@@ -1,0 +1,304 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="资源文件\cards">
+      <UniqueIdentifier>{d1c67f61-fd38-4b1e-be2a-5cd186a06df2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\cards\red">
+      <UniqueIdentifier>{b6a3df8b-fd54-4f05-a49a-e38967b7a1df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\cards\blue">
+      <UniqueIdentifier>{5203129a-e9c1-4f6a-b6b0-3c8cd3205e86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\cards\green">
+      <UniqueIdentifier>{ba5ceb3c-243a-4318-b631-7086a6b26e5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\cards\yellow">
+      <UniqueIdentifier>{00eaa413-3d22-4f0b-ad49-707eead92163}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\cards\black">
+      <UniqueIdentifier>{9803f762-76f9-4632-97f2-b763b7fde017}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\characters">
+      <UniqueIdentifier>{9e805699-d838-4f8d-8207-0fbe93307277}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="cards\blue\action_ban.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\action_draw2.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\action_rev.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_0.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_1.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_2.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_3.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_4.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_5.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_6.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_7.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_8.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\blue\number_9.jpg">
+      <Filter>资源文件\cards\blue</Filter>
+    </Image>
+    <Image Include="cards\back.jpg">
+      <Filter>资源文件\cards</Filter>
+    </Image>
+    <Image Include="cards\green\action_ban.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\action_draw2.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\action_rev.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_0.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_1.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_2.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_3.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_4.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_5.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_6.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_7.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_8.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\green\number_9.jpg">
+      <Filter>资源文件\cards\green</Filter>
+    </Image>
+    <Image Include="cards\red\action_ban.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\action_draw2.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\action_rev.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_0.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_1.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_2.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_3.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_4.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_5.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_6.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_7.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_8.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\red\number_9.jpg">
+      <Filter>资源文件\cards\red</Filter>
+    </Image>
+    <Image Include="cards\yellow\action_ban.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\action_draw2.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\action_rev.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_0.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_1.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_2.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_3.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_4.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_5.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_6.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_7.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_8.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\yellow\number_9.jpg">
+      <Filter>资源文件\cards\yellow</Filter>
+    </Image>
+    <Image Include="cards\black\wild_draw4.jpg">
+      <Filter>资源文件\cards\black</Filter>
+    </Image>
+    <Image Include="cards\black\wild_pal.jpg">
+      <Filter>资源文件\cards\black</Filter>
+    </Image>
+    <Image Include="cards\pointer.jpg">
+      <Filter>资源文件\cards</Filter>
+    </Image>
+    <Image Include="characters\trump.jpg">
+      <Filter>资源文件\characters</Filter>
+    </Image>
+    <Image Include="characters\unknown.jpg">
+      <Filter>资源文件\characters</Filter>
+    </Image>
+    <Image Include="characters\vanilla.jpg">
+      <Filter>资源文件\characters</Filter>
+    </Image>
+    <Image Include="cards\unknown.jpg">
+      <Filter>资源文件\cards</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\header\Card.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Character.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Effect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\GameLogic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\GameState.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\ImageManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Player.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Skill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Socket.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\TextManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\GameRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\Card.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Character.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Effect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\GameLogic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\GameState.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ImageManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Skill.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Socket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\TextManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sMain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\GameRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Player.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\config.json">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+</Project>
