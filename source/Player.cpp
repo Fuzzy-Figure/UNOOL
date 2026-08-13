@@ -33,7 +33,7 @@ void Player::drawTo(const std::size_t num) {
 //返回使用牌的引用
 Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
-	std::cout << "玩家" << id << "打出了：" << card->nameString() << std::endl;
+	std::cout << "玩家" << id << "打出了：" << card->toString() << std::endl;
 
 	game.launchPSkills(PSkill::TriggerTime::use_card_begin, *this, *card);
 	game.launchPSkills(PSkill::TriggerTime::card_target_begin, next(), *card, *this);
@@ -240,7 +240,7 @@ std::optional<std::size_t> Player::chooseToChange(const Card& targetCard, const 
 	network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
 	if (!index.has_value()) return std::nullopt;
 	getHand().getCardByIndex(index.value()).set(targetCard);
-	std::cout << "玩家" << id << "将手牌第" << index.value() << "张改为 [" << targetCard.nameString() << "]" << std::endl;
+	std::cout << "玩家" << id << "将手牌第" << index.value() << "张改为 [" << targetCard.toString() << "]" << std::endl;
 	return index;
 }
 
@@ -260,14 +260,14 @@ opt_ref<Card> Player::chooseToGive(Player& target, bool forced,
 		return std::nullopt;
 	}
 
-	std::string logName = hand->getCardByIndex(index.value()).nameString();
+	ref<Card> card = hand->getCardByIndex(index.value());
 
 	give(target, takeCardByIndex(index.value()));
 	hand->resetSelectedIndex();
-	std::cout << "玩家" << id << "给了" << target.characterName() << "一张" << logName << std::endl;
+	std::cout << "玩家" << id << "给了" << target.characterName() << "一张" << card.get().toString() << std::endl;
 	game.broadcastState();
 
-	return target.getCardByIndex(target.handCount() - 1);
+	return card;
 }
 
 

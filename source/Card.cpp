@@ -3,6 +3,8 @@
 #include "../header/ImageManager.h"
 #include "../header/utils.h"
 
+
+// ==================== Card 静态数据 ====================
 const std::unordered_map<std::tuple<Card::Color, Card::Name>, std::string, Card::TupleHash> Card::imagePaths = {
 	// 红色牌
 	{{Color::red, Name::number_0},     "cards/red/number_0.jpg"},
@@ -65,7 +67,7 @@ const std::unordered_map<std::tuple<Card::Color, Card::Name>, std::string, Card:
 	{{Color::yellow, Name::action_draw2}, "cards/yellow/action_draw2.jpg"},
 
 	// 黑色牌
-	{{Color::black, Name::wild_pal}, "cards/black/wild_pal.jpg"},
+	{{Color::black, Name::wild_pal},   "cards/black/wild_pal.jpg"},
 	{{Color::black, Name::wild_draw4}, "cards/black/wild_draw4.jpg"},
 
 	// 背面牌
@@ -74,23 +76,118 @@ const std::unordered_map<std::tuple<Card::Color, Card::Name>, std::string, Card:
 
 const Card Card::back(Card::Color::no, Card::Name::back);
 
-std::ostream& operator<<(std::ostream& ostr, const Card& card) {
-	ostr << card.nameString();
-	return ostr;
+
+// ==================== Card 类 ====================
+
+// 构造 / 静态工厂
+Card::Card(const Color _color, const Name _name) :color(_color), name(_name) {}
+
+std::unique_ptr<Card> Card::make(const Color _color, const Name _name) {
+	return std::make_unique<Card>(_color, _name);
 }
-std::ostream& operator<<(std::ostream& ostr, const Cards& cards) {
-	for (const auto& card : cards) {
-		ostr << *card << "，";
-	}
-	return ostr;
+std::unique_ptr<Card> Card::make(const Card& other) {
+	return std::make_unique<Card>(other.getColor(), other.getName());
+}
+std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
+	return make(*otherPtr);
 }
 
+// 属性查询
 bool Card::operator<(const Card& other) const {
 	if (color != other.color)
 		return color < other.color;
 	return name < other.name;
 }
+Card::Color Card::getColor() const {
+	return color;
+}
+Card::Name Card::getName() const {
+	return name;
+}
+bool Card::isNumber() const {
+	return name == Name::number_0 || name == Name::number_1
+		|| name == Name::number_2 || name == Name::number_3
+		|| name == Name::number_4 || name == Name::number_5
+		|| name == Name::number_6 || name == Name::number_7
+		|| name == Name::number_8 || name == Name::number_9;
+}
+bool Card::isNotNumber() const {
+	return !isNumber();
+}
+bool Card::isAction() const {
+	return name == Name::action_ban || name == Name::action_draw2
+		|| name == Name::action_rev;
+}
+bool Card::isWild() const {
+	return name == Name::wild_pal || name == Name::wild_draw4;
+}
+int Card::value() const {
+	switch (name) {
+		//数字
+	case Name::number_0: return 0;
+	case Name::number_1: return 1;
+	case Name::number_2: return 2;
+	case Name::number_3: return 3;
+	case Name::number_4: return 4;
+	case Name::number_5: return 5;
+	case Name::number_6: return 6;
+	case Name::number_7: return 7;
+	case Name::number_8: return 8;
+	case Name::number_9: return 9;
+		//功能
+	case Name::action_ban:
+	case Name::action_draw2:
+	case Name::action_rev: return 20;
+		//万能
+	case Name::wild_pal:
+	case Name::wild_draw4: return 50;
+		//其他
+	default: throw std::invalid_argument("无法计算背面/未知牌的价值");
+	}
+}
+std::string Card::toString() const {
+	return Card::to_string(color) + Card::to_string(name);
+}
+std::string Card::getImagePath() const {
+	if (auto it = imagePaths.find(std::tuple(color, name)); it != imagePaths.end())
+		return it->second;
+	else throw std::invalid_argument("未找到图片路径");
+}
 
+// 属性设置
+void Card::setColor(const Color newColor) {
+	color = newColor;
+}
+void Card::setName(const Name newName) {
+	name = newName;
+}
+void Card::set(const Card& other) {
+	setColor(other.getColor());
+	setName(other.getName());
+}
+
+// 显示
+void Card::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize) const {
+	renderer.displayImage(getImagePath(), pos, cardSize);
+}
+void Card::displayInCenter(GameRenderer& renderer, const sf::Vector2f& cardSize) const {
+	renderer.displayImageInCenter(getImagePath(), cardSize);
+}
+
+// 效果控制
+void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
+	if (isEffective()) {
+		switch (getName()) {
+		case Name::action_ban:   Effect::ban(*this, source, target); break;
+		case Name::action_rev:   Effect::rev(*this, game); break;
+		case Name::action_draw2: Effect::draw2(*this, source, target); break;
+		case Name::wild_pal:     Effect::pal(*this, game, source); break;
+		case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
+		}
+	}
+}
+
+// 静态转换方法
 std::string Card::to_string(const Color& color) {
 	switch (color) {
 	case Color::blue:   return "蓝";
@@ -113,7 +210,6 @@ std::wstring Card::to_wstring(const Color& color) {
 	default:            return L"";
 	}
 }
-
 std::string Card::to_string(const Name& name) {
 	switch (name) {
 		// 数字牌
@@ -167,111 +263,16 @@ std::wstring Card::to_wstring(const Name& name) {
 	}
 }
 
-
-Card::Card(const Color _color, const Name _name) :color(_color), name(_name) {}
-
-Card::Color Card::getColor() const {
-	return color;
-}
-void Card::setColor(const Color newColor) {
-	color = newColor;
-}
-Card::Name Card::getName() const {
-	return name;
-}
-void Card::setName(const Name newName) {
-	name = newName;
-}
-void Card::set(const Card& other) {
-	setColor(other.getColor());
-	setName(other.getName());
-}
-void Card::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize) const {
-	renderer.displayImage(getImagePath(), pos, cardSize);
-}
-void Card::displayInCenter(GameRenderer& renderer, const sf::Vector2f& cardSize) const {
-	renderer.displayImageInCenter(getImagePath(), cardSize);
-}
-
-bool Card::isNumber() const {
-	return name == Name::number_0 || name == Name::number_1
-		|| name == Name::number_2 || name == Name::number_3
-		|| name == Name::number_4 || name == Name::number_5
-		|| name == Name::number_6 || name == Name::number_7
-		|| name == Name::number_8 || name == Name::number_9;
-}
-bool Card::isNotNumber() const {
-	return !isNumber();
-}
-bool Card::isAction() const {
-	return name == Name::action_ban || name == Name::action_draw2
-		|| name == Name::action_rev;
-}
-bool Card::isWild() const {
-	return name == Name::wild_pal || name == Name::wild_draw4;
-}
-
-int Card::value() const {
-	switch (name) {
-		//数字
-	case Name::number_0: return 0;
-	case Name::number_1: return 1;
-	case Name::number_2: return 2;
-	case Name::number_3: return 3;
-	case Name::number_4: return 4;
-	case Name::number_5: return 5;
-	case Name::number_6: return 6;
-	case Name::number_7: return 7;
-	case Name::number_8: return 8;
-	case Name::number_9: return 9;
-		//功能
-	case Name::action_ban:
-	case Name::action_draw2:
-	case Name::action_rev: return 20;
-		//万能
-	case Name::wild_pal:
-	case Name::wild_draw4: return 50;
-		//其他
-	default: throw std::invalid_argument("无法计算背面/未知牌的价值");
-	}
-}
-
-std::string Card::nameString() const {
-	return Card::to_string(color) + Card::to_string(name);
-}
-
-std::string Card::getImagePath() const {
-	if (auto it = imagePaths.find(std::tuple(color, name)); it != imagePaths.end())
-		return it->second;
-	else throw std::invalid_argument("未找到图片路径");
-}
-
-std::unique_ptr<Card> Card::make(const Card& other) {
-	return std::make_unique<Card>(other.getColor(), other.getName());
-}
-
-std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
-	return make(*otherPtr);
-}
-
-std::unique_ptr<Card> Card::make(const Color _color, const Name _name) {
-	return std::make_unique<Card>(_color, _name);
-}
-
-void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
-	if (isEffective()) {
-		switch (getName()) {
-		case Name::action_ban:   Effect::ban(*this, source, target); break;
-		case Name::action_rev:   Effect::rev(*this, game); break;
-		case Name::action_draw2: Effect::draw2(*this, source, target); break;
-		case Name::wild_pal:     Effect::pal(*this, game, source); break;
-		case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
-		}
-	}
+// 友元流输出
+std::ostream& operator<<(std::ostream& ostr, const Card& card) {
+	ostr << card.toString();
+	return ostr;
 }
 
 
+// ==================== Cards 类 ====================
 
+// 修改容器
 [[nodiscard]] std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	if (index >= cards.size())
 		throw std::out_of_range("Cards::takeCardByIndex: index " + std::to_string(index) +
@@ -280,14 +281,12 @@ void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 	cards.erase(cards.begin() + index);
 	return card;
 }
-
 void Cards::push_front(std::unique_ptr<Card> card, const std::size_t number) {
 	for (std::size_t i = 0; i < number - 1; ++i) {
 		cards.push_front(Card::make(card));
 	}
 	cards.push_front(std::move(card));
 }
-
 void Cards::push_back(std::unique_ptr<Card> card, const std::size_t number) {
 	for (std::size_t i = 0; i < number - 1; ++i) {
 		cards.push_back(Card::make(card));
@@ -295,21 +294,19 @@ void Cards::push_back(std::unique_ptr<Card> card, const std::size_t number) {
 	cards.push_back(std::move(card));
 }
 
+// 容量 / 克隆
 void Cards::cloneTo(Cards& target) const {
 	for (const auto& card : cards) {
 		target.push_back(Card::make(*card));
 	}
 }
-
 Cards Cards::clone() const {
 	Cards newCards;
 	cloneTo(newCards);
 	return newCards;
 }
 
-
-
-
+// 条件遍历
 bool Cards::satisfy(const std::function<bool(const Cards&)>& condition) const {
 	return condition(*this);
 }
@@ -337,20 +334,18 @@ void Cards::forEachIf(const std::function<bool(const Card&)>& condition,
 	}
 }
 
-
-
-
-
-std::unique_ptr<Card> Pile::take_back(Pile& discardPile) {
-	std::unique_ptr<Card> card = std::move(cards.back());
-	cards.pop_back();
-	return card;
+// 友元流输出
+std::ostream& operator<<(std::ostream& ostr, const Cards& cards) {
+	for (const auto& card : cards) {
+		ostr << *card << "，";
+	}
+	return ostr;
 }
 
 
+// ==================== Hand 类 ====================
 
-
-
+// 指针导航
 void Hand::selectLeft() {
 	if (count() == 0) return;
 	if (selectedIndex == 0) selectedIndex = count() - 1;
@@ -364,28 +359,9 @@ void Hand::selectRight() {
 void Hand::selectLast() {
 	if (count() > 0) selectedIndex = count() - 1;
 }
-std::size_t Hand::getSelectedIndex() const {
-	return selectedIndex;
-}
-const Card& Hand::getSelectedCard() const {
-	if (count() == 0) throw std::out_of_range("手牌为空");
-	return *cards[selectedIndex];
-}
 void Hand::resetSelectedIndex() {
 	if (selectedIndex > 0) --selectedIndex;
 	if (selectedIndex < 0 || selectedIndex >= count()) selectedIndex = 0;
-}
-
-void Hand::sort() {
-	std::ranges::sort(cards, [](const std::unique_ptr<Card>& a, const std::unique_ptr<Card>& b) {
-		return *a < *b;
-	});
-}
-
-void Hand::print() const {
-	std::cout << *this;
-	if (!empty()) std::cout << "；当前选择了第" << getSelectedIndex() << "张牌：" << getSelectedCard();
-	std::cout << std::endl;
 }
 void Hand::setSelectedIndex(std::size_t idx) {
 	if (count() == 0) {
@@ -400,22 +376,26 @@ void Hand::setSelectedIndex(std::size_t idx) {
 	}
 }
 
-std::unique_ptr<Card> Hand::takeCardByIndex(const std::size_t index) {
-	auto card = Cards::takeCardByIndex(index);
-	if (index < selectedIndex) {
-		selectedIndex--;
-	}
-	else if (index == selectedIndex) {
-		if (selectedIndex >= count() && count() > 0) {
-			selectedIndex = count() - 1;
-		}
-	}
-	if (count() == 0) {
-		selectedIndex = 0;
-	}
-	return card;
+// 指针查询
+std::size_t Hand::getSelectedIndex() const {
+	return selectedIndex;
+}
+const Card& Hand::getSelectedCard() const {
+	if (count() == 0) throw std::out_of_range("手牌为空");
+	return *cards[selectedIndex];
 }
 
+// 排序 / 输出
+void Hand::sort() {
+	std::ranges::sort(cards, [](const std::unique_ptr<Card>& a, const std::unique_ptr<Card>& b) {
+		return *a < *b;
+		});
+}
+void Hand::print() const {
+	std::cout << *this;
+	if (!empty()) std::cout << "；当前选择了第" << getSelectedIndex() << "张牌：" << getSelectedCard();
+	std::cout << std::endl;
+}
 void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize) const {
 	bool displayPointer = pointerSize != sf::Vector2f{ 0, 0 };
 	const std::size_t foldCardWidth = static_cast<std::size_t>(cardSize.x / 3);
@@ -442,15 +422,7 @@ void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Ve
 	}
 }
 
-Hand Hand::clone() const {
-	Hand newHand;
-	cloneTo(newHand);
-	newHand.selectedIndex = selectedIndex;
-	return newHand;
-}
-
-
-
+// 工具方法
 std::size_t Hand::value() const {
 	std::size_t value = 0;
 	for (const auto& c : cards) {
@@ -458,7 +430,34 @@ std::size_t Hand::value() const {
 	}
 	return value;
 }
+Hand Hand::clone() const {
+	Hand newHand;
+	cloneTo(newHand);
+	newHand.selectedIndex = selectedIndex;
+	return newHand;
+}
 
+// 覆盖 Cards::takeCardByIndex（维护 selectedIndex）
+[[nodiscard]] std::unique_ptr<Card> Hand::takeCardByIndex(const std::size_t index) {
+	auto card = Cards::takeCardByIndex(index);
+	if (index < selectedIndex) {
+		selectedIndex--;
+	}
+	else if (index == selectedIndex) {
+		if (selectedIndex >= count() && count() > 0) {
+			selectedIndex = count() - 1;
+		}
+	}
+	if (count() == 0) {
+		selectedIndex = 0;
+	}
+	return card;
+}
+
+
+// ==================== Pile 类 ====================
+
+// 工厂 / 克隆
 std::unique_ptr<Pile> Pile::standard() {
 	std::unique_ptr<Pile> standard = std::make_unique<Pile>();
 	constexpr std::array<Card::Color, 4> colors = {
@@ -504,10 +503,13 @@ std::unique_ptr<Pile> Pile::standard() {
 	standard->shuffle();
 	return standard;
 }
-void Pile::recycle(Pile& other) {
-	cards = std::move(other.cards);
-	shuffle();
+Pile Pile::clone() const {
+	Pile newPile;
+	cloneTo(newPile);
+	return newPile;
 }
+
+// 牌堆操作
 [[nodiscard]] std::unique_ptr<Card> Pile::take_front(Pile& discardPile) {
 	//牌堆里没牌了，回收弃牌堆
 	if (cards.empty()) recycle(discardPile);
@@ -518,22 +520,25 @@ void Pile::recycle(Pile& other) {
 	if (cards.empty()) recycle(discardPile);
 	return frontCard;
 }
-
+[[nodiscard]] std::unique_ptr<Card> Pile::take_back(Pile& discardPile) {
+	std::unique_ptr<Card> card = std::move(cards.back());
+	cards.pop_back();
+	return card;
+}
+void Pile::recycle(Pile& other) {
+	cards = std::move(other.cards);
+	shuffle();
+}
 void Pile::shuffle() {
 	std::ranges::shuffle(cards, unool::random::rng);
 }
 
-Pile Pile::clone() const {
-	Pile newPile;
-	cloneTo(newPile);
-	return newPile;
-}
 
+// ==================== Packet 序列化 ====================
 sf::Packet& operator<<(sf::Packet& packet, const Card& card) {
 	packet << static_cast<int>(card.getColor()) << static_cast<int>(card.getName());
 	return packet;
 }
-
 sf::Packet& operator>>(sf::Packet& packet, Card& card) {
 	int colorInt, nameInt;
 	if (packet >> colorInt >> nameInt) {
@@ -558,7 +563,6 @@ sf::Packet& operator<<(sf::Packet& packet, const Hand& hand) {
 	packet << validIndex;
 	return packet;
 }
-
 sf::Packet& operator>>(sf::Packet& packet, Hand& hand) {
 	hand.cards.clear();
 	std::size_t size;

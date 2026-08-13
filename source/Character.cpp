@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 
+// ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"白板",     {Level::F, {}, {}, 200}},
 	{"特朗普",   {Level::D, {"粪怒"}, {}, 145}},
@@ -30,14 +31,46 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"新诸葛亮",              {Level::B, {"炼兵", "好火"}, {}, 77}},
 };
 
+
+// ==================== 构造 / 工厂 ====================
+Character::Character(const std::string& _name,
+					 const std::string& _skin)
+	:name(_name), skin(_skin) {}
+
+std::unique_ptr<Character> Character::make(const std::string& name, const std::string& skin) {
+	auto it = infos.find(name);
+	if (it == infos.end()) {
+		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+	}
+	const Info& info = it->second;
+
+	auto newChara = std::make_unique<Character>(name, skin);
+	//被动技能
+	for (const auto& skillName : info.pSkillNames) {
+		newChara->addSkill(PSkill::registry.at(skillName)());
+	}
+	//主动技能
+	for (const auto& skillName : info.aSkillNames) {
+		newChara->addSkill(ASkill::registry.at(skillName)());
+	}
+	//初始化体力
+	newChara->hp = info.hp;
+	newChara->maxHp = info.maxHp == 0 ? info.hp : info.maxHp;
+	return newChara;
+}
+
+
+// ==================== 基本信息 ====================
 std::string Character::getName() const {
 	return name;
 }
-
 std::wstring Character::getNameW() const {
 	return unool::string::to_utf16(name);
 }
-
+Character::Level Character::getLevel() const {
+	if (auto it = infos.find(name); it != infos.end()) return it->second.level;
+	else throw std::invalid_argument("此角色未定义等级");
+}
 std::string Character::skillsName() const {
 	std::string result;
 	for (const auto& ps : pSkills) {
@@ -48,40 +81,43 @@ std::string Character::skillsName() const {
 	}
 	return result;
 }
-
-
-void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
-							  PSkill::Trigger& trigger) const {
-	//遍历被动技能
-	for (auto& pSkill : pSkills) {
-		//如果时机和角色都符合，则发动
-		if (pSkill->matchTrigger(currentTriggerTime, trigger))
-			pSkill->launch(trigger);
-	}
+std::string Character::getImagePath() const {
+	return getImagePath(name, skin);
 }
-
-Character::Character() :Character("白板") {}
-
-Character::Character(const std::string& _name,
-					 const std::string& _skin)
-	:name(_name), skin(_skin) {}
-
 bool Character::operator<(const Character& other) const {
 	return name < other.name;
 }
-
 bool Character::operator==(const Character& other) const {
 	return name == other.name;
 }
 
+
+// ==================== 静态工具 ====================
+std::string Character::to_string(Level level) {
+	switch (level) {
+	case Level::S: return "S";
+	case Level::A: return "A";
+	case Level::B: return "B";
+	case Level::C: return "C";
+	case Level::D: return "D";
+	case Level::F: return "F";
+	default: return "?";
+	}
+}
+std::wstring Character::to_wstring(Level level) {
+	switch (level) {
+	case Level::S: return L"S";
+	case Level::A: return L"A";
+	case Level::B: return L"B";
+	case Level::C: return L"C";
+	case Level::D: return L"D";
+	case Level::F: return L"F";
+	default: return L"?";
+	}
+}
 std::string Character::getImagePath(const std::string& name, const std::string& skin) {
 	return "characters/" + name + "/" + skin + ".jpg";
 }
-
-std::string Character::getImagePath() const {
-	return getImagePath(name, skin);
-}
-
 std::vector<std::string> Character::getSkins(const std::string& name) {
 	namespace fs = std::filesystem;
 	const fs::path dir = fs::path(L"../characters") / unool::string::to_utf16(name);
@@ -107,34 +143,8 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 	return skins;
 }
 
-Character::Level Character::getLevel() const {
-	if (auto it = infos.find(name); it != infos.end()) return it->second.level;
-	else throw std::invalid_argument("此角色未定义等级");
-}
 
-std::string Character::to_string(Level level) {
-	switch (level) {
-	case Level::S: return "S";
-	case Level::A: return "A";
-	case Level::B: return "B";
-	case Level::C: return "C";
-	case Level::D: return "D";
-	case Level::F: return "F";
-	default: return "?";
-	}
-}
-std::wstring Character::to_wstring(Level level) {
-	switch (level) {
-	case Level::S: return L"S";
-	case Level::A: return L"A";
-	case Level::B: return L"B";
-	case Level::C: return L"C";
-	case Level::D: return L"D";
-	case Level::F: return L"F";
-	default: return L"?";
-	}
-}
-
+// ==================== 技能管理 ====================
 std::vector<std::string> Character::getPSkillsName() const {
 	std::vector<std::string> names;
 	for (const auto& skill : pSkills) {
@@ -142,7 +152,6 @@ std::vector<std::string> Character::getPSkillsName() const {
 	}
 	return names;
 }
-
 std::vector<std::string> Character::getASkillsName() const {
 	std::vector<std::string> names;
 	for (const auto& skill : aSkills) {
@@ -150,22 +159,27 @@ std::vector<std::string> Character::getASkillsName() const {
 	}
 	return names;
 }
-
 bool Character::hasPSkill(const std::string& skillName) const {
 	for (const auto& skill : pSkills) {
 		if (skill->getName() == skillName) return true;
 	}
 	return false;
 }
-
+void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+							  PSkill::Trigger& trigger) const {
+	//遍历被动技能
+	for (auto& pSkill : pSkills) {
+		//如果时机和角色都符合，则发动
+		if (pSkill->matchTrigger(currentTriggerTime, trigger))
+			pSkill->launch(trigger);
+	}
+}
 void Character::addSkill(std::unique_ptr<ASkill> aSkill) {
 	aSkills.push_back(std::move(aSkill));
 }
-
 void Character::addSkill(std::unique_ptr<PSkill> pSkill) {
 	pSkills.push_back(std::move(pSkill));
 }
-
 void Character::removeSkill(const std::string& name) {
 	std::erase_if(pSkills, [&name](const std::unique_ptr<PSkill>& ps) {
 		return ps->getName() == name;
@@ -174,7 +188,6 @@ void Character::removeSkill(const std::string& name) {
 		return as->getName() == name;
 	});
 }
-
 void Character::resetSkills() {
 	for (auto& pSkill : pSkills) {
 		pSkill->reset();
@@ -184,40 +197,17 @@ void Character::resetSkills() {
 	}
 }
 
-std::unique_ptr<Character> Character::make(const std::string& name, const std::string& skin) {
-	auto it = infos.find(name);
-	if (it == infos.end()) {
-		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
-	}
-	const Info& info = it->second;
 
-	auto newChara = std::make_unique<Character>(name, skin);
-	//被动技能
-	for (const auto& skillName : info.pSkillNames) {
-		newChara->addSkill(PSkill::registry.at(skillName)());
-	}
-	//主动技能
-	for (const auto& skillName : info.aSkillNames) {
-		newChara->addSkill(ASkill::registry.at(skillName)());
-	}
-	//初始化体力
-	newChara->hp = info.hp;
-	newChara->maxHp = info.maxHp == 0 ? info.hp : info.maxHp;
-	return newChara;
-}
-
+// ==================== 体力管理 ====================
 std::size_t Character::getHp() const {
 	return hp;
 }
-
 std::size_t Character::getMaxHp() const {
 	return maxHp;
 }
-
 void Character::setHp(std::size_t newHp) {
 	hp = newHp;
 }
-
 void Character::takeDamage(std::size_t damage) {
 	if (hp <= damage) hp = 0;
 	else hp -= damage;

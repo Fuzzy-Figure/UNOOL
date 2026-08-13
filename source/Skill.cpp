@@ -54,11 +54,11 @@ const std::unordered_map<std::string, PSkill::Factory> PSkill::registry = {
 const std::unordered_map<std::string, std::string> PSkill::descriptions = {
 	{"粪怒", "限定技，一名角色手牌数变为1时，你可令其摸你手牌数张牌（至多摸五张）。"},
 	{"隐身", "当你成为【+2】/【+4】的目标时，改为你的下家摸1张牌。"},
-	{"顶置", "回合开始时，你观看牌堆底一张牌，且可将此牌置于牌堆顶。"},
+	{"顶置", "锁定技，回合开始时，你观看牌堆底一张牌，然后可将此牌置于牌堆顶。"},
 	{"带派", "每局游戏开始时，选择获得一张【变色】或【+4】；也可选择两张均获得并失去25点体力。"},
 	{"寒魄", "限定技，你打出牌后，若你手牌数为1，你可令最后一张手牌变为你打出的牌。"},
 	{"割腕", "锁定技，你打出红色牌后失去随机1~5点体力。"},
-	{"丑皇", "你打出万能牌后，可选择回复10点体力或弃置一张非数字牌。"},
+	{"丑皇", "锁定技，你打出万能牌后，选择一项：回复10点体力或弃置一张非数字牌。"},
 	{"军国", "锁定技，当一名角色被封禁时，其失去1%最大体力（向上取整），自己被封禁改为失去1体力。"},
 	{"家暴", "限定技，回合开始时，你可以令一名体力小于你的角色失去10%最大体力（向上取整）。"},
 	{"健身", "锁定技，每局游戏开始时，回复5点体力。"},
@@ -139,7 +139,7 @@ void PSkill::reset() {
 
 std::unique_ptr<PSkill> PSkill::粪怒() {
 	const std::string   name = "粪怒";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::others;
 	const auto   triggerTime = TriggerTime::lose_card_end;
@@ -156,7 +156,7 @@ std::unique_ptr<PSkill> PSkill::粪怒() {
 }
 std::unique_ptr<PSkill> PSkill::隐身() {
 	const std::string   name = "隐身";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::card_target_begin;
@@ -172,7 +172,7 @@ std::unique_ptr<PSkill> PSkill::隐身() {
 }
 std::unique_ptr<PSkill> PSkill::顶置() {
 	const std::string   name = "顶置";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -203,7 +203,7 @@ std::unique_ptr<PSkill> PSkill::顶置() {
 }
 std::unique_ptr<PSkill> PSkill::带派() {
 	const std::string   name = "带派";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::game_begin;
@@ -238,7 +238,7 @@ std::unique_ptr<PSkill> PSkill::带派() {
 }
 std::unique_ptr<PSkill> PSkill::寒魄() {
 	const std::string   name = "寒魄";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -256,7 +256,7 @@ std::unique_ptr<PSkill> PSkill::寒魄() {
 }
 std::unique_ptr<PSkill> PSkill::割腕() {
 	const std::string   name = "割腕";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -273,7 +273,7 @@ std::unique_ptr<PSkill> PSkill::割腕() {
 }
 std::unique_ptr<PSkill> PSkill::丑皇() {
 	const std::string   name = "丑皇";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -310,7 +310,7 @@ std::unique_ptr<PSkill> PSkill::丑皇() {
 }
 std::unique_ptr<PSkill> PSkill::军国() {
 	const std::string   name = "军国";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::anybody;
 	const auto   triggerTime = TriggerTime::ban_begin;
@@ -330,7 +330,7 @@ std::unique_ptr<PSkill> PSkill::军国() {
 }
 std::unique_ptr<PSkill> PSkill::家暴() {
 	const std::string   name = "家暴";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -378,7 +378,7 @@ std::unique_ptr<PSkill> PSkill::家暴() {
 }
 std::unique_ptr<PSkill> PSkill::健身() {
 	const std::string   name = "健身";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::game_begin;
@@ -394,7 +394,7 @@ std::unique_ptr<PSkill> PSkill::健身() {
 }
 std::unique_ptr<PSkill> PSkill::做题() {
 	const std::string   name = "做题";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -403,7 +403,7 @@ std::unique_ptr<PSkill> PSkill::做题() {
 		Card& card = trigger.get_card();
 		Player& carrier = trigger.get_carrier();
 		if (card.isNumber()) return carrier.handInclude(&Card::isNotNumber);
-		else return carrier.handInclude(&Card::isNotNumber);
+		else return carrier.handInclude(&Card::isNumber);
 	};
 	const Content content = [](Trigger& trigger) {
 		Card& card = trigger.get_card();
@@ -421,7 +421,7 @@ std::unique_ptr<PSkill> PSkill::做题() {
 }
 std::unique_ptr<PSkill> PSkill::棍击() {
 	const std::string   name = "棍击";
-	const std::size_t  limit = 9;
+	const limit_t      limit = 9;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -456,7 +456,7 @@ std::unique_ptr<PSkill> PSkill::棍击() {
 }
 std::unique_ptr<PSkill> PSkill::神木() {
 	const std::string   name = "神木";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::game_begin;
@@ -474,7 +474,7 @@ std::unique_ptr<PSkill> PSkill::神木() {
 }
 std::unique_ptr<PSkill> PSkill::雷剑() {
 	const std::string   name = "雷剑";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -504,7 +504,7 @@ std::unique_ptr<PSkill> PSkill::雷剑() {
 }
 std::unique_ptr<PSkill> PSkill::买棋() {
 	const std::string   name = "买棋";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -526,7 +526,7 @@ std::unique_ptr<PSkill> PSkill::买棋() {
 }
 std::unique_ptr<PSkill> PSkill::卖棋() {
 	const std::string   name = "卖棋";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_end;
@@ -545,7 +545,7 @@ std::unique_ptr<PSkill> PSkill::卖棋() {
 }
 std::unique_ptr<PSkill> PSkill::耐克() {
 	const std::string   name = "耐克";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::card_target_begin;
@@ -589,7 +589,7 @@ std::unique_ptr<PSkill> PSkill::轰炸() {
 }
 std::unique_ptr<PSkill> PSkill::爆破() {
 	const std::string   name = "爆破";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::others;
 	const auto   triggerTime = TriggerTime::ban_end;
@@ -609,7 +609,7 @@ std::unique_ptr<PSkill> PSkill::爆破() {
 }
 std::unique_ptr<PSkill> PSkill::电音() {
 	const std::string   name = "电音";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -632,7 +632,7 @@ std::unique_ptr<PSkill> PSkill::电音() {
 }
 std::unique_ptr<PSkill> PSkill::蒙面() {
 	const std::string   name = "蒙面";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::lose_hp_begin;
@@ -647,7 +647,7 @@ std::unique_ptr<PSkill> PSkill::蒙面() {
 }
 std::unique_ptr<PSkill> PSkill::锐刻() {
 	const std::string   name = "锐刻";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -696,7 +696,7 @@ std::unique_ptr<PSkill> PSkill::锐刻() {
 }
 std::unique_ptr<PSkill> PSkill::巨富() {
 	const std::string   name = "巨富";
-	const std::size_t  limit = 1;
+	const limit_t      limit = 1;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::game_begin;
@@ -712,7 +712,7 @@ std::unique_ptr<PSkill> PSkill::巨富() {
 }
 std::unique_ptr<PSkill> PSkill::破产() {
 	const std::string   name = "破产";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -739,7 +739,7 @@ std::unique_ptr<PSkill> PSkill::破产() {
 }
 std::unique_ptr<PSkill> PSkill::假酒() {
 	const std::string   name = "假酒";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -785,10 +785,9 @@ std::unique_ptr<PSkill> PSkill::假酒() {
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
 }
-
 std::unique_ptr<PSkill> PSkill::窃观() {
 	const std::string   name = "窃观";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::others;
 	const auto   triggerTime = TriggerTime::draw_end;
@@ -811,7 +810,7 @@ std::unique_ptr<PSkill> PSkill::窃观() {
 }
 std::unique_ptr<PSkill> PSkill::生存() {
 	const std::string   name = "生存";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = true;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -845,7 +844,7 @@ std::unique_ptr<PSkill> PSkill::生存() {
 }
 std::unique_ptr<PSkill> PSkill::创造() {
 	const std::string   name = "创造";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -890,7 +889,7 @@ std::unique_ptr<PSkill> PSkill::创造() {
 }
 std::unique_ptr<PSkill> PSkill::炼兵() {
 	const std::string   name = "炼兵";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::self;
 	const auto   triggerTime = TriggerTime::phase_begin;
@@ -966,7 +965,7 @@ std::unique_ptr<PSkill> PSkill::炼兵() {
 }
 std::unique_ptr<PSkill> PSkill::好火() {
 	const std::string   name = "好火";
-	const auto         limit = unlimited;
+	const limit_t      limit = unlimited;
 	const bool        forced = false;
 	const auto triggerPlayer = TriggerPlayer::others;
 	const auto   triggerTime = TriggerTime::use_card_end;
@@ -994,7 +993,7 @@ std::unique_ptr<PSkill> PSkill::好火() {
 
 		usedPlayerIds->insert(target.getId());
 		std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
-			<< target.characterName() << "一张" << result.value().get().nameString() << std::endl;
+			<< target.characterName() << "一张" << result.value().get().toString() << std::endl;
 	};
 	auto skill = std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
 	skill->usedPlayerIdsFlag = usedPlayerIds;

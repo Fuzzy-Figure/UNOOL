@@ -22,6 +22,8 @@ protected:
 	std::size_t count = 0; //使用次数
 public:
 	inline static const auto unlimited = std::nullopt;
+	using limit_t = std::optional<std::size_t>;
+
 	std::string getName() const { return name; }
 	std::wstring getNameW() const { return unool::string::to_utf16(name); }
 	std::string getInfo() const { return info; }
