@@ -244,6 +244,32 @@ std::optional<std::size_t> Player::chooseToChange(const Card& targetCard, const 
 	return index;
 }
 
+opt_ref<Card> Player::chooseToGive(Player& target, bool forced,
+								   const std::function<bool(const Card&)>& condition) {
+	if (handEmpty()) return std::nullopt;
+
+	ServerNetwork& network = game.getNetwork();
+	std::wstring title = L"选择一张牌交给" + target.characterNameW();
+
+	network.sendPlayerChoice(id, title, {}, true, L"", std::nullopt);
+	auto index = chooseCard(condition, forced);
+	network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
+
+	if (!index.has_value()) {
+		std::cout << "玩家" << id << "取消了给" << target.characterName() << "牌" << std::endl;
+		return std::nullopt;
+	}
+
+	std::string logName = hand->getCardByIndex(index.value()).nameString();
+
+	give(target, takeCardByIndex(index.value()));
+	hand->resetSelectedIndex();
+	std::cout << "玩家" << id << "给了" << target.characterName() << "一张" << logName << std::endl;
+	game.broadcastState();
+
+	return target.getCardByIndex(target.handCount() - 1);
+}
+
 
 std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {

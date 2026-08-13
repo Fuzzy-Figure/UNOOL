@@ -81,7 +81,7 @@ const std::unordered_map<std::string, std::string> PSkill::descriptions = {
 	{"生存", "锁定技，回合开始时，选择一张手牌变为随机颜色的【X】（X为本局发动次数，至多9）。"},
 	{"创造", "每局每种颜色限一次，你打出【9】后，可从游戏外获得一张同色的任意牌名的牌。"},
 	{"炼兵", "每种颜色限一次，回合开始时，你可以弃置2张同色同名牌，从游戏外获得一张同色【+2】。"},
-	{"好火", "每名角色限一次，当其他角色打出红色牌后，若其体力值大于你，你可以交给其一张红色牌。"},
+	{"好火", "每名角色限一次，当其他角色打出红色牌后，若其体力值大于你，你可以交给其一张手牌。"},
 };
 
 PSkill::PSkill(const std::string& _name,
@@ -982,42 +982,19 @@ std::unique_ptr<PSkill> PSkill::好火() {
 		if (player == carrier) return false;
 		if (player.getHp() <= carrier.getHp()) return false;
 		if (usedPlayerIds->find(player.getId()) != usedPlayerIds->end()) return false;
-		if (!carrier.handInclude([](const Card& cc) { return cc.is(Card::Color::red); })) return false;
+		if (carrier.handCount() == 0) return false;
 		return true;
 	};
 	const Content content = [usedPlayerIds](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
 		Player& target = trigger.get_player();
-		GameLogic& game = trigger.get_game();
 
-		std::vector<std::size_t> redIndices;
-		std::vector<std::wstring> opts;
-		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
-			const Card& c = carrier.getHand().getCardByIndex(i);
-			if (c.is(Card::Color::red)) {
-				redIndices.push_back(i);
-				opts.push_back(Card::to_wstring(c.getColor()) + L" " + Card::to_wstring(c.getName()));
-			}
-		}
-		if (redIndices.empty()) return;
+		auto result = carrier.chooseToGive(target, false);
+		if (!result.has_value()) return;
 
-		std::size_t choice = carrier.ask(
-			L"【好火】选择要交给" + target.characterNameW() + L"的红色牌（0=放弃）：",
-			opts, false
-		);
-		if (choice == 0) return;
-		if (choice - 1 >= redIndices.size()) return;
-		std::size_t realIdx = redIndices[choice - 1];
-
-		// 先记录牌名日志再拿走（避免拿不到引用）
-		const Card& srcCard = carrier.getHand().getCardByIndex(realIdx);
-		std::string logName = Card::to_string(srcCard.getColor()) + Card::to_string(srcCard.getName());
-
-		carrier.give(target, carrier.takeCardByIndex(realIdx));
 		usedPlayerIds->insert(target.getId());
 		std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
-			<< target.characterName() << "一张" << logName << std::endl;
-		game.broadcastState();
+			<< target.characterName() << "一张" << result.value().get().nameString() << std::endl;
 	};
 	auto skill = std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
 	skill->usedPlayerIdsFlag = usedPlayerIds;

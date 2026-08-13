@@ -104,6 +104,9 @@ public:
 										   std::function<bool(const Card&)> condition
 										   = [](const Card&) {return true; });
 	std::optional<std::size_t> chooseToChange(const Card& targetCard, const std::wstring& title);
+	opt_ref<Card> chooseToGive(Player& target, bool forced,
+							   const std::function<bool(const Card&)>& condition
+							   = [](const Card&) {return true; });
 	std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
 					bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
 	void hint(const std::wstring& message);
