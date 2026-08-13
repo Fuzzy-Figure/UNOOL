@@ -300,5 +300,8 @@
     <None Include="..\config.json">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\.gitignore">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

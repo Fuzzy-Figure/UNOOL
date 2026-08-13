@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # 忽略卡牌、角色图片
 cards/
 characters/
+
+# 忽略.slnx
+UNOOL.slnx
