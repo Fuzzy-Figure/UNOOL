@@ -23,9 +23,9 @@ protected:
 public:
 	inline static const auto unlimited = std::nullopt;
 	std::string getName() const { return name; }
-	std::wstring getNameW() const { return unool::to_utf16(name); }
+	std::wstring getNameW() const { return unool::string::to_utf16(name); }
 	std::string getInfo() const { return info; }
-	std::wstring getInfoW() const { return unool::to_utf16(info); }
+	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
 	std::size_t getCount() const { return count; }
 	Skill(const std::string& _name, const std::string& _info, const std::optional<std::size_t>& _limit);
 	virtual ~Skill() = default;

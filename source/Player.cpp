@@ -1,6 +1,6 @@
 #include "../header/Player.h"
 #include "../header/GameLogic.h"
-#include <Windows.h>
+#include <thread>
 
 void Player::takeDamage(std::size_t damage, opt_ref<Player> source) {
 	game.launchPSkills(PSkill::TriggerTime::lose_hp_begin, *this, std::nullopt, source, damage);
@@ -159,7 +159,7 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		network.update();
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
-			Sleep(16);
+			std::this_thread::sleep_for(16ms);
 			continue;
 		}
 
@@ -262,7 +262,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		return std::nullopt;
 	};
 
-		auto sendPage = [&]() {
+	auto sendPage = [&]() {
 		if (!usePaging) {
 			network.sendPlayerChoice(id, title, options, forced, errorMsg, toTimeoutMs(), 0, 1);
 			return;
@@ -291,7 +291,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		network.update();
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
-			Sleep(16);
+			std::this_thread::sleep_for(16ms);
 			continue;
 		}
 
@@ -383,7 +383,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 				if (realIndex >= options.size()) {
 					errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
 						std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-						L"范围内的数字（←→翻页）";
+						L"范围内的数字（<-->翻页）";
 					sendPage();
 					continue;
 				}
@@ -393,7 +393,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 
 		if (!isValidDigit) {
 			if (usePaging) {
-				errorMsg = L"无效输入，请输入数字0-9或使用←→翻页";
+				errorMsg = L"无效输入，请输入数字0-9或使用<-->翻页";
 			}
 			else {
 				errorMsg = L"无效输入，请输入数字0-9";
@@ -406,7 +406,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 			if (usePaging) {
 				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
 					std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-					L"范围内的数字（←→翻页）";
+					L"范围内的数字（<-->翻页）";
 			}
 			else {
 				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
@@ -422,7 +422,9 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		}
 
 		network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
-		std::cout << "玩家" << id << "选择了" << choice << std::endl;
+		std::cout << "玩家" << id << "选择了" << choice << ": ";
+		if (choice != 0)
+			std::cout << unool::string::to_utf8(options[choice - 1]) << std::endl;
 		return choice;
 	}
 }

@@ -1,20 +1,19 @@
 #include "../header/GameLogic.h"
 #include "../header/Socket.h"
-#include "../header/Character.h"
 #include "../header/utils.h"
 #include <Windows.h>
-#include <vector>
 #include <chrono>
+#include <thread>
 
 constexpr std::array<std::array<int, 6>, 6> scoreboard = { {
-		//    败者  S   A   B   C   D   F
+		//     败者  S   A   B   C   D   F
 		//胜者
-		/*S*/     {10,  8,  5,  3,  2,  1},
-		/*A*/     {12, 10,  8,  5,  3,  2},
-		/*B*/     {15, 12, 10,  8,  5,  3},
-		/*C*/     {20, 15, 12, 10,  8,  5},
-		/*D*/     {30, 20, 15, 12, 10,  8},
-		/*F*/     {50, 30, 20, 15, 12, 10}
+		/*S*/      {10,  8,  5,  3,  2,  1},
+		/*A*/      {12, 10,  8,  5,  3,  2},
+		/*B*/      {15, 12, 10,  8,  5,  3},
+		/*C*/      {20, 15, 12, 10,  8,  5},
+		/*D*/      {30, 20, 15, 12, 10,  8},
+		/*F*/      {50, 30, 20, 15, 12, 10}
 	   } };
 
 
@@ -29,7 +28,7 @@ int main() {
 	unsigned short port = 8888;
 	if (!serverNetwork.start(port)) {
 		std::cerr << "[Server] 启动失败" << std::endl;
-		Sleep(3000);
+		std::this_thread::sleep_for(3s);
 		return 1;
 	}
 
@@ -42,7 +41,7 @@ int main() {
 
 	while (!serverNetwork.isReady()) {
 		serverNetwork.update();
-		Sleep(16);
+		std::this_thread::sleep_for(16ms);
 	}
 
 	try {
@@ -91,7 +90,7 @@ int main() {
 	}
 
 	while (true) {
-		Sleep(1000);
+		std::this_thread::sleep_for(1s);
 	}
 
 	return 0;

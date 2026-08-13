@@ -520,7 +520,7 @@ void Pile::recycle(Pile& other) {
 }
 
 void Pile::shuffle() {
-	std::ranges::shuffle(cards, unool::rng);
+	std::ranges::shuffle(cards, unool::random::rng);
 }
 
 Pile Pile::clone() const {

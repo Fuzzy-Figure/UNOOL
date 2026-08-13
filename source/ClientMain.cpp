@@ -2,6 +2,7 @@
 #include "../header/Socket.h"
 #include "../header/utils.h"
 #include <Windows.h>
+#include <thread>
 
 int main(int argc, char* argv[]) {
 	// 解析命令行参数
@@ -178,7 +179,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	Sleep(3000);
+	std::this_thread::sleep_for(3s);
 	system("pause");
 	return 0;
 }

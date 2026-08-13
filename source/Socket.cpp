@@ -1,6 +1,7 @@
 #include "../header/Socket.h"
+#include "../header/utils.h"
 #include <iostream>
-#include <Windows.h>
+#include <thread>
 
 ServerNetwork::~ServerNetwork() {
 	disconnect();
@@ -174,7 +175,7 @@ bool ServerNetwork::sendPacketToClient(sf::TcpSocket& socket, sf::Packet& packet
 	for (int attempt = 0; attempt < 3; ++attempt) {
 		sf::Socket::Status status = socket.send(packet);
 		if (status == sf::Socket::Status::Done) return true;
-		if (attempt < 2) Sleep(5);
+		if (attempt < 2) std::this_thread::sleep_for(5ms);
 	}
 	return false;
 }

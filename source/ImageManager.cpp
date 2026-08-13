@@ -2,7 +2,6 @@
 #include "../header/utils.h"
 #include <iostream>
 #include <fstream>
-#include <Windows.h>
 
 
 ImageManager::ImageManager(sf::RenderWindow& _window) :window(_window) {
@@ -20,7 +19,7 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 	//缓存未命中
 	if (auto it = textureCache.find(absolutePath); it == textureCache.end()) {
 		auto texture = std::make_unique<sf::Texture>();
-		if (!texture->loadFromFile(unool::to_utf16(absolutePath))) {
+		if (!texture->loadFromFile(unool::string::to_utf16(absolutePath))) {
 			throw std::runtime_error("[ImageManager] 纹理加载失败，路径：" + absolutePath);
 		}
 		std::cout << "[ImageManager] 纹理加载成功，路径：" << absolutePath

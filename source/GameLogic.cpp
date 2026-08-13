@@ -99,7 +99,7 @@ void GameLogic::determineSeatOrder() {
 	constexpr std::size_t playerCount = 2;
 	seatOrder.resize(playerCount);
 	std::ranges::iota(seatOrder, 0);
-	std::ranges::shuffle(seatOrder, unool::rng);
+	std::ranges::shuffle(seatOrder, unool::random::rng);
 	for (std::size_t id = 0; id < 2; ++id) {
 		players[id]->hint(L"你是" + std::to_wstring(seatOrder[id] + 1) + L"号位");
 	}
@@ -147,7 +147,7 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 }
 
 std::wstring GameLogic::formatCharacterLabelW(const CharacterEntry& entry) {
-	return unool::to_utf16(
+	return unool::string::to_utf16(
 		entry.first + "（" + Character::to_string(entry.second.level) + "）"
 	);
 }
@@ -156,10 +156,14 @@ std::vector<GameLogic::CharacterEntry> GameLogic::randomChooseCharacters(std::si
 	if (n > Character::infos.size() - 1) {
 		throw std::invalid_argument("候选角色数量不能超过已有角色数量（不含白板）");
 	}
+
+	auto filteredChars = Character::infos | std::views::filter([](const auto& kv) {
+		return kv.first != "白板";
+	});
 	std::vector<CharacterEntry> result;
 	result.reserve(n);
-	std::ranges::sample(Character::infos, std::back_inserter(result), n, unool::rng);
-	std::ranges::shuffle(result, unool::rng);
+	std::ranges::sample(filteredChars, std::back_inserter(result), n, unool::random::rng);
+	std::ranges::shuffle(result, unool::random::rng);
 	return result;
 }
 
@@ -185,7 +189,7 @@ void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
 	std::string skin = "默认";
 	if (skins.size() > 1) {
 		std::vector<std::wstring> skinOpts;
-		for (const auto& s : skins) skinOpts.push_back(unool::to_utf16(s));
+		for (const auto& s : skins) skinOpts.push_back(unool::string::to_utf16(s));
 		std::size_t skinChoice = player.ask(L"选择皮肤：", skinOpts, true);
 		skin = skins[skinChoice - 1];
 	}

@@ -35,7 +35,7 @@ std::string Character::getName() const {
 }
 
 std::wstring Character::getNameW() const {
-	return unool::to_utf16(name);
+	return unool::string::to_utf16(name);
 }
 
 std::string Character::skillsName() const {
@@ -84,14 +84,14 @@ std::string Character::getImagePath() const {
 
 std::vector<std::string> Character::getSkins(const std::string& name) {
 	namespace fs = std::filesystem;
-	const fs::path dir = fs::path(L"../characters") / unool::to_utf16(name);
+	const fs::path dir = fs::path(L"../characters") / unool::string::to_utf16(name);
 	if (!fs::exists(dir) || !fs::is_directory(dir)) {
 		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录不存在");
 	}
 	std::vector<std::string> skins;
 	for (const auto& entry : fs::directory_iterator(dir)) {
 		if (entry.is_regular_file() && entry.path().extension() == L".jpg") {
-			skins.push_back(unool::to_utf8(entry.path().stem().wstring()));
+			skins.push_back(unool::string::to_utf8(entry.path().stem().wstring()));
 		}
 	}
 	if (skins.empty()) {

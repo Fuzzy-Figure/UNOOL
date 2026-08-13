@@ -266,7 +266,7 @@ std::unique_ptr<PSkill> PSkill::割腕() {
 	};
 	const Content content = [](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
-		carrier.takeDamage(unool::randomSize_t(1, 5), carrier);
+		carrier.takeDamage(unool::random::randomSize_t(1, 5), carrier);
 		trigger.get_game().broadcastState();
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
@@ -322,7 +322,7 @@ std::unique_ptr<PSkill> PSkill::军国() {
 		Player& player = trigger.get_player();
 		Player& carrier = trigger.get_carrier();
 		if (player != carrier) //其他角色：失去 1% 最大体力，向上取整
-			player.takeDamage(unool::ceil(player.getMaxHp() * 0.01), carrier);
+			player.takeDamage(unool::math::ceil(player.getMaxHp() * 0.01), carrier);
 		else //自己：失去1体力
 			player.takeDamage(1, carrier);
 	};
@@ -368,7 +368,7 @@ std::unique_ptr<PSkill> PSkill::家暴() {
 
 
 		Player& target = game.getPlayerById(targetId);
-		std::size_t damage = unool::ceil(target.getMaxHp() * 0.1);
+		std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
 		target.takeDamage(damage, trigger.get_carrier());
 		std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName() << "发动家暴，造成" << damage << "点伤害！" << std::endl;
 
@@ -445,7 +445,7 @@ std::unique_ptr<PSkill> PSkill::棍击() {
 
 
 		Player& target = game.getPlayerById(targetId);
-		std::size_t damage = unool::pow(2, trigger.get_count());
+		std::size_t damage = unool::math::pow(2, trigger.get_count());
 		target.takeDamage(damage, trigger.get_carrier());
 		std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName()
 			<< "发动棍击，造成" << damage << "点伤害！" << std::endl;
@@ -515,7 +515,7 @@ std::unique_ptr<PSkill> PSkill::买棋() {
 	const Content content = [](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
 		carrier.takeDamage(10 * (trigger.get_count() - 1), trigger.get_carrier());
-		if (unool::probability(0.5)) { //万能
+		if (unool::random::probability(0.5)) { //万能
 			carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 		}
 		else { //+4
@@ -579,10 +579,10 @@ std::unique_ptr<PSkill> PSkill::轰炸() {
 	const Content content = [](Trigger& trigger) {
 		Player& target = trigger.get_player().next();
 		if (trigger.get_card().is(Card::Name::action_draw2)) {
-			target.takeDamage(unool::ceil(target.getMaxHp() * 0.02), trigger.get_carrier());
+			target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.get_carrier());
 		}
 		else {
-			target.takeDamage(unool::ceil(target.getMaxHp() * 0.04), trigger.get_carrier());
+			target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.get_carrier());
 		}
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
@@ -600,7 +600,7 @@ std::unique_ptr<PSkill> PSkill::爆破() {
 	const Content content = [](Trigger& trigger) {
 		Player& player = trigger.get_player();
 		Hand& hand = player.getHand();
-		auto card = hand.takeCardByIndex(unool::randomSize_t(0, hand.count() - 1));
+		auto card = hand.takeCardByIndex(unool::random::randomSize_t(0, hand.count() - 1));
 		player.takeDamage(card->value(), trigger.get_carrier());
 		std::cout << "爆破获取了 [" << *card << "]，造成了" << card->value() << "点伤害！" << std::endl;
 		trigger.get_carrier().gainCard(std::move(card));
@@ -624,7 +624,7 @@ std::unique_ptr<PSkill> PSkill::电音() {
 				Card::Name::number_0, Card::Name::number_1, Card::Name::number_2, Card::Name::number_3, Card::Name::number_4,
 				Card::Name::number_5, Card::Name::number_6, Card::Name::number_7, Card::Name::number_8, Card::Name::number_9
 			};
-			card.setName(numbers[unool::randomSize_t(0, 9)]);
+			card.setName(numbers[unool::random::randomSize_t(0, 9)]);
 		});
 		trigger.get_game().broadcastState();
 	};
@@ -641,7 +641,7 @@ std::unique_ptr<PSkill> PSkill::蒙面() {
 		return true;
 	};
 	const Content content = [](Trigger& trigger) {
-		trigger.get_number() = unool::floor(trigger.get_number() * 0.7);
+		trigger.get_number() = unool::math::floor(trigger.get_number() * 0.7);
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
 }
@@ -730,7 +730,7 @@ std::unique_ptr<PSkill> PSkill::破产() {
 	const Content content = [](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
 		Hand& hand = carrier.getHand();
-		std::size_t idx = unool::randomSize_t(0, hand.count() - 1);
+		std::size_t idx = unool::random::randomSize_t(0, hand.count() - 1);
 		carrier.discardByIndex(idx);
 		std::cout << "<技能> " << carrier.characterName() << "触发破产，随机弃置一张牌" << std::endl;
 		trigger.get_game().broadcastState();
@@ -778,7 +778,7 @@ std::unique_ptr<PSkill> PSkill::假酒() {
 
 		if (candidates.empty()) return;
 
-		std::size_t idx = unool::randomSize_t(0, candidates.size() - 1);
+		std::size_t idx = unool::random::randomSize_t(0, candidates.size() - 1);
 		carrier.gainCard(std::move(candidates[idx]));
 		std::cout << "<技能> " << carrier.characterName() << "发动假酒，获得了一张不同颜色的非数字牌" << std::endl;
 		trigger.get_game().broadcastState();
@@ -830,7 +830,7 @@ std::unique_ptr<PSkill> PSkill::生存() {
 		static const std::vector<Card::Color> colors = {
 			Card::Color::red, Card::Color::yellow, Card::Color::blue, Card::Color::green
 		};
-		Card::Color targetColor = colors[unool::randomSize_t(0, colors.size() - 1)];
+		Card::Color targetColor = colors[unool::random::randomSize_t(0, colors.size() - 1)];
 
 		auto target = Card::make(targetColor, targetName);
 		std::wstring title = L"请选择一张牌变为【" + std::to_wstring(x) + L"】，↑确认（不能取消）";
@@ -1025,7 +1025,7 @@ std::unique_ptr<PSkill> PSkill::好火() {
 }
 
 std::wstring PSkill::getInfoW(const std::string& skillName) {
-	return unool::to_utf16(descriptions.at(skillName));
+	return unool::string::to_utf16(descriptions.at(skillName));
 }
 
 
