@@ -3,12 +3,25 @@
 #include "../header/utils.h"
 #include <Windows.h>
 
-int main() {
+int main(int argc, char* argv[]) {
+	// 解析命令行参数
+	std::string windowTitle = "Client ?";
+	std::string windowTitleWithBrackets = "[Client ?]";
+	for (int i = 1; i < argc; ++i) {
+		std::string arg = argv[i];
+		if (arg == "--title" || arg == "-t") {
+			if (i + 1 < argc) {
+				windowTitle = argv[++i];
+				windowTitleWithBrackets = "[" + windowTitle + "]";
+			}
+		}
+	}
+
 	//设置控制台输入输出编码为 UTF-8
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 
-	std::cout << "[Client1] 启动客户端..." << std::endl;
+	std::cout << windowTitleWithBrackets << " 启动客户端..." << std::endl;
 
 	ClientNetwork clientNetwork;
 	const auto& config = unool::getConfig();
@@ -16,18 +29,18 @@ int main() {
 	unsigned short port = config["server"]["port"];
 
 	if (!clientNetwork.connect(ipAddress, port)) {
-		std::cerr << "[Client1] 连接服务器失败" << std::endl;
+		std::cerr << windowTitleWithBrackets << " 连接服务器失败" << std::endl;
 		system("pause");
 		return 1;
 	}
 
-	GameRenderer::Config rendererConfig("UNOOL - Client1");
+	GameRenderer::Config rendererConfig("UNOOL - " + windowTitle);
 	GameRenderer renderer(rendererConfig);
 
 	bool gameStarted = false;
 	bool gameEnded = false;
 
-	std::cout << "[Client1] 已连接到服务器，等待游戏开始..." << std::endl;
+	std::cout << windowTitleWithBrackets << " 已连接到服务器，等待游戏开始..." << std::endl;
 
 	sf::Clock clock;
 	while (renderer.windowIsOpen()) {
@@ -67,13 +80,13 @@ int main() {
 				std::size_t playerId;
 				if (packet >> playerId) {
 					clientNetwork.setPlayerId(playerId);
-					std::cout << "[Client1] 分配到玩家ID：" << playerId << std::endl;
+					std::cout << windowTitleWithBrackets << " 分配到玩家ID：" << playerId << std::endl;
 				}
 				break;
 			}
 			case MessageType::GameStart: {
 				gameStarted = true;
-				std::cout << "[Client1] 游戏开始！" << std::endl;
+				std::cout << windowTitleWithBrackets << " 游戏开始！" << std::endl;
 				break;
 			}
 			case MessageType::GameState: {
@@ -83,15 +96,22 @@ int main() {
 				break;
 			}
 			case MessageType::GameEnd: {
+				bool hasWinner;
 				std::size_t winnerId;
-				if (packet >> winnerId) {
+				if (packet >> hasWinner) {
 					gameEnded = true;
-					std::cout << "[Client1] 游戏结束，玩家" << winnerId << "获胜！" << std::endl;
+					if (hasWinner) {
+						packet >> winnerId;
+						std::cout << windowTitleWithBrackets << " 游戏结束，玩家" << winnerId << "获胜！" << std::endl;
+					}
+					else {
+						std::cout << windowTitleWithBrackets << " 游戏结束，无人获胜！" << std::endl;
+					}
 				}
 				break;
 			}
 			case MessageType::ConnectionRefused: {
-				std::cout << "[Client1] 连接被拒绝（服务器已满）" << std::endl;
+				std::cout << windowTitleWithBrackets << " 连接被拒绝（服务器已满）" << std::endl;
 				renderer.closeWindow();
 				break;
 			}

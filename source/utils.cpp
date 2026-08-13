@@ -7,13 +7,11 @@ namespace unool {
 
 	const json& getConfig() {
 		static json config = []() {
-			json j;
 			std::ifstream configFile("../config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 config.json");
 			}
-			configFile >> j;
-			return j;
+			return json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
 	}

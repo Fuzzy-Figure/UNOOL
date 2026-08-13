@@ -83,5 +83,5 @@ public:
 	void checkRoundEnd();
 	void resetRound();
 	bool isGameOver() const;
-	std::size_t getWinnerId() const;
+	std::optional<std::size_t> getWinnerId() const;
 };

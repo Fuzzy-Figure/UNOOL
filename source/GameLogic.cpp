@@ -118,10 +118,15 @@ void GameLogic::initPlayers() {
 	std::size_t secondSeatId = getSeatPlayerId(1);
 
 	//选候选角色
+	const std::size_t candidateCount = unool::getConfig()["candidateCount"];
 	SelectionState state;
-	auto allChars = randomChooseCharacters(10);
-	state.cands[0].assign(allChars.begin(), allChars.begin() + 5);
-	state.cands[1].assign(allChars.begin() + 5, allChars.begin() + 10);
+	auto allChars = randomChooseCharacters(candidateCount * 2);
+	for (std::size_t i = 0; i < 2; ++i) {
+		state.cands[i].assign(
+			allChars.begin() + i * candidateCount,
+			allChars.begin() + (i + 1) * candidateCount
+		);
+	}
 
 	//Ban环节：一号位先ban对方候选，然后二号位ban
 	banPhase(firstSeatId, secondSeatId, state);
@@ -135,15 +140,16 @@ void GameLogic::initPlayers() {
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
-	for (std::size_t i = 0; i < seatOrder.size(); ++i) {
-		if (seatOrder[i] == seat) return i;
+	for (const auto& [playerId, seatNumber] : seatOrder | std::views::enumerate) {
+		if (seatNumber == seat) return playerId;
 	}
 	throw std::logic_error("座位号无效");
 }
 
 std::wstring GameLogic::formatCharacterLabelW(const CharacterEntry& entry) {
-	std::string label = entry.first + "（" + Character::to_string(entry.second.level) + "）";
-	return unool::to_utf16(label);
+	return unool::to_utf16(
+		entry.first + "（" + Character::to_string(entry.second.level) + "）"
+	);
 }
 
 std::vector<GameLogic::CharacterEntry> GameLogic::randomChooseCharacters(std::size_t n) {
@@ -376,11 +382,11 @@ bool GameLogic::isGameOver() const {
 	return false;
 }
 
-std::size_t GameLogic::getWinnerId() const {
+std::optional<std::size_t> GameLogic::getWinnerId() const {
 	for (const auto& player : players) {
 		if (!player->isDead()) {
 			return player->getId();
 		}
 	}
-	return -1;
+	return std::nullopt;
 }

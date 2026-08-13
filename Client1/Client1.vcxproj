@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\source\Card.cpp" />
     <ClCompile Include="..\source\Character.cpp" />
+    <ClCompile Include="..\source\ClientMain.cpp" />
     <ClCompile Include="..\source\Effect.cpp" />
     <ClCompile Include="..\source\GameLogic.cpp" />
     <ClCompile Include="..\source\GameRenderer.cpp" />
@@ -31,7 +32,6 @@
     <ClCompile Include="..\source\Socket.cpp" />
     <ClCompile Include="..\source\TextManager.cpp" />
     <ClCompile Include="..\source\utils.cpp" />
-    <ClCompile Include="c1Main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>

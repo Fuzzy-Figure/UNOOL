@@ -1,25 +1,27 @@
 {
-	"server": {
-		"ip": "120.226.44.187",
-		"port": 14341
-	},
-	"size": {
-		"window": {
-			"width": 2000,
-			"height": 1200
-		},
-		"card": {
-			"width": 180,
-			"height": 270
-		},
-		"pointer": {
-			"width": 90,
-			"height": 135
-		},
-		"character": {
-			"width": 315,
-			"height": 405
-		}
-	},
-	"fonts": "C:/Windows/Fonts/msyh.ttc"
+  "candidateCount": 5,
+  //"characters": [ "", "" ],
+  "fonts": "C:/Windows/Fonts/msyh.ttc",
+  "server": {
+    "ip": "120.226.44.187",
+    "port": 14341
+  },
+  "size": {
+    "window": {
+      "width": 2000,
+      "height": 1200
+    },
+    "card": {
+      "width": 180,
+      "height": 270
+    },
+    "pointer": {
+      "width": 90,
+      "height": 135
+    },
+    "character": {
+      "width": 315,
+      "height": 405
+    }
+  }
 }

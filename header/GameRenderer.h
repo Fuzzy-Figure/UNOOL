@@ -87,7 +87,7 @@ public:
 	void displayTextInLeft(const std::wstring& text,
 						   const sf::Vector2f& size = { 20,40 },
 						   const sf::Color& color = sf::Color::Black);
-
+	
 	//显示图片
 	void displayImage(const std::string& path,
 					  const sf::Vector2f& pos,

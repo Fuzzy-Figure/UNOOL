@@ -234,11 +234,11 @@
     <ClCompile Include="..\source\GameState.cpp" />
     <ClCompile Include="..\source\ImageManager.cpp" />
     <ClCompile Include="..\source\Player.cpp" />
+    <ClCompile Include="..\source\ServerMain.cpp" />
     <ClCompile Include="..\source\Skill.cpp" />
     <ClCompile Include="..\source\Socket.cpp" />
     <ClCompile Include="..\source\TextManager.cpp" />
     <ClCompile Include="..\source\utils.cpp" />
-    <ClCompile Include="sMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\config.json" />

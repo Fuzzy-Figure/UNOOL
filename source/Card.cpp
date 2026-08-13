@@ -372,13 +372,12 @@ const Card& Hand::getSelectedCard() const {
 	return *cards[selectedIndex];
 }
 void Hand::resetSelectedIndex() {
-	if (selectedIndex >= count() || selectedIndex < 0) selectedIndex = 0;
+	if (selectedIndex > 0) --selectedIndex;
+	if (selectedIndex < 0 || selectedIndex >= count()) selectedIndex = 0;
 }
 
 void Hand::sort() {
-	std::sort(cards.begin(), cards.end(),
-			  [](const std::unique_ptr<Card>& a,
-				 const std::unique_ptr<Card>& b) {
+	std::ranges::sort(cards, [](const std::unique_ptr<Card>& a, const std::unique_ptr<Card>& b) {
 		return *a < *b;
 	});
 }
@@ -521,7 +520,7 @@ void Pile::recycle(Pile& other) {
 }
 
 void Pile::shuffle() {
-	std::shuffle(cards.begin(), cards.end(), unool::rng);
+	std::ranges::shuffle(cards, unool::rng);
 }
 
 Pile Pile::clone() const {

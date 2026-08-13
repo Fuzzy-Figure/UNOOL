@@ -129,9 +129,11 @@ bool ServerNetwork::sendGameStart() {
 	return sendPacketToAll(packet);
 }
 
-bool ServerNetwork::sendGameEnd(std::size_t winnerId) {
+bool ServerNetwork::sendGameEnd(std::optional<std::size_t> winnerId) {
 	sf::Packet packet;
-	packet << static_cast<int>(MessageType::GameEnd) << winnerId;
+	const bool hasWinner = winnerId.has_value();
+	packet << static_cast<int>(MessageType::GameEnd) << hasWinner;
+	if (hasWinner) packet << winnerId.value();
 	return sendPacketToAll(packet);
 }
 

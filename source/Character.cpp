@@ -98,8 +98,8 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录下无 .jpg 文件");
 	}
 	//排序，"默认"置首
-	std::sort(skins.begin(), skins.end(),
-			  [](const std::string& name1, const std::string& name2) {
+	std::ranges::sort(skins,
+					  [](const std::string& name1, const std::string& name2) {
 		if (name1 == "默认") return true;
 		if (name2 == "默认") return false;
 		return name1 < name2;

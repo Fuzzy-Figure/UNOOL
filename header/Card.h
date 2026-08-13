@@ -113,7 +113,7 @@ public:
 	const Card& operator[](const std::size_t pos) const { return *cards[pos]; }
 
 	template<class _Pr>
-	auto find_if(_Pr pred) { return std::find_if(cards.begin(), cards.end(), pred); }
+	auto find_if(_Pr pred) { return std::ranges::find_if(cards, pred); }
 
 	auto begin() { return cards.begin(); }
 	auto end() { return cards.end(); }

@@ -45,13 +45,13 @@
     <ClCompile Include="..\source\TextManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="c1Main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\source\utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\source\GameLogic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ClientMain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
