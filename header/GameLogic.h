@@ -18,7 +18,7 @@ private:
 	std::vector<std::unique_ptr<Player>> players;
 	std::size_t currentPlayerIndex = 0;
 	std::size_t firstPlayerIndex = 0;
-	std::vector<std::size_t> seatOrder;
+	std::vector<std::size_t> seatOrder; // seatOrder[playerId] = 座位号（0=一号位，1=二号位）
 	Card::Color currentColor = Card::Color::no;
 	Card::Name currentName = Card::Name::no;
 	Direction direction = Direction::increase;
@@ -28,12 +28,25 @@ private:
 
 	bool currentPlayerTurn();
 
+	using CharacterEntry = std::pair<std::string, Character::Info>;
+	struct SelectionState {
+		std::vector<CharacterEntry> cands[2];
+		std::optional<std::size_t> bannedIdx[2];
+	};
+
+	static std::wstring formatCharacterLabelW(const CharacterEntry& entry);
+	static std::vector<CharacterEntry> randomChooseCharacters(std::size_t n);
+	static void chooseSkinAndSet(Player& player, const std::string& charName);
+	std::size_t getSeatPlayerId(std::size_t seat) const;
+	void banPhase(std::size_t bannerId, std::size_t targetId, SelectionState& state);
+	void selectCharacter(std::size_t playerId, const SelectionState& state);
+
 public:
 	GameLogic(ServerNetwork& _network);
 	~GameLogic();
 
 	void initPlayers();
-	void initPlayers(const std::vector<std::string>& characters);
+	void initPlayers(const std::vector<std::string>& chars);
 	void determineSeatOrder();
 
 	bool runTurn();

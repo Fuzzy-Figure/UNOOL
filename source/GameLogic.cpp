@@ -100,9 +100,8 @@ void GameLogic::determineSeatOrder() {
 	seatOrder.resize(playerCount);
 	std::ranges::iota(seatOrder, 0);
 	std::ranges::shuffle(seatOrder, unool::rng);
-	for (const auto& [seat, playerId] : seatOrder | std::views::enumerate) {
-		std::wstring msg = L"你是" + std::to_wstring(seat + 1) + L"号位";
-		players[playerId]->ask(msg, { L"确认" }, true);
+	for (std::size_t id = 0; id < 2; ++id) {
+		players[id]->hint(L"你是" + std::to_wstring(seatOrder[id] + 1) + L"号位");
 	}
 }
 
@@ -115,100 +114,100 @@ void GameLogic::initPlayers() {
 
 	//拼点决定座次
 	determineSeatOrder();
+	std::size_t firstSeatId = getSeatPlayerId(0);
+	std::size_t secondSeatId = getSeatPlayerId(1);
 
-	//确定一号位和二号位的玩家id
-	std::size_t firstSeatId = 0, secondSeatId = 1;
-	for (std::size_t i = 0; i < seatOrder.size(); ++i) {
-		if (seatOrder[i] == 0) firstSeatId = i;
-		else if (seatOrder[i] == 1) secondSeatId = i;
-	}
-
-	//从所有角色中随机为每名玩家选5个候选（排除"白板"）
-	std::vector<std::tuple<std::string, Character::Level>> allChars;
-	for (const auto& [name, info] : Character::infos) {
-		if (name != "白板") allChars.push_back(std::tuple{ name, info.level });
-	}
-	std::shuffle(allChars.begin(), allChars.end(), unool::rng);
-	std::vector<std::tuple<std::string, Character::Level>> cands[2];
-	cands[0].assign(allChars.begin(), allChars.begin() + 5);
-	cands[1].assign(allChars.begin() + 5, allChars.begin() + 10);
-
-	//被ban的候选索引（对每名玩家）
-	std::optional<std::size_t> bannedIdx[2];
+	//选候选角色
+	SelectionState state;
+	auto allChars = randomChooseCharacters(10);
+	state.cands[0].assign(allChars.begin(), allChars.begin() + 5);
+	state.cands[1].assign(allChars.begin() + 5, allChars.begin() + 10);
 
 	//Ban环节：一号位先ban对方候选，然后二号位ban
-	auto doBan = [&](std::size_t bannerId, std::size_t targetId) {
-		std::vector<std::wstring> banOpts;
-		for (const auto& c : cands[targetId]) {
-			banOpts.push_back(unool::to_utf16(
-				std::get<0>(c) + "（" + Character::levelToString(std::get<1>(c)) + "）")
-			);
-		}
-		std::size_t banChoice = players[bannerId]->ask(
-			L"禁用对方的一个角色：", banOpts, false, 10000);
-		if (banChoice > 0) {
-			bannedIdx[targetId] = banChoice - 1;
-			//通知被ban方
-			std::wstring bannedName = unool::to_utf16(std::get<0>(cands[targetId][banChoice - 1]) + Character::levelToString(std::get<1>(cands[targetId][banChoice - 1])));
-			players[targetId]->ask(L"对方禁用了你的角色：" + bannedName, { L"确认" }, true);
-		}
-		else {
-			//通知被ban方：对方未禁用
-			players[targetId]->ask(L"对方未禁用你的任何角色", { L"确认" }, true);
-		}
-	};
-	doBan(firstSeatId, secondSeatId);
-	doBan(secondSeatId, firstSeatId);
-
-	//为指定角色选皮肤并设置；仅有"默认"皮肤时跳过询问
-	auto chooseSkinAndSet = [&](Player& player, const std::string& charName) {
-		auto skins = Character::getSkins(charName);
-		std::string skin = "默认";
-		if (skins.size() > 1) {
-			std::vector<std::wstring> skinOpts;
-			for (const auto& s : skins) skinOpts.push_back(unool::to_utf16(s));
-			std::size_t skinChoice = player.ask(L"选择皮肤：", skinOpts, true);
-			skin = skins[skinChoice - 1];
-		}
-		player.setCharacter(Character::make(charName, skin));
-	};
+	banPhase(firstSeatId, secondSeatId, state);
+	banPhase(secondSeatId, firstSeatId, state);
 
 	//选角环节：一号位先选，然后二号位选
-	auto selectCharacter = [&](std::size_t playerId) {
-		std::vector<std::wstring> opts;
-		std::vector<std::size_t> validIndices;
-		for (std::size_t i = 0; i < cands[playerId].size(); ++i) {
-			if (bannedIdx[playerId].has_value() && bannedIdx[playerId].value() == i) continue;
-			opts.push_back(unool::to_utf16(std::get<0>(cands[playerId][i])));
-			validIndices.push_back(i);
-		}
-		std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
-		std::string charName = std::get<0>(cands[playerId][validIndices[choice - 1]]);
-		chooseSkinAndSet(*players[playerId], charName);
-	};
-	selectCharacter(firstSeatId);
-	selectCharacter(secondSeatId);
+	selectCharacter(firstSeatId, state);
+	selectCharacter(secondSeatId, state);
 
 	resetRound();
 }
-void GameLogic::initPlayers(const std::vector<std::string>& characters) {
-	if (characters.size() != 2) throw std::invalid_argument("参数characters的大小必须为2");
 
-	//先用"白板"创建两个Player，以便使用ask
+std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
+	for (std::size_t i = 0; i < seatOrder.size(); ++i) {
+		if (seatOrder[i] == seat) return i;
+	}
+	throw std::logic_error("座位号无效");
+}
+
+std::wstring GameLogic::formatCharacterLabelW(const CharacterEntry& entry) {
+	std::string label = entry.first + "（" + Character::to_string(entry.second.level) + "）";
+	return unool::to_utf16(label);
+}
+
+std::vector<GameLogic::CharacterEntry> GameLogic::randomChooseCharacters(std::size_t n) {
+	if (n > Character::infos.size() - 1) {
+		throw std::invalid_argument("候选角色数量不能超过已有角色数量（不含白板）");
+	}
+	std::vector<CharacterEntry> result;
+	result.reserve(n);
+	std::ranges::sample(Character::infos, std::back_inserter(result), n, unool::rng);
+	std::ranges::shuffle(result, unool::rng);
+	return result;
+}
+
+void GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, SelectionState& state) {
+	std::vector<std::wstring> banOpts;
+	for (const auto& ch : state.cands[targetId]) {
+		banOpts.push_back(formatCharacterLabelW(ch));
+	}
+	std::size_t banChoice = players[bannerId]->ask(
+		L"禁用对方的一个角色：", banOpts, false, 10000ms);
+	if (banChoice > 0) {
+		state.bannedIdx[targetId] = banChoice - 1;
+		std::wstring bannedCharLabel = formatCharacterLabelW(state.cands[targetId][banChoice - 1]);
+		players[targetId]->hint(L"对方禁用了你的角色：" + bannedCharLabel);
+	}
+	else {
+		players[targetId]->hint(L"对方未禁用你的任何角色");
+	}
+}
+
+void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
+	auto skins = Character::getSkins(charName);
+	std::string skin = "默认";
+	if (skins.size() > 1) {
+		std::vector<std::wstring> skinOpts;
+		for (const auto& s : skins) skinOpts.push_back(unool::to_utf16(s));
+		std::size_t skinChoice = player.ask(L"选择皮肤：", skinOpts, true);
+		skin = skins[skinChoice - 1];
+	}
+	player.setCharacter(Character::make(charName, skin));
+}
+
+void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
+	std::vector<std::wstring> opts;
+	std::vector<std::size_t> validIndices;
+	for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
+		if (state.bannedIdx[playerId].has_value() && state.bannedIdx[playerId].value() == i) continue;
+		opts.push_back(formatCharacterLabelW(state.cands[playerId][i]));
+		validIndices.push_back(i);
+	}
+	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
+	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
+	chooseSkinAndSet(*players[playerId], charName);
+}
+void GameLogic::initPlayers(const std::vector<std::string>& chars) {
+	if (chars.size() != 2) throw std::invalid_argument("指定角色时，角色数量必须为2");
+
 	for (std::size_t i = 0; i < 2; ++i) {
-		auto p = std::make_unique<Player>(i, *this, Character::make(characters[i]));
+		auto p = std::make_unique<Player>(i, *this, Character::make(chars[i]));
 		players.push_back(std::move(p));
 	}
 
 	//拼点决定座次
 	determineSeatOrder();
-
-	//确定一号位和二号位的玩家id
-	std::size_t firstSeatId = 0, secondSeatId = 1;
-	for (std::size_t i = 0; i < seatOrder.size(); ++i) {
-		if (seatOrder[i] == 0) firstSeatId = i;
-		else if (seatOrder[i] == 1) secondSeatId = i;
-	}
 
 	resetRound();
 }
@@ -356,12 +355,7 @@ void GameLogic::resetRound() {
 	currentName = Card::Name::no;
 	// 重置当前玩家（一号位始终先手）
 	if (!seatOrder.empty()) {
-		for (std::size_t i = 0; i < seatOrder.size(); ++i) {
-			if (seatOrder[i] == 0) {
-				currentPlayerIndex = i;
-				break;
-			}
-		}
+		currentPlayerIndex = getSeatPlayerId(0);
 	}
 	else {
 		currentPlayerIndex = firstPlayerIndex;

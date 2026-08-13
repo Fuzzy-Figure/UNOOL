@@ -6,15 +6,16 @@
 #include <vector>
 #include <chrono>
 
-constexpr std::array<std::array<int, 6>, 6> ratingTable = { {
-		//战胜 战败 S(0)    A(1)    B(2)    C(3)    D(4)    F(5)
-		      {10,  8,  5,  3,  2,  1}, //  S(0)
-		      {12, 10,  8,  5,  3,  2}, // 战胜 A(1)
-		      {15, 12, 10,  8,  5,  3}, // 战胜 B(2)
-		      {20, 15, 12, 10,  8,  5}, // 战胜 C(3)
-		      {30, 20, 15, 12, 10,  8}, // 战胜 D(4)
-		      {50, 30, 20, 15, 12, 10}  // 战胜 F(5)
-	} };
+constexpr std::array<std::array<int, 6>, 6> scoreboard = { {
+		//    败者  S   A   B   C   D   F
+		//胜者
+		/*S*/     {10,  8,  5,  3,  2,  1},
+		/*A*/     {12, 10,  8,  5,  3,  2},
+		/*B*/     {15, 12, 10,  8,  5,  3},
+		/*C*/     {20, 15, 12, 10,  8,  5},
+		/*D*/     {30, 20, 15, 12, 10,  8},
+		/*F*/     {50, 30, 20, 15, 12, 10}
+	   } };
 
 
 int main() {
@@ -47,8 +48,8 @@ int main() {
 	try {
 		gameStarted = true;
 		std::cout << "[Server] 游戏开始！" << std::endl;
-		gameLogic.initPlayers();
-		//gameLogic.initPlayers({ "新诸葛亮", "新诸葛亮" });
+		//gameLogic.initPlayers();
+		gameLogic.initPlayers({ "Notch", "白板" });
 
 		gameLogic.broadcastState();
 

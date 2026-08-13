@@ -20,7 +20,8 @@ void Player::draw(std::size_t number) {
 	if (number == 1 && !hand->empty()) {
 		Card& lastCard = hand->getCardByIndex(hand->count() - 1);
 		game.launchPSkills(PSkill::TriggerTime::draw_end, *this, lastCard, std::nullopt, number);
-	} else {
+	}
+	else {
 		game.launchPSkills(PSkill::TriggerTime::draw_end, *this, std::nullopt, std::nullopt, number);
 	}
 }
@@ -232,28 +233,55 @@ std::vector<ref<Card>> Player::chooseToDiscard(std::size_t num, bool forced,
 	return discardedCards;
 }
 
-std::optional<std::size_t> Player::chooseToChange(const Card& targetCard) {
-	auto index = chooseCard([](const Card&) { return true; }, false);
+std::optional<std::size_t> Player::chooseToChange(const Card& targetCard, const std::wstring& title) {
+	ServerNetwork& network = game.getNetwork();
+	network.sendPlayerChoice(id, title, {}, true, L"", std::nullopt);
+	auto index = chooseCard([](const Card&) { return true; }, true);
+	network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
 	if (!index.has_value()) return std::nullopt;
 	getHand().getCardByIndex(index.value()).set(targetCard);
 	std::cout << "玩家" << id << "将手牌第" << index.value() << "张改为 [" << targetCard.nameString() << "]" << std::endl;
 	return index;
 }
 
-std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options, bool forced) {
-	return ask(title, options, forced, std::nullopt);
-}
 
-std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options, bool forced, std::optional<std::size_t> timeoutMs) {
+std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
+						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
 	ServerNetwork& network = game.getNetwork();
 	std::wstring errorMsg;
 
-	network.sendPlayerChoice(id, title, options, forced, errorMsg, timeoutMs);
+	constexpr std::size_t PER_PAGE = 9;
+	const bool usePaging = options.size() > PER_PAGE;
+	const std::size_t totalPages = usePaging ? (options.size() + PER_PAGE - 1) / PER_PAGE : 1;
+	std::size_t currentPage = 0;
+
+	auto toTimeoutMs = [&]() -> std::optional<std::size_t> {
+		if (timeoutMs.has_value()) {
+			return static_cast<std::size_t>(timeoutMs.value().count());
+		}
+		return std::nullopt;
+	};
+
+		auto sendPage = [&]() {
+		if (!usePaging) {
+			network.sendPlayerChoice(id, title, options, forced, errorMsg, toTimeoutMs(), 0, 1);
+			return;
+		}
+		std::vector<std::wstring> pageOptions;
+		const std::size_t start = currentPage * PER_PAGE;
+		const std::size_t end = std::min(start + PER_PAGE, options.size());
+		for (std::size_t i = start; i < end; ++i) {
+			pageOptions.push_back(options[i]);
+		}
+		network.sendPlayerChoice(id, title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages);
+	};
+
+	sendPage();
 
 	sf::Clock clock;
 	while (true) {
 		if (timeoutMs.has_value()) {
-			if (clock.getElapsedTime().asMilliseconds() >= static_cast<int>(timeoutMs.value())) {
+			if (clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
 				network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
 				std::cout << "玩家" << id << "超时未选择" << std::endl;
 				return 0;
@@ -274,6 +302,18 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 
 		sf::Keyboard::Scancode input = clientInput.key;
 		setInput(input);
+
+		if (usePaging && (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right)) {
+			if (input == sf::Keyboard::Scancode::Left) {
+				if (currentPage > 0) --currentPage;
+			}
+			else {
+				if (currentPage + 1 < totalPages) ++currentPage;
+			}
+			errorMsg.clear();
+			sendPage();
+			continue;
+		}
 
 		std::size_t choice = 0;
 		bool isValidDigit = false;
@@ -334,21 +374,50 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 			break;
 		}
 
+		if (usePaging && isValidDigit) {
+			if (choice == 0) {
+				// 0 = 取消，保持不变
+			}
+			else {
+				const std::size_t realIndex = currentPage * PER_PAGE + (choice - 1);
+				if (realIndex >= options.size()) {
+					errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
+						std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
+						L"范围内的数字（←→翻页）";
+					sendPage();
+					continue;
+				}
+				choice = realIndex + 1;
+			}
+		}
+
 		if (!isValidDigit) {
-			errorMsg = L"无效输入，请输入数字0-9";
-			network.sendPlayerChoice(id, title, options, forced, errorMsg, timeoutMs);
+			if (usePaging) {
+				errorMsg = L"无效输入，请输入数字0-9或使用←→翻页";
+			}
+			else {
+				errorMsg = L"无效输入，请输入数字0-9";
+			}
+			sendPage();
 			continue;
 		}
 
 		if (choice > options.size()) {
-			errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
-			network.sendPlayerChoice(id, title, options, forced, errorMsg, timeoutMs);
+			if (usePaging) {
+				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
+					std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
+					L"范围内的数字（←→翻页）";
+			}
+			else {
+				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
+			}
+			sendPage();
 			continue;
 		}
 
 		if (forced && choice == 0) {
 			errorMsg = L"必须选择一个选项，请重新输入";
-			network.sendPlayerChoice(id, title, options, forced, errorMsg, timeoutMs);
+			sendPage();
 			continue;
 		}
 
@@ -356,4 +425,8 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		std::cout << "玩家" << id << "选择了" << choice << std::endl;
 		return choice;
 	}
+}
+
+void Player::hint(const std::wstring& message) {
+	ask(message, { L"确认" }, true);
 }

@@ -60,7 +60,7 @@ public:
 	bool sendConnectionInfo(std::size_t playerId);
 	bool sendGameStart();
 	bool sendGameEnd(std::size_t winnerId);
-	bool sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg = L"", std::optional<std::size_t> timeoutMs = std::nullopt);
+	bool sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg = L"", std::optional<std::size_t> timeoutMs = std::nullopt, std::size_t currentPage = 0, std::size_t totalPages = 1);
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const { return clientSockets.size(); }

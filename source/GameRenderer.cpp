@@ -111,11 +111,25 @@ void GameRenderer::renderChoice() {
 	for (const auto& [i, option] : choice->options | std::views::enumerate) {
 		choiceText += (L"[" + std::to_wstring(i + 1) + L"] " + option + L'\n');
 	}
-	if (choice->forced) {
-		choiceText += (L"输入数字1-" + std::to_wstring(choice->options.size()) + L"选择（必须选择）" + L'\n');
-	}
-	else {
-		choiceText += (L"输入数字0-" + std::to_wstring(choice->options.size()) + L"选择（0表示不选择）" + L'\n');
+	if (!choice->options.empty()) {
+		if (choice->forced) {
+			if (choice->totalPages > 1) {
+				choiceText += (L"第 " + std::to_wstring(choice->currentPage + 1) + L"/" + std::to_wstring(choice->totalPages) + L"页，←→翻页\n");
+				choiceText += (L"输入数字1-" + std::to_wstring(choice->options.size()) + L"选择（必须选择）" + L'\n');
+			}
+			else {
+				choiceText += (L"输入数字1-" + std::to_wstring(choice->options.size()) + L"选择（必须选择）" + L'\n');
+			}
+		}
+		else {
+			if (choice->totalPages > 1) {
+				choiceText += (L"第 " + std::to_wstring(choice->currentPage + 1) + L"/" + std::to_wstring(choice->totalPages) + L"页，←→翻页\n");
+				choiceText += (L"输入数字0-" + std::to_wstring(choice->options.size()) + L"选择（0表示不选择）" + L'\n');
+			}
+			else {
+				choiceText += (L"输入数字0-" + std::to_wstring(choice->options.size()) + L"选择（0表示不选择）" + L'\n');
+			}
+		}
 	}
 	if (!choice->errorMsg.empty()) {
 		choiceText += choice->errorMsg + L'\n';
@@ -175,7 +189,7 @@ void GameRenderer::renderInfoBox() {
 			}
 		};
 
-		addWrapped(unool::to_utf16(targetState->characterName) + L"（" + unool::to_utf16(Character::levelToString(info.level)) + L"）");
+		addWrapped(unool::to_utf16(targetState->characterName) + L"（" + Character::to_wstring(info.level) + L"）");
 		addWrapped(L"体力：" + std::to_wstring(targetState->hp) + L"/" + std::to_wstring(targetState->maxHp));
 		addWrapped(L"技能：");
 		for (const auto& name : info.pSkillNames) {

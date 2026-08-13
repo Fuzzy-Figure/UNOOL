@@ -81,7 +81,7 @@ const std::unordered_map<std::string, std::string> PSkill::descriptions = {
 	{"生存", "锁定技，回合开始时，选择一张手牌变为随机颜色的【X】（X为本局发动次数，至多9）。"},
 	{"创造", "每局每种颜色限一次，你打出【9】后，可从游戏外获得一张同色的任意牌名的牌。"},
 	{"炼兵", "每种颜色限一次，回合开始时，你可以弃置2张同色同名牌，从游戏外获得一张同色【+2】。"},
-	{"好火", "每名角色限一次，当其他角色打出红色牌后，若其体力值大于你，你可以交给其一张牌。"},
+	{"好火", "每名角色限一次，当其他角色打出红色牌后，若其体力值大于你，你可以交给其一张红色牌。"},
 };
 
 PSkill::PSkill(const std::string& _name,
@@ -665,7 +665,7 @@ std::unique_ptr<PSkill> PSkill::锐刻() {
 		std::size_t choice = carrier.ask(L"发动[锐刻]，选择一项：", {
 			L"令一名角色摸1张牌",
 			L"令一名角色摸5张牌并失去此技能至本局结束"
-		}, false);
+										 }, false);
 
 		if (choice == 0) return;
 
@@ -785,6 +785,7 @@ std::unique_ptr<PSkill> PSkill::假酒() {
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
 }
+
 std::unique_ptr<PSkill> PSkill::窃观() {
 	const std::string   name = "窃观";
 	const auto         limit = unlimited;
@@ -799,11 +800,11 @@ std::unique_ptr<PSkill> PSkill::窃观() {
 	};
 	const Content content = [](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
-		Player& drawer  = trigger.get_player();
+		Player& drawer = trigger.get_player();
 		const Card& card = trigger.get_card();
 		std::wstring title = L"【窃观】" + drawer.characterNameW()
-						   + L"获得了 " + Card::to_wstring(card.getColor())
-						   + L" " + Card::to_wstring(card.getName()) + L"（需确认）";
+			+ L"获得了 " + Card::to_wstring(card.getColor())
+			+ L" " + Card::to_wstring(card.getName()) + L"（需确认）";
 		carrier.ask(title, { L"确认" }, true);
 	};
 	return std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
@@ -832,10 +833,11 @@ std::unique_ptr<PSkill> PSkill::生存() {
 		Card::Color targetColor = colors[unool::randomSize_t(0, colors.size() - 1)];
 
 		auto target = Card::make(targetColor, targetName);
-		auto opt = carrier.chooseToChange(*target);
+		std::wstring title = L"请选择一张牌变为【" + std::to_wstring(x) + L"】，↑确认（不能取消）";
+		auto opt = carrier.chooseToChange(*target, title);
 		if (opt.has_value()) {
 			std::cout << "<技能> " << carrier.characterName() << "发动生存，将一张手牌改为【"
-					  << Card::to_string(targetColor) << Card::to_string(targetName) << "】" << std::endl;
+				<< Card::to_string(targetColor) << Card::to_string(targetName) << "】" << std::endl;
 		}
 		game.broadcastState();
 	};
@@ -861,17 +863,16 @@ std::unique_ptr<PSkill> PSkill::创造() {
 		const Card& nine = trigger.get_card();
 		Card::Color targetColor = nine.getColor();
 		std::vector<std::wstring> opts = {
-			L"数字0", L"数字1", L"数字2", L"数字3", L"数字4",
-			L"数字5", L"数字6", L"数字7", L"数字8", L"数字9",
-			L"反转r", L"封禁s", L"+2 d"
+			L"1", L"2", L"3", L"4", L"5",
+			L"6", L"7", L"8", L"9", L"0",
+			L"反转", L"封禁", L"+2"
 		};
-		std::size_t idx = carrier.ask(L"【创造】选择获得的牌名（与9同色）：", opts, false);
-		if (idx == 0) return;
+		std::size_t idx = carrier.ask(L"【创造】选择获得的牌名（" + Card::to_wstring(targetColor) + L"色）：", opts, true);
 		static const Card::Name nameMap[] = {
-			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2,
-			Card::Name::number_3, Card::Name::number_4, Card::Name::number_5,
-			Card::Name::number_6, Card::Name::number_7, Card::Name::number_8,
-			Card::Name::number_9, Card::Name::action_rev, Card::Name::action_ban,
+			Card::Name::number_1, Card::Name::number_2, Card::Name::number_3,
+			Card::Name::number_4, Card::Name::number_5, Card::Name::number_6,
+			Card::Name::number_7, Card::Name::number_8, Card::Name::number_9,
+			Card::Name::number_0, Card::Name::action_rev, Card::Name::action_ban,
 			Card::Name::action_draw2
 		};
 		constexpr std::size_t nameCount = sizeof(nameMap) / sizeof(nameMap[0]);
@@ -880,7 +881,7 @@ std::unique_ptr<PSkill> PSkill::创造() {
 		carrier.gainCard(Card::make(targetColor, name));
 		usedColors->insert(targetColor);
 		std::cout << "<技能> " << carrier.characterName() << "发动创造，获得一张【"
-				  << Card::to_string(targetColor) << Card::to_string(name) << "】" << std::endl;
+			<< Card::to_string(targetColor) << Card::to_string(name) << "】" << std::endl;
 		trigger.get_game().broadcastState();
 	};
 	auto skill = std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
@@ -955,8 +956,8 @@ std::unique_ptr<PSkill> PSkill::炼兵() {
 		carrier.gainCard(Card::make(target.first, Card::Name::action_draw2));
 		usedColors->insert(target.first);
 		std::cout << "<技能> " << carrier.characterName() << "发动炼兵，弃两张"
-				  << Card::to_string(target.first) << Card::to_string(target.second)
-				  << "，获得一张" << Card::to_string(target.first) << "+2" << std::endl;
+			<< Card::to_string(target.first) << Card::to_string(target.second)
+			<< "，获得一张" << Card::to_string(target.first) << "+2" << std::endl;
 		game.broadcastState();
 	};
 	auto skill = std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);
@@ -981,30 +982,32 @@ std::unique_ptr<PSkill> PSkill::好火() {
 		if (player == carrier) return false;
 		if (player.getHp() <= carrier.getHp()) return false;
 		if (usedPlayerIds->find(player.getId()) != usedPlayerIds->end()) return false;
-		if (carrier.handCount() == 0) return false;
+		if (!carrier.handInclude([](const Card& cc) { return cc.is(Card::Color::red); })) return false;
 		return true;
 	};
 	const Content content = [usedPlayerIds](Trigger& trigger) {
 		Player& carrier = trigger.get_carrier();
-		Player& target  = trigger.get_player();
+		Player& target = trigger.get_player();
 		GameLogic& game = trigger.get_game();
 
-		std::vector<std::size_t> indices;
+		std::vector<std::size_t> redIndices;
 		std::vector<std::wstring> opts;
 		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
 			const Card& c = carrier.getHand().getCardByIndex(i);
-			indices.push_back(i);
-			opts.push_back(Card::to_wstring(c.getColor()) + L" " + Card::to_wstring(c.getName()));
+			if (c.is(Card::Color::red)) {
+				redIndices.push_back(i);
+				opts.push_back(Card::to_wstring(c.getColor()) + L" " + Card::to_wstring(c.getName()));
+			}
 		}
-		if (indices.empty()) return;
+		if (redIndices.empty()) return;
 
 		std::size_t choice = carrier.ask(
-			L"【好火】选择要交给" + target.characterNameW() + L"的牌（0=放弃）：",
+			L"【好火】选择要交给" + target.characterNameW() + L"的红色牌（0=放弃）：",
 			opts, false
 		);
 		if (choice == 0) return;
-		if (choice - 1 >= indices.size()) return;
-		std::size_t realIdx = indices[choice - 1];
+		if (choice - 1 >= redIndices.size()) return;
+		std::size_t realIdx = redIndices[choice - 1];
 
 		// 先记录牌名日志再拿走（避免拿不到引用）
 		const Card& srcCard = carrier.getHand().getCardByIndex(realIdx);
@@ -1013,7 +1016,7 @@ std::unique_ptr<PSkill> PSkill::好火() {
 		carrier.give(target, carrier.takeCardByIndex(realIdx));
 		usedPlayerIds->insert(target.getId());
 		std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
-				  << target.characterName() << "一张" << logName << std::endl;
+			<< target.characterName() << "一张" << logName << std::endl;
 		game.broadcastState();
 	};
 	auto skill = std::make_unique<PSkill>(name, limit, forced, triggerPlayer, triggerTime, filter, content);

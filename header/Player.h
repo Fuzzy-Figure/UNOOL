@@ -103,9 +103,10 @@ public:
 	std::vector<ref<Card>> chooseToDiscard(std::size_t num, bool forced,
 										   std::function<bool(const Card&)> condition
 										   = [](const Card&) {return true; });
-	std::optional<std::size_t> chooseToChange(const Card& targetCard);
-	std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options, bool forced);
-	std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options, bool forced, std::optional<std::size_t> timeoutMs);
+	std::optional<std::size_t> chooseToChange(const Card& targetCard, const std::wstring& title);
+	std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
+					bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
+	void hint(const std::wstring& message);
 
 	// === 回合流程 ===
 	void phaseBegin();

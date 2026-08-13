@@ -33,6 +33,8 @@ public:
 		bool forced;
 		std::wstring errorMsg;
 		std::optional<std::size_t> timeoutMs;
+		std::size_t currentPage = 0;
+		std::size_t totalPages = 1;
 	};
 
 private:

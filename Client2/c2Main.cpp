@@ -116,6 +116,20 @@ int main() {
 				packet >> errorSfStr;
 				std::wstring errorMsg = errorSfStr.toWideString();
 
+				bool hasTimeout;
+				packet >> hasTimeout;
+				std::optional<std::size_t> timeoutMs;
+				if (hasTimeout) {
+					std::uint64_t timeoutValue;
+					packet >> timeoutValue;
+					timeoutMs = static_cast<std::size_t>(timeoutValue);
+				}
+
+				std::size_t currentPage;
+				packet >> currentPage;
+				std::size_t totalPages;
+				packet >> totalPages;
+
 				if (title.empty() && options.empty()) {
 					renderer.clearChoicePrompt();
 				}
@@ -125,6 +139,9 @@ int main() {
 					prompt.options = options;
 					prompt.forced = forced;
 					prompt.errorMsg = errorMsg;
+					prompt.timeoutMs = timeoutMs;
+					prompt.currentPage = currentPage;
+					prompt.totalPages = totalPages;
 					renderer.setChoicePrompt(prompt);
 				}
 				break;

@@ -41,7 +41,8 @@ public:
 	std::string getName() const;
 	std::wstring getNameW() const;
 	Level getLevel() const;
-	static std::string levelToString(Level level);
+	static std::string to_string(Level level);
+	static std::wstring to_wstring(Level level);
 	std::string getImagePath() const;
 	std::string getSkin() const { return skin; }
 	static std::string getImagePath(const std::string& name, const std::string& skin = "默认");

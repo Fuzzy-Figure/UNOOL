@@ -112,7 +112,7 @@ Character::Level Character::getLevel() const {
 	else throw std::invalid_argument("此角色未定义等级");
 }
 
-std::string Character::levelToString(Level level) {
+std::string Character::to_string(Level level) {
 	switch (level) {
 	case Level::S: return "S";
 	case Level::A: return "A";
@@ -121,6 +121,17 @@ std::string Character::levelToString(Level level) {
 	case Level::D: return "D";
 	case Level::F: return "F";
 	default: return "?";
+	}
+}
+std::wstring Character::to_wstring(Level level) {
+	switch (level) {
+	case Level::S: return L"S";
+	case Level::A: return L"A";
+	case Level::B: return L"B";
+	case Level::C: return L"C";
+	case Level::D: return L"D";
+	case Level::F: return L"F";
+	default: return L"?";
 	}
 }
 

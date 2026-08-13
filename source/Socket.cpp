@@ -135,7 +135,7 @@ bool ServerNetwork::sendGameEnd(std::size_t winnerId) {
 	return sendPacketToAll(packet);
 }
 
-bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg, std::optional<std::size_t> timeoutMs) {
+bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg, std::optional<std::size_t> timeoutMs, std::size_t currentPage, std::size_t totalPages) {
 	if (clientIndex >= clientSockets.size()) return false;
 
 	sf::Packet packet;
@@ -152,6 +152,8 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex, const std::wstring
 	if (hasTimeout) {
 		packet << static_cast<std::uint64_t>(timeoutMs.value());
 	}
+	packet << currentPage;
+	packet << totalPages;
 
 	return sendPacketToClient(*clientSockets[clientIndex], packet);
 }
@@ -207,6 +209,7 @@ void ClientNetwork::disconnect() {
 }
 
 void ClientNetwork::update() {
+	using namespace std::chrono_literals;
 	if (socket && selector.wait(sf::milliseconds(10))) {
 		if (selector.isReady(*socket)) {
 			sf::Packet packet;
