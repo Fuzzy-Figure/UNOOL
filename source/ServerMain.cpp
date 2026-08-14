@@ -5,16 +5,7 @@
 #include <chrono>
 #include <thread>
 
-constexpr std::array<std::array<int, 6>, 6> scoreboard = { {
-		//     败者  S   A   B   C   D   F
-		//胜者
-		/*S*/      {10,  8,  5,  3,  2,  1},
-		/*A*/      {12, 10,  8,  5,  3,  2},
-		/*B*/      {15, 12, 10,  8,  5,  3},
-		/*C*/      {20, 15, 12, 10,  8,  5},
-		/*D*/      {30, 20, 15, 12, 10,  8},
-		/*F*/      {50, 30, 20, 15, 12, 10}
-	   } };
+
 
 
 int main() {

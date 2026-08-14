@@ -33,7 +33,7 @@ public:
 	std::size_t getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
 #pragma endregion
-
+	
 #pragma region 角色属性 - 委托到 Character
 	std::string characterName() const { return character->getName(); }
 	std::wstring characterNameW() const { return character->getNameW(); }

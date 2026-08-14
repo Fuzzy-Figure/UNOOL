@@ -243,6 +243,7 @@
   <ItemGroup>
     <None Include="..\.gitignore" />
     <None Include="..\config.json" />
+    <None Include="..\userDatas.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
