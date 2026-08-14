@@ -134,12 +134,17 @@ bool Player::turn() {
 	}
 
 	phaseBegin();
+	if (game.isGameOver()) return handEmpty();
+
 	bool used = phaseUse1();
+	if (game.isGameOver()) return handEmpty();
 
 	if (!used) {
 		phaseDraw();
+		if (game.isGameOver()) return handEmpty();
 		game.broadcastState();
 		phaseUse2();
+		if (game.isGameOver()) return handEmpty();
 	}
 
 	phaseEnd();
@@ -448,7 +453,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		}
 
 		network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
-		std::cout << "玩家" << id << "选择了" << choice << ": ";
+		std::cout << "[" << unool::string::to_utf8(title) << "] 玩家" << id << "选择了" << choice << ": ";
 		if (choice != 0)
 			std::cout << unool::string::to_utf8(options[choice - 1]) << std::endl;
 		return choice;

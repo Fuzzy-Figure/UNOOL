@@ -1,5 +1,7 @@
 #include "../header/Socket.h"
 #include "../header/utils.h"
+#include "../header/AccountProtocol.h"
+#include "../header/UserDB.h"
 #include <iostream>
 #include <thread>
 
@@ -50,13 +52,7 @@ void ServerNetwork::update() {
 					std::size_t newPlayerId = clientSockets.size() - 1;
 					sendConnectionInfo(newPlayerId);
 
-					std::cout << "[ServerNetwork] 客户端" << newPlayerId << "已连接" << std::endl;
-
-					if (clientSockets.size() == 2) {
-						serverReady = true;
-						sendGameStart();
-						std::cout << "[ServerNetwork] 两个客户端已连接，游戏开始" << std::endl;
-					}
+					std::cout << "[ServerNetwork] 客户端" << newPlayerId << "已连接，等待登录..." << std::endl;
 				}
 				else {
 					std::cout << "[ServerNetwork] 客户端连接被拒绝（已达到最大人数）" << std::endl;
@@ -64,23 +60,106 @@ void ServerNetwork::update() {
 			}
 		}
 
-		for (auto it = clientSockets.begin(); it != clientSockets.end();) {
-			sf::TcpSocket& socket = **it;
+		for (std::size_t i = 0; i < clientSockets.size(); ) {
+			sf::TcpSocket& socket = *clientSockets[i];
 			if (selector.isReady(socket)) {
 				sf::Packet packet;
 				sf::Socket::Status status = socket.receive(packet);
 				if (status == sf::Socket::Status::Done) {
-					receivedPackets.push(packet);
+					// 先 peek 类型，账号包内部处理，其他包入队列
+					sf::Packet peeked = packet;
+					int msgType;
+					if (peeked >> msgType) {
+						if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
+							msgType == static_cast<int>(MessageType::LoginRequest) ||
+							msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
+							handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
+						}
+						else {
+							receivedPackets.push(packet);
+						}
+					}
 				}
 				else if (status == sf::Socket::Status::Disconnected) {
-					std::cout << "[ServerNetwork] 客户端断开连接" << std::endl;
+					std::cout << "[ServerNetwork] 客户端" << i << " 断开连接" << std::endl;
 					selector.remove(socket);
-					it = clientSockets.erase(it);
+					clientSockets.erase(clientSockets.begin() + i);
+					clientSlots_[i].loggedIn = false;
+					clientSlots_[i].username.clear();
 					continue;
 				}
 			}
-			++it;
+			++i;
 		}
+	}
+}
+
+void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet) {
+	if (clientIdx >= clientSockets.size()) return;
+
+	// 跳过 msgType（调用方已在 update() 中 peek 过，但 packet 内部仍保留完整数据）
+	int discardedMsgType;
+	packet >> discardedMsgType;
+
+	if (type == MessageType::RegisterRequest) {
+		auto req = AccountProtocol::parseAccountRequest(packet);
+		if (!req) return;
+		std::string errMsg;
+		bool ok = UserDB::instance().registerUser(req->username, req->password, errMsg);
+		std::string msg = ok ? "注册成功" : errMsg;
+		auto resp = AccountProtocol::makeAccountResponse(MessageType::RegisterResponse, ok, msg);
+		sendPacketToClient(*clientSockets[clientIdx], resp);
+	}
+	else if (type == MessageType::LoginRequest) {
+		auto req = AccountProtocol::parseAccountRequest(packet);
+		if (!req) return;
+		std::string errMsg;
+		auto userInfo = UserDB::instance().login(req->username, req->password, errMsg);
+
+		bool ok = userInfo.has_value();
+		// 检查另一端是否已用同一账号登录
+		if (ok) {
+			std::size_t other = 1 - clientIdx;
+			if (other < clientSlots_.size()
+				&& clientSlots_[other].loggedIn
+				&& clientSlots_[other].username == req->username) {
+				ok = false;
+				errMsg = "该账号已在另一端登录";
+			}
+		}
+
+		int pts = ok ? userInfo->points : 0;
+		int w = ok ? userInfo->wins : 0;
+		int l = ok ? userInfo->losses : 0;
+		std::string msg = ok ? "登录成功" : errMsg;
+
+		auto resp = AccountProtocol::makeAccountResponse(MessageType::LoginResponse, ok, msg, pts, w, l);
+		sendPacketToClient(*clientSockets[clientIdx], resp);
+
+		if (ok) {
+			clientSlots_[clientIdx].loggedIn = true;
+			clientSlots_[clientIdx].username = req->username;
+			clientSlots_[clientIdx].points = pts;
+			clientSlots_[clientIdx].wins = w;
+			clientSlots_[clientIdx].losses = l;
+
+			std::cout << "[ServerNetwork] 客户端" << clientIdx << " 登录: " << req->username
+				<< "（积分 " << pts << "）" << std::endl;
+
+			// 两玩家都登录后开局
+			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn) {
+				serverReady = true;
+				sendGameStart();
+				std::cout << "[ServerNetwork] 两个客户端都已登录，游戏开始" << std::endl;
+			}
+		}
+	}
+	else if (type == MessageType::CheckUsernameRequest) {
+		auto username = AccountProtocol::parseCheckUsernameRequest(packet);
+		if (!username) return;
+		bool exists = UserDB::instance().exists(*username);
+		auto resp = AccountProtocol::makeCheckUsernameResponse(exists);
+		sendPacketToClient(*clientSockets[clientIdx], resp);
 	}
 }
 
@@ -236,6 +315,11 @@ bool ClientNetwork::sendClientInput(sf::Keyboard::Scancode key) {
 		<< static_cast<int>(key)
 		<< playerId;
 
+	return sendPacket(packet);
+}
+
+bool ClientNetwork::send(sf::Packet& packet) {
+	if (!socket) return false;
 	return sendPacket(packet);
 }
 

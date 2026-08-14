@@ -39,6 +39,7 @@ public:
 	std::wstring characterNameW() const { return character->getNameW(); }
 	std::string skin() const { return character->getSkin(); }
 	std::string skillsName() const { return character->skillsName(); }
+	Character::Level characterLevel() const { return character->getLevel(); }
 	std::size_t getHp() const { return character->getHp(); }
 	std::size_t getMaxHp() const { return character->getMaxHp(); }
 	void takeDamage(std::size_t damage, opt_ref<Player> source);

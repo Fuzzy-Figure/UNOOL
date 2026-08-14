@@ -254,6 +254,12 @@
     <ClInclude Include="..\header\GameRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\UserDB.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\AccountProtocol.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\Card.cpp">
@@ -293,6 +299,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\source\ServerMain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\UserDB.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ClientMain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\AccountProtocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

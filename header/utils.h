@@ -30,6 +30,16 @@ namespace unool {
 		std::size_t pow(const std::size_t a, const std::size_t b);
 	}
 
+	namespace input {
+		// 安全读取整数（失败返回nullopt）
+		std::optional<int> safeReadInt(int minVal, int maxVal);
+
+		// 安全读取字符串（去除首尾空白）
+		std::string safeReadLine();
+
+		// 安全读取不含空格的字符串（去除首尾空白，内部含空格则返回空串）
+		std::string safeReadNoSpace();
+	}
 	constexpr std::array<std::array<int, 6>, 6> scoreboard = { {
 			//      败者  S   A   B   C   D   F
 			//胜者

@@ -1,15 +1,74 @@
 #include "../header/GameLogic.h"
 #include "../header/Socket.h"
 #include "../header/utils.h"
+#include "../header/UserDB.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>
 
+// 根据 config.json 初始化角色（指定或随机）
+static void initCharacters(GameLogic& gameLogic) {
+	if (unool::getConfig().contains("characters")) {
+		const auto& chars = unool::getConfig()["characters"];
+		if (chars.size() != 2)
+			throw std::invalid_argument("指定角色时，角色数量必须为2");
+		gameLogic.initPlayers({ chars[0], chars[1] });
+	}
+	else {
+		gameLogic.initPlayers();
+	}
+}
 
+// 处理游戏结束：发送 GameEnd 包、按角色等级加分、打印日志
+static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
+	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
+	serverNetwork.sendGameEnd(winnerId);
 
+	if (winnerId.has_value()) {
+		std::size_t wId = winnerId.value();
+		std::size_t lId = 1 - wId;
+
+		auto& players = gameLogic.getPlayers();
+		Character::Level wLv = players[wId].get().characterLevel();
+		Character::Level lLv = players[lId].get().characterLevel();
+		const auto& slots = serverNetwork.getClientSlots();
+		UserDB::instance().addMatchResult(
+			slots[wId].username, slots[lId].username, wLv, lLv);
+
+		std::cout << "[Server] 游戏结束，玩家" << wId << "获胜！" << std::endl;
+	}
+	else {
+		std::cout << "[Server] 游戏结束，无人获胜！" << std::endl;
+	}
+}
+
+// 游戏主循环
+static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
+	while (!gameLogic.isGameOver()) {
+		bool roundEnded = gameLogic.runTurn();
+
+		// 回合结束后立即检查游戏是否结束（技能杀人等情况）
+		if (gameLogic.isGameOver()) {
+			handleGameOver(serverNetwork, gameLogic);
+			break;
+		}
+
+		if (!roundEnded) continue;
+
+		// 一局结束，处理体力扣除
+		gameLogic.checkRoundEnd();
+		gameLogic.broadcastState();
+
+		if (gameLogic.isGameOver()) {
+			handleGameOver(serverNetwork, gameLogic);
+			break;
+		}
+		// 开始新一局
+		gameLogic.resetRound();
+	}
+}
 
 int main() {
-	//设置控制台输入输出编码为 UTF-8
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 
@@ -25,64 +84,24 @@ int main() {
 
 	GameLogic gameLogic(serverNetwork);
 
-	bool gameStarted = false;
-	bool gameEnded = false;
-
 	std::cout << "[Server] 等待客户端连接..." << std::endl;
-
 	while (!serverNetwork.isReady()) {
 		serverNetwork.update();
 		std::this_thread::sleep_for(16ms);
 	}
 
 	try {
-		gameStarted = true;
 		std::cout << "[Server] 游戏开始！" << std::endl;
-
-		if (unool::getConfig().contains("characters")) {
-			//指定角色
-			const auto& chars = unool::getConfig()["characters"];
-			if (chars.size() != 2)
-				throw std::invalid_argument("指定角色时，角色数量必须为2");
-			gameLogic.initPlayers({ chars[0], chars[1] });
-		}
-		else { //随机选角色
-			gameLogic.initPlayers();
-		}
-
+		initCharacters(gameLogic);
 		gameLogic.broadcastState();
-
-		while (gameStarted && !gameLogic.isGameOver()) {
-			if (gameLogic.runTurn()) {
-				// 一局结束，处理体力扣除
-				gameLogic.checkRoundEnd();
-				gameLogic.broadcastState();
-
-				if (gameLogic.isGameOver()) {
-					// 游戏结束
-					std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
-					serverNetwork.sendGameEnd(winnerId);
-					if (winnerId.has_value()) {
-						std::cout << "[Server] 游戏结束，玩家" << winnerId.value() << "获胜！" << std::endl;
-					}
-					else {
-						std::cout << "[Server] 游戏结束，无人获胜！" << std::endl;
-					}
-					break;
-				}
-				else {
-					// 开始新一局
-					gameLogic.resetRound();
-				}
-			}
-		}
-	} catch (std::exception& e) {
+		gameLoop(serverNetwork, gameLogic);
+	}
+	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 
 	while (true) {
 		std::this_thread::sleep_for(1s);
 	}
-
 	return 0;
 }

@@ -353,7 +353,7 @@ void GameLogic::resetRound() {
 		// 重置手牌
 		player->clearHand();
 		// 初始手牌
-		player->draw(8);
+		player->draw(unool::getConfig()["initHandCount"]);
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁

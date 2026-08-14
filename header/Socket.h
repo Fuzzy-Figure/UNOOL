@@ -2,6 +2,7 @@
 #include <SFML/Network.hpp>
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <array>
 #include <memory>
 #include <string>
 #include <queue>
@@ -17,7 +18,13 @@ enum class MessageType {
 	ConnectionRefused,
 	GameStart,
 	GameEnd,
-	Choice
+	Choice,
+	RegisterRequest,
+	RegisterResponse,
+	LoginRequest,
+	LoginResponse,
+	CheckUsernameRequest,
+	CheckUsernameResponse
 };
 
 struct ClientInput {
@@ -35,9 +42,19 @@ struct GameEndInfo {
 };
 
 class ServerNetwork {
+public:
+	struct ClientSlot {
+		bool loggedIn = false;
+		std::string username;
+		int points = 0;
+		int wins = 0;
+		int losses = 0;
+	};
+
 private:
 	std::unique_ptr<sf::TcpListener> listener;
 	std::vector<std::unique_ptr<sf::TcpSocket>> clientSockets;
+	std::array<ClientSlot, 2> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
 	std::queue<sf::Packet> receivedPackets;
@@ -45,6 +62,7 @@ private:
 private:
 	bool sendPacketToClient(sf::TcpSocket& socket, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
+	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
 
 public:
 	ServerNetwork() = default;
@@ -64,6 +82,7 @@ public:
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const { return clientSockets.size(); }
+	const std::array<ClientSlot, 2>& getClientSlots() const { return clientSlots_; }
 };
 
 class ClientNetwork {
@@ -85,6 +104,7 @@ public:
 	void update();
 
 	bool sendClientInput(sf::Keyboard::Scancode key);
+	bool send(sf::Packet& packet);
 	std::optional<sf::Packet> receivePacket();
 
 	void setPlayerId(std::size_t id) { playerId = id; }
