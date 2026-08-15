@@ -3,9 +3,15 @@
 #include <thread>
 
 void Player::takeDamage(std::size_t damage, opt_ref<Player> source) {
-	game.launchPSkills(PSkill::TriggerTime::lose_hp_begin, *this, std::nullopt, source, damage);
+	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damage);
 	character->takeDamage(damage);
-	game.launchPSkills(PSkill::TriggerTime::lose_hp_end, *this, std::nullopt, source, damage);
+	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damage);
+}
+
+void Player::recover(std::size_t num) {
+	game.launchPSkills(PSkill::TriggerTime::recover_begin, *this, std::nullopt, std::nullopt, num);
+	character->recover(num);
+	game.launchPSkills(PSkill::TriggerTime::recover_end, *this, std::nullopt, std::nullopt, num);
 }
 
 
@@ -456,7 +462,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		}
 
 		network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
-		std::cout << "[" << unool::string::to_utf8(title) << "] 玩家" << id << "选择了" << choice << ": ";
+		std::cout << "[ask] 标题：“" << unool::string::to_utf8(title) << "”，玩家" << id << "选择了" << choice << ": ";
 		if (choice != 0)
 			std::cout << unool::string::to_utf8(options[choice - 1]) << std::endl;
 		return choice;

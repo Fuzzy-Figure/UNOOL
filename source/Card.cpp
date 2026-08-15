@@ -5,7 +5,7 @@
 
 
 // ==================== Card 静态数据 ====================
-const std::unordered_map<std::tuple<Card::Color, Card::Name>, std::string, Card::TupleHash> Card::imagePaths = {
+const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::imagePaths = {
 	// 红色牌
 	{{Color::red, Name::number_0},     "cards/red/number_0.jpg"},
 	{{Color::red, Name::number_1},     "cards/red/number_1.jpg"},
@@ -98,11 +98,17 @@ bool Card::operator<(const Card& other) const {
 		return color < other.color;
 	return name < other.name;
 }
+bool Card::operator==(const Card& other) const {
+	return getColorName() == other.getColorName();
+}
 Card::Color Card::getColor() const {
 	return color;
 }
 Card::Name Card::getName() const {
 	return name;
+}
+Card::ColorName Card::getColorName() const {
+	return std::make_pair(color, name);
 }
 bool Card::isNumber() const {
 	return name == Name::number_0 || name == Name::number_1

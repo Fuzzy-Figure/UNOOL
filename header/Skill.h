@@ -69,7 +69,8 @@ public:
 		use_card_begin, use_card_end,
 		lose_card_begin, lose_card_end,
 		card_target_begin, card_target_end,
-		lose_hp_begin, lose_hp_end,
+		damage_begin, damage_end,
+		recover_begin, recover_end,
 		draw_begin, draw_end,
 		discard_begin, discard_end,
 		recast_begin, recast_end,
@@ -124,6 +125,7 @@ public:
 	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
 	void launch(Trigger& trigger);
 	void reset() override;
+	void setForced(const bool newForced);
 
 private:
 	TriggerPlayer triggerPlayer;
@@ -401,7 +403,7 @@ public:
 		"锁定技，当你失去体力时，失去体力的数值减少30% （向下取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
-		TriggerTime::lose_hp_begin
+		TriggerTime::damage_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
@@ -502,8 +504,7 @@ public:
 
 class 炼兵 : public PSkillImpl<炼兵> {
 	std::unordered_set<Card::Color> usedColors;
-	using CN = std::pair<Card::Color, Card::Name>;
-	std::map<CN, std::size_t> buildPairs(Player& carrier) const;
+	std::map<Card::ColorName, std::size_t> buildPairs(Player& carrier) const;
 public:
 	炼兵() : PSkillImpl<炼兵>(
 		"炼兵",
@@ -589,8 +590,8 @@ public:
 		"举报",
 		"契定技，当一名角色打出万能牌后，你可令其失去10%当前体力。",
 		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
+		TriggerPlayer::anybody,
+		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
@@ -600,9 +601,34 @@ public:
 	猥琐() : PSkillImpl<猥琐>(
 		"猥琐",
 		"锁定技，回合结束时，若你不是全场体力最高的角色，回复1点体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 棋王 : public PSkillImpl<棋王> {
+public:
+	棋王() : PSkillImpl<棋王>(
+		"棋王",
+		"当你打出弃牌堆顶同色同名牌后，你可以弃置一张手牌。",
 		unlimited, false,
 		TriggerPlayer::self,
-		TriggerTime::phase_begin
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+class 金铲 : public PSkillImpl<金铲> {
+public:
+	金铲() : PSkillImpl<金铲>(
+		"金铲",
+		"锁定技，当一名角色回复1体力时，改为其失去1体力。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::recover_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;

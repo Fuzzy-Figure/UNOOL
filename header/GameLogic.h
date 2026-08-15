@@ -59,6 +59,9 @@ public:
 	const std::vector<ref<Player>> getPlayers() const;
 	const std::vector<ref<Player>> getPlayersIf(const std::function<bool(const Player&)>& condition) const;
 	const std::vector<ref<Player>> getPlayersExcludeId(const std::size_t id) const;
+	void forEachPlayer(const std::function<void(Player&)>& operation);
+	void forEachPlayerIf(const std::function<bool(const Player&)>& condition,
+						 const std::function<void(Player&)>& operation);
 
 	void print() const;
 

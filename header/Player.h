@@ -43,7 +43,7 @@ public:
 	std::size_t getHp() const { return character->getHp(); }
 	std::size_t getMaxHp() const { return character->getMaxHp(); }
 	void takeDamage(std::size_t damage, opt_ref<Player> source);
-	void recover(std::size_t num) { character->recover(num); }
+	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	void resetSkills() { character->resetSkills(); }
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }

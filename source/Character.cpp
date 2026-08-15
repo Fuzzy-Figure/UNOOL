@@ -30,6 +30,10 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"Notch",       {Level::C, {生存::make, 创造::make}, {}, 140}},
 	{"新诸葛亮",    {Level::B, {炼兵::make, 好火::make}, {}, 77}},
 	{"Brr Brr Patapim", {Level::B, {森罗::make, 大脚::make}, {}, 235}},
+	{"新关羽",          {Level::B, {过江::make, 大盏::make}, {}, 210}},
+	{"卞相壹",          {Level::B, {举报::make, 猥琐::make}, {}, 160}},
+	{"柯洁",            {Level::B, {棋王::make, 金铲::make}, {}, 160}},
+
 };
 
 

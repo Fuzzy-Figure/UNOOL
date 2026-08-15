@@ -71,6 +71,19 @@ const std::vector<ref<Player>> GameLogic::getPlayersExcludeId(const std::size_t 
 	});
 }
 
+void GameLogic::forEachPlayer(const std::function<void(Player&)>& operation) {
+	for (auto& p : players) {
+		operation(*p);
+	}
+}
+
+void GameLogic::forEachPlayerIf(const std::function<bool(const Player&)>& condition,
+								const std::function<void(Player&)>& operation) {
+	for (auto& p : players) {
+		if (condition(*p)) operation(*p);
+	}
+}
+
 void GameLogic::print() const {
 	return;
 	for (const auto& pl : players) {

@@ -14,6 +14,8 @@ void Skill::reset() {
 }
 
 
+
+
 // **********************
 //         被动技
 // **********************
@@ -63,6 +65,11 @@ void PSkill::reset() {
 	if (usedColorsFlag) usedColorsFlag->clear();
 	if (usedPlayerIdsFlag) usedPlayerIdsFlag->clear();
 }
+
+void PSkill::setForced(const bool newForced) {
+	forced = newForced;
+}
+
 
 
 PSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
@@ -644,6 +651,7 @@ void 创造::content(Trigger& trigger) {
 	else if (11 <= idx && idx <= 13) { //功能牌
 		name = Card::actionCards[idx - 10];
 	}
+	else throw std::runtime_error("意外的 idx 的值");
 
 	std::unique_ptr<Card> newCard = Card::make(targetColor, name);
 	std::cout << "<技能> " << carrier.characterName() << "发动创造，" <<
@@ -655,8 +663,8 @@ void 创造::content(Trigger& trigger) {
 
 
 // ==================== 技能：炼兵 ====================
-auto 炼兵::buildPairs(Player& carrier) const -> std::map<CN, std::size_t> {
-	std::map<CN, std::size_t> cnt;
+std::map<Card::ColorName, std::size_t> 炼兵::buildPairs(Player& carrier) const {
+	std::map<Card::ColorName, std::size_t> cnt;
 	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
 		const Card& c = carrier.getHand().getCardByIndex(i);
 		if (c.getColor() == Card::Color::black) continue;
@@ -680,7 +688,7 @@ void 炼兵::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 
 	auto cnt = buildPairs(carrier);
-	std::vector<CN> validPairs;
+	std::vector<Card::ColorName> validPairs;
 	std::vector<std::wstring> opts;
 	for (const auto& kv : cnt) {
 		if (kv.second >= 2 && usedColors.find(kv.first.first) == usedColors.end()) {
@@ -695,7 +703,7 @@ void 炼兵::content(Trigger& trigger) {
 	if (idx == 0) return;
 	if (idx - 1 >= validPairs.size()) return;
 
-	CN target = validPairs[idx - 1];
+	Card::ColorName target = validPairs[idx - 1];
 	std::size_t i1 = carrier.handCount(), i2 = carrier.handCount();
 	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
 		const Card& c = carrier.getHand().getCardByIndex(i);
@@ -756,6 +764,7 @@ void 森罗::content(Trigger& trigger) {
 	});
 }
 
+
 //================大脚=====================
 bool 大脚::filter(const Trigger& trigger) const {
 	return trigger.getCarrier().handInclude([](const Card& c) {
@@ -775,6 +784,7 @@ void 大脚::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 }
 
+
 //================过江==============
 bool 过江::filter(const Trigger& trigger) const {
 	return trigger.getCard().is(Card::Name::action_draw2);
@@ -782,6 +792,7 @@ bool 过江::filter(const Trigger& trigger) const {
 void 过江::content(Trigger& trigger) {
 	trigger.getSource().draw(2);
 }
+
 
 //================大盏==============
 void 大盏::randomEnlarge(Card& c) {
@@ -828,4 +839,47 @@ void 大盏::content(Trigger& trigger) {
 	}
 }
 
-//==============
+
+//==============举报=============
+bool 举报::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+void 举报::content(Trigger& trigger) {
+	setForced(true);
+	Player& player = trigger.getPlayer();
+	Player& carrier = trigger.getCarrier();
+	player.takeDamage(unool::math::ceil(0.1 * player.getHp()), carrier);
+}
+
+
+//=============猥琐====================
+bool 猥琐::filter(const Trigger& trigger) const {
+	//找到最大体力
+	std::size_t maxHp = 0;
+	trigger.getGame().forEachPlayer([&maxHp](Player& p) {
+		maxHp = std::max(maxHp, p.getHp());
+	});
+	return trigger.getCarrier().getHp() != maxHp;
+}
+void 猥琐::content(Trigger& trigger) {
+	trigger.getCarrier().recover(1);
+}
+
+
+
+bool 棋王::filter(const Trigger& trigger) const {
+	return trigger.getGame().getDiscardPile().count() >= 2
+		&& trigger.getCard() == trigger.getGame().getDiscardPile()[1];
+}
+void 棋王::content(Trigger& trigger) {
+	trigger.getCarrier().chooseToDiscard(1, true);
+}
+
+
+bool 金铲::filter(const Trigger& trigger) const {
+	return trigger.getNumber() == 1;
+}
+void 金铲::content(Trigger& trigger) {
+	trigger.getNumber() = 0;
+	trigger.getPlayer().takeDamage(1, trigger.getCarrier());
+}

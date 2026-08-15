@@ -25,8 +25,9 @@ public:
 		action_ban, action_rev, action_draw2, wild_pal, wild_draw4,
 		back
 	};
+	using ColorName = std::pair<Color, Name>;
 	struct TupleHash {
-		std::size_t operator()(const std::tuple<Card::Color, Card::Name>& t) const {
+		std::size_t operator()(const ColorName& t) const {
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
@@ -64,6 +65,7 @@ public:
 #pragma region 属性查询
 	Color getColor() const;
 	Name getName() const;
+	ColorName getColorName() const;
 
 	template<typename... Colors> requires (std::same_as<Colors, Color> && ...)
 		bool is(const Colors... colors) const {
@@ -82,6 +84,7 @@ public:
 	std::string toString() const;
 	std::string getImagePath() const;
 	bool operator<(const Card& other) const;
+	bool operator==(const Card& other) const;
 #pragma endregion
 
 #pragma region 属性设置
@@ -107,7 +110,7 @@ public:
 	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::wstring to_wstring(const Name& name);
-	static const std::unordered_map<std::tuple<Card::Color, Card::Name>, std::string, TupleHash> imagePaths;
+	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
 #pragma endregion
 };
 
