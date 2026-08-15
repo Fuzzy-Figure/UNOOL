@@ -444,11 +444,7 @@ bool 电音::filter(const Trigger& trigger) const {
 void 电音::content(Trigger& trigger) {
 	Hand& hand = trigger.getCarrier().getHand();
 	hand.forEachIf(&Card::isNumber, [](Card& card) {
-		static const std::array<Card::Name, 10> numbers = {
-			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2, Card::Name::number_3, Card::Name::number_4,
-			Card::Name::number_5, Card::Name::number_6, Card::Name::number_7, Card::Name::number_8, Card::Name::number_9
-		};
-		card.setName(numbers[unool::random::randomSize_t(0, 9)]);
+		card.setName(Card::numberCardsFrom0[unool::random::randomSize_t(0, 9)]);
 	});
 	trigger.getGame().broadcastState();
 }
@@ -610,7 +606,7 @@ void 生存::content(Trigger& trigger) {
 
 	auto target = Card::make(targetColor, targetName);
 	auto opt = carrier.chooseToOperate(
-		L"请选择一张牌变为【" + std::to_wstring(x) + L"】", 
+		L"请选择一张牌变为【" + std::to_wstring(x) + L"】",
 		true, unool::alwaysTrue,
 		[&target](Card& c) {
 		c.set(*target);
@@ -634,26 +630,26 @@ void 创造::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	const Card& nine = trigger.getCard();
 	Card::Color targetColor = nine.getColor();
+
 	std::vector<std::wstring> opts = {
 		L"1", L"2", L"3", L"4", L"5",
 		L"6", L"7", L"8", L"9", L"0",
 		L"反转", L"封禁", L"+2"
 	};
 	std::size_t idx = carrier.ask(L"【创造】选择获得的牌名（" + Card::to_wstring(targetColor) + L"色）：", opts, true);
-	static const Card::Name nameMap[] = {
-		Card::Name::number_1, Card::Name::number_2, Card::Name::number_3,
-		Card::Name::number_4, Card::Name::number_5, Card::Name::number_6,
-		Card::Name::number_7, Card::Name::number_8, Card::Name::number_9,
-		Card::Name::number_0, Card::Name::action_rev, Card::Name::action_ban,
-		Card::Name::action_draw2
-	};
-	constexpr std::size_t nameCount = sizeof(nameMap) / sizeof(nameMap[0]);
-	if (idx < 1 || idx - 1 >= nameCount) return;
-	Card::Name name = nameMap[idx - 1];
-	carrier.gainCard(Card::make(targetColor, name));
+	Card::Name name;
+	if (1 <= idx && idx <= 10) { //数字牌
+		name = Card::numberCardsFrom1[idx];
+	}
+	else if (11 <= idx && idx <= 13) { //功能牌
+		name = Card::actionCards[idx - 10];
+	}
+
+	std::unique_ptr<Card> newCard = Card::make(targetColor, name);
+	std::cout << "<技能> " << carrier.characterName() << "发动创造，" <<
+		"获得一张【" << newCard->toString() << "】" << std::endl;
+	carrier.gainCard(std::move(newCard));
 	usedColors.insert(targetColor);
-	std::cout << "<技能> " << carrier.characterName() << "发动创造，获得一张【"
-		<< Card::to_string(targetColor) << Card::to_string(name) << "】" << std::endl;
 	trigger.getGame().broadcastState();
 }
 
@@ -789,17 +785,13 @@ void 过江::content(Trigger& trigger) {
 
 //================大盏==============
 void 大盏::randomEnlarge(Card& c) {
-	static const std::array<Card::Name, 10> numbers = {
-		Card::Name::number_0, Card::Name::number_1, Card::Name::number_2, Card::Name::number_3, Card::Name::number_4,
-		Card::Name::number_5, Card::Name::number_6, Card::Name::number_7, Card::Name::number_8, Card::Name::number_9
-	};
 	//非数字牌，不能变大
 	if (c.isNotNumber()) return;
 	//9不能变大
 	if (c.is(Card::Name::number_9)) return;
 	//变大
 	std::size_t currentNumber = c.value();
-	c.setName(numbers[unool::random::randomSize_t(currentNumber + 1, 9)]);
+	c.setName(Card::numberCardsFrom0[unool::random::randomSize_t(currentNumber + 1, 9)]);
 }
 bool 大盏::filter(const Trigger& trigger) const {
 	return trigger.getCarrier().handInclude([](const Card& c) {

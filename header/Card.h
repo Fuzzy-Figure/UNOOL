@@ -30,6 +30,21 @@ public:
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
+
+	inline static constexpr std::array<Name, 10> numberCardsFrom1 = {
+		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
+		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0
+	};
+	inline static constexpr std::array<Name, 10> numberCardsFrom0 = {
+		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
+		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
+	};
+	inline static constexpr std::array<Name, 3> actionCards = {
+		Name::action_rev, Name::action_ban, Name::action_draw2
+	};
+	inline static constexpr std::array<Name, 2> wildCards = {
+		Name::wild_pal, Name::wild_draw4,
+	};
 #pragma endregion
 
 private:
@@ -51,11 +66,11 @@ public:
 	Name getName() const;
 
 	template<typename... Colors> requires (std::same_as<Colors, Color> && ...)
-	bool is(const Colors... colors) const {
+		bool is(const Colors... colors) const {
 		return ((color == colors) || ...);
 	}
 	template<typename... Names> requires (std::same_as<Names, Name> && ...)
-	bool is(const Names... names) const {
+		bool is(const Names... names) const {
 		return ((name == names) || ...);
 	}
 
