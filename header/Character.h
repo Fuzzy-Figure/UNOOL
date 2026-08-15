@@ -12,8 +12,8 @@ public:
 	enum class Level { S, A, B, C, D, F };
 	struct Info {
 		Level level;
-		std::vector<std::string> pSkillNames;
-		std::vector<std::string> aSkillNames;
+		std::vector<PSkill::Factory> pSkills;
+		std::vector<ASkill::Factory> aSkills;
 		std::size_t hp;
 		std::size_t maxHp = 0;
 	};

@@ -192,13 +192,15 @@ void GameRenderer::renderInfoBox() {
 		addWrapped(unool::string::to_utf16(targetState->characterName) + L"（" + Character::to_wstring(info.level) + L"）");
 		addWrapped(L"体力：" + std::to_wstring(targetState->hp) + L"/" + std::to_wstring(targetState->maxHp));
 		addWrapped(L"技能：");
-		for (const auto& name : info.pSkillNames) {
-			addWrapped(L"【" + unool::string::to_utf16(name) + L"】");
-			addWrapped(PSkill::getInfoW(name));
+		for (const auto& factory : info.pSkills) {
+			auto temp = factory();
+			addWrapped(L"【" + temp->getNameW() + L"】");
+			addWrapped(temp->getInfoW());
 		}
-		for (const auto& name : info.aSkillNames) {
-			addWrapped(L"【" + unool::string::to_utf16(name) + L"】");
-			addWrapped(ASkill::getInfoW(name));
+		for (const auto& factory : info.aSkills) {
+			auto temp = factory();
+			addWrapped(L"【" + temp->getNameW() + L"】");
+			addWrapped(temp->getInfoW());
 		}
 
 		//拼接完整文本（无多余尾行）

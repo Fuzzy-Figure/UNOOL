@@ -7,6 +7,7 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 #include <memory>
 #include "utils.h"
 
@@ -29,12 +30,12 @@ public:
 	std::string getInfo() const { return info; }
 	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
 	std::size_t getCount() const { return count; }
-	Skill(const std::string& _name, const std::string& _info, const std::optional<std::size_t>& _limit);
+	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
 	virtual void reset();
 };
 
-class PSkill :public Skill {
+class PSkill : public Skill {
 public:
 	enum class TriggerPlayer {
 		nobody, self, others, anybody
@@ -108,71 +109,458 @@ public:
 		void set_count(const std::size_t _count) { count = _count; }
 	};
 	using Factory = std::function<std::unique_ptr<PSkill>()>;
-	static const std::unordered_map<std::string, Factory> registry;
 
-private:
-	using Filter = std::function<bool(const Trigger& trigger)>;
-	using Content = std::function<void(Trigger& trigger)>;
+	virtual bool filter(const Trigger& trigger) const = 0;
+	virtual void content(Trigger& trigger) = 0;
 
-	static const std::unordered_map<std::string, std::string> descriptions;
+	PSkill(const std::string& name, const std::string& description,
+		   const limit_t& limit, bool forced,
+		   const TriggerPlayer& triggerPlayer, const TriggerTime& triggerTime);
 
-	TriggerPlayer triggerPlayer;
-	TriggerTime triggerTime;
-	Filter filter;
-	Content content;
-	bool forced = false;
-public:
-	std::shared_ptr<bool> disabledFlag; //用于"失去技能至本局结束"机制
+	std::shared_ptr<bool> disabledFlag;
 	std::shared_ptr<std::unordered_set<Card::Color>> usedColorsFlag;
 	std::shared_ptr<std::unordered_set<std::size_t>> usedPlayerIdsFlag;
-	PSkill(const std::string& _name,
-		   const std::optional<std::size_t> _limit, const bool _forced,
-		   const TriggerPlayer& _triggerPlayer, const TriggerTime& _triggerTime,
-		   const Filter& _filter, const Content& _content);
-	bool matchTrigger(const TriggerTime& currentTriggerTime,
-					  const Trigger& trigger) const;
+
+	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
 	void launch(Trigger& trigger);
 	void reset() override;
 
-	static std::unique_ptr<PSkill> 粪怒();
-	static std::unique_ptr<PSkill> 隐身();
-	static std::unique_ptr<PSkill> 顶置();
-	static std::unique_ptr<PSkill> 带派();
-	static std::unique_ptr<PSkill> 寒魄();
-	static std::unique_ptr<PSkill> 割腕();
-	static std::unique_ptr<PSkill> 丑皇();
-	static std::unique_ptr<PSkill> 军国();
-	static std::unique_ptr<PSkill> 家暴();
-	static std::unique_ptr<PSkill> 健身();
-	static std::unique_ptr<PSkill> 做题();
-	static std::unique_ptr<PSkill> 棍击();
-	static std::unique_ptr<PSkill> 神木();
-	static std::unique_ptr<PSkill> 雷剑();
-	static std::unique_ptr<PSkill> 买棋();
-	static std::unique_ptr<PSkill> 卖棋();
-	static std::unique_ptr<PSkill> 耐克();
-	static std::unique_ptr<PSkill> 轰炸();
-	static std::unique_ptr<PSkill> 爆破();
-	static std::unique_ptr<PSkill> 电音();
-	static std::unique_ptr<PSkill> 蒙面();
-	static std::unique_ptr<PSkill> 锐刻();
-	static std::unique_ptr<PSkill> 巨富();
-	static std::unique_ptr<PSkill> 破产();
-	static std::unique_ptr<PSkill> 假酒();
-	static std::unique_ptr<PSkill> 窃观();
-	static std::unique_ptr<PSkill> 生存();
-	static std::unique_ptr<PSkill> 创造();
-	static std::unique_ptr<PSkill> 炼兵();
-	static std::unique_ptr<PSkill> 好火();
-
-	static std::wstring getInfoW(const std::string& skillName);
+private:
+	TriggerPlayer triggerPlayer;
+	TriggerTime triggerTime;
+	bool forced = false;
 };
 
-class ASkill :public Skill {
+// CRTP 基类：在 PSkill 外部定义，避免继承不完整类型
+template<class Derived>
+class PSkillImpl : public PSkill {
 public:
-	ASkill(const std::string& _name, const std::string& _info, const std::optional<std::size_t>& _limit);
-
-	using Factory = std::function<std::unique_ptr<ASkill>()>;
-	static const std::unordered_map<std::string, Factory> registry;
-	static std::wstring getInfoW(const std::string& skillName);
+	static std::unique_ptr<PSkill> make();
+protected:
+	using PSkill::PSkill;
 };
+
+class 粪怒 : public PSkillImpl<粪怒> {
+public:
+	粪怒() : PSkillImpl<粪怒>(
+		"粪怒",
+		"限定技，一名角色手牌数变为1时，你可令其摸你手牌数张牌（至多摸五张）。",
+		1, false,
+		TriggerPlayer::others,
+		TriggerTime::lose_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 隐身 : public PSkillImpl<隐身> {
+public:
+	隐身() : PSkillImpl<隐身>(
+		"隐身",
+		"当你成为【+2】/【+4】的目标时，改为你的下家摸1张牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::card_target_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 顶置 : public PSkillImpl<顶置> {
+public:
+	顶置() : PSkillImpl<顶置>(
+		"顶置",
+		"锁定技，回合开始时，你观看牌堆底一张牌，然后可将此牌置于牌堆顶。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 带派 : public PSkillImpl<带派> {
+public:
+	带派() : PSkillImpl<带派>(
+		"带派",
+		"每局游戏开始时，选择获得一张【变色】或【+4】；也可选择两张均获得并失去25点体力。",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 寒魄 : public PSkillImpl<寒魄> {
+public:
+	寒魄() : PSkillImpl<寒魄>(
+		"寒魄",
+		"限定技，你打出牌后，若你手牌数为1，你可令最后一张手牌变为你打出的牌。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 割腕 : public PSkillImpl<割腕> {
+public:
+	割腕() : PSkillImpl<割腕>(
+		"割腕",
+		"锁定技，你打出红色牌后失去随机1~5点体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 丑皇 : public PSkillImpl<丑皇> {
+public:
+	丑皇() : PSkillImpl<丑皇>(
+		"丑皇",
+		"锁定技，你打出万能牌后，选择一项：回复10点体力或弃置一张非数字牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 军国 : public PSkillImpl<军国> {
+public:
+	军国() : PSkillImpl<军国>(
+		"军国",
+		"锁定技，当一名角色被封禁时，其失去1%最大体力（向上取整），自己被封禁改为失去1体力。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::ban_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 家暴 : public PSkillImpl<家暴> {
+public:
+	家暴() : PSkillImpl<家暴>(
+		"家暴",
+		"限定技，回合开始时，你可以令一名体力小于你的角色失去10%最大体力（向上取整）。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 健身 : public PSkillImpl<健身> {
+public:
+	健身() : PSkillImpl<健身>(
+		"健身",
+		"锁定技，每局游戏开始时，回复5点体力。",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 做题 : public PSkillImpl<做题> {
+public:
+	做题() : PSkillImpl<做题>(
+		"做题",
+		"限定技，你打出数字牌/非数字牌后，可弃置一张非数字牌/数字牌。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 棍击 : public PSkillImpl<棍击> {
+public:
+	棍击() : PSkillImpl<棍击>(
+		"棍击",
+		"每局限9次，当你打出万能牌后，你可以对一名其他角色造成2^X点伤害（X为本局此技能发动次数）。",
+		9, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 神木 : public PSkillImpl<神木> {
+public:
+	神木() : PSkillImpl<神木>(
+		"神木",
+		"锁定技，游戏开始时，从游戏外将九张【变色】和九张【+4】加入牌堆。",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 雷剑 : public PSkillImpl<雷剑> {
+public:
+	雷剑() : PSkillImpl<雷剑>(
+		"雷剑",
+		"你打出【反转】后，可弃置一张同色数字牌并回复此牌分值点体力。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 买棋 : public PSkillImpl<买棋> {
+public:
+	买棋() : PSkillImpl<买棋>(
+		"买棋",
+		"回合开始时，你可以失去10X点体力（X为此技能发动次数-1），从游戏外获得随机一张万能牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 卖棋 : public PSkillImpl<卖棋> {
+public:
+	卖棋() : PSkillImpl<卖棋>(
+		"卖棋",
+		"回合结束时，你可以弃置一张万能牌，回复10点体力。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 耐克 : public PSkillImpl<耐克> {
+public:
+	耐克() : PSkillImpl<耐克>(
+		"耐克",
+		"锁定技，若上一张牌为蓝色或万能牌，【封禁】、【+2】和【+4】对你无效",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::card_target_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 轰炸 : public PSkillImpl<轰炸> {
+public:
+	轰炸() : PSkillImpl<轰炸>(
+		"轰炸",
+		"锁定技，当你打出【+2】时，目标失去2%最大体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 爆破 : public PSkillImpl<爆破> {
+public:
+	爆破() : PSkillImpl<爆破>(
+		"爆破",
+		"你对其他角色造成封禁效果后，可随机获得其一张牌并对其造成此牌分值点伤害。",
+		unlimited, false,
+		TriggerPlayer::others,
+		TriggerTime::ban_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 电音 : public PSkillImpl<电音> {
+public:
+	电音() : PSkillImpl<电音>(
+		"电音",
+		"回合开始时，你可以令手牌中所有数字牌变成随机数字。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 蒙面 : public PSkillImpl<蒙面> {
+public:
+	蒙面() : PSkillImpl<蒙面>(
+		"蒙面",
+		"锁定技，当你失去体力时，失去体力的数值减少30% （向下取整）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::lose_hp_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 锐刻 : public PSkillImpl<锐刻> {
+	bool disabled = false;
+public:
+	锐刻() : PSkillImpl<锐刻>(
+		"锐刻",
+		"当你打出【5】时，你可以令一名角色摸1张牌；你可改为令其摸5张牌并失去此技能（至本局结束）。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); disabled = false; }
+};
+
+class 巨富 : public PSkillImpl<巨富> {
+public:
+	巨富() : PSkillImpl<巨富>(
+		"巨富",
+		"游戏开始时，你的初始手牌改为十二张；你执行摸牌阶段额外摸一张牌。",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 破产 : public PSkillImpl<破产> {
+public:
+	破产() : PSkillImpl<破产>(
+		"破产",
+		"锁定技，若你打出牌后手牌数全场最多，随机弃置一张牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 假酒 : public PSkillImpl<假酒> {
+public:
+	假酒() : PSkillImpl<假酒>(
+		"假酒",
+		"你打出功能牌后，可随机获得一张不同颜色的非数字牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 窃观 : public PSkillImpl<窃观> {
+public:
+	窃观() : PSkillImpl<窃观>(
+		"窃观",
+		"锁定技，其他角色从牌堆一次性获得一张牌时，你得知其颜色牌名并需要输入确认。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::draw_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 生存 : public PSkillImpl<生存> {
+public:
+	生存() : PSkillImpl<生存>(
+		"生存",
+		"锁定技，回合开始时，选择一张手牌变为随机颜色的【X】（X为本局发动次数，至多9）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 创造 : public PSkillImpl<创造> {
+	std::unordered_set<Card::Color> usedColors;
+public:
+	创造() : PSkillImpl<创造>(
+		"创造",
+		"每局每种颜色限一次，你打出【9】后，可从游戏外获得一张同色的任意牌名的牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); usedColors.clear(); }
+};
+
+class 炼兵 : public PSkillImpl<炼兵> {
+	std::unordered_set<Card::Color> usedColors;
+	using CN = std::pair<Card::Color, Card::Name>;
+	std::map<CN, std::size_t> buildPairs(Player& carrier) const;
+public:
+	炼兵() : PSkillImpl<炼兵>(
+		"炼兵",
+		"每种颜色限一次，回合开始时，你可以弃置2张同色同名牌，从游戏外获得一张同色【+2】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); usedColors.clear(); }
+};
+
+class 好火 : public PSkillImpl<好火> {
+	std::unordered_set<std::size_t> usedPlayerIds;
+public:
+	好火() : PSkillImpl<好火>(
+		"好火",
+		"每名角色限一次，当其他角色打出红色牌后，若其体力值大于你，你可以交给其一张手牌。",
+		unlimited, false,
+		TriggerPlayer::others,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); usedPlayerIds.clear(); }
+};
+
+class ASkill : public Skill {
+public:
+	using Factory = std::function<std::unique_ptr<ASkill>()>;
+	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit);
+};
+
+// CRTP 基类：在 ASkill 外部定义
+template<class Derived>
+class ASkillImpl : public ASkill {
+public:
+	static std::unique_ptr<ASkill> make();
+protected:
+	using ASkill::ASkill;
+};
+
+template<class Derived>
+inline std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
+	return std::make_unique<Derived>();
+}
+
+template<class Derived>
+inline std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
+	return std::make_unique<Derived>();
+}

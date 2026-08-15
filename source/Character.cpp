@@ -8,27 +8,27 @@
 // ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"白板",     {Level::F, {}, {}, 1}},
-	{"特朗普",   {Level::D, {"粪怒"}, {}, 145}},
-	{"棍母",     {Level::F, {"隐身"}, {}, 120}},
-	{"夏搏",     {Level::F, {"顶置"}, {}, 114}},
-	{"雨姐",     {Level::D, {"带派"}, {}, 300}},
-	{"神里绫华", {Level::D, {"寒魄"}, {}, 150}},
-	{"瑜伽一",   {Level::F, {"割腕", "丑皇"}, {}, 255}},
-	{"李阳",     {Level::C, {"军国", "家暴"}, {}, 200}},
-	{"薛维旭",   {Level::D, {"健身", "做题"}, {}, 210}},
-	//{"Tung Tung Tung Tung Tung Tung Tung Tung Tung Sahur", {Level::S, {"棍击", "神木"}, {}, 100}},
-	{"雷电将军", {Level::D, {"雷剑"}, {}, 150}},
-	{"王天一",   {Level::C, {"买棋", "卖棋"}, {}, 150}},
-	{"Tralalero Tralala",    {Level::C, {"耐克"}, {}, 175}},
-	{"Bombardiro Crocodilo", {Level::A, {"轰炸"}, {}, 200}},
-	{"Bumbumbini Guzzini",   {Level::A, {"爆破"}, {}, 200}},
-	{"Alan Walker",          {Level::C, {"电音", "蒙面"}, {}, 250}},
-	{"丁真",                 {Level::C, {"锐刻"}, {}, 150}},
-	{"代增玉",               {Level::F, {"巨富", "破产"}, {}, 275}},
-	{"潘子",                 {Level::F, {"假酒"}, {}, 130}},
-	{"土语",                 {Level::D, {"窃观"}, {}, 215}},
-	{"Notch",                {Level::C, {"生存", "创造"}, {}, 150}},
-	{"新诸葛亮",              {Level::B, {"炼兵", "好火"}, {}, 77}},
+	{"特朗普",   {Level::D, {粪怒::make}, {}, 145}},
+	{"棍母",     {Level::F, {隐身::make}, {}, 110}},
+	{"夏搏",     {Level::F, {顶置::make}, {}, 114}},
+	{"雨姐",     {Level::D, {带派::make}, {}, 275}},
+	{"神里绫华", {Level::D, {寒魄::make}, {}, 140}},
+	{"瑜伽一",   {Level::F, {割腕::make, 丑皇::make}, {}, 230}},
+	{"李阳",     {Level::C, {军国::make, 家暴::make}, {}, 185}},
+	{"薛维旭",   {Level::D, {健身::make, 做题::make}, {}, 190}},
+	//{"Tung Tung Tung Tung Tung Tung Tung Tung Tung Sahur", {Level::S, {棍击::make, 神木::make}, {}, 90}},
+	{"雷电将军", {Level::D, {雷剑::make}, {}, 140}},
+	{"王天一",   {Level::C, {买棋::make, 卖棋::make}, {}, 140}},
+	{"Tralalero Tralala",    {Level::C, {耐克::make}, {}, 160}},
+	{"Bombardiro Crocodilo", {Level::A, {轰炸::make}, {}, 185}},
+	{"Bumbumbini Guzzini",   {Level::A, {爆破::make}, {}, 185}},
+	{"Alan Walker", {Level::C, {电音::make, 蒙面::make}, {}, 230}},
+	{"丁真",        {Level::C, {锐刻::make}, {}, 140}},
+	{"代增玉",      {Level::F, {巨富::make, 破产::make}, {}, 275}},
+	{"潘子",        {Level::F, {假酒::make}, {}, 120}},
+	{"土语",        {Level::D, {窃观::make}, {}, 195}},
+	{"Notch",       {Level::C, {生存::make, 创造::make}, {}, 140}},
+	{"新诸葛亮",    {Level::B, {炼兵::make, 好火::make}, {}, 77}},
 };
 
 
@@ -46,12 +46,12 @@ std::unique_ptr<Character> Character::make(const std::string& name, const std::s
 
 	auto newChara = std::make_unique<Character>(name, skin);
 	//被动技能
-	for (const auto& skillName : info.pSkillNames) {
-		newChara->addSkill(PSkill::registry.at(skillName)());
+	for (const auto& factory : info.pSkills) {
+		newChara->addSkill(factory());
 	}
 	//主动技能
-	for (const auto& skillName : info.aSkillNames) {
-		newChara->addSkill(ASkill::registry.at(skillName)());
+	for (const auto& factory : info.aSkills) {
+		newChara->addSkill(factory());
 	}
 	//初始化体力
 	newChara->hp = info.hp;

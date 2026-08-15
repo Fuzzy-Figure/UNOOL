@@ -1,7 +1,7 @@
 {
 	"candidateCount": 5,
-	"initHandCount": 1,
-	"characters": [ "李阳", "白板" ],
+	"initHandCount": 8,
+	//"characters": [ "李阳", "白板" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
 	"server": {
 		"ip": "120.226.44.187",
