@@ -22,18 +22,20 @@ UNOOL 是一款双人联机卡牌对战游戏。在标准 UNO 牌堆与出牌规
 
 | 层级 | 技术选型 |
 |---|---|
-| 语言 | C++23 |
+| 语言 | C++23（`/std:c++latest`） |
 | 图形渲染 | SFML 3.x（`sf::RenderWindow` / `sf::Texture` / `sf::Sprite` / `sf::Font` / `sf::Text`） |
-| 网络通信 | SFML Network（`sf::TcpListener` / `sf::TcpSocket` / `sf::Packet`） |
+| 网络通信 | Windows Socket（`ws2_32.lib`）+ SFML Network（`sf::TcpListener` / `sf::TcpSocket` / `sf::Packet`） |
 | 数据序列化 | SFML `sf::Packet` 自定义 `operator<<` / `operator>>` |
-| 配置管理 | `nlohmann/json`（`config.json`） |
-| 构建系统 | Visual Studio 2026 |
-| 平台 | Windows（控制台代码页强制 UTF-8） |
+| 配置管理 | `nlohmann/json`（`config.json`，单头文件 `json.hpp`） |
+| 构建系统 | Visual Studio 2026（MSVC，`.sln` / `.vcxproj`） |
+| 平台 | Windows 10/11（控制台代码页强制 UTF-8） |
 
 ### 模块划分
 
 ```
 UNOOL/
+├── UNOOL.slnx                  # Visual Studio 2026 解决方案
+├── UNOOL.vcxproj               # Visual Studio 项目文件
 ├── config.json                 # 运行时配置（窗口尺寸 / 牌尺寸 / 服务器 IP & 端口 / 候选角色数 / 初始手牌数）
 ├── README.md
 │
@@ -42,7 +44,7 @@ UNOOL/
 │   ├── ServerMain.cpp          # 服务端入口：监听 → 初始化 → 回合循环
 │   ├── GameLogic.cpp           # 核心游戏规则（回合/座次/牌堆/技能触发）
 │   ├── Player.cpp              # 玩家逻辑（出牌/摸牌/交互/回合流程）
-│   ├── Character.cpp            # 角色数据与技能装配
+│   ├── Character.cpp           # 角色数据与技能装配
 │   ├── Card.cpp                # 卡牌定义、牌堆/手牌容器、序列化
 │   ├── Skill.cpp               # 技能基类 + 全部被动/主动技能实现
 │   ├── Effect.cpp              # 卡牌效果函数（封禁/反转/+2/变色/+4）
@@ -82,7 +84,7 @@ UNOOL/
 │   ├── 柯洁/
 │   └── ……
 │
-└── userDatas.json                  # 运行时生成：用户账号数据（自动创建）
+└── users.json                  # 运行时生成：用户账号数据（自动创建）
 ```
 
 ---
@@ -157,17 +159,17 @@ UNOOL/
 
 ### 部分角色示例
 
-| 角色 | 等级 | 技能 | 简介 |
-|---|---|---|---|
-| **棍母** | F | 隐身 | 被动：当你成为 +2 / +4 的目标时，取消该牌效果并改为自己摸 1 张牌 |
-| **Tralalero Tralala** | C | 耐克 | 被动：若上一张牌为蓝色或万能牌，封禁 / +2 / +4 对你无效 |
-| **Bombardiro Crocodilo** | A | 轰炸 | 被动：一名角色打出 +2 / +4 生效时，对"该角色的下一个玩家"造成其 2% / 4% 最大体力的伤害 |
-| **Alan Walker** | C | 电音 / 蒙面 | 电音：回合开始时将所有数字手牌变为随机数字；蒙面：锁定技，你摸牌数量向下取整为原来的 70% |
-| **丁真** | C | 锐刻 | 被动：你打出 5 时，可令一名角色摸 1 张牌，或令其摸 5 张牌并令你失去此技能至本局结束 |
-| **Brr Brr Patapim** | B | 森罗 / 大脚 | 森罗：回合开始时将所有非黑色手牌变为绿色；大脚：打出万能牌时弃 1 张万能牌，并将所有非黑色手牌变为绿色 |
-| **新关羽** | B | 过江 / 大盏 | 过江：你打出 +2 时令源角色（你自己）摸 2 张；大盏：回合开始将点数最小的数字牌随机变大（若数字牌全为 9，则将一张 9 变为红色） |
+| 角色 | 等级 | HP | 技能 | 简介 |
+|---|---|---|---|---|
+| **棍母** | F | 110 | 隐身 | 锁定技：当你成为【+2】/【+4】的目标时，改为你的下家摸 1 张牌 |
+| **Tralalero Tralala** | C | 160 | 耐克 | 锁定技：若上一张牌为蓝色或万能牌，【封禁】、【+2】和【+4】对你无效 |
+| **Bombardiro Crocodilo** | A | 185 | 轰炸 | 锁定技：当你打出【+2】时，目标失去 2% 最大体力 |
+| **Alan Walker** | C | 230 | 电音 / 蒙面 | 电音：回合开始时，你可令手牌中所有数字牌变成随机数字；蒙面：锁定技，你失去体力时数值减少 30%（向下取整） |
+| **丁真** | C | 140 | 锐刻 | 当你打出【5】时，你可令一名角色摸 1 张牌；你可改为令其摸 5 张牌并失去此技能至本局结束 |
+| **Brr Brr Patapim** | B | 235 | 森罗 / 大脚 | 森罗：锁定技，游戏开始时将手中所有非黑色牌变为绿色；大脚：回合开始时，可弃置一张万能牌并发动一次【森罗】 |
+| **新关羽** | B | 210 | 过江 / 大盏 | 过江：锁定技，当你成为【+2】的目标时，来源摸 2 张牌；大盏：锁定技，回合开始时点数最小的数字牌均随机变大（至多变至 9），若全为【9】可将其中一张变为红色 |
 
-> 完整角色列表与技能描述见 `Character::infos`（`Character.cpp`）与 `Skill.h` 中各技能类的构造函数。
+> 完整角色列表与技能描述见 `Character::infos`（`Character.cpp`）与 `Skill.h` 中各技能类的构造函数。技能描述均直接取自源码，确保与运行行为一致。
 
 ---
 
@@ -179,19 +181,19 @@ UNOOL/
 启动服务器 (端口 8888)
     │
     ▼
-等待两名客户端连接 ──────────────┐
-    │                              │
-    ▼                              │
-初始化角色（config.json 指定 或 随机候选）│
-    │                              │
-    ▼                              │
-Ban 阶段（一号位禁用对方候选 → 二号位禁用）│
-    │                              │
-    ▼                              │
-Pick 阶段（一号位选角 → 二号位选角，可选皮肤）│
-    │                              │
-    ▼                              │
-进入游戏循环 ──────────────────────┘
+等待两名客户端连接
+    │
+    ▼
+初始化角色（config.json 指定 或 随机候选）
+    │
+    ▼
+Ban 阶段（一号位禁用对方候选 → 二号位禁用）
+    │
+    ▼
+Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
+    │
+    ▼
+进入游戏循环
     │
     ├── 当前玩家回合开始（phaseBegin）
     ├── 出牌阶段 1（phaseUse1）：可选择打出一张合法牌
@@ -275,9 +277,35 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）│
 ### 环境要求
 
 - **操作系统**：Windows 10/11（代码中使用 `<Windows.h>` 设置控制台 UTF-8 代码页）
-- **编译器**：支持 C++23 的 MSVC / MinGW-w64
+- **IDE / 编译器**：Visual Studio 2026（MSVC，语言标准设为 `/std:c++latest` 即 C++23）
 - **依赖库**：[SFML 3.x](https://www.sfml-dev.org/)（Graphics / Network / System / Window modules）、[nlohmann/json](https://github.com/nlohmann/json)（单头文件 `json.hpp`）
-- **构建工具**：Visual Studio 2026
+- **网络库**：Windows Socket（`ws2_32.lib`，Visual Studio 默认提供）
+
+### SFML 配置步骤（Visual Studio 2026）
+
+1. 下载 [SFML 3.x](https://www.sfml-dev.org/download.php) Windows SDK 版本并解压到本地（如 `C:/SFML-3.0`）。
+2. 在 Visual Studio 中打开 `UNOOL.sln`，右键项目 → **属性**：
+   - **VC++ 目录 → 包含目录**：添加 `C:/SFML-3.0/include`
+   - **VC++ 目录 → 库目录**：添加 `C:/SFML-3.0/lib`
+   - **链接器 → 输入 → 附加依赖项**：添加以下 lib（Debug 配置加 `-d` 后缀）：
+     ```
+     sfml-graphics.lib
+     sfml-window.lib
+     sfml-system.lib
+     sfml-network.lib
+     ws2_32.lib
+     ```
+3. 将 SFML 的 DLL 文件（位于 `C:/SFML-3.0/bin`）复制到输出目录（`x64/Debug/` 或 `x64/Release/`）。
+4. 将 `nlohmann/json` 的 `json.hpp` 放入项目包含路径（如 `header/json.hpp` 或任意 include 目录）。
+
+### 构建步骤
+
+1. 在 Visual Studio 2026 中打开 `UNOOL.sln`。
+2. 选择配置：**Debug**（开发调试）或 **Release**（发布构建）。
+3. 菜单栏 → **生成 → 生成解决方案**（或按 `Ctrl+Shift+B`）。
+4. 产物位于 `x64/Debug/UNOOL.exe` 或 `x64/Release/UNOOL.exe`。
+
+> **提示**：确保运行时 `cards/`、`characters/`、`users.json`（首次运行自动创建）、`config.json` 位于可执行文件所在目录或其父目录（`ImageManager` 以可执行文件父目录为资源根路径 `UNOOL`）。
 
 ### 配置说明（`config.json`）
 
@@ -301,13 +329,13 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）│
 | `size.window` | 客户端渲染窗口尺寸 |
 | `size.card` / `size.pointer` / `size.character` | 卡牌 / 选择指针 / 角色立绘的显示尺寸 |
 | `candidateCount` | 每名玩家的候选角色数量（Ban/Pick 阶段） |
-| `initHandCount` | 初始手牌数（「巨富」会多摸 4 张） |
+| `initHandCount` | 初始手牌数（「巨富」角色会覆盖为 12） |
 | `characters` | （可选）若指定，则双方直接使用该数组中的两个角色名，跳过随机候选与 Ban/Pick |
 
 ### 运行方式
 
-1. **启动服务端**：运行 `UNOOL.exe`（服务端模式），等待两名客户端连接。
-2. **启动客户端**：运行 `UNOOL.exe`（客户端模式），按提示输入服务器 IP 与端口（或通过 `--title` / `-t` 命令行参数指定窗口标题）。
+1. **启动服务端**：在 Visual Studio 中将 Server 项目设为启动项目（`右键 → 设为启动项目`），按 `F5` 运行；或直接在输出目录运行 `Server.exe`，等待两名客户端连接。
+2. **启动客户端**：将 Client 项目设为启动项目，按 `F5` 运行；或直接在输出目录运行 `Client.exe`，按提示输入服务器 IP 与端口（或通过 `--title` / `-t` 命令行参数指定窗口标题）。
 3. **账号操作**：客户端连接后进入账号系统，选择「注册」或「登录」。
 4. **开始游戏**：两名玩家均登录后，服务端自动进入 Ban/Pick 阶段与游戏循环。
 
