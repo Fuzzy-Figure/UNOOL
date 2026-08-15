@@ -27,7 +27,7 @@ UNOOL 是一款双人联机卡牌对战游戏。在标准 UNO 牌堆与出牌规
 | 网络通信 | SFML Network（`sf::TcpListener` / `sf::TcpSocket` / `sf::Packet`） |
 | 数据序列化 | SFML `sf::Packet` 自定义 `operator<<` / `operator>>` |
 | 配置管理 | `nlohmann/json`（`config.json`） |
-| 构建系统 | CMake |
+| 构建系统 | Visual Studio 2026 |
 | 平台 | Windows（控制台代码页强制 UTF-8） |
 
 ### 模块划分
@@ -279,24 +279,6 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）│
 - **依赖库**：[SFML 3.x](https://www.sfml-dev.org/)（Graphics / Network / System / Window modules）、[nlohmann/json](https://github.com/nlohmann/json)（单头文件 `json.hpp`）
 - **构建工具**：Visual Studio 2026
 
-### 构建步骤
-
-```powershell
-# 1. 克隆仓库
-git clone <repo-url>
-cd UNOOL
-
-# 2. 配置（CMake 会自动查找 SFML；确保 SFML_DIR 或 CMAKE_PREFIX_PATH 指向 SFML 安装目录）
-cmake -B build -S .
-
-# 3. 编译
-cmake --build build --config Release
-
-# 4. 产物位于 build/Release/UNOOL.exe（或对应目录）
-```
-
-> **提示**：确保运行时 `cards/`、`characters/`、`users.json`（首次运行自动创建）、`config.json` 位于可执行文件所在目录或其父目录（`ImageManager` 以可执行文件父目录为资源根路径 `UNOOL`）。
-
 ### 配置说明（`config.json`）
 
 ```json
@@ -319,7 +301,7 @@ cmake --build build --config Release
 | `size.window` | 客户端渲染窗口尺寸 |
 | `size.card` / `size.pointer` / `size.character` | 卡牌 / 选择指针 / 角色立绘的显示尺寸 |
 | `candidateCount` | 每名玩家的候选角色数量（Ban/Pick 阶段） |
-| `initHandCount` | 初始手牌数（「巨富」角色会覆盖为 12） |
+| `initHandCount` | 初始手牌数（「巨富」会多摸 4 张） |
 | `characters` | （可选）若指定，则双方直接使用该数组中的两个角色名，跳过随机候选与 Ban/Pick |
 
 ### 运行方式
@@ -369,4 +351,3 @@ cmake --build build --config Release
 ## 📄 License
 
 本项目为课程/个人学习项目，仅供交流与学习使用。角色名称与图片资源版权归各自原作者所有，卡牌规则灵感来源于经典 UNO 游戏。
-
