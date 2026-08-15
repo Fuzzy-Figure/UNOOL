@@ -216,7 +216,7 @@ opt_ref<Card> Player::chooseToUse() {
 }
 
 std::vector<ref<Card>> Player::chooseToDiscard(std::size_t num, bool forced,
-											   std::function<bool(const Card&)> condition) {
+											   const std::function<bool(const Card&)>& condition) {
 	std::vector<ref<Card>> discardedCards;
 	if (num > handCount()) return discardedCards;
 
@@ -238,15 +238,18 @@ std::vector<ref<Card>> Player::chooseToDiscard(std::size_t num, bool forced,
 	return discardedCards;
 }
 
-std::optional<std::size_t> Player::chooseToChange(const Card& targetCard, const std::wstring& title) {
+opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
+									  const std::function<bool(const Card&)>& condition,
+									  const std::function<void(Card&)>& operation) {
 	ServerNetwork& network = game.getNetwork();
-	network.sendPlayerChoice(id, title, {}, true, L"", std::nullopt);
-	auto index = chooseCard([](const Card&) { return true; }, true);
-	network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
+	if (forced) network.sendPlayerChoice(id, title + L"（↑确认，不可取消）", {}, true);
+	else network.sendPlayerChoice(id, title + L"（↑确认，↓取消）", {}, false);
+	std::optional<std::size_t> index = chooseCard(condition, forced);
+	network.sendPlayerChoice(id, L"", {}, false);
 	if (!index.has_value()) return std::nullopt;
-	getHand().getCardByIndex(index.value()).set(targetCard);
-	std::cout << "玩家" << id << "将手牌第" << index.value() << "张改为 [" << targetCard.toString() << "]" << std::endl;
-	return index;
+	ref<Card> cardRef = getHand().getCardByIndex(index.value());
+	operation(getHand().getCardByIndex(index.value()));
+	return cardRef;
 }
 
 opt_ref<Card> Player::chooseToGive(Player& target, bool forced,

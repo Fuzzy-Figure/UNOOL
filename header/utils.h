@@ -12,6 +12,8 @@ namespace unool {
 	//全局配置，首次调用时读取 config.json，之后返回缓存引用
 	const json& getConfig();
 
+	inline constexpr auto alwaysTrue = [](auto&&...) noexcept { return true; };
+
 	namespace string {
 		std::wstring to_utf16(const std::string& utf8);
 		std::string to_utf8(const std::wstring& wstr);

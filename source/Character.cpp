@@ -29,6 +29,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"土语",        {Level::D, {窃观::make}, {}, 195}},
 	{"Notch",       {Level::C, {生存::make, 创造::make}, {}, 140}},
 	{"新诸葛亮",    {Level::B, {炼兵::make, 好火::make}, {}, 77}},
+	{"Brr Brr Patapim", {Level::B, {森罗::make, 大脚::make}, {}, 235}},
 };
 
 

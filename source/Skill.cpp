@@ -19,22 +19,22 @@ void Skill::reset() {
 // **********************
 
 PSkill::PSkill(const std::string& name, const std::string& description,
-	const limit_t& _limit, const bool _forced,
-	const TriggerPlayer& _triggerPlayer, const TriggerTime& _triggerTime)
+			   const limit_t& _limit, const bool _forced,
+			   const TriggerPlayer& _triggerPlayer, const TriggerTime& _triggerTime)
 	:Skill(name, description, _limit),
 	forced(_forced),
 	triggerPlayer(_triggerPlayer),
 	triggerTime(_triggerTime) {}
 
 bool PSkill::matchTrigger(const TriggerTime& currentTriggerTime,
-	const Trigger& trigger) const {
+						  const Trigger& trigger) const {
 	if (disabledFlag && *disabledFlag) return false;
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
 		triggerTime == TriggerTime::game_end ||
 		triggerPlayer == TriggerPlayer::anybody ||
-		(triggerPlayer == TriggerPlayer::self && trigger.get_carrier() == trigger.get_player()) ||
-		(triggerPlayer == TriggerPlayer::others && trigger.get_carrier() != trigger.get_player())
+		(triggerPlayer == TriggerPlayer::self && trigger.getCarrier() == trigger.getPlayer()) ||
+		(triggerPlayer == TriggerPlayer::others && trigger.getCarrier() != trigger.getPlayer())
 		);
 }
 
@@ -43,7 +43,7 @@ void PSkill::launch(Trigger& trigger) {
 	if ((limit != unlimited && count >= limit) || !this->filter(trigger)) return;
 	//如果不是锁定技，询问玩家是否发动
 	if (!forced) {
-		const std::size_t choice = trigger.get_carrier().ask(
+		const std::size_t choice = trigger.getCarrier().ask(
 			L"是否发动 [" + getNameW() + L"]？",
 			{ L"发动", L"不发动" },
 			true
@@ -53,7 +53,7 @@ void PSkill::launch(Trigger& trigger) {
 	//发动技能
 	count += 1;
 	trigger.set_count(count);
-	std::cout << "<技能> " << trigger.get_carrier().characterName() << "发动了" << name << "！" << std::endl;
+	std::cout << "<技能> " << trigger.getCarrier().characterName() << "发动了" << name << "！" << std::endl;
 	this->content(trigger);
 }
 
@@ -66,10 +66,10 @@ void PSkill::reset() {
 
 
 PSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
-	opt_ref<Player> _player,
-	opt_ref<Card> _card,
-	opt_ref<Player> _source,
-	opt_ref<std::size_t> _number)
+						 opt_ref<Player> _player,
+						 opt_ref<Card> _card,
+						 opt_ref<Player> _source,
+						 opt_ref<std::size_t> _number)
 	:game(_game), carrier(_carrier), player(_player),
 	card(_card), source(_source), number(_number) {}
 
@@ -83,22 +83,22 @@ ASkill::ASkill(const std::string& _name, const std::string& _info, const limit_t
 
 // ==================== 技能：粪怒 ====================
 bool 粪怒::filter(const Trigger& trigger) const {
-	return trigger.get_player().handCount() == 1;
+	return trigger.getPlayer().handCount() == 1;
 }
 void 粪怒::content(Trigger& trigger) {
-	trigger.get_player().draw(
-		std::min(trigger.get_carrier().handCount(), 5ull)
+	trigger.getPlayer().draw(
+		std::min(trigger.getCarrier().handCount(), 5ull)
 	);
 }
 
 
 // ==================== 技能：隐身 ====================
 bool 隐身::filter(const Trigger& trigger) const {
-	return trigger.get_card().is(Card::Name::action_draw2, Card::Name::wild_draw4);
+	return trigger.getCard().is(Card::Name::action_draw2, Card::Name::wild_draw4);
 }
 void 隐身::content(Trigger& trigger) {
-	trigger.get_card().cancelEffect();
-	trigger.get_source().draw(1);
+	trigger.getCard().cancelEffect();
+	trigger.getSource().draw(1);
 }
 
 
@@ -107,13 +107,13 @@ bool 顶置::filter(const Trigger& trigger) const {
 	return true;
 }
 void 顶置::content(Trigger& trigger) {
-	GameLogic& game = trigger.get_game();
+	GameLogic& game = trigger.getGame();
 	Pile& pile = game.getPile();
 
 	if (pile.empty()) return;
 
 	const Card& bottomCard = pile.back();
-	std::size_t choice = trigger.get_carrier().ask(
+	std::size_t choice = trigger.getCarrier().ask(
 		L"牌堆底是" + Card::to_wstring(bottomCard.getColor()) + L" " + Card::to_wstring(bottomCard.getName()) + L"，是否顶置？",
 		{ L"顶置", L"不顶置" },
 		true
@@ -132,7 +132,7 @@ bool 带派::filter(const Trigger& trigger) const {
 	return true;
 }
 void 带派::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 	std::size_t choice = carrier.ask(
 		L"发动[带派]，选择一项：", {
 		L"获得一张变色",
@@ -152,39 +152,39 @@ void 带派::content(Trigger& trigger) {
 		carrier.takeDamage(25, carrier);
 		break;
 	}
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：寒魄 ====================
 bool 寒魄::filter(const Trigger& trigger) const {
-	return trigger.get_carrier().handCount() == 1;
+	return trigger.getCarrier().handCount() == 1;
 }
 void 寒魄::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	Card& card = trigger.get_card();
+	Player& carrier = trigger.getCarrier();
+	Card& card = trigger.getCard();
 	carrier.getCardByIndex(0).set(card);
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：割腕 ====================
 bool 割腕::filter(const Trigger& trigger) const {
-	return trigger.get_card().getColor() == Card::Color::red;
+	return trigger.getCard().getColor() == Card::Color::red;
 }
 void 割腕::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 	carrier.takeDamage(unool::random::randomSize_t(1, 5), carrier);
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：丑皇 ====================
 bool 丑皇::filter(const Trigger& trigger) const {
-	return trigger.get_card().isWild();
+	return trigger.getCard().isWild();
 }
 void 丑皇::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 
 	std::size_t choice = 1;
 	if (carrier.handInclude(&Card::isNotNumber)) { //有非数字牌
@@ -206,7 +206,7 @@ void 丑皇::content(Trigger& trigger) {
 		});
 		break;
 	}
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
@@ -215,8 +215,8 @@ bool 军国::filter(const Trigger& trigger) const {
 	return true;
 }
 void 军国::content(Trigger& trigger) {
-	Player& player = trigger.get_player();
-	Player& carrier = trigger.get_carrier();
+	Player& player = trigger.getPlayer();
+	Player& carrier = trigger.getCarrier();
 	if (player != carrier) //其他角色：失去 1% 最大体力，向上取整
 		player.takeDamage(unool::math::ceil(player.getMaxHp() * 0.01), carrier);
 	else //自己：失去1体力
@@ -226,18 +226,18 @@ void 军国::content(Trigger& trigger) {
 
 // ==================== 技能：家暴 ====================
 bool 家暴::filter(const Trigger& trigger) const {
-	return trigger.get_game().playersSatisfy(
+	return trigger.getGame().playersSatisfy(
 		//有玩家的血量 < 携带者
 		[&trigger](const std::vector<std::unique_ptr<Player>>& players)->bool {
 		for (const auto& player : players) {
-			if (player->getHp() < trigger.get_carrier().getHp()) return true;
+			if (player->getHp() < trigger.getCarrier().getHp()) return true;
 		}
 		return false;
 	});
 }
 void 家暴::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 	const auto& candidates = game.getPlayersIf([&carrier](const Player& p) {
 		return p.getHp() < carrier.getHp();
 	});
@@ -259,7 +259,7 @@ void 家暴::content(Trigger& trigger) {
 
 	Player& target = game.getPlayerById(targetId);
 	std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
-	target.takeDamage(damage, trigger.get_carrier());
+	target.takeDamage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName() << "发动家暴，造成" << damage << "点伤害！" << std::endl;
 
 	game.broadcastState();
@@ -271,21 +271,21 @@ bool 健身::filter(const Trigger& trigger) const {
 	return true;
 }
 void 健身::content(Trigger& trigger) {
-	trigger.get_carrier().recover(5);
-	trigger.get_game().broadcastState();
+	trigger.getCarrier().recover(5);
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：做题 ====================
 bool 做题::filter(const Trigger& trigger) const {
-	Card& card = trigger.get_card();
-	Player& carrier = trigger.get_carrier();
+	Card& card = trigger.getCard();
+	Player& carrier = trigger.getCarrier();
 	if (card.isNumber()) return carrier.handInclude(&Card::isNotNumber);
 	else return carrier.handInclude(&Card::isNumber);
 }
 void 做题::content(Trigger& trigger) {
-	Card& card = trigger.get_card();
-	Player& carrier = trigger.get_carrier();
+	Card& card = trigger.getCard();
+	Player& carrier = trigger.getCarrier();
 	if (card.isNumber()) {
 		carrier.chooseToDiscard(1, true,
 								[](const Card& c)->bool { return !c.isNumber(); });
@@ -299,11 +299,11 @@ void 做题::content(Trigger& trigger) {
 
 // ==================== 技能：棍击 ====================
 bool 棍击::filter(const Trigger& trigger) const {
-	return trigger.get_card().isWild();
+	return trigger.getCard().isWild();
 }
 void 棍击::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 	const auto& candidates = game.getPlayersExcludeId(carrier.getId());
 
 	if (candidates.empty()) return;
@@ -317,8 +317,8 @@ void 棍击::content(Trigger& trigger) {
 
 
 	Player& target = game.getPlayerById(targetId);
-	std::size_t damage = unool::math::pow(2, trigger.get_count());
-	target.takeDamage(damage, trigger.get_carrier());
+	std::size_t damage = unool::math::pow(2, trigger.getCount());
+	target.takeDamage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName()
 		<< "发动棍击，造成" << damage << "点伤害！" << std::endl;
 
@@ -331,7 +331,7 @@ bool 神木::filter(const Trigger& trigger) const {
 	return true;
 }
 void 神木::content(Trigger& trigger) {
-	GameLogic& game = trigger.get_game();
+	GameLogic& game = trigger.getGame();
 	game.getPile().push_front(Card::make(Card::Color::black, Card::Name::wild_pal), 9);
 	game.getPile().push_front(Card::make(Card::Color::black, Card::Name::wild_draw4), 9);
 	game.getPile().shuffle();
@@ -340,11 +340,11 @@ void 神木::content(Trigger& trigger) {
 
 // ==================== 技能：雷剑 ====================
 bool 雷剑::filter(const Trigger& trigger) const {
-	return trigger.get_card().getName() == Card::Name::action_rev;
+	return trigger.getCard().getName() == Card::Name::action_rev;
 }
 void 雷剑::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	Card& card = trigger.get_card();
+	Player& carrier = trigger.getCarrier();
+	Card& card = trigger.getCard();
 	Card::Color color = card.getColor();
 
 	auto discarded = carrier.chooseToDiscard(1, false,
@@ -357,7 +357,7 @@ void 雷剑::content(Trigger& trigger) {
 		carrier.recover(value);
 		std::cout << "<技能> " << carrier.characterName()
 			<< "发动雷剑，弃置 [" << discarded.front().get() << "] 并回复" << value << "点体力！" << std::endl;
-		trigger.get_game().broadcastState();
+		trigger.getGame().broadcastState();
 	}
 }
 
@@ -367,8 +367,8 @@ bool 买棋::filter(const Trigger& trigger) const {
 	return true;
 }
 void 买棋::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	carrier.takeDamage(10 * (trigger.get_count() - 1), trigger.get_carrier());
+	Player& carrier = trigger.getCarrier();
+	carrier.takeDamage(10 * (trigger.getCount() - 1), trigger.getCarrier());
 	if (unool::random::probability(0.5)) { //万能
 		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 	}
@@ -380,10 +380,10 @@ void 买棋::content(Trigger& trigger) {
 
 // ==================== 技能：卖棋 ====================
 bool 卖棋::filter(const Trigger& trigger) const {
-	return trigger.get_carrier().handInclude(&Card::isWild);
+	return trigger.getCarrier().handInclude(&Card::isWild);
 }
 void 卖棋::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 	carrier.chooseToDiscard(1, true, [](const Card& card) {
 		return card.isWild();
 	});
@@ -393,47 +393,47 @@ void 卖棋::content(Trigger& trigger) {
 
 // ==================== 技能：耐克 ====================
 bool 耐克::filter(const Trigger& trigger) const {
-	Card& card = trigger.get_card();
+	Card& card = trigger.getCard();
 	if (!card.is(Card::Name::action_ban, Card::Name::action_draw2, Card::Name::wild_draw4))
 		return false;
-	auto lastOpt = trigger.get_game().lastCard();
+	auto lastOpt = trigger.getGame().lastCard();
 	if (!lastOpt.has_value()) return false;
 	const Card& last = lastOpt.value();
 	return last.is(Card::Color::blue) || last.isWild();
 }
 void 耐克::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	trigger.get_card().cancelEffect();
+	Player& carrier = trigger.getCarrier();
+	trigger.getCard().cancelEffect();
 	std::cout << carrier.characterName() << "触发技能，使此牌无效" << std::endl;
 }
 
 
 // ==================== 技能：轰炸 ====================
 bool 轰炸::filter(const Trigger& trigger) const {
-	return trigger.get_card().is(Card::Name::action_draw2, Card::Name::wild_draw4);
+	return trigger.getCard().is(Card::Name::action_draw2, Card::Name::wild_draw4);
 }
 void 轰炸::content(Trigger& trigger) {
-	Player& target = trigger.get_player().next();
-	if (trigger.get_card().is(Card::Name::action_draw2)) {
-		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.get_carrier());
+	Player& target = trigger.getPlayer().next();
+	if (trigger.getCard().is(Card::Name::action_draw2)) {
+		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.getCarrier());
 	}
 	else {
-		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.get_carrier());
+		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.getCarrier());
 	}
 }
 
 
 // ==================== 技能：爆破 ====================
 bool 爆破::filter(const Trigger& trigger) const {
-	return trigger.get_source() == trigger.get_carrier();
+	return trigger.getSource() == trigger.getCarrier();
 }
 void 爆破::content(Trigger& trigger) {
-	Player& player = trigger.get_player();
+	Player& player = trigger.getPlayer();
 	Hand& hand = player.getHand();
 	auto card = hand.takeCardByIndex(unool::random::randomSize_t(0, hand.count() - 1));
-	player.takeDamage(card->value(), trigger.get_carrier());
+	player.takeDamage(card->value(), trigger.getCarrier());
 	std::cout << "爆破获取了 [" << *card << "]，造成了" << card->value() << "点伤害！" << std::endl;
-	trigger.get_carrier().gainCard(std::move(card));
+	trigger.getCarrier().gainCard(std::move(card));
 }
 
 
@@ -442,15 +442,15 @@ bool 电音::filter(const Trigger& trigger) const {
 	return true;
 }
 void 电音::content(Trigger& trigger) {
-	Hand& hand = trigger.get_carrier().getHand();
+	Hand& hand = trigger.getCarrier().getHand();
 	hand.forEachIf(&Card::isNumber, [](Card& card) {
-		static const std::vector numbers = {
+		static const std::array<Card::Name, 10> numbers = {
 			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2, Card::Name::number_3, Card::Name::number_4,
 			Card::Name::number_5, Card::Name::number_6, Card::Name::number_7, Card::Name::number_8, Card::Name::number_9
 		};
 		card.setName(numbers[unool::random::randomSize_t(0, 9)]);
 	});
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
@@ -459,18 +459,18 @@ bool 蒙面::filter(const Trigger& trigger) const {
 	return true;
 }
 void 蒙面::content(Trigger& trigger) {
-	trigger.get_number() = unool::math::ceil(trigger.get_number() * 0.7);
+	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.7);
 }
 
 
 // ==================== 技能：锐刻 ====================
 bool 锐刻::filter(const Trigger& trigger) const {
 	if (disabled) return false;
-	return trigger.get_card().getName() == Card::Name::number_5;
+	return trigger.getCard().getName() == Card::Name::number_5;
 }
 void 锐刻::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 
 	std::size_t choice = carrier.ask(L"发动[锐刻]，选择一项：", {
 		L"令一名角色摸1张牌",
@@ -506,15 +506,15 @@ bool 巨富::filter(const Trigger& trigger) const {
 	return true;
 }
 void 巨富::content(Trigger& trigger) {
-	trigger.get_carrier().draw(4); //初始8张 + 4张 = 12张
-	trigger.get_game().broadcastState();
+	trigger.getCarrier().draw(4); //初始8张 + 4张 = 12张
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：破产 ====================
 bool 破产::filter(const Trigger& trigger) const {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 	std::size_t myCount = carrier.handCount();
 	if (myCount == 0) return false;
 	for (const auto& p : game.getPlayers()) {
@@ -523,22 +523,22 @@ bool 破产::filter(const Trigger& trigger) const {
 	return true;
 }
 void 破产::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 	Hand& hand = carrier.getHand();
 	std::size_t idx = unool::random::randomSize_t(0, hand.count() - 1);
 	carrier.discardByIndex(idx);
 	std::cout << "<技能> " << carrier.characterName() << "触发破产，随机弃置一张牌" << std::endl;
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：假酒 ====================
 bool 假酒::filter(const Trigger& trigger) const {
-	return trigger.get_card().isNotNumber();
+	return trigger.getCard().isNotNumber();
 }
 void 假酒::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	Card::Color playedColor = trigger.get_card().getColor();
+	Player& carrier = trigger.getCarrier();
+	Card::Color playedColor = trigger.getCard().getColor();
 
 	static const std::vector nonNumberNames = {
 		Card::Name::action_ban, Card::Name::action_rev, Card::Name::action_draw2,
@@ -570,20 +570,20 @@ void 假酒::content(Trigger& trigger) {
 	std::size_t idx = unool::random::randomSize_t(0, candidates.size() - 1);
 	carrier.gainCard(std::move(candidates[idx]));
 	std::cout << "<技能> " << carrier.characterName() << "发动假酒，获得了一张不同颜色的非数字牌" << std::endl;
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
 // ==================== 技能：窃观 ====================
 bool 窃观::filter(const Trigger& trigger) const {
-	if (!trigger.has_number()) return false;
-	if (trigger.get_number() != 1) return false;
-	return trigger.has_card();
+	if (!trigger.hasNumber()) return false;
+	if (trigger.getNumber() != 1) return false;
+	return trigger.hasCard();
 }
 void 窃观::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	Player& drawer = trigger.get_player();
-	const Card& card = trigger.get_card();
+	Player& carrier = trigger.getCarrier();
+	Player& drawer = trigger.getPlayer();
+	const Card& card = trigger.getCard();
 	std::wstring title = L"【窃观】" + drawer.characterNameW()
 		+ L"获得了 " + Card::to_wstring(card.getColor())
 		+ L" " + Card::to_wstring(card.getName()) + L"（需确认）";
@@ -593,13 +593,13 @@ void 窃观::content(Trigger& trigger) {
 
 // ==================== 技能：生存 ====================
 bool 生存::filter(const Trigger& trigger) const {
-	return trigger.get_carrier().handCount() > 0;
+	return trigger.getCarrier().handCount() > 0;
 }
 void 生存::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 
-	std::size_t x = trigger.get_count();
+	std::size_t x = trigger.getCount();
 	if (x > 9) x = 9;
 	Card::Name targetName = static_cast<Card::Name>(static_cast<int>(Card::Name::number_0) + x);
 
@@ -609,11 +609,15 @@ void 生存::content(Trigger& trigger) {
 	Card::Color targetColor = colors[unool::random::randomSize_t(0, colors.size() - 1)];
 
 	auto target = Card::make(targetColor, targetName);
-	std::wstring title = L"请选择一张牌变为【" + std::to_wstring(x) + L"】，↑确认（不能取消）";
-	auto opt = carrier.chooseToChange(*target, title);
+	auto opt = carrier.chooseToOperate(
+		L"请选择一张牌变为【" + std::to_wstring(x) + L"】", 
+		true, unool::alwaysTrue,
+		[&target](Card& c) {
+		c.set(*target);
+	});
 	if (opt.has_value()) {
 		std::cout << "<技能> " << carrier.characterName() << "发动生存，将一张手牌改为【"
-			<< Card::to_string(targetColor) << Card::to_string(targetName) << "】" << std::endl;
+			<< target->toString() << "】" << std::endl;
 	}
 	game.broadcastState();
 }
@@ -621,14 +625,14 @@ void 生存::content(Trigger& trigger) {
 
 // ==================== 技能：创造 ====================
 bool 创造::filter(const Trigger& trigger) const {
-	const Card& c = trigger.get_card();
+	const Card& c = trigger.getCard();
 	if (c.getName() != Card::Name::number_9) return false;
 	if (c.is(Card::Color::black)) return false;
 	return usedColors.find(c.getColor()) == usedColors.end();
 }
 void 创造::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	const Card& nine = trigger.get_card();
+	Player& carrier = trigger.getCarrier();
+	const Card& nine = trigger.getCard();
 	Card::Color targetColor = nine.getColor();
 	std::vector<std::wstring> opts = {
 		L"1", L"2", L"3", L"4", L"5",
@@ -650,7 +654,7 @@ void 创造::content(Trigger& trigger) {
 	usedColors.insert(targetColor);
 	std::cout << "<技能> " << carrier.characterName() << "发动创造，获得一张【"
 		<< Card::to_string(targetColor) << Card::to_string(name) << "】" << std::endl;
-	trigger.get_game().broadcastState();
+	trigger.getGame().broadcastState();
 }
 
 
@@ -664,9 +668,8 @@ auto 炼兵::buildPairs(Player& carrier) const -> std::map<CN, std::size_t> {
 	}
 	return cnt;
 }
-
 bool 炼兵::filter(const Trigger& trigger) const {
-	Player& carrier = trigger.get_carrier();
+	Player& carrier = trigger.getCarrier();
 	if (carrier.handCount() < 2) return false;
 	auto cnt = buildPairs(carrier);
 	for (const auto& kv : cnt) {
@@ -677,8 +680,8 @@ bool 炼兵::filter(const Trigger& trigger) const {
 	return false;
 }
 void 炼兵::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	GameLogic& game = trigger.get_game();
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
 
 	auto cnt = buildPairs(carrier);
 	std::vector<CN> validPairs;
@@ -720,11 +723,11 @@ void 炼兵::content(Trigger& trigger) {
 
 // ==================== 技能：好火 ====================
 bool 好火::filter(const Trigger& trigger) const {
-	if (!trigger.has_card() || !trigger.has_player()) return false;
-	const Card& c = trigger.get_card();
+	if (!trigger.hasCard() || !trigger.hasPlayer()) return false;
+	const Card& c = trigger.getCard();
 	if (!c.is(Card::Color::red)) return false;
-	Player& player = trigger.get_player();
-	Player& carrier = trigger.get_carrier();
+	Player& player = trigger.getPlayer();
+	Player& carrier = trigger.getCarrier();
 	if (player == carrier) return false;
 	if (player.getHp() <= carrier.getHp()) return false;
 	if (usedPlayerIds.find(player.getId()) != usedPlayerIds.end()) return false;
@@ -732,8 +735,8 @@ bool 好火::filter(const Trigger& trigger) const {
 	return true;
 }
 void 好火::content(Trigger& trigger) {
-	Player& carrier = trigger.get_carrier();
-	Player& target = trigger.get_player();
+	Player& carrier = trigger.getCarrier();
+	Player& target = trigger.getPlayer();
 
 	auto result = carrier.chooseToGive(target, false);
 	if (!result.has_value()) return;
@@ -742,3 +745,95 @@ void 好火::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
 		<< target.characterName() << "一张" << result.value().get().toString() << std::endl;
 }
+
+
+//================== 森罗 =================
+bool 森罗::filter(const Trigger& trigger) const {
+	return true;
+}
+void 森罗::content(Trigger& trigger) {
+	trigger.getCarrier().getHand().forEachIf(
+		[](const Card& c) {
+		return c.getColor() != Card::Color::black;
+	}, [](Card& c) {
+		c.setColor(Card::Color::green);
+	});
+}
+
+//================大脚=====================
+bool 大脚::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handInclude([](const Card& c) {
+		return c.isWild();
+	});
+}
+void 大脚::content(Trigger& trigger) {
+	trigger.getCarrier().chooseToDiscard(1, true, [](const Card& c) {
+		return c.isWild();
+	});
+	trigger.getCarrier().getHand().forEachIf(
+		[](const Card& c) {
+		return c.getColor() != Card::Color::black;
+	}, [](Card& c) {
+		c.setColor(Card::Color::green);
+	});
+	trigger.getGame().broadcastState();
+}
+
+//================过江==============
+bool 过江::filter(const Trigger& trigger) const {
+	return trigger.getCard().is(Card::Name::action_draw2);
+}
+void 过江::content(Trigger& trigger) {
+	trigger.getSource().draw(2);
+}
+
+//================大盏==============
+void 大盏::randomEnlarge(Card& c) {
+	static const std::array<Card::Name, 10> numbers = {
+		Card::Name::number_0, Card::Name::number_1, Card::Name::number_2, Card::Name::number_3, Card::Name::number_4,
+		Card::Name::number_5, Card::Name::number_6, Card::Name::number_7, Card::Name::number_8, Card::Name::number_9
+	};
+	//非数字牌，不能变大
+	if (c.isNotNumber()) return;
+	//9不能变大
+	if (c.is(Card::Name::number_9)) return;
+	//变大
+	std::size_t currentNumber = c.value();
+	c.setName(numbers[unool::random::randomSize_t(currentNumber + 1, 9)]);
+}
+bool 大盏::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handInclude([](const Card& c) {
+		return c.isNumber();
+	});
+}
+void 大盏::content(Trigger& trigger) {
+	// 找到最小数字
+	int min = 100;
+	trigger.getCarrier().getHand().forEach([&min](const Card& c) {
+		if (c.isNotNumber()) return;
+		if (c.value() < min) {
+			min = c.value();
+		}
+	});
+
+
+	if (min != 9) { //min不是9，存在数字牌点数不是9
+		// 让点数最小的数字牌随机变大
+		trigger.getCarrier().getHand().forEach([&min](Card& c) {
+			if (c.isNumber() && c.value() == min) {
+				randomEnlarge(c);
+			}
+		});
+	}
+	else { //min == 9，说明数字牌全是9，将一张9变为红色
+		trigger.getCarrier().chooseToOperate(
+			L"选择一张[9]变成红色", false,
+			[](const Card& c) {
+			return c.value() == 9;
+		}, [](Card& c) {
+			c.setColor(Card::Color::red);
+		});
+	}
+}
+
+//==============
