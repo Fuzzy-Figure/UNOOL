@@ -2,7 +2,7 @@
   "candidateCount": 5,
   //"characters": [ "Notch", "白板" ],
   "fonts": "C:/Windows/Fonts/msyh.ttc",
-  "initHandCount": 1,
+  "initHandCount": 8,
   "server": {
     "ip": "120.226.44.187",
     "port": 14341

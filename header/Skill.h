@@ -388,7 +388,7 @@ class 电音 : public PSkillImpl<电音> {
 public:
 	电音() : PSkillImpl<电音>(
 		"电音",
-		"回合开始时，你可以令手牌中所有数字牌变成随机数字。",
+		"回合开始时，你可以令手牌中所有数字牌变成随机数字并回复1点体力。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
@@ -575,7 +575,7 @@ public:
 	大盏() : PSkillImpl<大盏>(
 		"大盏",
 		"锁定技，回合开始时，若你有数字牌，其中点数最小的牌均随机变大（至多变至9）。"
-		"若全为【9】，可将其中一张变为红色。",
+		"若全为【9】，可将其中一张变为红色并回复1点体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
@@ -595,6 +595,7 @@ public:
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
+	void reset() override;
 };
 class 猥琐 : public PSkillImpl<猥琐> {
 public:

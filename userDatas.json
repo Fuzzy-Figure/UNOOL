@@ -12,15 +12,15 @@
     "wins": 5
   },
   "Lazer": {
-    "losses": 8,
+    "losses": 13,
     "password": "114",
-    "points": 47,
-    "wins": 5
+    "points": 105,
+    "wins": 9
   },
   "fuzzy figure": {
-    "losses": 5,
+    "losses": 9,
     "password": "123",
-    "points": 92,
-    "wins": 8
+    "points": 160,
+    "wins": 13
   }
 }

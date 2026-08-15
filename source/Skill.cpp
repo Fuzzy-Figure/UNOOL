@@ -453,6 +453,7 @@ void 电音::content(Trigger& trigger) {
 	hand.forEachIf(&Card::isNumber, [](Card& card) {
 		card.setName(Card::numberCardsFrom0[unool::random::randomSize_t(0, 9)]);
 	});
+	trigger.getCarrier().recover(1);
 	trigger.getGame().broadcastState();
 }
 
@@ -649,7 +650,7 @@ void 创造::content(Trigger& trigger) {
 		name = Card::numberCardsFrom1[idx];
 	}
 	else if (11 <= idx && idx <= 13) { //功能牌
-		name = Card::actionCards[idx - 10];
+		name = Card::actionCards[idx - 11];
 	}
 	else throw std::runtime_error("意外的 idx 的值");
 
@@ -836,6 +837,7 @@ void 大盏::content(Trigger& trigger) {
 		}, [](Card& c) {
 			c.setColor(Card::Color::red);
 		});
+		trigger.getCarrier().recover(1);
 	}
 }
 
@@ -849,6 +851,10 @@ void 举报::content(Trigger& trigger) {
 	Player& player = trigger.getPlayer();
 	Player& carrier = trigger.getCarrier();
 	player.takeDamage(unool::math::ceil(0.1 * player.getHp()), carrier);
+}
+void 举报::reset() {
+	PSkill::reset();
+	setForced(false);
 }
 
 
