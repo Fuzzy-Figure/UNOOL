@@ -570,7 +570,7 @@ public:
 	void content(Trigger& trigger) override;
 };
 class 大盏 : public PSkillImpl<大盏> {
-	inline static void randomEnlarge(Card& c);
+	static void randomEnlarge(Card& c);
 public:
 	大盏() : PSkillImpl<大盏>(
 		"大盏",
@@ -635,6 +635,21 @@ public:
 	void content(Trigger& trigger) override;
 };
 
+class 淘汰 : public PSkillImpl<淘汰> {
+public:
+	淘汰() : PSkillImpl<淘汰>(
+		"淘汰",
+		"每局游戏共限五次，"
+		"你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；"
+		"你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
+		5, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
 class pskill : public PSkillImpl<pskill> {
 public:
 	pskill() : PSkillImpl<pskill>(
@@ -647,9 +662,6 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
 };
-
-
-
 
 
 

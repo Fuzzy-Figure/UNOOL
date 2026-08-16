@@ -101,12 +101,13 @@ public:
 	Player& prev() const;
 
 	// === 交互（网络 / 选择）===
-	std::vector<ref<Card>> chooseToDiscard(std::size_t num, bool forced,
+	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
+										   const std::size_t num, const bool forced,
 										   const std::function<bool(const Card&)> &
 										   = unool::alwaysTrue);
 	opt_ref<Card> chooseToOperate(const std::wstring& title, bool forced,
-						 const std::function<bool(const Card&)>& condition,
-						 const std::function<void(Card&)>& operation);
+								  const std::function<bool(const Card&)>& condition,
+								  const std::function<void(Card&)>& operation);
 	opt_ref<Card> chooseToGive(Player& target, bool forced,
 							   const std::function<bool(const Card&)>& condition
 							   = unool::alwaysTrue);

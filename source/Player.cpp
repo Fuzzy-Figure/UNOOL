@@ -221,7 +221,8 @@ opt_ref<Card> Player::chooseToUse() {
 	}
 }
 
-std::vector<ref<Card>> Player::chooseToDiscard(std::size_t num, bool forced,
+std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
+											   const std::size_t num, const bool forced,
 											   const std::function<bool(const Card&)>& condition) {
 	std::vector<ref<Card>> discardedCards;
 	if (num > handCount()) return discardedCards;
