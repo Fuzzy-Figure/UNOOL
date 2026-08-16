@@ -62,6 +62,7 @@ public:
 	void forEachPlayer(const std::function<void(Player&)>& operation);
 	void forEachPlayerIf(const std::function<bool(const Player&)>& condition,
 						 const std::function<void(Player&)>& operation);
+	Card& judge();
 
 	void print() const;
 

@@ -84,6 +84,14 @@ void GameLogic::forEachPlayerIf(const std::function<bool(const Player&)>& condit
 	}
 }
 
+Card& GameLogic::judge() {
+	auto card = pile->takeCardByIndex(0);
+	Card& ref = *card;
+	discardPile->push_front(std::move(card));
+	broadcastState();
+	return ref;
+}
+
 void GameLogic::print() const {
 	return;
 	for (const auto& pl : players) {

@@ -650,10 +650,41 @@ public:
 	void content(Trigger& trigger) override;
 };
 
-class pskill : public PSkillImpl<pskill> {
+class 光合 : public PSkillImpl<光合> {
 public:
-	pskill() : PSkillImpl<pskill>(
-		"pskill",
+	光合() : PSkillImpl<光合>(
+		"光合",
+		"当你成为封禁类功能牌的目标时，你可判定："
+		"若结果为数字牌，来源摸一张牌；为功能牌，解除此牌封禁状态。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::card_target_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+class 射门 : public PSkillImpl<射门> {
+public:
+	射门() : PSkillImpl<射门>(
+		"射门",
+		"你打出数字牌后，可令一名角色进行判定，若结果为蓝色，其摸1张牌；"
+		"若判定角色为你，改为弃置一张牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+
+
+
+
+class test : public PSkillImpl<test> {
+public:
+	test() : PSkillImpl<test>(
+		"test",
 		"",
 		unlimited, false,
 		TriggerPlayer::self,
@@ -684,12 +715,14 @@ protected:
 	using ASkill::ASkill;
 };
 
+
+
 template<class Derived>
-inline std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
+std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
 	return std::make_unique<Derived>();
 }
 
 template<class Derived>
-inline std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
+std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
 	return std::make_unique<Derived>();
 }

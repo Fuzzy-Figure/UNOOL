@@ -7,7 +7,7 @@
 
 // ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
-	{"白板",     {Level::F, {}, {}, 1}},
+	{"白板",     {Level::F, {test::make}, {}, 1}},
 	{"特朗普",   {Level::D, {粪怒::make}, {}, 145}},
 	{"棍母",     {Level::F, {隐身::make}, {}, 100}},
 	{"夏搏",     {Level::F, {顶置::make}, {}, 114}},
@@ -30,11 +30,13 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"Notch",       {Level::C, {生存::make, 创造::make}, {}, 140}},
 	{"新诸葛亮",    {Level::B, {炼兵::make, 好火::make}, {}, 77}},
 	{"Brr Brr Patapim", {Level::B, {森罗::make, 大脚::make}, {}, 185}},
-	{"新关羽",          {Level::B, {过江::make, 大盏::make}, {}, 210}},
-	{"卞相壹",          {Level::B, {举报::make, 猥琐::make}, {}, 160}},
-	{"柯洁",            {Level::B, {棋王::make, 金铲::make}, {}, 160}},
-	{"老友",            {Level::A, {淘汰::make}, {}, 160}},
-	//{"屎軖",            {Level::A, {招待::make}, {}, 160}},
+	{"新关羽", {Level::B, {过江::make, 大盏::make}, {}, 210}},
+	{"卞相壹", {Level::B, {举报::make, 猥琐::make}, {}, 160}},
+	{"柯洁",   {Level::B, {棋王::make, 金铲::make}, {}, 160}},
+	{"老友",   {Level::A, {淘汰::make}, {}, 160}},
+	//{"屎軖",   {Level::A, {招待::make}, {}, 160}},
+	{"植物人", {Level::F, {光合::make}, {}, 200}},
+	{"梅西",   {Level::B, {射门::make}, {}, 220}},
 };
 
 

@@ -253,17 +253,13 @@ void 家暴::content(Trigger& trigger) {
 		return;
 	}
 
-	std::size_t targetId;
-
 	std::vector<std::wstring> options;
 	for (auto& p : candidates) {
 		options.push_back(p.get().characterNameW());
 	}
 	std::size_t choice = carrier.ask(L"选择家暴目标：", options, true);
-	targetId = candidates[choice - 1].get().getId();
 
-
-	Player& target = game.getPlayerById(targetId);
+	Player& target =  candidates[choice - 1].get();
 	std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
 	target.takeDamage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName() << "发动家暴，造成" << damage << "点伤害！" << std::endl;
@@ -921,4 +917,68 @@ void 淘汰::content(Trigger& trigger) {
 			Card::actionCards[unool::random::randomSize_t(0, 2)]
 		));
 	}
+}
+
+
+
+bool 光合::filter(const Trigger& trigger) const {
+	return trigger.getCard().is(Card::Name::action_ban, Card::Name::action_draw2);
+}
+void 光合::content(Trigger& trigger) {
+	Card& card=trigger.getGame().judge();
+	if (card.isNumber()) {
+		trigger.getSource().draw(1);
+	}
+	else if (card.isAction()) {
+		trigger.getCard().cancelEffect();
+	}
+}
+
+
+
+bool 射门::filter(const Trigger& trigger) const {
+	return trigger.getCard().isNumber();
+}
+
+void 射门::content(Trigger& trigger) {
+	GameLogic& game = trigger.getGame();
+	//判定
+	if (game.judge().getColor() != Card::Color::blue) return;
+
+	//选角色
+	Player& carrier = trigger.getCarrier();
+	const auto& candidates = game.getPlayers();
+
+	if (candidates.empty()) {
+		game.broadcastState();
+		return;
+	}
+
+	std::vector<std::wstring> options;
+	for (auto& p : candidates) {
+		options.push_back(p.get().characterNameW());
+	}
+	std::size_t choice = carrier.ask(L"选择射门目标：", options, true);
+
+	Player& target = candidates[choice - 1].get();
+
+	//执行效果
+	if (target == carrier) {
+		target.chooseToDiscard(L"[射门] 弃置一张牌", 1, true);
+	}
+	else {
+		target.draw(1);
+	}
+}
+
+
+
+
+
+
+bool test::filter(const Trigger& trigger) const {
+	return true;
+}
+void test::content(Trigger& trigger) {
+	std::cout << "判定：" << trigger.getGame().judge() << std::endl;
 }
