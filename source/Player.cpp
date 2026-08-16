@@ -285,6 +285,25 @@ opt_ref<Card> Player::chooseToGive(Player& target, bool forced,
 	return card;
 }
 
+opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,
+									 const std::function<bool(const Player&)>& condition) {
+	//选角色
+	const auto& candidates = game.getPlayersIf(condition);
+
+	if (candidates.empty()) {
+		game.broadcastState();
+		return std::nullopt;
+	}
+
+	std::vector<std::wstring> options;
+	for (auto& p : candidates) {
+		options.push_back(p.get().characterNameW());
+	}
+	std::size_t choice = ask(title, options, forced);
+
+	return candidates[choice - 1];
+}
+
 
 std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {

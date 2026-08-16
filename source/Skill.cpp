@@ -259,7 +259,7 @@ void 家暴::content(Trigger& trigger) {
 	}
 	std::size_t choice = carrier.ask(L"选择家暴目标：", options, true);
 
-	Player& target =  candidates[choice - 1].get();
+	Player& target = candidates[choice - 1].get();
 	std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
 	target.takeDamage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName() << "发动家暴，造成" << damage << "点伤害！" << std::endl;
@@ -586,7 +586,7 @@ void 窃观::content(Trigger& trigger) {
 	std::wstring title = L"【窃观】" + drawer.characterNameW()
 		+ L"获得了 " + Card::to_wstring(card.getColor())
 		+ L" " + Card::to_wstring(card.getName()) + L"（需确认）";
-	carrier.ask(title, { L"确认" }, true);
+	carrier.hint(title);
 }
 
 
@@ -925,7 +925,7 @@ bool 光合::filter(const Trigger& trigger) const {
 	return trigger.getCard().is(Card::Name::action_ban, Card::Name::action_draw2);
 }
 void 光合::content(Trigger& trigger) {
-	Card& card=trigger.getGame().judge();
+	Card& card = trigger.getGame().judge();
 	if (card.isNumber()) {
 		trigger.getSource().draw(1);
 	}
@@ -947,27 +947,15 @@ void 射门::content(Trigger& trigger) {
 
 	//选角色
 	Player& carrier = trigger.getCarrier();
-	const auto& candidates = game.getPlayers();
-
-	if (candidates.empty()) {
-		game.broadcastState();
-		return;
-	}
-
-	std::vector<std::wstring> options;
-	for (auto& p : candidates) {
-		options.push_back(p.get().characterNameW());
-	}
-	std::size_t choice = carrier.ask(L"选择射门目标：", options, true);
-
-	Player& target = candidates[choice - 1].get();
+	const auto& target = carrier.choosePlayer(L"选择射门目标：", true);
+	if (!target.has_value()) return;
 
 	//执行效果
-	if (target == carrier) {
-		target.chooseToDiscard(L"[射门] 弃置一张牌", 1, true);
+	if (target.value().get() == carrier) {
+		target.value().get().chooseToDiscard(L"[射门] 弃置一张牌", 1, true);
 	}
 	else {
-		target.draw(1);
+		target.value().get().draw(1);
 	}
 }
 
@@ -981,4 +969,12 @@ bool test::filter(const Trigger& trigger) const {
 }
 void test::content(Trigger& trigger) {
 	std::cout << "判定：" << trigger.getGame().judge() << std::endl;
+}
+
+bool 招待::filter(const Trigger& trigger) const {
+	return false;
+}
+
+void 招待::content(Trigger& trigger) {
+	
 }

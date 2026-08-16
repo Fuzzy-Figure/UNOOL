@@ -678,8 +678,20 @@ public:
 	void content(Trigger& trigger) override;
 };
 
-
-
+class 招待 : public PSkillImpl<招待> {
+	bool numberCardUsed = false;
+	bool notNumberCardUsed = false;
+public:
+	招待() : PSkillImpl<招待>(
+		"招待",
+		"回合开始时，你可以将一张牌交给一名其他角色（数字牌/非数字牌各限一次）。",
+		2, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
 
 class test : public PSkillImpl<test> {
 public:

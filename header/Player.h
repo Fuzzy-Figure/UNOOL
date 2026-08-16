@@ -111,6 +111,9 @@ public:
 	opt_ref<Card> chooseToGive(Player& target, bool forced,
 							   const std::function<bool(const Card&)>& condition
 							   = unool::alwaysTrue);
+	opt_ref<Player> choosePlayer(const std::wstring& title, bool forced,
+								 const std::function<bool(const Player&)>& condition
+								 = unool::alwaysTrue);
 	std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
 					bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
 	void hint(const std::wstring& message);
