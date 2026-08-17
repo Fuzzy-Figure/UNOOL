@@ -103,13 +103,17 @@ public:
 		GameLogic& getGame() const { return game.get(); }
 		Player& getCarrier() const { return carrier.get(); }
 		Player& getPlayer() const { return player.value().get(); }
-		Card& getCard() const { return cards.value().front().get(); }
+		Card& getCard() const {
+			if (cards.value().size() != 1)
+				std::cout << "[警告] cards含有多于一张牌的情况下调用getCard" << std::endl;
+			return cards.value().front().get();
+		}
 		std::vector<ref<Card>> getCards() const { return cards.value(); }
 		Player& getSource() const { return source.value().get(); }
 		std::size_t& getNumber() const { return number.value().get(); }
 		std::size_t getCount() const { return count; }
 
-		void set_count(const std::size_t _count) { count = _count; }
+		void setCount(const std::size_t _count) { count = _count; }
 	};
 	using Factory = std::function<std::unique_ptr<PSkill>()>;
 
@@ -690,6 +694,7 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
 };
+
 
 class test : public PSkillImpl<test> {
 public:

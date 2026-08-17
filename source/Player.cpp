@@ -17,9 +17,10 @@ void Player::recover(std::size_t num) {
 
 // === 游戏逻辑 ===
 
-void Player::draw(std::size_t number) {
+void Player::draw(std::size_t number, const DrawReason reason) {
 	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌" << std::endl;
 	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
+	if (hasPSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
 
 	std::vector<ref<Card>> drawnCards;
 	drawnCards.reserve(number);
@@ -33,8 +34,9 @@ void Player::draw(std::size_t number) {
 	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
 }
 
-void Player::drawTo(const std::size_t num) {
-	if (const std::size_t _handCount = handCount(); _handCount < num) draw(num - _handCount);
+void Player::drawTo(const std::size_t num, const DrawReason reason) {
+	if (const std::size_t _handCount = handCount(); _handCount < num)
+		draw(num - _handCount, reason);
 }
 
 //返回使用牌的引用
@@ -108,33 +110,34 @@ void Player::ban(Player& source, Card& card) {
 // === 回合流程 ===
 
 void Player::phaseBegin() {
-	game.launchPSkills(PSkill::TriggerTime::phase_begin, *this, std::nullopt, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::phase_begin, *this);
 }
 
 //返回是否出牌
 bool Player::phaseUse1() {
-	game.launchPSkills(PSkill::TriggerTime::phase_use1_begin, *this, std::nullopt, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::phase_use1_begin, *this);
 	auto card = chooseToUse();
 	if (card.has_value())
-		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this, card.value().get(), std::nullopt);
+		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this, card.value().get());
 	else
-		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this, std::nullopt, std::nullopt);
+		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this);
 	return card.has_value();
 }
 
 void Player::phaseDraw() {
-	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this, std::nullopt, std::nullopt);
+	int drawCount = 1;
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this);
 	draw(hasPSkill("巨富") ? 2 : 1);
-	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this, std::nullopt, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this);
 }
 
 void Player::phaseUse2() {
-	game.launchPSkills(PSkill::TriggerTime::phase_use2_begin, *this, std::nullopt, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::phase_use2_begin, *this);
 	chooseToUse();
 }
 
 void Player::phaseEnd() {
-	game.launchPSkills(PSkill::TriggerTime::phase_end, *this, std::nullopt, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::phase_end, *this);
 }
 
 bool Player::turn() {
@@ -248,6 +251,28 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 		game.broadcastState();
 	}
 	return discardedCards;
+}
+
+void Player::chooseToRecast(const std::wstring& title,
+							const std::size_t num, const bool forced,
+							const std::function<bool(const Card&)>& condition) {
+	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
+	chooseToDiscard(title, num, forced, condition);
+	draw(num);
+	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
+}
+
+void Player::decree(const std::wstring& title,
+					const std::size_t num, const bool forced,
+					const std::function<bool(const Card&)>& condition) {
+	game.launchPSkills(PSkill::TriggerTime::decree_begin, *this);
+	draw(num);
+	chooseToDiscard(title, num, forced, condition);
+	game.launchPSkills(PSkill::TriggerTime::decree_end, *this);
+}
+
+void Player::inherit(std::unique_ptr<Card>& card) {
+	
 }
 
 opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,

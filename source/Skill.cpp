@@ -53,7 +53,7 @@ void PSkill::launch(Trigger& trigger) {
 	}
 	//发动技能
 	count += 1;
-	trigger.set_count(count);
+	trigger.setCount(count);
 	std::cout << "<技能> " << trigger.getCarrier().characterName() << "发动了" << name << "！" << std::endl;
 	this->content(trigger);
 }
@@ -559,7 +559,7 @@ void 假酒::content(Trigger& trigger) {
 
 // ==================== 技能：窃观 ====================
 bool 窃观::filter(const Trigger& trigger) const {
-	return trigger.getNumber() == 1;
+	return trigger.getCards().size() == 1;
 }
 void 窃观::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
