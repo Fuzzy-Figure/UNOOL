@@ -154,6 +154,9 @@ int Card::value() const {
 std::string Card::toString() const {
 	return Card::to_string(color) + Card::to_string(name);
 }
+std::wstring Card::toWString() const {
+	return Card::to_wstring(color) + Card::to_wstring(name);
+}
 std::string Card::getImagePath() const {
 	if (auto it = imagePaths.find(std::tuple(color, name)); it != imagePaths.end())
 		return it->second;

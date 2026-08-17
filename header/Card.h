@@ -82,6 +82,7 @@ public:
 	bool isWild() const;
 	int value() const;
 	std::string toString() const;
+	std::wstring toWString() const;
 	std::string getImagePath() const;
 	bool operator<(const Card& other) const;
 	bool operator==(const Card& other) const;

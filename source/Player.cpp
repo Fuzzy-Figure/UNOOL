@@ -20,16 +20,17 @@ void Player::recover(std::size_t num) {
 void Player::draw(std::size_t number) {
 	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌" << std::endl;
 	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
+
+	std::vector<ref<Card>> drawnCards;
+	drawnCards.reserve(number);
+
 	for (std::size_t i = 0; i < number; ++i) {
-		hand->push_back(game.getPile().take_front(game.getDiscardPile()));
+		auto cardPtr = game.getPile().take_front(game.getDiscardPile());
+		hand->push_back(std::move(cardPtr));
+		drawnCards.emplace_back(hand->back());
 	}
-	if (number == 1 && !hand->empty()) {
-		Card& lastCard = hand->getCardByIndex(hand->count() - 1);
-		game.launchPSkills(PSkill::TriggerTime::draw_end, *this, lastCard, std::nullopt, number);
-	}
-	else {
-		game.launchPSkills(PSkill::TriggerTime::draw_end, *this, std::nullopt, std::nullopt, number);
-	}
+
+	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
 }
 
 void Player::drawTo(const std::size_t num) {
@@ -70,7 +71,11 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 }
 
 void Player::discardByIndex(const std::size_t cardIndex) {
-	game.putCardToDiscardPile(hand->takeCardByIndex(cardIndex));
+	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
+	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
+	ref<Card> cardRef = *card;
+	game.putCardToDiscardPile(std::move(card));
+	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
 }
 
 std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
@@ -303,6 +308,12 @@ opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,
 
 	return candidates[choice - 1];
 }
+opt_ref<Player> Player::chooseOtherPlayer(const std::wstring& title, bool forced,
+										  const std::function<bool(const Player&)>& condition) {
+	return choosePlayer(title, forced, [this, &condition](const Player& p) {
+		return p != *this && condition(p);
+	});
+}
 
 
 std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
@@ -491,4 +502,20 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 
 void Player::hint(const std::wstring& message) {
 	ask(message, { L"确认" }, true);
+}
+
+Card& Player::judge() {
+	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this);
+	auto card = game.getPile().takeCardByIndex(0);
+	Card& cardRef = *card;
+	game.getDiscardPile().push_front(std::move(card));
+	game.broadcastState();
+	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this, cardRef);
+	return cardRef;
+}
+
+void Player::showCard(const Card& card) {
+	game.forEachOtherPlayer(*this, [this, &card](Player& p) {
+		p.hint(unool::string::to_utf16(characterName()) + L"展示了" + card.toWString());
+	});
 }

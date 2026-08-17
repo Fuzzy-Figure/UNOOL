@@ -75,14 +75,15 @@ public:
 		discard_begin, discard_end,
 		recast_begin, recast_end,
 		ban_begin, ban_end,
-		resolution_begin, resolution_end
+		judge_begin, judge_end,
+		decree_begin, decree_end
 	};
 	struct Trigger {
 	private:
 		ref<GameLogic> game;
 		ref<Player> carrier;
 		opt_ref<Player> player = std::nullopt;
-		opt_ref<Card> card = std::nullopt;
+		std::optional<std::vector<ref<Card>>> cards = std::nullopt;
 		opt_ref<Player> source = std::nullopt;
 		opt_ref<std::size_t> number = std::nullopt;
 		std::size_t count = 0;
@@ -90,19 +91,20 @@ public:
 	public:
 		Trigger(GameLogic& _game, Player& _carrier,
 				opt_ref<Player> _player,
-				opt_ref<Card> _card,
+				std::optional<std::vector<ref<Card>>> _cards,
 				opt_ref<Player> _source,
 				opt_ref<std::size_t> _number);
 
 		bool hasPlayer() const { return player.has_value(); }
-		bool hasCard() const { return card.has_value(); }
+		bool hasCards() const { return cards.has_value(); }
 		bool hasSource() const { return source.has_value(); }
 		bool hasNumber() const { return number.has_value(); }
 
 		GameLogic& getGame() const { return game.get(); }
 		Player& getCarrier() const { return carrier.get(); }
 		Player& getPlayer() const { return player.value().get(); }
-		Card& getCard() const { return card.value().get(); }
+		Card& getCard() const { return cards.value().front().get(); }
+		std::vector<ref<Card>> getCards() const { return cards.value(); }
 		Player& getSource() const { return source.value().get(); }
 		std::size_t& getNumber() const { return number.value().get(); }
 		std::size_t getCount() const { return count; }
@@ -117,10 +119,6 @@ public:
 	PSkill(const std::string& name, const std::string& description,
 		   const limit_t& limit, bool forced,
 		   const TriggerPlayer& triggerPlayer, const TriggerTime& triggerTime);
-
-	std::shared_ptr<bool> disabledFlag;
-	std::shared_ptr<std::unordered_set<Card::Color>> usedColorsFlag;
-	std::shared_ptr<std::unordered_set<std::size_t>> usedPlayerIdsFlag;
 
 	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
 	void launch(Trigger& trigger);
@@ -466,7 +464,7 @@ class 窃观 : public PSkillImpl<窃观> {
 public:
 	窃观() : PSkillImpl<窃观>(
 		"窃观",
-		"锁定技，其他角色从牌堆一次性获得一张牌时，你得知其颜色牌名并需要输入确认。",
+		"锁定技，其他角色从牌堆一次性获得一张牌时，你得知其颜色牌名。",
 		unlimited, true,
 		TriggerPlayer::others,
 		TriggerTime::draw_end

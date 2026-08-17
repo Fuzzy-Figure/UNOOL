@@ -6,6 +6,7 @@
 #include <SFML/Graphics.hpp>
 #include <ranges>
 #include <algorithm>
+#include <variant>
 
 //获取curIndex的下一个玩家的id（curIndex不一定是当前回合玩家的id）
 std::size_t GameLogic::nextPlayerIndex(const std::size_t curIndex) const {
@@ -77,19 +78,25 @@ void GameLogic::forEachPlayer(const std::function<void(Player&)>& operation) {
 	}
 }
 
+void GameLogic::forEachOtherPlayer(const Player& self,
+								   const std::function<void(Player&)>& operation) {
+	for (auto& p : players) {
+		if (*p != self) operation(*p);
+	}
+}
+
 void GameLogic::forEachPlayerIf(const std::function<bool(const Player&)>& condition,
 								const std::function<void(Player&)>& operation) {
 	for (auto& p : players) {
 		if (condition(*p)) operation(*p);
 	}
 }
-
-Card& GameLogic::judge() {
-	auto card = pile->takeCardByIndex(0);
-	Card& ref = *card;
-	discardPile->push_front(std::move(card));
-	broadcastState();
-	return ref;
+void GameLogic::forEachOtherPlayerIf(const Player& self,
+									 const std::function<bool(const Player&)>& condition,
+									 const std::function<void(Player&)>& operation) {
+	for (auto& p : players) {
+		if (*p != self && condition(*p)) operation(*p);
+	}
 }
 
 void GameLogic::print() const {
@@ -333,14 +340,23 @@ void GameLogic::reverse() {
 
 void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 							  opt_ref<Player> player,
-							  opt_ref<Card> card,
+							  Card& card,
+							  opt_ref<Player> source,
+							  opt_ref<std::size_t> number) {
+	launchPSkills(currentTriggerTime, player, std::vector<ref<Card>>{card}, source, number);
+}
+void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+							  opt_ref<Player> player,
+							  std::optional<std::vector<ref<Card>>> cards,
 							  opt_ref<Player> source,
 							  opt_ref<std::size_t> number) {
 	for (auto& carrier : players) {
-		PSkill::Trigger trigger = { *this, *carrier, player, card, source, number };
+		PSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
 		carrier->launchPSkills(currentTriggerTime, trigger);
+		std::optional<std::variant<std::reference_wrapper<Card>, std::vector<std::reference_wrapper<Card>>>> a;
 	}
 }
+
 
 //返回置入弃牌堆的牌的引用
 Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card) {

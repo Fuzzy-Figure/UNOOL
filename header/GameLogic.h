@@ -60,9 +60,13 @@ public:
 	const std::vector<ref<Player>> getPlayersIf(const std::function<bool(const Player&)>& condition) const;
 	const std::vector<ref<Player>> getPlayersExcludeId(const std::size_t id) const;
 	void forEachPlayer(const std::function<void(Player&)>& operation);
+	void forEachOtherPlayer(const Player& self,
+							const std::function<void(Player&)>& operation);
 	void forEachPlayerIf(const std::function<bool(const Player&)>& condition,
 						 const std::function<void(Player&)>& operation);
-	Card& judge();
+	void forEachOtherPlayerIf(const Player& self,
+							  const std::function<bool(const Player&)>& condition,
+							  const std::function<void(Player&)>& operation);
 
 	void print() const;
 
@@ -76,9 +80,14 @@ public:
 	std::size_t nextPlayerIndex(const std::size_t curIndex) const;
 	std::size_t prevPlayerIndex(const std::size_t curIndex) const;
 	void reverse();
+	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+					   opt_ref<Player> player,
+					   Card& card,
+					   opt_ref<Player> source = std::nullopt,
+					   opt_ref<std::size_t> number = std::nullopt);
 	void launchPSkills(const PSkill::TriggerTime& triggerTime,
 					   opt_ref<Player> player = std::nullopt,
-					   opt_ref<Card> card = std::nullopt,
+					   std::optional<std::vector<ref<Card>>> cards = std::nullopt,
 					   opt_ref<Player> source = std::nullopt,
 					   opt_ref<std::size_t> number = std::nullopt);
 	Card& putCardToDiscardPile(std::unique_ptr<Card> card);
