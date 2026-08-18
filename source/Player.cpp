@@ -272,7 +272,7 @@ void Player::decree(const std::wstring& title,
 }
 
 void Player::inherit(std::unique_ptr<Card>& card) {
-	
+
 }
 
 opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
@@ -526,7 +526,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 }
 
 void Player::hint(const std::wstring& message) {
-	ask(message, { L"确认" }, true);
+	(void)ask(message, { L"确认" }, true);
 }
 
 Card& Player::judge() {

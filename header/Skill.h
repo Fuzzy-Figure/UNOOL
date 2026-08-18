@@ -693,6 +693,7 @@ public:
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	void content(Trigger& trigger) override;
+	void reset() override;
 };
 
 

@@ -194,7 +194,7 @@ void 丑皇::content(Trigger& trigger) {
 		choice = carrier.ask(L"选择一项：", { L"回复10体力", L"弃置一张非数字牌" }, true);
 	}
 	else {
-		carrier.ask(L"手中没有非数字牌，已自动选择回复10体力", { L"确定", }, true);
+		carrier.hint(L"手中没有非数字牌，已自动选择回复10体力");
 		choice = 1;
 	}
 	switch (choice) {
@@ -941,11 +941,34 @@ void 射门::content(Trigger& trigger) {
 
 
 bool 招待::filter(const Trigger& trigger) const {
-	return false;
+	return !numberCardUsed || !notNumberCardUsed;
 }
-
 void 招待::content(Trigger& trigger) {
+	//选角色
+	Player& carrier = trigger.getCarrier();
+	std::optional targetOpt = carrier.chooseOtherPlayer(L"[招待] 选择一名其他角色", true);
+	if (!targetOpt.has_value()) return;
+	Player& target = targetOpt.value();
 
+	//给牌
+	std::function<bool(const Card&)> condition = unool::alwaysTrue;
+	if (!numberCardUsed && notNumberCardUsed) {
+		//只能给数字牌
+		condition = &Card::isNumber;
+	}
+	else if (numberCardUsed && !notNumberCardUsed) {
+		//只能给非数字牌
+		condition = &Card::isNotNumber;
+	}
+	const std::optional cardOpt = carrier.chooseToGive(target, true, condition);
+	if (cardOpt.has_value()) {
+		if (cardOpt.value().get().isNumber()) numberCardUsed = true;
+		else if (cardOpt.value().get().isNotNumber()) notNumberCardUsed = true;
+	}
+}
+void 招待::reset() {
+	numberCardUsed = false;
+	notNumberCardUsed = false;
 }
 
 
