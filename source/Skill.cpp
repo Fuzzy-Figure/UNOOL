@@ -971,7 +971,51 @@ void 招待::reset() {
 	notNumberCardUsed = false;
 }
 
+// ==================== 技能：追番 ====================
+bool 追番::filter(const Trigger& trigger) const {
+	//先检测手中是否有点数≤5的数字牌
+	return trigger.getCarrier().handInclude([](const Card& c) {
+		return c.isNumber() && c.value() <= 5;
+	});
+}
+void 追番::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	//选择一张点数≤5的数字牌
+	auto cardRef = carrier.chooseToOperate(
+		L"选择一张点数≤5的数字牌", false,
+		[](const Card& c) {
+		return c.isNumber() && c.value() <= 5;
+	},
+		[](Card&) {});
+	if (!cardRef.has_value()) return; //取消发动
+	//自选+1/+2/+3
+	const std::size_t addChoice = carrier.ask(L"选择增加的点数：",
+											  { L"+1", L"+2", L"+3" }, false);
+	const int add = static_cast<int>(addChoice) + 1;
+	Card& card = cardRef->get();
+	card.setName(Card::numberCardsFrom0[card.value() + add]);
+	std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
+		<< card.toString() << "的点数+" << add << std::endl;
+	trigger.getGame().broadcastState();
+}
 
+
+// ==================== 技能：崩三 ====================
+bool 崩三::filter(const Trigger& trigger) const {
+	//仅对自己打出【3】的时机计数
+	return trigger.getCard().is(Card::Name::number_3);
+}
+void 崩三::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	++count3; //累计打出【3】
+	//每累计两张【3】触发一次
+	if (count3 % 2 != 0) return;
+	//先检测手中是否有【6】
+	if (!carrier.handInclude([](const Card& c) { return c.is(Card::Name::number_6); })) return;
+	carrier.chooseToDiscard(L"选择一张[6]弃置", 1, false,
+							[](const Card& c) { return c.is(Card::Name::number_6); });
+	trigger.getGame().broadcastState();
+}
 
 
 bool test::filter(const Trigger& trigger) const {

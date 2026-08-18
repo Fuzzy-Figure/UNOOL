@@ -696,6 +696,33 @@ public:
 	void reset() override;
 };
 
+class 追番 : public PSkillImpl<追番> {
+public:
+	追番() : PSkillImpl<追番>(
+		"追番",
+		"回合开始时，你可以将一张点数≤5的数字牌点数+1~3点。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+};
+class 崩三 : public PSkillImpl<崩三> {
+	std::size_t count3 = 0; //累计打出的【3】次数
+public:
+	崩三() : PSkillImpl<崩三>(
+		"崩三",
+		"你每累计打出两张【3】后，可弃置一张【6】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	void content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); count3 = 0; }
+};
+
 
 class test : public PSkillImpl<test> {
 public:
