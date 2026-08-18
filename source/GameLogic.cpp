@@ -50,6 +50,13 @@ bool GameLogic::playersSatisfy(const std::function<bool(std::vector<std::unique_
 	return condition(players);
 }
 
+bool GameLogic::playersInclude(const std::function<bool(const Player&)>& condition) {
+	for (const auto& p : players) {
+		if (condition(*p)) return true;
+	}
+	return false;
+}
+
 const std::vector<ref<Player>> GameLogic::getPlayers() const {
 	std::vector<ref<Player>> refs;
 	for (const auto& pl : players) {

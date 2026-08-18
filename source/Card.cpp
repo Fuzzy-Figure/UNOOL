@@ -274,8 +274,7 @@ std::wstring Card::to_wstring(const Name& name) {
 
 // 友元流输出
 std::ostream& operator<<(std::ostream& ostr, const Card& card) {
-	ostr << card.toString();
-	return ostr;
+	return ostr << card.toString();
 }
 
 

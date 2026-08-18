@@ -30,6 +30,7 @@ public:
 	std::string getInfo() const { return info; }
 	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
 	std::size_t getCount() const { return count; }
+
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
 	virtual void reset();
@@ -118,7 +119,7 @@ public:
 	using Factory = std::function<std::unique_ptr<PSkill>()>;
 
 	virtual bool filter(const Trigger& trigger) const = 0;
-	virtual void content(Trigger& trigger) = 0;
+	virtual bool content(Trigger& trigger) = 0;
 
 	PSkill(const std::string& name, const std::string& description,
 		   const limit_t& limit, bool forced,
@@ -154,7 +155,7 @@ public:
 		TriggerTime::lose_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 隐身 : public PSkillImpl<隐身> {
@@ -167,7 +168,7 @@ public:
 		TriggerTime::card_target_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 顶置 : public PSkillImpl<顶置> {
@@ -180,7 +181,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 带派 : public PSkillImpl<带派> {
@@ -193,7 +194,7 @@ public:
 		TriggerTime::game_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 寒魄 : public PSkillImpl<寒魄> {
@@ -206,7 +207,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 割腕 : public PSkillImpl<割腕> {
@@ -219,7 +220,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 丑皇 : public PSkillImpl<丑皇> {
 public:
@@ -231,7 +232,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 军国 : public PSkillImpl<军国> {
@@ -244,7 +245,7 @@ public:
 		TriggerTime::ban_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 家暴 : public PSkillImpl<家暴> {
 public:
@@ -256,7 +257,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 健身 : public PSkillImpl<健身> {
@@ -269,7 +270,7 @@ public:
 		TriggerTime::game_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 做题 : public PSkillImpl<做题> {
 public:
@@ -281,7 +282,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 棍击 : public PSkillImpl<棍击> {
@@ -294,7 +295,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 神木 : public PSkillImpl<神木> {
 public:
@@ -306,7 +307,7 @@ public:
 		TriggerTime::game_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 雷剑 : public PSkillImpl<雷剑> {
@@ -319,7 +320,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 买棋 : public PSkillImpl<买棋> {
@@ -332,7 +333,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 卖棋 : public PSkillImpl<卖棋> {
 public:
@@ -344,7 +345,7 @@ public:
 		TriggerTime::phase_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 耐克 : public PSkillImpl<耐克> {
@@ -357,7 +358,7 @@ public:
 		TriggerTime::card_target_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 轰炸 : public PSkillImpl<轰炸> {
@@ -370,7 +371,7 @@ public:
 		TriggerTime::use_card_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 爆破 : public PSkillImpl<爆破> {
@@ -383,7 +384,7 @@ public:
 		TriggerTime::ban_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 电音 : public PSkillImpl<电音> {
@@ -396,7 +397,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 蒙面 : public PSkillImpl<蒙面> {
 public:
@@ -408,7 +409,7 @@ public:
 		TriggerTime::damage_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 锐刻 : public PSkillImpl<锐刻> {
@@ -422,7 +423,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); disabled = false; }
 };
 
@@ -436,7 +437,7 @@ public:
 		TriggerTime::game_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 破产 : public PSkillImpl<破产> {
 public:
@@ -448,7 +449,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 假酒 : public PSkillImpl<假酒> {
@@ -461,7 +462,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 窃观 : public PSkillImpl<窃观> {
@@ -474,7 +475,7 @@ public:
 		TriggerTime::draw_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 生存 : public PSkillImpl<生存> {
@@ -487,7 +488,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 创造 : public PSkillImpl<创造> {
 	std::unordered_set<Card::Color> usedColors;
@@ -500,7 +501,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); usedColors.clear(); }
 };
 
@@ -516,7 +517,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); usedColors.clear(); }
 };
 class 好火 : public PSkillImpl<好火> {
@@ -530,7 +531,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); usedPlayerIds.clear(); }
 };
 
@@ -544,7 +545,7 @@ public:
 		TriggerTime::game_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 大脚 : public PSkillImpl<大脚> {
 public:
@@ -556,7 +557,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 过江 : public PSkillImpl<过江> {
@@ -569,7 +570,7 @@ public:
 		TriggerTime::card_target_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 大盏 : public PSkillImpl<大盏> {
 	static void randomEnlarge(Card& c);
@@ -583,7 +584,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 举报 : public PSkillImpl<举报> {
@@ -596,7 +597,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override;
 };
 class 猥琐 : public PSkillImpl<猥琐> {
@@ -609,7 +610,7 @@ public:
 		TriggerTime::phase_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 棋王 : public PSkillImpl<棋王> {
@@ -622,7 +623,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 class 金铲 : public PSkillImpl<金铲> {
 public:
@@ -634,7 +635,7 @@ public:
 		TriggerTime::recover_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 淘汰 : public PSkillImpl<淘汰> {
@@ -649,7 +650,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 光合 : public PSkillImpl<光合> {
@@ -663,7 +664,7 @@ public:
 		TriggerTime::card_target_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 射门 : public PSkillImpl<射门> {
@@ -677,7 +678,7 @@ public:
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 };
 
 class 招待 : public PSkillImpl<招待> {
@@ -692,23 +693,11 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
+	bool content(Trigger& trigger) override;
 	void reset() override;
 };
 
 
-class test : public PSkillImpl<test> {
-public:
-	test() : PSkillImpl<test>(
-		"test",
-		"",
-		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	void content(Trigger& trigger) override;
-};
 
 
 
