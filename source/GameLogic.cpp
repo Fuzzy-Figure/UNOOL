@@ -208,7 +208,7 @@ void GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, SelectionSt
 		banOpts.push_back(formatCharacterLabelW(ch));
 	}
 	std::size_t banChoice = players[bannerId]->ask(
-		L"禁用对方的一个角色：", banOpts, false, 10000ms);
+		L"禁用对方的一个角色：", banOpts, false, 30000ms);
 	if (banChoice > 0) {
 		state.bannedIdx[targetId] = banChoice - 1;
 		std::wstring bannedCharLabel = formatCharacterLabelW(state.cands[targetId][banChoice - 1]);

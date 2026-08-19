@@ -37,6 +37,8 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	//{"屎軖",   {Level::A, {招待::make}, {}, 160}},
 	{"植物人", {Level::F, {光合::make}, {}, 200}},
 	{"梅西",   {Level::B, {射门::make}, {}, 220}},
+	{"二次元", {Level::F, {追番::make, 崩三::make}, {}, 100}},
+	{"金正日", {Level::B, {望日::make, 慈父::make}, {}, 188}},
 };
 
 

@@ -365,7 +365,7 @@ class 轰炸 : public PSkillImpl<轰炸> {
 public:
 	轰炸() : PSkillImpl<轰炸>(
 		"轰炸",
-		"锁定技，当你打出【+2】时，目标失去2%最大体力。",
+		"锁定技，当你打出【+2】/【+4】时，目标失去2%/4%最大体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::use_card_begin
@@ -431,7 +431,7 @@ class 巨富 : public PSkillImpl<巨富> {
 public:
 	巨富() : PSkillImpl<巨富>(
 		"巨富",
-		"游戏开始时，你的初始手牌改为十二张；你执行摸牌阶段额外摸一张牌。",
+		"锁定技，游戏开始时，你的初始手牌改为十二张；你执行摸牌阶段额外摸一张牌。",
 		1, true,
 		TriggerPlayer::self,
 		TriggerTime::game_begin
@@ -506,19 +506,19 @@ public:
 };
 
 class 炼兵 : public PSkillImpl<炼兵> {
-	std::unordered_set<Card::Color> usedColors;
-	std::map<Card::ColorName, std::size_t> buildPairs(Player& carrier) const;
+	std::unordered_set<Card::Name> usedNames;
+	std::map<Card::Name, std::size_t> buildPairs(Player& carrier) const;
 public:
 	炼兵() : PSkillImpl<炼兵>(
 		"炼兵",
-		"每种颜色限一次，回合开始时，你可以弃置2张同色同名牌，从游戏外获得一张同色【+2】。",
+		"每种牌名限一次，回合开始时，你可以弃置2张同名牌，从游戏外获得一张随机颜色的【+2】。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
-	void reset() override { PSkill::reset(); usedColors.clear(); }
+	void reset() override { PSkill::reset(); usedNames.clear(); }
 };
 class 好火 : public PSkillImpl<好火> {
 	std::unordered_set<std::size_t> usedPlayerIds;
@@ -671,7 +671,7 @@ class 射门 : public PSkillImpl<射门> {
 public:
 	射门() : PSkillImpl<射门>(
 		"射门",
-		"你打出数字牌后，可令一名角色进行判定，若结果为蓝色，其摸1张牌；"
+		"你打出数字牌后，可令一名角色进行判定，若结果为蓝色/黑色，其摸1张牌；"
 		"若判定角色为你，改为弃置一张牌。",
 		unlimited, false,
 		TriggerPlayer::self,
@@ -697,8 +697,58 @@ public:
 	void reset() override;
 };
 
+class 追番 : public PSkillImpl<追番> {
+public:
+	追番() : PSkillImpl<追番>(
+		"追番",
+		"回合开始时，你可以将一张点数≤5的数字牌点数+1~3点。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+class 崩三 : public PSkillImpl<崩三> {
+	mutable std::size_t count3 = 0; //累计打出的【3】次数
+public:
+	崩三() : PSkillImpl<崩三>(
+		"崩三",
+		"你每累计打出两张【3】后，可弃置一张【6】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); count3 = 0; }
+};
 
 
+class 望日 : public PSkillImpl<望日> {
+public:
+	望日() : PSkillImpl<望日>(
+		"望日",
+		"锁定技，回合开始时，令一张黄色牌点数+1（至多为9）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+class 慈父 : public PSkillImpl<慈父> {
+public:
+	慈父() : PSkillImpl<慈父>(
+		"慈父",
+		"你打出黄色【9】后，可以获得一张【+4】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
 
 
 

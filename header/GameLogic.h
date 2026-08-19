@@ -57,7 +57,6 @@ public:
 	std::size_t getCurrentPlayerId() const;
 	bool playersSatisfy(const std::function<bool(std::vector<std::unique_ptr<Player>>&)>& condition);
 	bool playersInclude(const std::function<bool(const Player&)>& condition);
-
 	const std::vector<ref<Player>> getPlayers() const;
 	const std::vector<ref<Player>> getPlayersIf(const std::function<bool(const Player&)>& condition) const;
 	const std::vector<ref<Player>> getPlayersExcludeId(const std::size_t id) const;
