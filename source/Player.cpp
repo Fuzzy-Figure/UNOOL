@@ -536,9 +536,10 @@ Card& Player::judge() {
 	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this);
 	auto card = game.getPile().takeCardByIndex(0);
 	Card& cardRef = *card;
+	std::cout << "判定结果：" << cardRef << std::endl;
 	game.getDiscardPile().push_front(std::move(card));
+	game.launchPSkills(PSkill::TriggerTime::judge_end, *this, cardRef);
 	game.broadcastState();
-	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this, cardRef);
 	return cardRef;
 }
 

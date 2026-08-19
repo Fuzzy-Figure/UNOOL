@@ -1098,4 +1098,3 @@ bool 慈父::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
-

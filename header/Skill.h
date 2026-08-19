@@ -724,6 +724,32 @@ public:
 	void reset() override { PSkill::reset(); count3 = 0; }
 };
 
+class 望日 : public PSkillImpl<望日> {
+public:
+	望日() : PSkillImpl<望日>(
+		"望日",
+		"锁定技，回合开始时，令一张黄色牌点数+1（至多为9）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 慈父 : public PSkillImpl<慈父> {
+public:
+	慈父() : PSkillImpl<慈父>(
+		"慈父",
+		"你打出黄色【9】后，可以获得一张【+4】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
 
 class 望日 : public PSkillImpl<望日> {
 public:
