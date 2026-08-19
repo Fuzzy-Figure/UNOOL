@@ -1033,19 +1033,18 @@ bool 追番::content(Trigger& trigger) {
 
 // ==================== 技能：崩三 ====================
 bool 崩三::filter(const Trigger& trigger) const {
-	//仅对自己打出【3】的时机计数
-	return trigger.getCard().is(Card::Name::number_3);
+	if (trigger.getCard().is(Card::Name::number_3)) ++count3;
+	Player& carrier = trigger.getCarrier();
+	return count3 % 2 == 0
+		&& carrier.handInclude([](const Card& c) { return c.is(Card::Name::number_6); });
 }
 bool 崩三::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	++count3; //累计打出【3】
-	//每累计两张【3】触发一次
-	if (count3 % 2 != 0) return;
-	//先检测手中是否有【6】
-	if (!carrier.handInclude([](const Card& c) { return c.is(Card::Name::number_6); })) return;
-	carrier.chooseToDiscard(L"选择一张[6]弃置", 1, false,
-							[](const Card& c) { return c.is(Card::Name::number_6); });
+	carrier.chooseToDiscard(
+		L"选择一张[6]弃置", 1, false,
+		[](const Card& c) { return c.is(Card::Name::number_6); });
 	trigger.getGame().broadcastState();
+	return true;
 }
 
 // ==================== 技能：崩三 ====================
