@@ -29,7 +29,8 @@ public:
 
 	// 加分：按 scoreboard 表查询并更新双方积分，立即落盘
 	void addMatchResult(const std::string& winnerUser, const std::string& loserUser,
-						Character::Level winnerLevel, Character::Level loserLevel);
+						Character::Level winnerLevel, Character::Level loserLevel,
+						bool winnerFullHp = false);
 
 	void load();
 	void save() const;

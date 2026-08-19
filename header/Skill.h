@@ -682,19 +682,16 @@ public:
 };
 
 class 招待 : public PSkillImpl<招待> {
-	bool numberCardUsed = false;
-	bool notNumberCardUsed = false;
 public:
 	招待() : PSkillImpl<招待>(
 		"招待",
-		"回合开始时，你可以将一张牌交给一名其他角色（数字牌/非数字牌各限一次）。",
-		2, false,
+		"限定技，回合开始时，你可以将一张牌交给一名其他角色。",
+		1, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
-	void reset() override;
 };
 
 class 追番 : public PSkillImpl<追番> {
@@ -754,7 +751,7 @@ class 朔日 : public PSkillImpl<朔日> {
 public:
 	朔日() : PSkillImpl<朔日>(
 		"朔日",
-		"你打出黄色牌后，回复1点体力并可选择一项：\n1.将一张数字牌变为黄色并令其点数+1/-1；\n2.将一张功能牌变为黄色的随机功能牌。",
+		"你打出黄色牌后，回复1点体力并可选择一项：\n1.将一张数字牌变为黄色且可令其点数+1/-1；\n2.将一张功能牌变为黄色的随机功能牌。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -775,6 +772,36 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); setForced(false); }
+};
+
+class 健忘 : public PSkillImpl<健忘> {
+public:
+	健忘() : PSkillImpl<健忘>(
+		"健忘",
+		"每局游戏限两次，回合开始时，你可以任意更改当前的公共颜色。",
+		2, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 豪赌 : public PSkillImpl<豪赌> {
+public:
+	豪赌() : PSkillImpl<豪赌>(
+		"豪赌",
+		"回合开始时，可进行一次判定：\n"
+		"绿色或黑色，你获得之；\n"
+		"黄色，你跳过此回合；\n"
+		"蓝色，你重铸一张手牌；\n"
+		"红色，你失去5点体力。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
 };
 
 

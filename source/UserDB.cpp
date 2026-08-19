@@ -51,10 +51,12 @@ std::optional<UserInfo> UserDB::login(const std::string& username, const std::st
 }
 
 void UserDB::addMatchResult(const std::string& winnerUser, const std::string& loserUser,
-							Character::Level winnerLevel, Character::Level loserLevel) {
+							Character::Level winnerLevel, Character::Level loserLevel,
+							bool winnerFullHp) {
 	int wi = static_cast<int>(winnerLevel);
 	int li = static_cast<int>(loserLevel);
 	int delta = unool::scoreboard[wi][li];
+	if (winnerFullHp) delta *= 2;
 
 	auto wit = users_.find(winnerUser);
 	auto lit = users_.find(loserUser);
@@ -62,7 +64,8 @@ void UserDB::addMatchResult(const std::string& winnerUser, const std::string& lo
 		wit->second.points += delta;
 		wit->second.wins += 1;
 		std::cout << "[UserDB] 玩家" << winnerUser << "胜利，获得 "
-			<< delta << " 积分（当前 " << wit->second.points << "）" << std::endl;
+			<< delta << " 积分（当前 " << wit->second.points << "）"
+			<< (winnerFullHp ? " [满血翻倍]" : "") << std::endl;
 	}
 	if (lit != users_.end()) {
 		lit->second.losses += 1;

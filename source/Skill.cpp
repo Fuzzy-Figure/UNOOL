@@ -972,7 +972,7 @@ bool 射门::content(Trigger& trigger) {
 
 
 bool 招待::filter(const Trigger& trigger) const {
-	return !numberCardUsed || !notNumberCardUsed;
+	return true;
 }
 bool 招待::content(Trigger& trigger) {
 	//选角色
@@ -982,30 +982,10 @@ bool 招待::content(Trigger& trigger) {
 	Player& target = targetOpt.value();
 
 	//给牌
-	std::function<bool(const Card&)> condition = unool::alwaysTrue;
-	std::wstring title = L"选择一张手牌交给" + target.characterNameW();
-
-	if (!numberCardUsed && notNumberCardUsed) {
-		//只能给数字牌
-		condition = &Card::isNumber;
-		title = L"选择一张数字牌交给" + target.characterNameW();
-	}
-	else if (numberCardUsed && !notNumberCardUsed) {
-		//只能给非数字牌
-		condition = &Card::isNotNumber;
-		title = L"选择一张非数字牌交给" + target.characterNameW();
-	}
-	const std::optional cardOpt = carrier.chooseToGive(title, target, true, condition);
-	if (cardOpt.has_value()) {
-		if (cardOpt.value().get().isNumber()) numberCardUsed = true;
-		else if (cardOpt.value().get().isNotNumber()) notNumberCardUsed = true;
-	}
+	carrier.chooseToGive(L"选择一张手牌交给" + target.characterNameW(), target, true);
 	return true;
 }
-void 招待::reset() {
-	numberCardUsed = false;
-	notNumberCardUsed = false;
-}
+
 
 // ==================== 技能：追番 ====================
 bool 追番::filter(const Trigger& trigger) const {
@@ -1182,7 +1162,72 @@ bool 徒步::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	std::size_t x = trigger.getCount();
 	carrier.takeDamage(x, carrier);
-	carrier.chooseToRecast(L"选择一张手牌重铸", 1, true);
+	carrier.chooseToRecast(L"【徒步】重铸一张手牌", 1, true);
 	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：健忘 ====================
+bool 健忘::filter(const Trigger& trigger) const {
+	return true;
+}
+bool 健忘::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+	std::vector<std::wstring> options = {
+		Card::to_wstring(Card::Color::blue),
+		Card::to_wstring(Card::Color::red),
+		Card::to_wstring(Card::Color::green),
+		Card::to_wstring(Card::Color::yellow)
+	};
+	std::size_t choice = carrier.ask(L"【健忘】请选择新的公共颜色", options, true);
+	Card::Color newColor;
+	switch (choice) {
+	case 1: newColor = Card::Color::blue; break;
+	case 2: newColor = Card::Color::red; break;
+	case 3: newColor = Card::Color::green; break;
+	case 4: newColor = Card::Color::yellow; break;
+	default: newColor = Card::Color::blue; break;
+	}
+	game.setCurrentColor(newColor);
+	std::cout << "<技能> " << carrier.characterName() << "发动健忘，将公共颜色改为"
+		<< Card::to_string(newColor) << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：豪赌 ====================
+bool 豪赌::filter(const Trigger& trigger) const {
+	(void)trigger;
+	return true;
+}
+bool 豪赌::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//调用标准判定：牌从牌堆取出，入弃牌堆顶，触发judge_begin/judge_end
+	Card& card = carrier.judge();
+	game.forEachPlayer([&card](Player& p) {
+		p.hint(L"[豪赌] 判定结果是" + card.toWString());
+	});
+
+	if (card.is(Card::Color::green, Card::Color::black)) {
+		//从弃牌堆顶取回这张牌，加入手牌
+		std::unique_ptr<Card> cardU = game.getDiscardPile().takeCardByIndex(0);
+		carrier.gainCard(std::move(cardU));
+	}
+	else if (card.is(Card::Color::yellow)) {
+		carrier.ban();
+	}
+	else if (card.is(Card::Color::blue)) {
+		if (!carrier.handEmpty()) {
+			carrier.chooseToRecast(L"【豪赌】重铸一张手牌", 1, true);
+		}
+	}
+	else if (card.is(Card::Color::red)) {
+		carrier.takeDamage(5, carrier);
+	}
+
+	game.broadcastState();
 	return true;
 }
