@@ -1087,3 +1087,102 @@ bool 慈父::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
+
+// ==================== 技能：朔日 ====================
+bool 朔日::filter(const Trigger& trigger) const {
+	const Card& c = trigger.getCard();
+	if (!c.is(Card::Color::yellow)) return false;
+	Player& carrier = trigger.getCarrier();
+	bool hasNumber = carrier.handInclude([](const Card& c) { return c.isNumber(); });
+	bool hasAction = carrier.handInclude([](const Card& c) { return c.isAction(); });
+	return hasNumber || hasAction;
+}
+bool 朔日::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	//回复1点体力
+	carrier.recover(1);
+	std::cout << "<技能> " << carrier.characterName() << "发动朔日，回复1点体力" << std::endl;
+	trigger.getGame().broadcastState();
+
+	//构建可选项
+	bool hasNumber = carrier.handInclude([](const Card& c) { return c.isNumber(); });
+	bool hasAction = carrier.handInclude([](const Card& c) { return c.isAction(); });
+
+	std::vector<std::wstring> opts;
+	std::vector<int> branchMap;
+	if (hasNumber) {
+		opts.push_back(L"将一张数字牌变为黄色并调整点数");
+		branchMap.push_back(1);
+	}
+	if (hasAction) {
+		opts.push_back(L"将一张功能牌变为黄色随机功能牌");
+		branchMap.push_back(2);
+	}
+
+	std::size_t choice = carrier.ask(L"【朔日】选择一项：", opts, false);
+	if (choice == 0) return true; //取消，但已回复体力
+
+	int branch = branchMap[choice - 1];
+
+	if (branch == 1) {
+		//选择一张数字牌，变黄色
+		auto cardRef = carrier.chooseToOperate(
+			L"选择一张数字牌变为黄色", false,
+			[](const Card& c) { return c.isNumber(); },
+			[](Card& c) { c.setColor(Card::Color::yellow); });
+		if (!cardRef.has_value()) return true;
+		Card& card = cardRef->get();
+		//选择+1/-1
+		std::vector<std::wstring> adjOpts;
+		std::vector<int> adjMap;
+		if (card.value() > 0) {
+			adjOpts.push_back(L"-1");
+			adjMap.push_back(-1);
+		}
+		if (card.value() < 9) {
+			adjOpts.push_back(L"+1");
+			adjMap.push_back(1);
+		}
+		if (!adjOpts.empty()) {
+			std::size_t adjChoice = carrier.ask(L"选择调整点数：", adjOpts, false);
+			if (adjChoice > 0) {
+				int adj = adjMap[adjChoice - 1];
+				card.setName(Card::numberCardsFrom0[card.value() + adj]);
+			}
+		}
+		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
+			<< card.toString() << std::endl;
+	}
+	else {
+		//选择一张功能牌
+		auto cardRef = carrier.chooseToOperate(
+			L"选择一张功能牌变为黄色随机功能牌", false,
+			[](const Card& c) { return c.isAction(); },
+			[](Card&) {});
+		if (!cardRef.has_value()) return true;
+		Card& card = cardRef->get();
+		//随机功能牌名
+		Card::Name randomName = Card::actionCards[unool::random::randomSize_t(0, 2)];
+		card.setName(randomName);
+		card.setColor(Card::Color::yellow);
+		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
+			<< card.toString() << std::endl;
+	}
+
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：徒步 ====================
+bool 徒步::filter(const Trigger& trigger) const {
+	return !trigger.getCard().isNumber();
+}
+bool 徒步::content(Trigger& trigger) {
+	setForced(true);
+	Player& carrier = trigger.getCarrier();
+	std::size_t x = trigger.getCount();
+	carrier.takeDamage(x, carrier);
+	carrier.chooseToRecast(L"选择一张手牌重铸", 1, true);
+	trigger.getGame().broadcastState();
+	return true;
+}

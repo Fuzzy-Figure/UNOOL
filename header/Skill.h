@@ -226,7 +226,7 @@ class 丑皇 : public PSkillImpl<丑皇> {
 public:
 	丑皇() : PSkillImpl<丑皇>(
 		"丑皇",
-		"锁定技，你打出万能牌后，选择一项：回复10点体力或弃置一张非数字牌。",
+		"锁定技，你打出万能牌后，选择一项：\n1.回复10点体力；\n2.弃置一张非数字牌。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -482,7 +482,7 @@ class 生存 : public PSkillImpl<生存> {
 public:
 	生存() : PSkillImpl<生存>(
 		"生存",
-		"锁定技，回合开始时，选择一张手牌变为随机颜色的【X】（X为本局发动次数，至多9）。",
+		"锁定技，回合开始时，选择一张手牌变为随机颜色的【X】\n（X为此技能本局发动次数，至多为9）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
@@ -577,7 +577,7 @@ class 大盏 : public PSkillImpl<大盏> {
 public:
 	大盏() : PSkillImpl<大盏>(
 		"大盏",
-		"锁定技，回合开始时，若你有数字牌，其中点数最小的牌均随机变大（至多变至9）。"
+		"锁定技，回合开始时，若你有数字牌，其中点数最小的牌均随机变大（至多变至9）。\n"
 		"若全为【9】，可将其中一张变为红色并回复1点体力。",
 		unlimited, true,
 		TriggerPlayer::self,
@@ -642,9 +642,9 @@ class 淘汰 : public PSkillImpl<淘汰> {
 public:
 	淘汰() : PSkillImpl<淘汰>(
 		"淘汰",
-		"每局游戏共限五次，"
-		"你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；"
-		"你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
+		"每局游戏共限五次："
+		"\n你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；"
+		"\n你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
 		5, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -658,7 +658,7 @@ public:
 	光合() : PSkillImpl<光合>(
 		"光合",
 		"当你成为封禁类功能牌的目标时，你可判定："
-		"若结果为数字牌，来源摸一张牌；为功能牌，解除此牌封禁状态。",
+		"\n若结果为数字牌，来源摸一张牌；\n为功能牌，解除此牌封禁状态。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
@@ -750,9 +750,32 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
+class 朔日 : public PSkillImpl<朔日> {
+public:
+	朔日() : PSkillImpl<朔日>(
+		"朔日",
+		"你打出黄色牌后，回复1点体力并可选择一项：\n1.将一张数字牌变为黄色并令其点数+1/-1；\n2.将一张功能牌变为黄色的随机功能牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
 
-
-
+class 徒步 : public PSkillImpl<徒步> {
+public:
+	徒步() : PSkillImpl<徒步>(
+		"徒步",
+		"契定技，你打出非数字牌后，可失去X点体力并重铸一张手牌（X为此技能本局发动次数）。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); setForced(false); }
+};
 
 
 class ASkill : public Skill {
