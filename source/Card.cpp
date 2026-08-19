@@ -274,8 +274,7 @@ std::wstring Card::to_wstring(const Name& name) {
 
 // 友元流输出
 std::ostream& operator<<(std::ostream& ostr, const Card& card) {
-	ostr << card.toString();
-	return ostr;
+	return ostr << card.toString();
 }
 
 
@@ -398,7 +397,7 @@ const Card& Hand::getSelectedCard() const {
 void Hand::sort() {
 	std::ranges::sort(cards, [](const std::unique_ptr<Card>& a, const std::unique_ptr<Card>& b) {
 		return *a < *b;
-		});
+	});
 }
 void Hand::print() const {
 	std::cout << *this;
@@ -446,19 +445,25 @@ Hand Hand::clone() const {
 	return newHand;
 }
 
-// 覆盖 Cards::takeCardByIndex（维护 selectedIndex）
+
 [[nodiscard]] std::unique_ptr<Card> Hand::takeCardByIndex(const std::size_t index) {
 	auto card = Cards::takeCardByIndex(index);
-	if (index < selectedIndex) {
-		selectedIndex--;
-	}
-	else if (index == selectedIndex) {
-		if (selectedIndex >= count() && count() > 0) {
-			selectedIndex = count() - 1;
-		}
-	}
 	if (count() == 0) {
 		selectedIndex = 0;
+	}
+	else if (index < selectedIndex) {
+		selectedIndex -= 1;
+	}
+	else if (index == selectedIndex) {
+		if (selectedIndex >= count()) {
+			//出的是最右边的牌，指向新的最右边
+			selectLast();
+		}
+		else if (selectedIndex > 0) {
+			//出的是中间的牌，指向其左边那张
+			selectedIndex -= 1;
+		}
+		//出的是最左边的牌(index==0)，不变
 	}
 	return card;
 }

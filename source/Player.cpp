@@ -31,6 +31,7 @@ void Player::draw(std::size_t number, const DrawReason reason) {
 		drawnCards.emplace_back(hand->back());
 	}
 
+	if (reason == DrawReason::phase_draw) handSelectLast();
 	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
 }
 
@@ -58,9 +59,6 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	//牌恢复效果并置入弃牌堆
 	card->recoverEffect();
 	Card& cardRef = game.putCardToDiscardPile(std::move(card));
-
-	//重置手牌指针
-	hand->resetSelectedIndex();
 
 	//更新客户端显示
 	game.broadcastState();
@@ -127,7 +125,7 @@ bool Player::phaseUse1() {
 void Player::phaseDraw() {
 	int drawCount = 1;
 	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this);
-	draw(hasPSkill("巨富") ? 2 : 1);
+	draw(1, DrawReason::phase_draw);
 	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this);
 }
 
@@ -235,12 +233,17 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 	std::vector<ref<Card>> discardedCards;
 	if (num > handCount()) return discardedCards;
 
+	ServerNetwork& network = game.getNetwork();
 	std::cout << "玩家" << id << "请选择弃置" << num << "张牌" << std::endl;
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
+		std::wstring fullTitle = title + L"（" + std::to_wstring(discardedCount + 1) + L"/" + std::to_wstring(num) + L"）"
+			+ (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
+		network.sendPlayerChoice(id, fullTitle, {}, forced);
 		auto index = chooseCard(condition, forced);
 		if (!index.has_value()) {
+			network.sendPlayerChoice(id, L"", {}, false);
 			std::cout << "玩家" << id << "取消了弃牌" << std::endl;
 			return discardedCards;
 		}
@@ -250,6 +253,7 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 		std::cout << "玩家" << id << "弃置了一张牌（" << discardedCount << "/" << num << "）" << std::endl;
 		game.broadcastState();
 	}
+	network.sendPlayerChoice(id, L"", {}, false);
 	return discardedCards;
 }
 
@@ -308,7 +312,6 @@ opt_ref<Card> Player::chooseToGive(Player& target, bool forced,
 	ref<Card> card = hand->getCardByIndex(index.value());
 
 	give(target, takeCardByIndex(index.value()));
-	hand->resetSelectedIndex();
 	std::cout << "玩家" << id << "给了" << target.characterName() << "一张" << card.get().toString() << std::endl;
 	game.broadcastState();
 
