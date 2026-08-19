@@ -73,6 +73,7 @@ public:
 	void clearHand() { hand->clear(); hand->resetSelectedIndex(); }
 	void handSelectLeft() { hand->selectLeft(); }
 	void handSelectRight() { hand->selectRight(); }
+	void handSelectLast() { hand->selectLast(); }
 	void sortHand() { hand->sort(); }
 
 	void gainCard(std::unique_ptr<Card> card) { hand->push_back(std::move(card)); }
@@ -86,8 +87,7 @@ public:
 	}
 #pragma endregion
 
-
-	// === 游戏逻辑 ===
+#pragma region 游戏逻辑
 	void draw(std::size_t num, const DrawReason reason = DrawReason::unknown);
 	void drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 
@@ -97,16 +97,22 @@ public:
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
 
-	// === 技能 / 状态 ===
+#pragma endregion
+
+#pragma region 技能 / 状态
 	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) { character->launchPSkills(currentTriggerTime, trigger); }
 	void ban(Player& source, Card& card);
 	void unban() { banned = false; }
 
-	// === 导航 ===
+#pragma endregion
+
+#pragma region 导航
 	Player& next() const;
 	Player& prev() const;
 
-	// === 交互（网络 / 选择）===
+#pragma endregion
+
+#pragma region 交互
 	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
 										   const std::size_t num, const bool forced,
 										   const std::function<bool(const Card&)>& condition
@@ -141,11 +147,15 @@ public:
 	[[nodiscard]] Card& judge();
 	void showCard(const Card& card);
 
-	// === 回合流程 ===
+#pragma endregion
+
+#pragma region 回合流程
 	void phaseBegin();
 	bool phaseUse1();
 	void phaseDraw();
 	void phaseUse2();
 	void phaseEnd();
 	bool turn();
+#pragma endregion
+
 };
