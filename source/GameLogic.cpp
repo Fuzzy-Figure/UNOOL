@@ -141,6 +141,7 @@ void GameLogic::determineSeatOrder() {
 }
 
 void GameLogic::initPlayers() {
+	players.clear();
 	//先用"白板"创建两个Player，以便使用ask
 	for (std::size_t i = 0; i < 2; ++i) {
 		auto p = std::make_unique<Player>(i, *this, Character::make("白板"));
@@ -244,6 +245,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	chooseSkinAndSet(*players[playerId], charName);
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
+	players.clear();
 	if (chars.size() != 2) throw std::invalid_argument("指定角色时，角色数量必须为2");
 
 	for (std::size_t i = 0; i < 2; ++i) {

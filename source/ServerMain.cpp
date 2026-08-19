@@ -91,10 +91,24 @@ int main() {
 	}
 
 	try {
-		std::cout << "[Server] 游戏开始！" << std::endl;
-		initCharacters(gameLogic);
-		gameLogic.broadcastState();
-		gameLoop(serverNetwork, gameLogic);
+		while (true) {
+			std::cout << "[Server] 游戏开始！" << std::endl;
+			initCharacters(gameLogic);
+			gameLogic.broadcastState();
+			gameLoop(serverNetwork, gameLogic);
+
+			// 询问双方是否继续
+			for (std::size_t i = 0; i < 2; ++i) {
+				auto& player = gameLogic.getPlayerById(i);
+				std::size_t choice = player.ask(
+					L"是否继续下一场对战？", { L"继续", L"退出" }, true);
+				if (choice == 2) {
+					std::cout << "[Server] 玩家" << i << "选择退出，游戏结束" << std::endl;
+					goto gameSessionEnd;
+				}
+			}
+		}
+		gameSessionEnd:;
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
