@@ -739,7 +739,8 @@ bool 好火::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	Player& target = trigger.getPlayer();
 
-	auto result = carrier.chooseToGive(target, false);
+	auto result = carrier.chooseToGive(L"选择一张手牌交给" + target.characterNameW(),
+									   target, false, unool::alwaysTrue);
 	if (!result.has_value()) return false;
 
 	usedPlayerIds.insert(target.getId());
@@ -982,15 +983,19 @@ bool 招待::content(Trigger& trigger) {
 
 	//给牌
 	std::function<bool(const Card&)> condition = unool::alwaysTrue;
+	std::wstring title = L"选择一张手牌交给" + target.characterNameW();
+
 	if (!numberCardUsed && notNumberCardUsed) {
 		//只能给数字牌
 		condition = &Card::isNumber;
+		title = L"选择一张数字牌交给" + target.characterNameW();
 	}
 	else if (numberCardUsed && !notNumberCardUsed) {
 		//只能给非数字牌
 		condition = &Card::isNotNumber;
+		title = L"选择一张非数字牌交给" + target.characterNameW();
 	}
-	const std::optional cardOpt = carrier.chooseToGive(target, true, condition);
+	const std::optional cardOpt = carrier.chooseToGive(title, target, true, condition);
 	if (cardOpt.has_value()) {
 		if (cardOpt.value().get().isNumber()) numberCardUsed = true;
 		else if (cardOpt.value().get().isNotNumber()) notNumberCardUsed = true;
@@ -1027,22 +1032,6 @@ bool 追番::content(Trigger& trigger) {
 	card.setName(Card::numberCardsFrom0[card.value() + add]);
 	std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
 		<< card.toString() << "的点数+" << add << std::endl;
-	trigger.getGame().broadcastState();
-	return true;
-}
-
-// ==================== 技能：崩三 ====================
-bool 崩三::filter(const Trigger& trigger) const {
-	if (trigger.getCard().is(Card::Name::number_3)) ++count3;
-	Player& carrier = trigger.getCarrier();
-	return count3 % 2 == 0
-		&& carrier.handInclude([](const Card& c) { return c.is(Card::Name::number_6); });
-}
-bool 崩三::content(Trigger& trigger) {
-	Player& carrier = trigger.getCarrier();
-	carrier.chooseToDiscard(
-		L"选择一张[6]弃置", 1, false,
-		[](const Card& c) { return c.is(Card::Name::number_6); });
 	trigger.getGame().broadcastState();
 	return true;
 }

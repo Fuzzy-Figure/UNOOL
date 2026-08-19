@@ -130,19 +130,19 @@ public:
 	opt_ref<Card> chooseToOperate(const std::wstring& title, bool forced,
 								  const std::function<bool(const Card&)>& condition,
 								  const std::function<void(Card&)>& operation);
-	opt_ref<Card> chooseToGive(Player& target, bool forced,
-							   const std::function<bool(const Card&)>& condition
+	opt_ref<Card> chooseToGive(const std::wstring& title, Player& target,
+							   bool forced, const std::function<bool(const Card&)>& condition
 							   = unool::alwaysTrue);
 
 
 	[[nodiscard]] opt_ref<Player> choosePlayer(const std::wstring& title, bool forced,
-								 const std::function<bool(const Player&)>& condition
-								 = unool::alwaysTrue);
+											   const std::function<bool(const Player&)>& condition
+											   = unool::alwaysTrue);
 	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::wstring& title, bool forced,
-									  const std::function<bool(const Player&)>& condition
-									  = unool::alwaysTrue);
+													const std::function<bool(const Player&)>& condition
+													= unool::alwaysTrue);
 	[[nodiscard]] std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
-					bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
+								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
 	void hint(const std::wstring& message);
 	[[nodiscard]] Card& judge();
 	void showCard(const Card& card);

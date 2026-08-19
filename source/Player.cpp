@@ -293,12 +293,11 @@ opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 	return cardRef;
 }
 
-opt_ref<Card> Player::chooseToGive(Player& target, bool forced,
-								   const std::function<bool(const Card&)>& condition) {
+opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
+								   bool forced, const std::function<bool(const Card&)>& condition) {
 	if (handEmpty()) return std::nullopt;
 
 	ServerNetwork& network = game.getNetwork();
-	std::wstring title = L"选择一张牌交给" + target.characterNameW();
 
 	network.sendPlayerChoice(id, title, {}, true, L"", std::nullopt);
 	auto index = chooseCard(condition, forced);
