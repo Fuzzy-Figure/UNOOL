@@ -188,10 +188,12 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 
 		switch (input) {
 		case sf::Keyboard::Scancode::Left:
+		case sf::Keyboard::Scancode::A:
 			handSelectLeft();
 			game.broadcastState();
 			break;
 		case sf::Keyboard::Scancode::Right:
+		case sf::Keyboard::Scancode::D:
 			handSelectRight();
 			game.broadcastState();
 			break;
@@ -200,11 +202,13 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 			game.broadcastState();
 			break;
 		case sf::Keyboard::Scancode::Up:
+		case sf::Keyboard::Scancode::W:
 			if (!handEmpty() && condition(hand->getSelectedCard())) {
 				return hand->getSelectedIndex();
 			}
 			break;
 		case sf::Keyboard::Scancode::Down:
+		case sf::Keyboard::Scancode::S:
 			if (!forced) {
 				return std::nullopt;
 			}

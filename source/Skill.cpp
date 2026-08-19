@@ -1039,6 +1039,7 @@ bool 追番::content(Trigger& trigger) {
 // ==================== 技能：崩三 ====================
 bool 崩三::filter(const Trigger& trigger) const {
 	if (trigger.getCard().is(Card::Name::number_3)) ++count3;
+	else return false;
 	Player& carrier = trigger.getCarrier();
 	return count3 % 2 == 0
 		&& carrier.handInclude([](const Card& c) { return c.is(Card::Name::number_6); });

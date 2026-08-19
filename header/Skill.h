@@ -702,7 +702,7 @@ public:
 	追番() : PSkillImpl<追番>(
 		"追番",
 		"回合开始时，你可以将一张点数≤5的数字牌点数+1~3点。",
-		unlimited, false,
+		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
