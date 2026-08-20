@@ -25,7 +25,7 @@ void GameRenderer::updateState(const GameState& state) {
 	currentState = state;
 }
 
-void GameRenderer::updateCursor(std::size_t playerId, std::size_t selectedIndex) {
+void GameRenderer::updatePointer(std::size_t playerId, std::size_t selectedIndex) {
 	for (auto& ps : currentState.players) {
 		if (ps.id == playerId) {
 			ps.hand.setSelectedIndex(selectedIndex);
@@ -34,7 +34,7 @@ void GameRenderer::updateCursor(std::size_t playerId, std::size_t selectedIndex)
 	}
 }
 
-void GameRenderer::moveCursorLeft(std::size_t playerId) {
+void GameRenderer::movePointerLeft(std::size_t playerId) {
 	for (auto& ps : currentState.players) {
 		if (ps.id == playerId) {
 			ps.hand.selectLeft();
@@ -43,7 +43,7 @@ void GameRenderer::moveCursorLeft(std::size_t playerId) {
 	}
 }
 
-void GameRenderer::moveCursorRight(std::size_t playerId) {
+void GameRenderer::movePointerRight(std::size_t playerId) {
 	for (auto& ps : currentState.players) {
 		if (ps.id == playerId) {
 			ps.hand.selectRight();

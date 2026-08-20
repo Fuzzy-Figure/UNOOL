@@ -75,9 +75,9 @@ public:
 	~GameRenderer();
 
 	void updateState(const GameState& state);
-	void updateCursor(std::size_t playerId, std::size_t selectedIndex);
-	void moveCursorLeft(std::size_t playerId);
-	void moveCursorRight(std::size_t playerId);
+	void updatePointer(std::size_t playerId, std::size_t selectedIndex);
+	void movePointerLeft(std::size_t playerId);
+	void movePointerRight(std::size_t playerId);
 	std::size_t getSelectedIndex(std::size_t playerId) const;
 	bool isChoiceActive() const;
 	bool isLocalTurn() const;

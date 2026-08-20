@@ -264,10 +264,10 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 			if (keyEvent) {
 				auto sc = keyEvent->scancode;
 				if (!renderer.isChoiceActive() && renderer.isLocalTurn() && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
-					renderer.moveCursorLeft(net.getPlayerId());
+					renderer.movePointerLeft(net.getPlayerId());
 				}
 				else if (!renderer.isChoiceActive() && renderer.isLocalTurn() && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
-					renderer.moveCursorRight(net.getPlayerId());
+					renderer.movePointerRight(net.getPlayerId());
 				}
 				else {
 					net.sendClientInput(sc, renderer.getSelectedIndex(net.getPlayerId()));
@@ -309,10 +309,10 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 			renderer.updateState(state);
 			break;
 		}
-		case MessageType::CursorUpdate: {
+		case MessageType::PointerUpdate: {
 			std::size_t playerId, selectedIndex;
 			packet >> playerId >> selectedIndex;
-			renderer.updateCursor(playerId, selectedIndex);
+			renderer.updatePointer(playerId, selectedIndex);
 			break;
 		}
 		case MessageType::CharInfo: {

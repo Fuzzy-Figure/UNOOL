@@ -247,9 +247,9 @@ bool ServerNetwork::sendCharInfo(const CharInfo& info) {
 	return sendPacketToAll(packet);
 }
 
-bool ServerNetwork::sendCursorUpdate(std::size_t playerId, std::size_t selectedIndex) {
+bool ServerNetwork::sendPointerUpdate(std::size_t playerId, std::size_t selectedIndex) {
 	sf::Packet packet;
-	packet << static_cast<int>(MessageType::CursorUpdate);
+	packet << static_cast<int>(MessageType::PointerUpdate);
 	packet << playerId << selectedIndex;
 	return sendPacketToAll(packet);
 }
