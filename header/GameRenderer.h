@@ -80,6 +80,7 @@ public:
 	void movePointerRight(std::size_t playerId);
 	std::size_t getSelectedIndex(std::size_t playerId) const;
 	bool isChoiceActive() const;
+	bool hasChoiceOptions() const;
 	bool isLocalTurn() const;
 	void setLocalPlayerId(std::size_t id) { localPlayerId = id; }
 	void updateCharInfo(std::size_t playerIndex, const std::string& levelStr, const std::string& skills);

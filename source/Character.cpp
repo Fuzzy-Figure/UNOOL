@@ -7,7 +7,7 @@
 
 // ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
-	{"白板",     {Level::F, {}, {}, 1}},
+	{"白板",     {Level::F, {}, {}, 10000000}},
 	{"特朗普",   {Level::D, {粪怒::make}, {}, 145}},
 	{"棍母",     {Level::F, {隐身::make}, {}, 100}},
 	{"夏搏",     {Level::F, {顶置::make}, {}, 114}},

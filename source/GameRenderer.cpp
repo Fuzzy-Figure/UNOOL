@@ -63,6 +63,10 @@ bool GameRenderer::isChoiceActive() const {
 	return choice.has_value();
 }
 
+bool GameRenderer::hasChoiceOptions() const {
+	return choice.has_value() && !choice->options.empty();
+}
+
 bool GameRenderer::isLocalTurn() const {
 	return !currentState.players.empty()
 		&& currentState.players[currentState.currentPlayerIndex].id == localPlayerId;
@@ -129,7 +133,7 @@ void GameRenderer::renderPlayers() {
 		bool isCurrentPlayer = currentState.players[currentState.currentPlayerIndex].id == playerState.id;
 		bool isLocalPlayer = playerState.id == localPlayerId;
 
-		playerState.hand.display(*this, handDisplayPos, config.cardSize, (isLocalPlayer && isCurrentPlayer) ? config.pointerSize : sf::Vector2f{ 0, 0 });
+		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 });
 	}
 }
 
