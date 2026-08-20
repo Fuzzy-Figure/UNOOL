@@ -93,6 +93,7 @@ int main() {
 
 	try {
 		while (true) {
+			gameLogic.nextMatch();
 			std::cout << "[Server] 游戏开始！" << std::endl;
 			initCharacters(gameLogic);
 			gameLogic.broadcastState();

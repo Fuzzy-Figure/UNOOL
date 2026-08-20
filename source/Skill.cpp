@@ -1281,3 +1281,48 @@ bool 互质::content(Trigger& trigger) {
 }
 
 
+// ==================== 技能：黑帮 ====================
+bool 黑帮::filter(const Trigger& trigger) const {
+	return true;
+}
+bool 黑帮::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t X = trigger.getGame().getMatchCount();
+	for (std::size_t i = 0; i < X; ++i) {
+		carrier.gainCard(Card::make(Card::Color::black,
+			Card::wildCards[unool::random::randomSize_t(0, 1)]));
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动黑帮，获得了" << X << "张万能牌" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：拖拉 ====================
+bool 拖拉::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 拖拉::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Card::Name targetName = trigger.getCard().getName();
+
+	std::vector<std::size_t> matchingIndices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getCardByIndex(i).getName() == targetName) {
+			matchingIndices.push_back(i);
+		}
+	}
+
+	for (auto it = matchingIndices.rbegin(); it != matchingIndices.rend(); ++it) {
+		carrier.discardByIndex(*it);
+	}
+
+	std::size_t count = matchingIndices.size();
+	if (count > 0) {
+		carrier.recover(count);
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动拖拉，弃置了" << count << "张牌，回复" << count << "点体力" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+

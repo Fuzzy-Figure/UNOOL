@@ -25,6 +25,7 @@ private:
 	Direction direction = Direction::increase;
 	ServerNetwork& network;
 	std::array<bool, 2> charInfoDirty{ true, true };
+	std::size_t matchCount = 0;
 #pragma endregion
 
 #pragma region 私有辅助方法
@@ -62,6 +63,8 @@ public:
 	void broadcastState();
 	void flushCharInfo();
 	void markCharInfoDirty(std::size_t playerId);
+	std::size_t getMatchCount() const { return matchCount; }
+	void nextMatch() { ++matchCount; }
 	ServerNetwork& getNetwork();
 	Player& currentPlayer() const;
 	GameState packStateForPlayer(std::size_t playerId) const;

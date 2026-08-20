@@ -836,6 +836,32 @@ public:
 	bool content(Trigger& trigger) override;
 };*/
 
+class 黑帮 : public PSkillImpl<黑帮> {
+public:
+	黑帮() : PSkillImpl<黑帮>(
+		"黑帮",
+		"锁定技，游戏开始时，你随机获得X张万能牌（X为当前局数）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 拖拉 : public PSkillImpl<拖拉> {
+public:
+	拖拉() : PSkillImpl<拖拉>(
+		"拖拉",
+		"锁定技，其他角色打出万能牌后，你弃置手中所有此牌名的牌并回复弃牌数点体力。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
 
 
 
