@@ -132,8 +132,9 @@ void GameRenderer::renderPlayers() {
 
 		bool isCurrentPlayer = currentState.players[currentState.currentPlayerIndex].id == playerState.id;
 		bool isLocalPlayer = playerState.id == localPlayerId;
+		bool canSelect = isLocalPlayer && !hasChoiceOptions() && (isLocalTurn() || isChoiceActive());
 
-		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 });
+		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
 	}
 }
 

@@ -410,7 +410,7 @@ void Hand::print() const {
 	if (!empty()) std::cout << "；当前选择了第" << getSelectedIndex() << "张牌：" << getSelectedCard();
 	std::cout << std::endl;
 }
-void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize) const {
+void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize, bool canSelect) const {
 	bool displayPointer = pointerSize != sf::Vector2f{ 0, 0 };
 	const std::size_t foldCardWidth = static_cast<std::size_t>(cardSize.x / 3);
 	std::size_t dx = 0;
@@ -428,7 +428,7 @@ void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Ve
 
 	if (displayPointer && !empty()) {
 		renderer.displayImage(
-			"cards/pointer.jpg",
+			canSelect ? "cards/pointer/green.jpg" : "cards/pointer/red.jpg",
 			{ pos.x + selectedPos + cardSize.x / 2 - pointerSize.x / 2,
 			pos.y + cardSize.y },
 			pointerSize

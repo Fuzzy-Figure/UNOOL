@@ -204,7 +204,7 @@ public:
 #pragma region 排序 / 输出
 	void sort();
 	void print() const;
-	void display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize = { 0,0 }) const;
+	void display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize = { 0,0 }, bool canSelect = false) const;
 #pragma endregion
 
 #pragma region 工具方法
