@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <vector>
 #include <optional>
 #include <string>
@@ -47,21 +48,15 @@ private:
 	std::optional<std::size_t> infoBoxPlayerId; // 当前显示信息框的角色id
 	std::size_t localPlayerId = 0;
 
-	//infoBox 缓存：仅当切换角色或 hp 变化时重算
+	//infoBox 缓存：仅当切换角色时重算
 	struct InfoBoxCache {
 		std::size_t playerId = static_cast<std::size_t>(-1);
-		std::size_t hp = 0;
 		std::wstring text;
 		float boxHeight = 0.f;
 	};
 	InfoBoxCache infoBoxCache;
 	//角色信息缓存：仅在收到CharInfo包时更新
-	struct CharInfoCache {
-		std::string levelStr;
-		std::string skills;
-		bool valid = false;
-	};
-	std::array<CharInfoCache, 2> charInfoCache;
+	std::array<std::string, 2> charInfoCache;
 	sf::Clock countdownClock;
 
 	//渲染子模块
@@ -83,7 +78,7 @@ public:
 	bool hasChoiceOptions() const;
 	bool isLocalTurn() const;
 	void setLocalPlayerId(std::size_t id) { localPlayerId = id; }
-	void updateCharInfo(std::size_t playerIndex, const std::string& levelStr, const std::string& skills);
+	void updateCharInfo(std::size_t playerIndex, const std::string& fullText);
 	void display();
 	void handleMouseClick(const sf::Vector2f& mousePos);
 

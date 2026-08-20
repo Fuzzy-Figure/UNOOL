@@ -449,7 +449,7 @@ bool 蒙面::filter(const Trigger& trigger) const {
 	return true;
 }
 bool 蒙面::content(Trigger& trigger) {
-	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.7);
+	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.75);
 	return true;
 }
 
@@ -883,7 +883,7 @@ bool 棋王::filter(const Trigger& trigger) const {
 		&& trigger.getCard() == trigger.getGame().getDiscardPile()[1];
 }
 bool 棋王::content(Trigger& trigger) {
-	trigger.getCarrier().chooseToDiscard(L"弃置一张手牌", 1, true);
+	trigger.getCarrier().chooseToDiscard(L"弃置两张手牌", 2, true);
 	return true;
 }
 

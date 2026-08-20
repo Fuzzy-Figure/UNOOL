@@ -172,6 +172,7 @@ void GameLogic::initPlayers() {
 	selectCharacter(firstSeatId, state);
 	selectCharacter(secondSeatId, state);
 
+	charInfoDirty = { true, true };
 	resetRound();
 }
 
@@ -330,8 +331,10 @@ void GameLogic::flushCharInfo() {
 		if (i < 2 && charInfoDirty[i]) {
 			CharInfo info;
 			info.playerIndex = i;
-			info.levelStr = Character::to_string(players[i]->characterLevel());
-			info.skills = players[i]->getSkillsText();
+			info.fullText = players[i]->characterName() + "（"
+				+ Character::to_string(players[i]->characterLevel()) + "）\n"
+				+ "技能：\n"
+				+ players[i]->getSkillsText();
 			network.sendCharInfo(info);
 			charInfoDirty[i] = false;
 		}
@@ -408,6 +411,7 @@ void GameLogic::checkRoundEnd() {
 }
 
 void GameLogic::resetRound() {
+	++matchCount;
 	// 重置牌堆
 	pile = Pile::standard();
 	discardPile->clear();

@@ -64,7 +64,7 @@ public:
 	void flushCharInfo();
 	void markCharInfoDirty(std::size_t playerId);
 	std::size_t getMatchCount() const { return matchCount; }
-	void nextMatch() { ++matchCount; }
+	void clearMatchCount() { matchCount = 0; }
 	ServerNetwork& getNetwork();
 	Player& currentPlayer() const;
 	GameState packStateForPlayer(std::size_t playerId) const;

@@ -264,10 +264,10 @@ class 健身 : public PSkillImpl<健身> {
 public:
 	健身() : PSkillImpl<健身>(
 		"健身",
-		"锁定技，每局游戏开始时，回复5点体力。",
+		"锁定技，每局游戏结束时，回复5点体力。",
 		1, true,
 		TriggerPlayer::self,
-		TriggerTime::game_begin
+		TriggerTime::game_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -391,8 +391,8 @@ class 电音 : public PSkillImpl<电音> {
 public:
 	电音() : PSkillImpl<电音>(
 		"电音",
-		"回合开始时，你可以令手牌中所有数字牌变成随机数字并回复1点体力。",
-		unlimited, false,
+		"每局游戏限十次，回合开始时，你可以令手牌中所有数字牌变成随机数字并回复1点体力。",
+		10, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
@@ -403,7 +403,7 @@ class 蒙面 : public PSkillImpl<蒙面> {
 public:
 	蒙面() : PSkillImpl<蒙面>(
 		"蒙面",
-		"锁定技，当你失去体力时，失去体力的数值减少30% （向下取整）。",
+		"锁定技，当你失去体力时，失去体力的数值减少25% （向下取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::damage_begin
@@ -617,7 +617,7 @@ class 棋王 : public PSkillImpl<棋王> {
 public:
 	棋王() : PSkillImpl<棋王>(
 		"棋王",
-		"当你打出弃牌堆顶同色同名牌后，你可以弃置一张手牌。",
+		"当你打出弃牌堆顶同色同名牌后，你可以弃置两张手牌。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -629,9 +629,9 @@ class 金铲 : public PSkillImpl<金铲> {
 public:
 	金铲() : PSkillImpl<金铲>(
 		"金铲",
-		"锁定技，当一名角色回复1体力时，改为其失去1体力。",
+		"锁定技，当其他角色回复1体力时，改为其失去1体力。",
 		unlimited, true,
-		TriggerPlayer::anybody,
+		TriggerPlayer::others,
 		TriggerTime::recover_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;

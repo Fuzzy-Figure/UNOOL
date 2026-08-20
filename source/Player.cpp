@@ -139,16 +139,18 @@ void Player::phaseEnd() {
 }
 
 bool Player::turn() {
+	phaseBegin();
+	bool used = false;
+
 	if (banned) {
 		std::cout << "玩家" << id << "跳过了他的回合" << std::endl;
 		unban();
-		return false;
+		goto PhaseEnd;
 	}
 
-	phaseBegin();
 	if (game.isGameOver()) return handEmpty();
 
-	bool used = phaseUse1();
+	used = phaseUse1();
 	if (game.isGameOver()) return handEmpty();
 
 	if (!used) {
@@ -159,6 +161,7 @@ bool Player::turn() {
 		if (game.isGameOver()) return handEmpty();
 	}
 
+PhaseEnd:
 	phaseEnd();
 	return handEmpty();
 }

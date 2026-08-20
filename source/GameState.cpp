@@ -84,9 +84,9 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& state) {
 }
 
 sf::Packet& operator>>(sf::Packet& packet, CharInfo& info) {
-	return packet >> info.playerIndex >> info.levelStr >> info.skills;
+	return packet >> info.playerIndex >> info.fullText;
 }
 
 sf::Packet& operator<<(sf::Packet& packet, const CharInfo& info) {
-	return packet << info.playerIndex << info.levelStr << info.skills;
+	return packet << info.playerIndex << info.fullText;
 }

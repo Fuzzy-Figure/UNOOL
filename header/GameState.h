@@ -41,8 +41,7 @@ struct GameState {
 
 struct CharInfo {
 	std::size_t playerIndex = 0;
-	std::string levelStr;
-	std::string skills;
+	std::string fullText;
 
 	friend sf::Packet& operator>>(sf::Packet& packet, CharInfo& info);
 	friend sf::Packet& operator<<(sf::Packet& packet, const CharInfo& info);

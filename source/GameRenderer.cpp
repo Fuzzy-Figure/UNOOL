@@ -72,11 +72,9 @@ bool GameRenderer::isLocalTurn() const {
 		&& currentState.players[currentState.currentPlayerIndex].id == localPlayerId;
 }
 
-void GameRenderer::updateCharInfo(std::size_t playerIndex, const std::string& levelStr, const std::string& skills) {
+void GameRenderer::updateCharInfo(std::size_t playerIndex, const std::string& fullText) {
 	if (playerIndex < 2) {
-		charInfoCache[playerIndex].levelStr = levelStr;
-		charInfoCache[playerIndex].skills = skills;
-		charInfoCache[playerIndex].valid = true;
+		charInfoCache[playerIndex] = fullText;
 		//使infoBox缓存失效，强制重算
 		infoBoxCache.playerId = static_cast<std::size_t>(-1);
 	}
@@ -208,18 +206,9 @@ void GameRenderer::renderChoice() {
 void GameRenderer::renderInfoBox() {
 	if (!infoBoxPlayerId.has_value()) return;
 
-	const PlayerState* targetState = nullptr;
-	for (const auto& ps : currentState.players) {
-		if (ps.id == infoBoxPlayerId.value()) {
-			targetState = &ps;
-			break;
-		}
-	}
-	if (!targetState) return;
-
-	//从缓存获取角色等级和技能信息
-	const CharInfoCache& ciCache = charInfoCache[infoBoxPlayerId.value()];
-	if (!ciCache.valid) return;
+	//从缓存获取角色信息全文（服务器预格式化：角色名（等级）\n技能：\n...）
+	const std::string& ciCache = charInfoCache[infoBoxPlayerId.value()];
+	if (ciCache.empty()) return;
 
 	//边框与文本参数
 	const float boxWidth = 700.f;
@@ -230,63 +219,16 @@ void GameRenderer::renderInfoBox() {
 	const sf::Vector2f textSize = { 24, 28 };
 	const unsigned int charSize = static_cast<unsigned int>(textSize.y);
 
-	//缓存判断：仅当切换角色或 hp 变化时重算
-	const bool cacheValid = (infoBoxCache.playerId == infoBoxPlayerId.value()
-							 && infoBoxCache.hp == targetState->hp);
-	if (!cacheValid) {
-		std::vector<std::wstring> lines;
+	//缓存判断：仅当切换角色时重算
+	if (infoBoxCache.playerId != infoBoxPlayerId.value()) {
+		std::wstring infoText = textMgr.wrapText(
+			unool::string::to_utf16(ciCache), maxWidth, textSize);
 
-		auto addWrapped = [&](const std::wstring& raw) {
-			std::wstring wrapped = textMgr.wrapText(raw, maxWidth, textSize);
-			std::size_t start = 0;
-			for (std::size_t i = 0; i <= wrapped.size(); ++i) {
-				if (i == wrapped.size() || wrapped[i] == L'\n') {
-					lines.emplace_back(wrapped.substr(start, i - start));
-					start = i + 1;
-				}
-			}
-		};
-
-		addWrapped(unool::string::to_utf16(targetState->characterName)
-			+ L"（" + unool::string::to_utf16(ciCache.levelStr) + L"）");
-		addWrapped(L"体力：" + std::to_wstring(targetState->hp) + L"/" + std::to_wstring(targetState->maxHp));
-		addWrapped(L"技能：");
-
-		//解析skills字符串：格式为 "name1\ninfo1\nname2\ninfo2\n..."
-		std::wstring skillsW = unool::string::to_utf16(ciCache.skills);
-		std::size_t start = 0;
-		bool isName = true;
-		for (std::size_t i = 0; i <= skillsW.size(); ++i) {
-			if (i == skillsW.size() || skillsW[i] == L'\n') {
-				std::wstring line = skillsW.substr(start, i - start);
-				if (!line.empty()) {
-					if (isName) {
-						addWrapped(L"【" + line + L"】");
-					}
-					else {
-						addWrapped(line);
-					}
-				}
-				start = i + 1;
-				isName = !isName;
-			}
-		}
-
-		//拼接完整文本
-		std::wstring infoText;
-		for (std::size_t i = 0; i < lines.size(); ++i) {
-			if (i > 0) infoText += L'\n';
-			infoText += lines[i];
-		}
-
-		//用字体实际测量文本像素高度
 		const sf::Vector2f measured = textMgr.measureText(infoText, charSize);
-		const float textHeight = measured.y;
 
 		infoBoxCache.playerId = infoBoxPlayerId.value();
-		infoBoxCache.hp = targetState->hp;
 		infoBoxCache.text = std::move(infoText);
-		infoBoxCache.boxHeight = textHeight + topPad + bottomPad;
+		infoBoxCache.boxHeight = measured.y + topPad + bottomPad;
 	}
 
 	//绘制（使用缓存）

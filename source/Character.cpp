@@ -7,7 +7,7 @@
 
 // ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
-	{"白板",     {Level::F, {}, {}, 10000000}},
+	{"白板",     {Level::F, {}, {}, 1}},
 	{"特朗普",   {Level::D, {粪怒::make}, {}, 145}},
 	{"棍母",     {Level::F, {隐身::make}, {}, 100}},
 	{"夏搏",     {Level::F, {顶置::make}, {}, 114}},
@@ -22,7 +22,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"Tralalero Tralala",    {Level::C, {耐克::make}, {}, 160}},
 	{"Bombardiro Crocodilo", {Level::A, {轰炸::make}, {}, 185}},
 	{"Bumbumbini Guzzini",   {Level::A, {爆破::make}, {}, 185}},
-	{"Alan Walker", {Level::D, {电音::make, 蒙面::make}, {}, 200}},
+	{"Alan Walker", {Level::D, {电音::make, 蒙面::make}, {}, 175}},
 	{"丁真",        {Level::C, {锐刻::make}, {}, 140}},
 	{"代增玉",      {Level::F, {巨富::make, 破产::make}, {}, 275}},
 	{"潘子",        {Level::F, {假酒::make}, {}, 120}},
@@ -99,10 +99,10 @@ std::string Character::skillsName() const {
 std::string Character::getSkillsText() const {
 	std::string result;
 	for (const auto& ps : pSkills) {
-		result += ps->getName() + "\n" + ps->getInfo() + "\n";
+		result += "【" + ps->getName() + "】\n" + ps->getInfo() + "\n";
 	}
 	for (const auto& as : aSkills) {
-		result += as->getName() + "\n" + as->getInfo() + "\n";
+		result += "【" + as->getName() + "】\n" + as->getInfo() + "\n";
 	}
 	return result;
 }
