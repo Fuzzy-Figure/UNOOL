@@ -187,22 +187,14 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		setInput(input);
 
 		switch (input) {
-		case sf::Keyboard::Scancode::Left:
-		case sf::Keyboard::Scancode::A:
-			handSelectLeft();
-			game.broadcastState();
-			break;
-		case sf::Keyboard::Scancode::Right:
-		case sf::Keyboard::Scancode::D:
-			handSelectRight();
-			game.broadcastState();
-			break;
 		case sf::Keyboard::Scancode::Space:
+			hand->setSelectedIndex(clientInput.selectedIndex);
 			sortHand();
 			game.broadcastState();
 			break;
 		case sf::Keyboard::Scancode::Up:
 		case sf::Keyboard::Scancode::W:
+			hand->setSelectedIndex(clientInput.selectedIndex);
 			if (!handEmpty() && condition(hand->getSelectedCard())) {
 				return hand->getSelectedIndex();
 			}

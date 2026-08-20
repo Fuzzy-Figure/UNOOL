@@ -277,6 +277,7 @@ void GameLogic::broadcastState() {
 		GameState state = packStateForPlayer(i);
 		network.sendGameStateToClient(i, state);
 	}
+	flushCharInfo();
 }
 
 ServerNetwork& GameLogic::getNetwork() {
@@ -314,12 +315,31 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.players[i].hand.setSelectedIndex(pl->handSelectedIndex());
 	}
 
-	state.discardPile.resize(discardPile->count());
-	for (const auto& [i, card] : *discardPile | std::views::enumerate) {
-		state.discardPile[i] = *card;
+	//弃牌堆只传前4张
+	std::size_t discardCount = std::min(discardPile->count(), static_cast<std::size_t>(4));
+	state.discardPile.resize(discardCount);
+	for (std::size_t i = 0; i < discardCount; ++i) {
+		state.discardPile[i] = discardPile->getCardByIndex(i);
 	}
 
 	return state;
+}
+
+void GameLogic::flushCharInfo() {
+	for (std::size_t i = 0; i < players.size(); ++i) {
+		if (i < 2 && charInfoDirty[i]) {
+			CharInfo info;
+			info.playerIndex = i;
+			info.levelStr = Character::to_string(players[i]->characterLevel());
+			info.skills = players[i]->getSkillsText();
+			network.sendCharInfo(info);
+			charInfoDirty[i] = false;
+		}
+	}
+}
+
+void GameLogic::markCharInfoDirty(std::size_t playerId) {
+	if (playerId < 2) charInfoDirty[playerId] = true;
 }
 
 Player& GameLogic::getPlayerById(const std::size_t id) {

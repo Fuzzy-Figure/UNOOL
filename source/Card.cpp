@@ -411,7 +411,7 @@ void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Ve
 	std::size_t selectedPos = 0;
 	for (std::size_t i = 0; i < count(); ++i) {
 		cards[i]->display(renderer, { pos.x + dx, pos.y }, cardSize);
-		if (selectedIndex == i) {
+		if (displayPointer && selectedIndex == i) {
 			selectedPos = dx;
 			dx += static_cast<std::size_t>(cardSize.x);
 		}

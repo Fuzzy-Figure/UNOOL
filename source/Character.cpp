@@ -95,6 +95,16 @@ std::string Character::skillsName() const {
 	}
 	return result;
 }
+std::string Character::getSkillsText() const {
+	std::string result;
+	for (const auto& ps : pSkills) {
+		result += ps->getName() + "\n" + ps->getInfo() + "\n";
+	}
+	for (const auto& as : aSkills) {
+		result += as->getName() + "\n" + as->getInfo() + "\n";
+	}
+	return result;
+}
 std::string Character::getImagePath() const {
 	return getImagePath(name, skin);
 }

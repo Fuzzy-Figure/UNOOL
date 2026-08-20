@@ -172,10 +172,10 @@ std::optional<ClientInput> ServerNetwork::receiveClientInput() {
 		if (packet >> msgType && msgType == static_cast<int>(MessageType::ClientInput)) {
 			ClientInput input;
 			int keyCode;
-			if (packet >> keyCode >> input.playerId) {
-				input.key = static_cast<sf::Keyboard::Scancode>(keyCode);
-				return input;
-			}
+			if (packet >> keyCode >> input.playerId >> input.selectedIndex) {
+			input.key = static_cast<sf::Keyboard::Scancode>(keyCode);
+			return input;
+		}
 		}
 	}
 	return std::nullopt;
@@ -238,6 +238,20 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex, const std::wstring
 	packet << totalPages;
 
 	return sendPacketToClient(*clientSockets[clientIndex], packet);
+}
+
+bool ServerNetwork::sendCharInfo(const CharInfo& info) {
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::CharInfo);
+	packet << info;
+	return sendPacketToAll(packet);
+}
+
+bool ServerNetwork::sendCursorUpdate(std::size_t playerId, std::size_t selectedIndex) {
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::CursorUpdate);
+	packet << playerId << selectedIndex;
+	return sendPacketToAll(packet);
 }
 
 bool ServerNetwork::sendPacketToAll(sf::Packet& packet) {
@@ -307,13 +321,14 @@ void ClientNetwork::update() {
 	}
 }
 
-bool ClientNetwork::sendClientInput(sf::Keyboard::Scancode key) {
+bool ClientNetwork::sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex) {
 	if (!socket) return false;
 
 	sf::Packet packet;
 	packet << static_cast<int>(MessageType::ClientInput)
 		<< static_cast<int>(key)
-		<< playerId;
+		<< playerId
+		<< selectedIndex;
 
 	return sendPacket(packet);
 }

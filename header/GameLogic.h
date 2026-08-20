@@ -24,6 +24,7 @@ private:
 	Card::Name currentName = Card::Name::no;
 	Direction direction = Direction::increase;
 	ServerNetwork& network;
+	std::array<bool, 2> charInfoDirty{ true, true };
 #pragma endregion
 
 #pragma region 私有辅助方法
@@ -59,6 +60,8 @@ public:
 #pragma region 回合执行
 	bool runTurn();
 	void broadcastState();
+	void flushCharInfo();
+	void markCharInfoDirty(std::size_t playerId);
 	ServerNetwork& getNetwork();
 	Player& currentPlayer() const;
 	GameState packStateForPlayer(std::size_t playerId) const;

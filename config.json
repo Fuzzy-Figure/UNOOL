@@ -1,6 +1,6 @@
 {
 	"candidateCount": 5,
-	//"characters": [ "金日成", "白板" ],
+	"characters": [ "白板", "白板" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
 	"initHandCount": 8,
 	"server": {

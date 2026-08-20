@@ -249,6 +249,7 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 
 // 游戏主循环
 static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::string& titleBrackets) {
+	renderer.setLocalPlayerId(net.getPlayerId());
 	sf::Clock clock;
 	while (renderer.windowIsOpen()) {
 		sf::Time elapsed = clock.restart();
@@ -259,9 +260,20 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				return;
 			}
 			if (event->is<sf::Event::KeyPressed>()) {
-				auto keyEvent = event->getIf<sf::Event::KeyPressed>();
-				if (keyEvent) net.sendClientInput(keyEvent->scancode);
+			auto keyEvent = event->getIf<sf::Event::KeyPressed>();
+			if (keyEvent) {
+				auto sc = keyEvent->scancode;
+				if (!renderer.isChoiceActive() && renderer.isLocalTurn() && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
+					renderer.moveCursorLeft(net.getPlayerId());
+				}
+				else if (!renderer.isChoiceActive() && renderer.isLocalTurn() && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
+					renderer.moveCursorRight(net.getPlayerId());
+				}
+				else {
+					net.sendClientInput(sc, renderer.getSelectedIndex(net.getPlayerId()));
+				}
 			}
+		}
 			if (event->is<sf::Event::MouseButtonPressed>()) {
 				auto mouseEvent = event->getIf<sf::Event::MouseButtonPressed>();
 				if (mouseEvent && mouseEvent->button == sf::Mouse::Button::Left) {
@@ -292,11 +304,23 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				std::cout << titleBrackets << " 游戏开始！" << std::endl;
 				break;
 			case MessageType::GameState: {
-				GameState state;
-				packet >> state;
-				renderer.updateState(state);
-				break;
-			}
+			GameState state;
+			packet >> state;
+			renderer.updateState(state);
+			break;
+		}
+		case MessageType::CursorUpdate: {
+			std::size_t playerId, selectedIndex;
+			packet >> playerId >> selectedIndex;
+			renderer.updateCursor(playerId, selectedIndex);
+			break;
+		}
+		case MessageType::CharInfo: {
+			CharInfo info;
+			packet >> info;
+			renderer.updateCharInfo(info.playerIndex, info.levelStr, info.skills);
+			break;
+		}
 			case MessageType::GameEnd: {
 				bool hasWinner;
 				if (packet >> hasWinner) {

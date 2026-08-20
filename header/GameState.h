@@ -38,3 +38,12 @@ struct GameState {
 	friend sf::Packet& operator>>(sf::Packet& packet, GameState& state);
 	friend sf::Packet& operator<<(sf::Packet& packet, const GameState& state);
 };
+
+struct CharInfo {
+	std::size_t playerIndex = 0;
+	std::string levelStr;
+	std::string skills;
+
+	friend sf::Packet& operator>>(sf::Packet& packet, CharInfo& info);
+	friend sf::Packet& operator<<(sf::Packet& packet, const CharInfo& info);
+};

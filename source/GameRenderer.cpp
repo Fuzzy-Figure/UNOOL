@@ -25,6 +25,59 @@ void GameRenderer::updateState(const GameState& state) {
 	currentState = state;
 }
 
+void GameRenderer::updateCursor(std::size_t playerId, std::size_t selectedIndex) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.setSelectedIndex(selectedIndex);
+			break;
+		}
+	}
+}
+
+void GameRenderer::moveCursorLeft(std::size_t playerId) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.selectLeft();
+			break;
+		}
+	}
+}
+
+void GameRenderer::moveCursorRight(std::size_t playerId) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.selectRight();
+			break;
+		}
+	}
+}
+
+std::size_t GameRenderer::getSelectedIndex(std::size_t playerId) const {
+	for (const auto& ps : currentState.players) {
+		if (ps.id == playerId) return ps.hand.getSelectedIndex();
+	}
+	return 0;
+}
+
+bool GameRenderer::isChoiceActive() const {
+	return choice.has_value();
+}
+
+bool GameRenderer::isLocalTurn() const {
+	return !currentState.players.empty()
+		&& currentState.players[currentState.currentPlayerIndex].id == localPlayerId;
+}
+
+void GameRenderer::updateCharInfo(std::size_t playerIndex, const std::string& levelStr, const std::string& skills) {
+	if (playerIndex < 2) {
+		charInfoCache[playerIndex].levelStr = levelStr;
+		charInfoCache[playerIndex].skills = skills;
+		charInfoCache[playerIndex].valid = true;
+		//使infoBox缓存失效，强制重算
+		infoBoxCache.playerId = static_cast<std::size_t>(-1);
+	}
+}
+
 void GameRenderer::display() {
 	window->clear(sf::Color::White);
 	renderPlayers();
@@ -74,8 +127,9 @@ void GameRenderer::renderPlayers() {
 			sf::Vector2f{ config.characterSize.x, config.windowSize.y - config.characterSize.y };
 
 		bool isCurrentPlayer = currentState.players[currentState.currentPlayerIndex].id == playerState.id;
+		bool isLocalPlayer = playerState.id == localPlayerId;
 
-		playerState.hand.display(*this, handDisplayPos, config.cardSize, isCurrentPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 });
+		playerState.hand.display(*this, handDisplayPos, config.cardSize, (isLocalPlayer && isCurrentPlayer) ? config.pointerSize : sf::Vector2f{ 0, 0 });
 	}
 }
 
@@ -158,9 +212,9 @@ void GameRenderer::renderInfoBox() {
 	}
 	if (!targetState) return;
 
-	auto it = Character::infos.find(targetState->characterName);
-	if (it == Character::infos.end()) return;
-	const auto& info = it->second;
+	//从缓存获取角色等级和技能信息
+	const CharInfoCache& ciCache = charInfoCache[infoBoxPlayerId.value()];
+	if (!ciCache.valid) return;
 
 	//边框与文本参数
 	const float boxWidth = 700.f;
@@ -179,7 +233,6 @@ void GameRenderer::renderInfoBox() {
 
 		auto addWrapped = [&](const std::wstring& raw) {
 			std::wstring wrapped = textMgr.wrapText(raw, maxWidth, textSize);
-			//按 \n 拆分逐行，避免末尾空行
 			std::size_t start = 0;
 			for (std::size_t i = 0; i <= wrapped.size(); ++i) {
 				if (i == wrapped.size() || wrapped[i] == L'\n') {
@@ -189,21 +242,32 @@ void GameRenderer::renderInfoBox() {
 			}
 		};
 
-		addWrapped(unool::string::to_utf16(targetState->characterName) + L"（" + Character::to_wstring(info.level) + L"）");
+		addWrapped(unool::string::to_utf16(targetState->characterName)
+			+ L"（" + unool::string::to_utf16(ciCache.levelStr) + L"）");
 		addWrapped(L"体力：" + std::to_wstring(targetState->hp) + L"/" + std::to_wstring(targetState->maxHp));
 		addWrapped(L"技能：");
-		for (const auto& factory : info.pSkills) {
-			auto temp = factory();
-			addWrapped(L"【" + temp->getNameW() + L"】");
-			addWrapped(temp->getInfoW());
-		}
-		for (const auto& factory : info.aSkills) {
-			auto temp = factory();
-			addWrapped(L"【" + temp->getNameW() + L"】");
-			addWrapped(temp->getInfoW());
+
+		//解析skills字符串：格式为 "name1\ninfo1\nname2\ninfo2\n..."
+		std::wstring skillsW = unool::string::to_utf16(ciCache.skills);
+		std::size_t start = 0;
+		bool isName = true;
+		for (std::size_t i = 0; i <= skillsW.size(); ++i) {
+			if (i == skillsW.size() || skillsW[i] == L'\n') {
+				std::wstring line = skillsW.substr(start, i - start);
+				if (!line.empty()) {
+					if (isName) {
+						addWrapped(L"【" + line + L"】");
+					}
+					else {
+						addWrapped(line);
+					}
+				}
+				start = i + 1;
+				isName = !isName;
+			}
 		}
 
-		//拼接完整文本（无多余尾行）
+		//拼接完整文本
 		std::wstring infoText;
 		for (std::size_t i = 0; i < lines.size(); ++i) {
 			if (i > 0) infoText += L'\n';
