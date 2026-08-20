@@ -1,6 +1,6 @@
 {
 	"candidateCount": 5,
-	"characters": [ "白板", "新诸葛亮" ],
+	//"characters": [ "白板", "新诸葛亮" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
 	"initHandCount": 8,
 	"server": {
