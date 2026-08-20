@@ -136,7 +136,13 @@ private:
 	bool forced = false;
 };
 
-// CRTP 基类：在 PSkill 外部定义，避免继承不完整类型
+class ASkill : public Skill {
+public:
+	using Factory = std::function<std::unique_ptr<ASkill>()>;
+	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit);
+};
+
+// CRTP 基类
 template<class Derived>
 class PSkillImpl : public PSkill {
 public:
@@ -144,6 +150,27 @@ public:
 protected:
 	using PSkill::PSkill;
 };
+
+// CRTP 基类
+template<class Derived>
+class ASkillImpl : public ASkill {
+public:
+	static std::unique_ptr<ASkill> make();
+protected:
+	using ASkill::ASkill;
+};
+
+template<class Derived>
+std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
+	return std::make_unique<Derived>();
+}
+
+template<class Derived>
+std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
+	return std::make_unique<Derived>();
+}
+
+
 
 class 粪怒 : public PSkillImpl<粪怒> {
 public:
@@ -642,9 +669,9 @@ class 淘汰 : public PSkillImpl<淘汰> {
 public:
 	淘汰() : PSkillImpl<淘汰>(
 		"淘汰",
-		"每局游戏共限五次："
-		"\n你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；"
-		"\n你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
+		"每局游戏共限五次：\n"
+		"你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；\n"
+		"你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
 		5, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -657,8 +684,9 @@ class 光合 : public PSkillImpl<光合> {
 public:
 	光合() : PSkillImpl<光合>(
 		"光合",
-		"当你成为封禁类功能牌的目标时，你可判定："
-		"\n若结果为数字牌，来源摸一张牌；\n为功能牌，解除此牌封禁状态。",
+		"当你成为封禁类功能牌的目标时，你可判定：\n"
+		"若结果为数字牌，来源摸一张牌；\n"
+		"为功能牌，解除此牌封禁状态。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
@@ -751,7 +779,9 @@ class 朔日 : public PSkillImpl<朔日> {
 public:
 	朔日() : PSkillImpl<朔日>(
 		"朔日",
-		"你打出黄色牌后，回复1点体力并可选择一项：\n1.将一张数字牌变为黄色且可令其点数+1/-1；\n2.将一张功能牌变为黄色的随机功能牌。",
+		"你打出黄色牌后，回复1点体力并可选择一项：\n"
+		"1.将一张数字牌变为黄色且可令其点数+1/-1；\n"
+		"2.将一张功能牌变为黄色的随机功能牌。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -805,29 +835,8 @@ public:
 };
 
 
-class ASkill : public Skill {
-public:
-	using Factory = std::function<std::unique_ptr<ASkill>()>;
-	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit);
-};
-
-// CRTP 基类：在 ASkill 外部定义
-template<class Derived>
-class ASkillImpl : public ASkill {
-public:
-	static std::unique_ptr<ASkill> make();
-protected:
-	using ASkill::ASkill;
-};
 
 
 
-template<class Derived>
-std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
-	return std::make_unique<Derived>();
-}
 
-template<class Derived>
-std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
-	return std::make_unique<Derived>();
-}
+
