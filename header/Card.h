@@ -79,7 +79,9 @@ public:
 	bool isNumber() const;
 	bool isNotNumber() const;
 	bool isAction() const;
+	bool isNotAction() const;
 	bool isWild() const;
+	bool isNotWild() const;
 	int value() const;
 	std::string toString() const;
 	std::wstring toWString() const;

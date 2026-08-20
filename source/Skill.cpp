@@ -1231,3 +1231,53 @@ bool 豪赌::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：互质 ====================
+bool 互质::areCoprime(const int a, const int b) {
+	if (a == 0 || b == 0) {
+		return false;  // 0 与任何数（包括 0）都不互质
+	}
+	return std::gcd(a, b) == 1;
+}
+bool 互质::isPairwiseCoprime(const std::vector<int>& nums) {
+	// 空集或单元素集视为两两互质
+	if (nums.size() <= 1) {
+		return true;
+	}
+	// 检查是否存在 0（有 0 且不止一个元素则必然不互质）
+	if (std::ranges::any_of(nums, [](int x) { return x == 0; })) {
+		return false;
+	}
+	// 使用索引视图生成所有数对并检查
+	for (auto i : std::views::iota(0ull, nums.size())) {
+		for (auto j : std::views::iota(i + 1, nums.size())) {
+			if (!areCoprime(nums[i], nums[j])) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+bool 互质::filter(const Trigger& trigger) const {
+	Hand& hand = trigger.getCarrier().getHand();
+	std::vector<int> nums;
+	for (const auto& c : hand) {
+		if (c->isNumber()) nums.push_back(c->value());
+	}
+	return isPairwiseCoprime(nums);
+}
+bool 互质::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t product = 1;
+	carrier.getHand().forEachIf(
+		&Card::isNumber,
+		[&product](const Card& c) {
+		product *= c.value();
+	}
+	);
+	carrier.takeDamage(product, carrier);
+	return true;
+}
+
+

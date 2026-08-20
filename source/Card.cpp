@@ -124,8 +124,14 @@ bool Card::isAction() const {
 	return name == Name::action_ban || name == Name::action_draw2
 		|| name == Name::action_rev;
 }
+bool Card::isNotAction() const {
+	return !isAction();
+}
 bool Card::isWild() const {
 	return name == Name::wild_pal || name == Name::wild_draw4;
+}
+bool Card::isNotWild() const {
+	return !isWild();
 }
 int Card::value() const {
 	switch (name) {
