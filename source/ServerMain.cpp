@@ -23,6 +23,7 @@ static void initCharacters(GameLogic& gameLogic) {
 static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
 	serverNetwork.sendGameEnd(winnerId);
+	gameLogic.clearMatchCount();
 
 	if (winnerId.has_value()) {
 		std::size_t wId = winnerId.value();

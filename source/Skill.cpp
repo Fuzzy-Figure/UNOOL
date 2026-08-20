@@ -449,7 +449,7 @@ bool 蒙面::filter(const Trigger& trigger) const {
 	return true;
 }
 bool 蒙面::content(Trigger& trigger) {
-	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.7);
+	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.75);
 	return true;
 }
 
@@ -883,7 +883,7 @@ bool 棋王::filter(const Trigger& trigger) const {
 		&& trigger.getCard() == trigger.getGame().getDiscardPile()[1];
 }
 bool 棋王::content(Trigger& trigger) {
-	trigger.getCarrier().chooseToDiscard(L"弃置一张手牌", 1, true);
+	trigger.getCarrier().chooseToDiscard(L"弃置两张手牌", 2, true);
 	return true;
 }
 
@@ -1231,3 +1231,98 @@ bool 豪赌::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：互质 ====================
+bool 互质::areCoprime(const int a, const int b) {
+	if (a == 0 || b == 0) {
+		return false;  // 0 与任何数（包括 0）都不互质
+	}
+	return std::gcd(a, b) == 1;
+}
+bool 互质::isPairwiseCoprime(const std::vector<int>& nums) {
+	// 空集或单元素集视为两两互质
+	if (nums.size() <= 1) {
+		return true;
+	}
+	// 检查是否存在 0（有 0 且不止一个元素则必然不互质）
+	if (std::ranges::any_of(nums, [](int x) { return x == 0; })) {
+		return false;
+	}
+	// 使用索引视图生成所有数对并检查
+	for (auto i : std::views::iota(0ull, nums.size())) {
+		for (auto j : std::views::iota(i + 1, nums.size())) {
+			if (!areCoprime(nums[i], nums[j])) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+bool 互质::filter(const Trigger& trigger) const {
+	Hand& hand = trigger.getCarrier().getHand();
+	std::vector<int> nums;
+	for (const auto& c : hand) {
+		if (c->isNumber()) nums.push_back(c->value());
+	}
+	return isPairwiseCoprime(nums);
+}
+bool 互质::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t product = 1;
+	carrier.getHand().forEachIf(
+		&Card::isNumber,
+		[&product](const Card& c) {
+		product *= c.value();
+	}
+	);
+	carrier.takeDamage(product, carrier);
+	return true;
+}
+
+
+// ==================== 技能：黑帮 ====================
+bool 黑帮::filter(const Trigger& trigger) const {
+	return true;
+}
+bool 黑帮::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t X = trigger.getGame().getMatchCount();
+	for (std::size_t i = 0; i < X; ++i) {
+		carrier.gainCard(Card::make(Card::Color::black,
+			Card::wildCards[unool::random::randomSize_t(0, 1)]));
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动黑帮，获得了" << X << "张万能牌" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：拖拉 ====================
+bool 拖拉::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 拖拉::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Card::Name targetName = trigger.getCard().getName();
+
+	std::vector<std::size_t> matchingIndices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getCardByIndex(i).getName() == targetName) {
+			matchingIndices.push_back(i);
+		}
+	}
+
+	for (auto it = matchingIndices.rbegin(); it != matchingIndices.rend(); ++it) {
+		carrier.discardByIndex(*it);
+	}
+
+	std::size_t count = matchingIndices.size();
+	if (count > 0) {
+		carrier.recover(count);
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动拖拉，弃置了" << count << "张牌，回复" << count << "点体力" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+

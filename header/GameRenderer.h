@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <vector>
 #include <optional>
 #include <string>
@@ -45,15 +46,17 @@ private:
 	Config config;
 	std::optional<Choice> choice;
 	std::optional<std::size_t> infoBoxPlayerId; // 当前显示信息框的角色id
+	std::size_t localPlayerId = 0;
 
-	//infoBox 缓存：仅当切换角色或 hp 变化时重算
+	//infoBox 缓存：仅当切换角色时重算
 	struct InfoBoxCache {
 		std::size_t playerId = static_cast<std::size_t>(-1);
-		std::size_t hp = 0;
 		std::wstring text;
 		float boxHeight = 0.f;
 	};
 	InfoBoxCache infoBoxCache;
+	//角色信息缓存：仅在收到CharInfo包时更新
+	std::array<std::string, 2> charInfoCache;
 	sf::Clock countdownClock;
 
 	//渲染子模块
@@ -67,6 +70,15 @@ public:
 	~GameRenderer();
 
 	void updateState(const GameState& state);
+	void updatePointer(std::size_t playerId, std::size_t selectedIndex);
+	void movePointerLeft(std::size_t playerId);
+	void movePointerRight(std::size_t playerId);
+	std::size_t getSelectedIndex(std::size_t playerId) const;
+	bool isChoiceActive() const;
+	bool hasChoiceOptions() const;
+	bool isLocalTurn() const;
+	void setLocalPlayerId(std::size_t id) { localPlayerId = id; }
+	void updateCharInfo(std::size_t playerIndex, const std::string& fullText);
 	void display();
 	void handleMouseClick(const sf::Vector2f& mousePos);
 

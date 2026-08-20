@@ -17,13 +17,13 @@ class GameLogic;
 
 class Skill {
 protected:
+	using limit_t = std::optional<std::size_t>;
 	std::string name = "未知技能";
 	std::string info = "无";
-	std::optional<std::size_t> limit; //每局使用限制次数，std::nullopt代表无次数限制
+	limit_t limit; //每局使用限制次数，std::nullopt代表无次数限制
 	std::size_t count = 0; //使用次数
 public:
 	inline static const auto unlimited = std::nullopt;
-	using limit_t = std::optional<std::size_t>;
 
 	std::string getName() const { return name; }
 	std::wstring getNameW() const { return unool::string::to_utf16(name); }
@@ -291,10 +291,10 @@ class 健身 : public PSkillImpl<健身> {
 public:
 	健身() : PSkillImpl<健身>(
 		"健身",
-		"锁定技，每局游戏开始时，回复5点体力。",
+		"锁定技，每局游戏结束时，回复5点体力。",
 		1, true,
 		TriggerPlayer::self,
-		TriggerTime::game_begin
+		TriggerTime::game_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -418,8 +418,8 @@ class 电音 : public PSkillImpl<电音> {
 public:
 	电音() : PSkillImpl<电音>(
 		"电音",
-		"回合开始时，你可以令手牌中所有数字牌变成随机数字并回复1点体力。",
-		unlimited, false,
+		"每局游戏限十次，回合开始时，你可以令手牌中所有数字牌变成随机数字并回复1点体力。",
+		10, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
@@ -430,7 +430,7 @@ class 蒙面 : public PSkillImpl<蒙面> {
 public:
 	蒙面() : PSkillImpl<蒙面>(
 		"蒙面",
-		"锁定技，当你失去体力时，失去体力的数值减少30% （向下取整）。",
+		"锁定技，当你失去体力时，失去体力的数值减少25% （向下取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::damage_begin
@@ -644,7 +644,7 @@ class 棋王 : public PSkillImpl<棋王> {
 public:
 	棋王() : PSkillImpl<棋王>(
 		"棋王",
-		"当你打出弃牌堆顶同色同名牌后，你可以弃置一张手牌。",
+		"当你打出弃牌堆顶同色同名牌后，你可以弃置两张手牌。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -656,9 +656,9 @@ class 金铲 : public PSkillImpl<金铲> {
 public:
 	金铲() : PSkillImpl<金铲>(
 		"金铲",
-		"锁定技，当一名角色回复1体力时，改为其失去1体力。",
+		"锁定技，当其他角色回复1体力时，改为其失去1体力。",
 		unlimited, true,
-		TriggerPlayer::anybody,
+		TriggerPlayer::others,
 		TriggerTime::recover_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
@@ -833,6 +833,70 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+class 互质 : public PSkillImpl<互质> {
+	// 判断两个整数是否互质
+	static bool areCoprime(const int a, const int b);
+	// 判断 vector 中的所有整数是否两两互质
+	static bool isPairwiseCoprime(const std::vector<int>& nums);
+public:
+	互质() : PSkillImpl<互质>(
+		"互质",
+		"锁定技，回合结束时，若你手牌两两互质，你失去X点体力（X为你手牌点数之积）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+/*class 难题 : public PSkillImpl<难题> {
+	std::array<bool, 10> record{};
+public:
+	难题() : PSkillImpl<难题>(
+		"难题",
+		"你于摸牌阶段获得数字牌时，若点数未记录，记录之。\n"
+		"回合开始时，你可将一张非万能牌变为随机已记录点数的同色数字牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};*/
+
+class 黑帮 : public PSkillImpl<黑帮> {
+public:
+	黑帮() : PSkillImpl<黑帮>(
+		"黑帮",
+		"锁定技，游戏开始时，你随机获得X张万能牌（X为当前局数）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 拖拉 : public PSkillImpl<拖拉> {
+public:
+	拖拉() : PSkillImpl<拖拉>(
+		"拖拉",
+		"锁定技，其他角色打出万能牌后，你弃置手中所有此牌名的牌并回复弃牌数点体力。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+
+
+
+
+
 
 
 

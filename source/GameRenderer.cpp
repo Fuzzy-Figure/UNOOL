@@ -25,6 +25,61 @@ void GameRenderer::updateState(const GameState& state) {
 	currentState = state;
 }
 
+void GameRenderer::updatePointer(std::size_t playerId, std::size_t selectedIndex) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.setSelectedIndex(selectedIndex);
+			break;
+		}
+	}
+}
+
+void GameRenderer::movePointerLeft(std::size_t playerId) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.selectLeft();
+			break;
+		}
+	}
+}
+
+void GameRenderer::movePointerRight(std::size_t playerId) {
+	for (auto& ps : currentState.players) {
+		if (ps.id == playerId) {
+			ps.hand.selectRight();
+			break;
+		}
+	}
+}
+
+std::size_t GameRenderer::getSelectedIndex(std::size_t playerId) const {
+	for (const auto& ps : currentState.players) {
+		if (ps.id == playerId) return ps.hand.getSelectedIndex();
+	}
+	return 0;
+}
+
+bool GameRenderer::isChoiceActive() const {
+	return choice.has_value();
+}
+
+bool GameRenderer::hasChoiceOptions() const {
+	return choice.has_value() && !choice->options.empty();
+}
+
+bool GameRenderer::isLocalTurn() const {
+	return !currentState.players.empty()
+		&& currentState.players[currentState.currentPlayerIndex].id == localPlayerId;
+}
+
+void GameRenderer::updateCharInfo(std::size_t playerIndex, const std::string& fullText) {
+	if (playerIndex < 2) {
+		charInfoCache[playerIndex] = fullText;
+		//使infoBox缓存失效，强制重算
+		infoBoxCache.playerId = static_cast<std::size_t>(-1);
+	}
+}
+
 void GameRenderer::display() {
 	window->clear(sf::Color::White);
 	renderPlayers();
@@ -74,8 +129,10 @@ void GameRenderer::renderPlayers() {
 			sf::Vector2f{ config.characterSize.x, config.windowSize.y - config.characterSize.y };
 
 		bool isCurrentPlayer = currentState.players[currentState.currentPlayerIndex].id == playerState.id;
+		bool isLocalPlayer = playerState.id == localPlayerId;
+		bool canSelect = isLocalPlayer && !hasChoiceOptions() && (isLocalTurn() || isChoiceActive());
 
-		playerState.hand.display(*this, handDisplayPos, config.cardSize, isCurrentPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 });
+		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
 	}
 }
 
@@ -149,18 +206,9 @@ void GameRenderer::renderChoice() {
 void GameRenderer::renderInfoBox() {
 	if (!infoBoxPlayerId.has_value()) return;
 
-	const PlayerState* targetState = nullptr;
-	for (const auto& ps : currentState.players) {
-		if (ps.id == infoBoxPlayerId.value()) {
-			targetState = &ps;
-			break;
-		}
-	}
-	if (!targetState) return;
-
-	auto it = Character::infos.find(targetState->characterName);
-	if (it == Character::infos.end()) return;
-	const auto& info = it->second;
+	//从缓存获取角色信息全文（服务器预格式化：角色名（等级）\n技能：\n...）
+	const std::string& ciCache = charInfoCache[infoBoxPlayerId.value()];
+	if (ciCache.empty()) return;
 
 	//边框与文本参数
 	const float boxWidth = 700.f;
@@ -171,53 +219,16 @@ void GameRenderer::renderInfoBox() {
 	const sf::Vector2f textSize = { 24, 28 };
 	const unsigned int charSize = static_cast<unsigned int>(textSize.y);
 
-	//缓存判断：仅当切换角色或 hp 变化时重算
-	const bool cacheValid = (infoBoxCache.playerId == infoBoxPlayerId.value()
-							 && infoBoxCache.hp == targetState->hp);
-	if (!cacheValid) {
-		std::vector<std::wstring> lines;
+	//缓存判断：仅当切换角色时重算
+	if (infoBoxCache.playerId != infoBoxPlayerId.value()) {
+		std::wstring infoText = textMgr.wrapText(
+			unool::string::to_utf16(ciCache), maxWidth, textSize);
 
-		auto addWrapped = [&](const std::wstring& raw) {
-			std::wstring wrapped = textMgr.wrapText(raw, maxWidth, textSize);
-			//按 \n 拆分逐行，避免末尾空行
-			std::size_t start = 0;
-			for (std::size_t i = 0; i <= wrapped.size(); ++i) {
-				if (i == wrapped.size() || wrapped[i] == L'\n') {
-					lines.emplace_back(wrapped.substr(start, i - start));
-					start = i + 1;
-				}
-			}
-		};
-
-		addWrapped(unool::string::to_utf16(targetState->characterName) + L"（" + Character::to_wstring(info.level) + L"）");
-		addWrapped(L"体力：" + std::to_wstring(targetState->hp) + L"/" + std::to_wstring(targetState->maxHp));
-		addWrapped(L"技能：");
-		for (const auto& factory : info.pSkills) {
-			auto temp = factory();
-			addWrapped(L"【" + temp->getNameW() + L"】");
-			addWrapped(temp->getInfoW());
-		}
-		for (const auto& factory : info.aSkills) {
-			auto temp = factory();
-			addWrapped(L"【" + temp->getNameW() + L"】");
-			addWrapped(temp->getInfoW());
-		}
-
-		//拼接完整文本（无多余尾行）
-		std::wstring infoText;
-		for (std::size_t i = 0; i < lines.size(); ++i) {
-			if (i > 0) infoText += L'\n';
-			infoText += lines[i];
-		}
-
-		//用字体实际测量文本像素高度
 		const sf::Vector2f measured = textMgr.measureText(infoText, charSize);
-		const float textHeight = measured.y;
 
 		infoBoxCache.playerId = infoBoxPlayerId.value();
-		infoBoxCache.hp = targetState->hp;
 		infoBoxCache.text = std::move(infoText);
-		infoBoxCache.boxHeight = textHeight + topPad + bottomPad;
+		infoBoxCache.boxHeight = measured.y + topPad + bottomPad;
 	}
 
 	//绘制（使用缓存）

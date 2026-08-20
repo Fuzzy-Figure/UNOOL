@@ -82,3 +82,11 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& state) {
 
 	return packet;
 }
+
+sf::Packet& operator>>(sf::Packet& packet, CharInfo& info) {
+	return packet >> info.playerIndex >> info.fullText;
+}
+
+sf::Packet& operator<<(sf::Packet& packet, const CharInfo& info) {
+	return packet << info.playerIndex << info.fullText;
+}

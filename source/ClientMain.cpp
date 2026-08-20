@@ -249,6 +249,7 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 
 // 游戏主循环
 static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::string& titleBrackets) {
+	renderer.setLocalPlayerId(net.getPlayerId());
 	sf::Clock clock;
 	while (renderer.windowIsOpen()) {
 		sf::Time elapsed = clock.restart();
@@ -260,7 +261,18 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 			}
 			if (event->is<sf::Event::KeyPressed>()) {
 				auto keyEvent = event->getIf<sf::Event::KeyPressed>();
-				if (keyEvent) net.sendClientInput(keyEvent->scancode);
+				if (keyEvent) {
+					auto sc = keyEvent->scancode;
+					if (!renderer.hasChoiceOptions() && (renderer.isLocalTurn() || renderer.isChoiceActive()) && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
+						renderer.movePointerLeft(net.getPlayerId());
+					}
+					else if (!renderer.hasChoiceOptions() && (renderer.isLocalTurn() || renderer.isChoiceActive()) && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
+						renderer.movePointerRight(net.getPlayerId());
+					}
+					else {
+						net.sendClientInput(sc, renderer.getSelectedIndex(net.getPlayerId()));
+					}
+				}
 			}
 			if (event->is<sf::Event::MouseButtonPressed>()) {
 				auto mouseEvent = event->getIf<sf::Event::MouseButtonPressed>();
@@ -295,6 +307,18 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				GameState state;
 				packet >> state;
 				renderer.updateState(state);
+				break;
+			}
+			case MessageType::PointerUpdate: {
+				std::size_t playerId, selectedIndex;
+				packet >> playerId >> selectedIndex;
+				renderer.updatePointer(playerId, selectedIndex);
+				break;
+			}
+			case MessageType::CharInfo: {
+				CharInfo info;
+				packet >> info;
+				renderer.updateCharInfo(info.playerIndex, info.fullText);
 				break;
 			}
 			case MessageType::GameEnd: {

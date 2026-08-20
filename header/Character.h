@@ -43,6 +43,7 @@ public:
 	const std::string& getSkin() const { return skin; }
 	Level getLevel() const;
 	std::string skillsName() const;
+	std::string getSkillsText() const;
 	std::string getImagePath() const;
 	bool operator<(const Character& other) const;
 	bool operator==(const Character& other) const;

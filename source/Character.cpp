@@ -22,7 +22,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"Tralalero Tralala",    {Level::C, {耐克::make}, {}, 160}},
 	{"Bombardiro Crocodilo", {Level::A, {轰炸::make}, {}, 185}},
 	{"Bumbumbini Guzzini",   {Level::A, {爆破::make}, {}, 185}},
-	{"Alan Walker", {Level::D, {电音::make, 蒙面::make}, {}, 200}},
+	{"Alan Walker", {Level::D, {电音::make, 蒙面::make}, {}, 175}},
 	{"丁真",        {Level::C, {锐刻::make}, {}, 140}},
 	{"代增玉",      {Level::F, {巨富::make, 破产::make}, {}, 275}},
 	{"潘子",        {Level::F, {假酒::make}, {}, 120}},
@@ -43,6 +43,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"刘建龙", {Level::D, {徒步::make}, {}, 250}},
 	{"拜登",   {Level::A, {健忘::make}, {}, 125}},
 	{"王耘浩", {Level::C, {豪赌::make}, {}, 250}},
+	{"Bulbito Bandito Traktorito", {Level::B, {黑帮::make, 拖拉::make}, {}, 225}},
 };
 
 
@@ -92,6 +93,16 @@ std::string Character::skillsName() const {
 	}
 	for (const auto& as : aSkills) {
 		result += as->getName() + ", ";
+	}
+	return result;
+}
+std::string Character::getSkillsText() const {
+	std::string result;
+	for (const auto& ps : pSkills) {
+		result += "【" + ps->getName() + "】\n" + ps->getInfo() + "\n";
+	}
+	for (const auto& as : aSkills) {
+		result += "【" + as->getName() + "】\n" + as->getInfo() + "\n";
 	}
 	return result;
 }

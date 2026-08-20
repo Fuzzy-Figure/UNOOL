@@ -19,6 +19,8 @@ enum class MessageType {
 	GameStart,
 	GameEnd,
 	Choice,
+	PointerUpdate,
+	CharInfo,
 	RegisterRequest,
 	RegisterResponse,
 	LoginRequest,
@@ -30,6 +32,7 @@ enum class MessageType {
 struct ClientInput {
 	sf::Keyboard::Scancode key;
 	std::size_t playerId;
+	std::size_t selectedIndex;
 };
 
 struct ConnectionInfo {
@@ -79,6 +82,8 @@ public:
 	bool sendGameStart();
 	bool sendGameEnd(std::optional<std::size_t> winnerId);
 	bool sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg = L"", std::optional<std::size_t> timeoutMs = std::nullopt, std::size_t currentPage = 0, std::size_t totalPages = 1);
+	bool sendCharInfo(const CharInfo& info);
+	bool sendPointerUpdate(std::size_t playerId, std::size_t selectedIndex);
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const { return clientSockets.size(); }
@@ -103,7 +108,7 @@ public:
 	void disconnect();
 	void update();
 
-	bool sendClientInput(sf::Keyboard::Scancode key);
+	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
 	bool send(sf::Packet& packet);
 	std::optional<sf::Packet> receivePacket();
 
