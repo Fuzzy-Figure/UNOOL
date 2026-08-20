@@ -1205,7 +1205,7 @@ bool 豪赌::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 
-	//调用标准判定：牌从牌堆取出，入弃牌堆顶，触发judge_begin/judge_end
+	//判定
 	Card& card = carrier.judge();
 	game.forEachPlayer([&card](Player& p) {
 		p.hint(L"[豪赌] 判定结果是" + card.toWString());
