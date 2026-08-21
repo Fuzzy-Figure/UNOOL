@@ -426,9 +426,9 @@ void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Ve
 		}
 	}
 
-	if (displayPointer && !empty()) {
+	if (displayPointer && !empty() && canSelect) {
 		renderer.displayImage(
-			canSelect ? "cards/pointer/green.jpg" : "cards/pointer/red.jpg",
+			"cards/pointer/默认.jpg",
 			{ pos.x + selectedPos + cardSize.x / 2 - pointerSize.x / 2,
 			pos.y + cardSize.y },
 			pointerSize
