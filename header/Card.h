@@ -224,9 +224,8 @@ public:
 
 class Pile :public Cards {
 public:
-#pragma region 工厂 / 克隆
+#pragma region 工厂
 	static std::unique_ptr<Pile> standard();
-	Pile clone() const;
 #pragma endregion
 
 #pragma region 牌堆操作
