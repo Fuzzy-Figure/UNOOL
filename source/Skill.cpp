@@ -20,13 +20,16 @@ void Skill::reset() {
 //         被动技
 // **********************
 
-PSkill::PSkill(const std::string& name, const std::string& description,
-			   const limit_t& _limit, const bool _forced,
-			   const TriggerPlayer& _triggerPlayer, const TriggerTime& _triggerTime)
-	:Skill(name, description, _limit),
-	forced(_forced),
-	triggerPlayer(_triggerPlayer),
-	triggerTime(_triggerTime) {}
+
+//无子技能
+PSkill::PSkill(const std::string& name, const std::string& description, 
+			   const limit_t& limit, bool forced, 
+			   const TriggerPlayer& triggerPlayer, 
+			   const TriggerTime& triggerTime)
+	: Skill(name, description, limit),
+	forced(forced),
+	triggerPlayer(triggerPlayer),
+	triggerTime(triggerTime) {}
 
 bool PSkill::matchTrigger(const TriggerTime& currentTriggerTime,
 						  const Trigger& trigger) const {
@@ -1290,7 +1293,7 @@ bool 黑帮::content(Trigger& trigger) {
 	std::size_t X = trigger.getGame().getMatchCount();
 	for (std::size_t i = 0; i < X; ++i) {
 		carrier.gainCard(Card::make(Card::Color::black,
-			Card::wildCards[unool::random::randomSize_t(0, 1)]));
+									Card::wildCards[unool::random::randomSize_t(0, 1)]));
 	}
 	std::cout << "<技能> " << carrier.characterName() << "发动黑帮，获得了" << X << "张万能牌" << std::endl;
 	trigger.getGame().broadcastState();
@@ -1325,4 +1328,20 @@ bool 拖拉::content(Trigger& trigger) {
 	return true;
 }
 
+bool js::filter(const Trigger& trigger) const {
+	return true;
+}
 
+bool js::content(Trigger& trigger) {
+	trigger.getCarrier().draw(1);
+	return true;
+}
+
+bool test::filter(const Trigger& trigger) const {
+	return true;
+}
+
+bool test::content(Trigger& trigger) {
+	trigger.getCarrier().draw(1);
+	return true;
+}

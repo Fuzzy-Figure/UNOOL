@@ -121,15 +121,29 @@ public:
 	virtual bool filter(const Trigger& trigger) const = 0;
 	virtual bool content(Trigger& trigger) = 0;
 
+	//无子技能
 	PSkill(const std::string& name, const std::string& description,
 		   const limit_t& limit, bool forced,
-		   const TriggerPlayer& triggerPlayer, const TriggerTime& triggerTime);
+		   const TriggerPlayer& triggerPlayer,
+		   const TriggerTime& triggerTime);
 
+	//有子技能
+	template<typename... SubSkills>
+		requires (std::same_as<std::decay_t<SubSkills>, std::unique_ptr<PSkill>> && ...)
+	PSkill(const std::string& _name, const std::string& _description,
+		   const limit_t& _limit, bool _forced,
+		   const TriggerPlayer& _triggerPlayer,
+		   const TriggerTime& _triggerTime,
+		   SubSkills&&... _subSkills)
+		: PSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
+		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
+	}
 	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
 	void launch(Trigger& trigger);
 	void reset() override;
 	void setForced(const bool newForced);
 
+	std::vector<std::unique_ptr<PSkill>> subSkills;
 private:
 	TriggerPlayer triggerPlayer;
 	TriggerTime triggerTime;
@@ -892,7 +906,32 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
+class js : public PSkillImpl<js> {
+public:
+	js() : PSkillImpl<js>(
+		"js",
+		"锁定技，回合结束时摸1",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
 
+class test : public PSkillImpl<test> {
+public:
+	test() : PSkillImpl<test>(
+		"test",
+		"锁定技，回合开始/结束时摸1",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin,
+		js::make()
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
 
 
 

@@ -385,7 +385,6 @@ void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 	for (auto& carrier : players) {
 		PSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
 		carrier->launchPSkills(currentTriggerTime, trigger);
-		std::optional<std::variant<std::reference_wrapper<Card>, std::vector<std::reference_wrapper<Card>>>> a;
 	}
 }
 

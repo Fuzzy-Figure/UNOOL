@@ -101,7 +101,7 @@ public:
 #pragma endregion
 
 #pragma region 技能 / 状态
-	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) { character->launchPSkills(currentTriggerTime, trigger); }
+	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger);
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }

@@ -98,6 +98,10 @@ bool Player::canUse(const Card& card) {
 
 // === 技能 / 状态 ===
 
+void Player::launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) {
+	character->launchPSkills(currentTriggerTime, trigger);
+}
+
 void Player::ban(Player& source, Card& card) {
 	game.launchPSkills(PSkill::TriggerTime::ban_begin, *this, card, source);
 	banned = true;
@@ -140,6 +144,7 @@ void Player::phaseEnd() {
 
 bool Player::turn() {
 	phaseBegin();
+	game.broadcastState();
 	bool used = false;
 
 	if (banned) {
@@ -163,6 +168,7 @@ bool Player::turn() {
 
 PhaseEnd:
 	phaseEnd();
+	game.broadcastState();
 	return handEmpty();
 }
 
