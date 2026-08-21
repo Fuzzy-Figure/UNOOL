@@ -1306,7 +1306,7 @@ bool 互质::filter(const Trigger& trigger) const {
 	for (const auto& c : hand) {
 		if (c->isNumber()) nums.push_back(c->value());
 	}
-	return isPairwiseCoprime(nums);
+	return !isPairwiseCoprime(nums);
 }
 bool 互质::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
@@ -1317,7 +1317,7 @@ bool 互质::content(Trigger& trigger) {
 		product *= c.value();
 	}
 	);
-	carrier.takeDamage(product, carrier);
+	carrier.takeDamage(std::min(product, 300ull), carrier);
 	return true;
 }
 
@@ -1328,8 +1328,13 @@ bool 难题_变牌::filter(const Trigger& trigger) const {
 }
 bool 难题_变牌::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
+	std::wstring recordStr = L"已记录的点数：";
+	for (const auto& x : *record) {
+		recordStr += Card::to_wstring(x) + L",";
+	}
 	auto cardRef = carrier.chooseToOperate(
-		L"【难题】选择一张非万能牌变为随机已记录点数的同色数字牌", false,
+		L"【难题】\n" + recordStr + L"\n" +
+		L"选择一张非万能牌变为随机已记录点数的同色数字牌", false,
 		&Card::isNotWild,
 		[this](Card& c) { c.setName(unool::random::randomGet(*record)); }
 	);
@@ -1363,3 +1368,29 @@ bool 难题::content(Trigger& trigger) {
 	return true;
 }
 
+
+// ==================== 技能：迷烟 ====================
+bool 迷烟::filter(const Trigger& trigger) const {
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+bool 迷烟::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Card& card = trigger.getCard();
+	carrier.showCard(card);
+	std::optional targetOpt = carrier.chooseOtherPlayer(L"[迷烟] 选择一名其他玩家", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	std::wstring colorStr = Card::to_wstring(card.getColor());
+	std::vector discard = target.chooseToDiscard(
+		L"[迷烟]\n弃置一张" + colorStr + L"色手牌或万能牌，\n或取消并摸一张牌", 1, false,
+		[&card](const Card& c) {
+		return c.getColor() == card.getColor() || c.isWild();
+	});
+	if (discard.size() == 0) { //没弃牌，摸一张
+		target.draw(1);
+	}
+	return true;
+}

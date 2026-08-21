@@ -32,6 +32,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason)
 	}
 
 	if (reason == DrawReason::phase_draw) handSelectLast();
+
 	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
 	return drawnCards;
 }
@@ -39,6 +40,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason)
 std::vector<ref<Card>> Player::drawTo(const std::size_t num, const DrawReason reason) {
 	if (const std::size_t _handCount = handCount(); _handCount < num)
 		return draw(num - _handCount, reason);
+	else return {};
 }
 
 //返回使用牌的引用
@@ -244,7 +246,7 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
-		std::wstring fullTitle = title + L"（" + std::to_wstring(discardedCount + 1) + L"/" + std::to_wstring(num) + L"）"
+		std::wstring fullTitle = title + L"（" + std::to_wstring(discardedCount + 1) + L"/" + std::to_wstring(num) + L"）\n"
 			+ (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
 		network.sendPlayerChoice(id, fullTitle, {}, forced);
 		auto index = chooseCard(condition, forced);
@@ -289,8 +291,8 @@ opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 									  const std::function<bool(const Card&)>& condition,
 									  const std::function<void(Card&)>& operation) {
 	ServerNetwork& network = game.getNetwork();
-	if (forced) network.sendPlayerChoice(id, title + L"（↑确认，不可取消）", {}, true);
-	else network.sendPlayerChoice(id, title + L"（↑确认，↓取消）", {}, false);
+	if (forced) network.sendPlayerChoice(id, title + L"\n（↑确认，不可取消）", {}, true);
+	else network.sendPlayerChoice(id, title + L"\n（↑确认，↓取消）", {}, false);
 	std::optional<std::size_t> index = chooseCard(condition, forced);
 	network.sendPlayerChoice(id, L"", {}, false);
 	if (!index.has_value()) return std::nullopt;

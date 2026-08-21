@@ -304,9 +304,6 @@
     <ClCompile Include="..\source\UserDB.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\ClientMain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\source\AccountProtocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

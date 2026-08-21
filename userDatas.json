@@ -1,15 +1,15 @@
 {
   "1": {
-    "losses": 8,
+    "losses": 9,
     "password": "1",
-    "points": 153,
-    "wins": 7
+    "points": 173,
+    "wins": 8
   },
   "2": {
-    "losses": 7,
+    "losses": 8,
     "password": "2",
-    "points": 58,
-    "wins": 8
+    "points": 68,
+    "wins": 9
   },
   "Lazer": {
     "losses": 27,

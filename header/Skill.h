@@ -106,7 +106,7 @@ public:
 		Player& getPlayer() const { return player.value().get(); }
 		Card& getCard() const {
 			if (cards.value().size() != 1)
-				std::cout << "[警告] cards含有多于一张牌的情况下调用getCard" << std::endl;
+				std::cout << "[警告] 在cards含有多于一张牌的情况下调用getCard" << std::endl;
 			return cards.value().front().get();
 		}
 		std::vector<ref<Card>> getCards() const { return cards.value(); }
@@ -848,37 +848,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-class 互质 : public PSkillImpl<互质> {
-	// 判断两个整数是否互质
-	static bool areCoprime(const int a, const int b);
-	// 判断 vector 中的所有整数是否两两互质
-	static bool isPairwiseCoprime(const std::vector<int>& nums);
-public:
-	互质() : PSkillImpl<互质>(
-		"互质",
-		"锁定技，回合结束时，若你手牌两两互质，你失去X点体力（X为你手牌点数之积）。",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_end
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-
-/*class 难题 : public PSkillImpl<难题> {
-	std::array<bool, 10> record{};
-public:
-	难题() : PSkillImpl<难题>(
-		"难题",
-		"你于摸牌阶段获得数字牌时，若点数未记录，记录之。\n"
-		"回合开始时，你可将一张非万能牌变为随机已记录点数的同色数字牌。",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};*/
 
 class 黑帮 : public PSkillImpl<黑帮> {
 public:
@@ -905,6 +874,26 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+
+class 互质 : public PSkillImpl<互质> {
+	// 判断两个整数是否互质
+	static bool areCoprime(const int a, const int b);
+	// 判断 vector 中的所有整数是否两两互质
+	static bool isPairwiseCoprime(const std::vector<int>& nums);
+public:
+	互质() : PSkillImpl<互质>(
+		"互质",
+		"锁定技，回合结束时，若你手中数字牌点数不两两互质，你失去X点体力\n"
+		"（X为你手中数字牌点数之积，至多45）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
 
 //难题子技能：回合开始时变牌
 class 难题_变牌 : public PSkillImpl<难题_变牌> {
@@ -942,6 +931,20 @@ public:
 			TriggerTime::phase_draw_end,
 			难题_变牌::makeWith(_record)
 		), record(_record) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 迷烟 : public PSkillImpl<迷烟> {
+public:
+	迷烟() : PSkillImpl<迷烟>(
+		"迷烟",
+		"摸牌阶段结束时，你可展示此阶段摸到的牌，"
+		"令一名其他角色选择弃置一张万能牌或与你展示牌颜色相同的手牌，否则其摸一张牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_draw_end
+	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
