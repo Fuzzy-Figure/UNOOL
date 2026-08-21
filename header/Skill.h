@@ -906,6 +906,46 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
+//难题子技能：回合开始时变牌
+class 难题_变牌 : public PSkillImpl<难题_变牌> {
+	std::shared_ptr<std::vector<Card::Name>> record;
+public:
+	难题_变牌(std::shared_ptr<std::vector<Card::Name>> _record)
+		: PSkillImpl<难题_变牌>(
+			"难题_变牌",
+			"回合开始时，你可将一张非万能牌变为随机已记录点数的同色数字牌。",
+			unlimited, true,
+			TriggerPlayer::self,
+			TriggerTime::phase_begin
+		), record(std::move(_record)) {}
+
+	static std::unique_ptr<PSkill> makeWith(std::shared_ptr<std::vector<Card::Name>> r) {
+		return std::make_unique<难题_变牌>(std::move(r));
+	}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//难题主技能：摸牌时记录数字
+class 难题 : public PSkillImpl<难题> {
+	std::shared_ptr<std::vector<Card::Name>> record;
+public:
+	难题() : 难题(std::make_shared<std::vector<Card::Name>>()) {}
+
+	难题(std::shared_ptr<std::vector<Card::Name>> _record)
+		: PSkillImpl<难题>(
+			"难题",
+			"你于摸牌阶段获得数字牌时，若点数未记录，记录之。\n"
+			"回合开始时，你可将一张非万能牌变为随机已记录点数的同色数字牌。",
+			unlimited, true,
+			TriggerPlayer::self,
+			TriggerTime::phase_draw_end,
+			难题_变牌::makeWith(_record)
+		), record(_record) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
 
 
 

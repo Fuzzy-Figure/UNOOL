@@ -89,8 +89,8 @@ public:
 #pragma endregion
 
 #pragma region 游戏逻辑
-	void draw(std::size_t num, const DrawReason reason = DrawReason::unknown);
-	void drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
+	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown);
+	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 
 	Card& useCardByIndex(const std::size_t cardIndex);
 	void discardByIndex(const std::size_t cardIndex);

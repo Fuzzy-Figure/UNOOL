@@ -1,8 +1,8 @@
 {
 	"candidateCount": 5,
-	"characters": [ "白板", "白板" ],
+	"characters": [ "曹海涛", "白板" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
-	"initHandCount": 1,
+	"initHandCount": 8,
 	"server": {
 		"ip": "120.226.44.187",
 		"port": 14341

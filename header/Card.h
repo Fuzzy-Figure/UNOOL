@@ -31,7 +31,9 @@ public:
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
-
+	inline static constexpr std::array<Color, 4> colors = {
+		Color::blue, Color::green, Color::red, Color::yellow
+	};
 	inline static constexpr std::array<Name, 10> numberCardsFrom1 = {
 		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
 		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0

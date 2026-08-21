@@ -17,7 +17,7 @@ void Player::recover(std::size_t num) {
 
 // === 游戏逻辑 ===
 
-void Player::draw(std::size_t number, const DrawReason reason) {
+std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason) {
 	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌" << std::endl;
 	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
 	if (hasPSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
@@ -33,11 +33,12 @@ void Player::draw(std::size_t number, const DrawReason reason) {
 
 	if (reason == DrawReason::phase_draw) handSelectLast();
 	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
+	return drawnCards;
 }
 
-void Player::drawTo(const std::size_t num, const DrawReason reason) {
+std::vector<ref<Card>> Player::drawTo(const std::size_t num, const DrawReason reason) {
 	if (const std::size_t _handCount = handCount(); _handCount < num)
-		draw(num - _handCount, reason);
+		return draw(num - _handCount, reason);
 }
 
 //返回使用牌的引用
@@ -129,8 +130,8 @@ bool Player::phaseUse1() {
 void Player::phaseDraw() {
 	int drawCount = 1;
 	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this);
-	draw(1, DrawReason::phase_draw);
-	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this);
+	std::vector<ref<Card>> drawnCards= draw(1, DrawReason::phase_draw);
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this, drawnCards);
 }
 
 void Player::phaseUse2() {

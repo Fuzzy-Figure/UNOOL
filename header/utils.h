@@ -9,6 +9,13 @@
 using nlohmann::json;
 using namespace std::chrono_literals;
 
+template<typename T>
+using ref = std::reference_wrapper<T>;
+
+template<typename T>
+using opt_ref = std::optional<ref<T>>;
+
+
 namespace unool {
 	//全局配置，首次调用时读取 config.json，之后返回缓存引用
 	const json& getConfig();
@@ -25,6 +32,44 @@ namespace unool {
 		int randomInt(const int begin, const int end);
 		std::size_t randomSize_t(const std::size_t begin, const std::size_t end);
 		bool probability(const double p);
+
+		//随机取 N 个元素，返回vector<ref<T>>
+		template<std::ranges::forward_range R>
+		std::vector<ref<std::ranges::range_value_t<R>>>
+			randomGet(R& range, std::size_t n) {
+			using T = std::ranges::range_value_t<R>;
+
+			if (n > std::ranges::size(range))
+				throw std::out_of_range(
+					"randomGet：需要选" + std::to_string(n) +
+					"个元素，但容器中只有" +
+					std::to_string(std::ranges::size(range)) + "个元素");
+
+			if (n == 0 || std::ranges::empty(range)) return {};
+
+			std::vector<ref<T>> all_refs;
+			for (auto& elem : range)
+				all_refs.emplace_back(elem);
+
+			std::vector<ref<T>> result;
+			result.reserve(n);
+			std::ranges::sample(all_refs, std::back_inserter(result), n, rng);
+
+			return result;
+		}
+
+		//随机取 1 个元素，直接返回原始引用
+		template<std::ranges::forward_range R>
+		const std::ranges::range_value_t<R>&
+			randomGet(R& range) {
+			if (std::ranges::empty(range))
+				throw std::out_of_range("randomGet on empty container");
+			auto offset = randomSize_t(0, std::ranges::size(range) - 1);
+
+			auto it = std::ranges::begin(range);
+			std::ranges::advance(it, offset);
+			return *it;
+		}
 	}
 
 	namespace math {
@@ -55,11 +100,4 @@ namespace unool {
 		} };
 }
 
-//别名
-
-template<typename T>
-using ref = std::reference_wrapper<T>;
-
-template<typename T>
-using opt_ref = std::optional<ref<T>>;
 

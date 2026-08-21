@@ -44,6 +44,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"拜登",   {Level::A, {健忘::make}, {}, 125}},
 	{"王耘浩", {Level::C, {豪赌::make}, {}, 250}},
 	{"Bulbito Bandito Traktorito", {Level::B, {黑帮::make, 拖拉::make}, {}, 225}},
+	{"曹海涛", {Level::S, {互质::make, 难题::make}, {}, 2022}},
 };
 
 
