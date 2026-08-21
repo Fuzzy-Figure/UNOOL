@@ -906,34 +906,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-class js : public PSkillImpl<js> {
-public:
-	js() : PSkillImpl<js>(
-		"js",
-		"锁定技，回合结束时摸1",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_end
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-
-class test : public PSkillImpl<test> {
-public:
-	test() : PSkillImpl<test>(
-		"test",
-		"锁定技，回合开始/结束时摸1",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin,
-		js::make()
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-
-
 
 
 

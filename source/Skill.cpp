@@ -1327,21 +1327,3 @@ bool 拖拉::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
-
-bool js::filter(const Trigger& trigger) const {
-	return true;
-}
-
-bool js::content(Trigger& trigger) {
-	trigger.getCarrier().draw(1);
-	return true;
-}
-
-bool test::filter(const Trigger& trigger) const {
-	return true;
-}
-
-bool test::content(Trigger& trigger) {
-	trigger.getCarrier().draw(1);
-	return true;
-}
