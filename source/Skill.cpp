@@ -1445,16 +1445,16 @@ bool 补天::filter(const Trigger& trigger) const {
 	const Player& carrier = trigger.getCarrier();
 	const auto& hand = carrier.getHand();
 	if (hand.empty()) return false;
-	//手牌中只有一种牌名
-	Card::Name firstName = hand[0].getName();
-	for (std::size_t i = 1; i < hand.count(); ++i) {
-		if (hand[i].getName() != firstName) return false;
+	//打出的牌是手中该牌名的唯一一张（剩余手牌中无此牌名）
+	Card::Name playedName = trigger.getCard().getName();
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].getName() == playedName) return false;
 	}
 	//该牌名未被记录
-	if (std::ranges::find(record, firstName) != record.end()) return false;
-	//至少有一个未记录的牌名（排除即将记录的firstName）
+	if (std::ranges::find(record, playedName) != record.end()) return false;
+	//至少有一个未记录的牌名（排除即将记录的playedName）
 	for (const auto& name : Card::allCards) {
-		if (name != firstName && std::ranges::find(record, name) == record.end()) {
+		if (name != playedName && std::ranges::find(record, name) == record.end()) {
 			return true;
 		}
 	}
@@ -1463,8 +1463,7 @@ bool 补天::filter(const Trigger& trigger) const {
 
 bool 补天::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	const auto& hand = carrier.getHand();
-	Card::Name recordedName = hand[0].getName();
+	Card::Name recordedName = trigger.getCard().getName();
 
 	//记录牌名
 	record.push_back(recordedName);
