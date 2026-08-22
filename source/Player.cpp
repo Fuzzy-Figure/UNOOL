@@ -130,9 +130,9 @@ bool Player::phaseUse1() {
 }
 
 void Player::phaseDraw() {
-	int drawCount = 1;
-	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this);
-	std::vector<ref<Card>> drawnCards= draw(1, DrawReason::phase_draw);
+	std::size_t drawCount = 1;
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this, std::nullopt, std::nullopt, drawCount);
+	std::vector<ref<Card>> drawnCards = draw(drawCount, DrawReason::phase_draw);
 	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this, drawnCards);
 }
 
