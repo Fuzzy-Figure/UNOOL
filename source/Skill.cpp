@@ -1479,17 +1479,14 @@ bool 补天::content(Trigger& trigger) {
 	}
 
 	//随机选一个
-	std::size_t idx = unool::random::randomSize_t(0, available.size() - 1);
-	Card::Color selectedColor = available[idx].first;
-	Card::Name selectedName = available[idx].second;
+	Card targetCard(unool::random::randomGet(available));
 
 	//选择一张手牌变为此牌
-	Card targetCard(selectedColor, selectedName);
 	auto cardOpt = carrier.chooseToOperate(
 		L"【补天】选择一张手牌变为" + targetCard.toWString(), true, unool::alwaysTrue,
 		[&targetCard](Card& c) {
-			c.set(targetCard);
-		});
+		c.set(targetCard);
+	});
 	if (!cardOpt.has_value()) return false;
 	std::cout << "<技能> " << carrier.characterName() << "发动补天，将一张牌变为"
 		<< targetCard << std::endl;
