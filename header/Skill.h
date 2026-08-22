@@ -884,8 +884,8 @@ class 互质 : public PSkillImpl<互质> {
 public:
 	互质() : PSkillImpl<互质>(
 		"互质",
-		"锁定技，回合结束时，若你手中数字牌点数不两两互质，你失去X点体力\n"
-		"（X为你手中数字牌点数之积，至多45）。",
+		"锁定技，回合结束时，若你手中数字牌点数两两互质，你失去X点体力\n"
+		"（X为你手中数字牌点数之积）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end
@@ -947,6 +947,34 @@ public:
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
+};
+
+class 创世 : public PSkillImpl<创世> {
+public:
+	创世() : PSkillImpl<创世>(
+		"创世",
+		"游戏开始时，你可选择一个你手中没有的牌名，将一张手牌变为此牌名的牌（颜色自选）。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 补天 : public PSkillImpl<补天> {
+	std::vector<Card::Name> record;
+public:
+	补天() : PSkillImpl<补天>(
+		"补天",
+		"锁定技，每种牌名限一次，你打出手中唯一一种牌名的牌后，记录其牌名，然后选择一张手牌变为随机一张未记录的牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
 };
 
 

@@ -31,22 +31,28 @@ public:
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
-	inline static constexpr std::array<Color, 4> colors = {
+	inline static constexpr std::array<Card::Color, 4> colors = {
 		Color::blue, Color::green, Color::red, Color::yellow
 	};
-	inline static constexpr std::array<Name, 10> numberCardsFrom1 = {
+	inline static constexpr std::array<Card::Name, 10> numberCardsFrom1 = {
 		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
 		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0
 	};
-	inline static constexpr std::array<Name, 10> numberCardsFrom0 = {
+	inline static constexpr std::array<Card::Name, 10> numberCardsFrom0 = {
 		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
 		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
 	};
-	inline static constexpr std::array<Name, 3> actionCards = {
+	inline static constexpr std::array<Card::Name, 3> actionCards = {
 		Name::action_rev, Name::action_ban, Name::action_draw2
 	};
-	inline static constexpr std::array<Name, 2> wildCards = {
-		Name::wild_pal, Name::wild_draw4,
+	inline static constexpr std::array<Card::Name, 2> wildCards = {
+		Name::wild_pal, Name::wild_draw4
+	};
+	inline static constexpr std::array<Card::Name, 15> allCards = {
+		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
+		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
+		Name::action_rev, Name::action_ban, Name::action_draw2,
+		Name::wild_pal, Name::wild_draw4
 	};
 #pragma endregion
 
@@ -58,6 +64,7 @@ private:
 public:
 #pragma region 构造 / 静态工厂
 	Card(const Color color = Color::no, const Name name = Name::no);
+	Card(const ColorName cn);
 	static std::unique_ptr<Card> make(const Color, const Name);
 	static std::unique_ptr<Card> make(const Card& other);
 	static std::unique_ptr<Card> make(const std::unique_ptr<Card>& otherPtr);
@@ -96,6 +103,8 @@ public:
 	void setColor(const Color newColor);
 	void setName(const Name newName);
 	void set(const Card& other);
+	void set(const Color color, const Name name);
+	void set(const ColorName& cn);
 #pragma endregion
 
 #pragma region 显示
@@ -110,12 +119,15 @@ public:
 	bool isEffective() const { return effective; }
 #pragma endregion
 
-#pragma region 静态转换 / 静态数据
+#pragma region 静态转换 / 静态数据 / 静态方法
 	static std::string to_string(const Color& color);
 	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::wstring to_wstring(const Name& name);
 	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
+	static bool is_number(const Card::Name name);
+	static bool is_action(const Card::Name name);
+	static bool is_wild(const Card::Name name);
 #pragma endregion
 };
 

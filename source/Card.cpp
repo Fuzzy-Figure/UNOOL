@@ -76,11 +76,12 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 
 const Card Card::back(Card::Color::no, Card::Name::back);
 
-
 // ==================== Card 类 ====================
 
 // 构造 / 静态工厂
 Card::Card(const Color _color, const Name _name) :color(_color), name(_name) {}
+
+Card::Card(const ColorName cn) :Card(cn.first, cn.second) {}
 
 std::unique_ptr<Card> Card::make(const Color _color, const Name _name) {
 	return std::make_unique<Card>(_color, _name);
@@ -111,28 +112,24 @@ Card::ColorName Card::getColorName() const {
 	return std::make_pair(color, name);
 }
 bool Card::isNumber() const {
-	return name == Name::number_0 || name == Name::number_1
-		|| name == Name::number_2 || name == Name::number_3
-		|| name == Name::number_4 || name == Name::number_5
-		|| name == Name::number_6 || name == Name::number_7
-		|| name == Name::number_8 || name == Name::number_9;
+	return is_number(name);
 }
 bool Card::isNotNumber() const {
-	return !isNumber();
+	return !is_number(name);
 }
 bool Card::isAction() const {
-	return name == Name::action_ban || name == Name::action_draw2
-		|| name == Name::action_rev;
+	return is_action(name);
 }
 bool Card::isNotAction() const {
-	return !isAction();
+	return !is_action(name);
 }
 bool Card::isWild() const {
-	return name == Name::wild_pal || name == Name::wild_draw4;
+	return is_wild(name);
 }
 bool Card::isNotWild() const {
-	return !isWild();
+	return !is_wild(name);
 }
+
 int Card::value() const {
 	switch (name) {
 		//数字
@@ -179,6 +176,14 @@ void Card::setName(const Name newName) {
 void Card::set(const Card& other) {
 	setColor(other.getColor());
 	setName(other.getName());
+}
+void Card::set(const Color color, const Name name) {
+	setColor(color);
+	setName(name);
+}
+void Card::set(const ColorName& cn) {
+	setColor(cn.first);
+	setName(cn.second);
 }
 
 // 显示
@@ -276,6 +281,21 @@ std::wstring Card::to_wstring(const Name& name) {
 	case Name::no:           return L"无";
 	default:                 return L"未知";
 	}
+}
+
+bool Card::is_number(const Card::Name name) {
+	return name == Name::number_0 || name == Name::number_1
+		|| name == Name::number_2 || name == Name::number_3
+		|| name == Name::number_4 || name == Name::number_5
+		|| name == Name::number_6 || name == Name::number_7
+		|| name == Name::number_8 || name == Name::number_9;
+}
+bool Card::is_action(const Card::Name name) {
+	return name == Name::action_ban || name == Name::action_draw2
+		|| name == Name::action_rev;
+}
+bool Card::is_wild(const Card::Name name) {
+	return name == Name::wild_pal || name == Name::wild_draw4;
 }
 
 // 友元流输出

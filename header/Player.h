@@ -143,6 +143,10 @@ public:
 	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::wstring& title, bool forced,
 													const std::function<bool(const Player&)>& condition
 													= unool::alwaysTrue);
+	[[nodiscard]] std::optional<Card::Color> chooseCardColor(const std::wstring& title, bool forced,
+															 const std::vector<Card::Color>& colors);
+	[[nodiscard]] std::optional<Card::Name> chooseCardName(const std::wstring& title, bool forced,
+															 const std::vector<Card::Name>& names);
 	[[nodiscard]] std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
 								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
 	void hint(const std::wstring& message);

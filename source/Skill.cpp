@@ -4,7 +4,7 @@
 #include "../header/utils.h"
 #include <iostream>
 #include <cmath>
-
+#include <set>
 
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)
 	:name(_name), info(_info), limit(_limit) {}
@@ -1306,7 +1306,7 @@ bool 互质::filter(const Trigger& trigger) const {
 	for (const auto& c : hand) {
 		if (c->isNumber()) nums.push_back(c->value());
 	}
-	return !isPairwiseCoprime(nums);
+	return isPairwiseCoprime(nums);
 }
 bool 互质::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
@@ -1317,7 +1317,7 @@ bool 互质::content(Trigger& trigger) {
 		product *= c.value();
 	}
 	);
-	carrier.takeDamage(std::min(product, 300ull), carrier);
+	carrier.takeDamage(product, carrier);
 	return true;
 }
 
@@ -1393,4 +1393,110 @@ bool 迷烟::content(Trigger& trigger) {
 		target.draw(1);
 	}
 	return true;
+}
+
+bool 创世::filter(const Trigger& trigger) const {
+	return true;
+}
+bool 创世::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	//收集手牌中已有的牌名
+	std::unordered_set<Card::Name> handNames;
+	for (const auto& x : carrier.getHand()) {
+		handNames.insert(x->getName());
+	}
+	//筛选手牌中没有的牌名
+	std::vector<Card::Name> available;
+	for (const auto& name : Card::allCards) {
+		if (!handNames.contains(name)) {
+			available.push_back(name);
+		}
+	}
+
+	//选牌名
+	auto nameOpt = carrier.chooseCardName(L"【创世】选择一个牌名", false, available);
+	if (!nameOpt.has_value()) return false;
+	Card::Name selectedName = nameOpt.value();
+
+	//选颜色
+	Card::Color selectedColor = Card::Color::black;
+	if (!Card::is_wild(selectedName)) {
+		std::vector<Card::Color> colorVec(Card::colors.begin(), Card::colors.end());
+		auto colorOpt = carrier.chooseCardColor(L"【创世】选择颜色", false, colorVec);
+		if (!colorOpt.has_value()) return false;
+		selectedColor = colorOpt.value();
+	}
+
+	//选手牌变为此牌
+	Card targetCard(selectedColor, selectedName);
+	auto cardOpt = carrier.chooseToOperate(
+		L"【创世】选择一张手牌变为" + targetCard.toWString(), false, unool::alwaysTrue,
+		[&targetCard](Card& c) {
+		c.set(targetCard);
+	});
+	if (!cardOpt.has_value()) return false;
+	std::cout << "<技能> " << carrier.characterName() << "发动创世，将一张牌变为"
+		<< targetCard << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+bool 补天::filter(const Trigger& trigger) const {
+	const Player& carrier = trigger.getCarrier();
+	const auto& hand = carrier.getHand();
+	if (hand.empty()) return false;
+	//手牌中只有一种牌名
+	Card::Name firstName = hand[0].getName();
+	for (std::size_t i = 1; i < hand.count(); ++i) {
+		if (hand[i].getName() != firstName) return false;
+	}
+	//该牌名未被记录
+	if (std::ranges::find(record, firstName) != record.end()) return false;
+	//至少有一个未记录的牌名（排除即将记录的firstName）
+	for (const auto& name : Card::allCards) {
+		if (name != firstName && std::ranges::find(record, name) == record.end()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool 补天::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	const auto& hand = carrier.getHand();
+	Card::Name recordedName = hand[0].getName();
+
+	//记录牌名
+	record.push_back(recordedName);
+
+	//算出所有可选的牌名颜色组合（排除已记录的牌名）
+	std::vector<Card::ColorName> available;
+	for (const auto& name : Card::allCards) {
+		if (std::ranges::find(record, name) != record.end()) continue;
+		for (const auto& color : Card::colors) {
+			available.emplace_back(color, name);
+		}
+	}
+
+	//随机选一个
+	std::size_t idx = unool::random::randomSize_t(0, available.size() - 1);
+	Card::Color selectedColor = available[idx].first;
+	Card::Name selectedName = available[idx].second;
+
+	//选择一张手牌变为此牌
+	Card targetCard(selectedColor, selectedName);
+	auto cardOpt = carrier.chooseToOperate(
+		L"【补天】选择一张手牌变为" + targetCard.toWString(), true, unool::alwaysTrue,
+		[&targetCard](Card& c) {
+			c.set(targetCard);
+		});
+	if (!cardOpt.has_value()) return false;
+	std::cout << "<技能> " << carrier.characterName() << "发动补天，将一张牌变为"
+		<< targetCard << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+void 补天::reset() {
+	PSkill::reset();
+	record.clear();
 }

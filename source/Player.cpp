@@ -350,6 +350,28 @@ opt_ref<Player> Player::chooseOtherPlayer(const std::wstring& title, bool forced
 	});
 }
 
+std::optional<Card::Color> Player::chooseCardColor(const std::wstring& title, bool forced, const std::vector<Card::Color>& colors) {
+	if (colors.empty()) return std::nullopt;
+	std::vector<std::wstring> options;
+	for (const auto& c : colors) {
+		options.push_back(Card::to_wstring(c));
+	}
+	std::size_t choice = ask(title, options, forced);
+	if (choice == 0) return std::nullopt;
+	return colors[choice - 1];
+}
+
+std::optional<Card::Name> Player::chooseCardName(const std::wstring& title, bool forced, const std::vector<Card::Name>& names) {
+	if (names.empty()) return std::nullopt;
+	std::vector<std::wstring> options;
+	for (const auto& n : names) {
+		options.push_back(Card::to_wstring(n));
+	}
+	std::size_t choice = ask(title, options, forced);
+	if (choice == 0) return std::nullopt;
+	return names[choice - 1];
+}
+
 
 std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
