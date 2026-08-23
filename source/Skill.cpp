@@ -1467,32 +1467,41 @@ bool 补天::content(Trigger& trigger) {
 	//记录牌名
 	record.push_back(recordedName);
 
-	//提示已记录的牌名
+	//提示已记录的牌名（按分值从小到大）
 	if (!record.empty()) {
+		std::vector<Card::Name> sorted(record.begin(), record.end());
+		std::ranges::sort(sorted, [](Card::Name a, Card::Name b) {
+			return static_cast<int>(a) < static_cast<int>(b);
+		});
 		std::wstring hintText = L"【补天】已记录的牌名：";
-		for (std::size_t i = 0; i < record.size(); ++i) {
+		for (std::size_t i = 0; i < sorted.size(); ++i) {
 			if (i > 0) hintText += L"、";
-			hintText += Card::to_wstring(record[i]);
+			hintText += Card::to_wstring(sorted[i]);
 		}
 		carrier.hint(hintText);
 	}
 
-	//算出所有可选的牌名颜色组合（排除已记录的牌名，万能牌仅配black，其他牌配4种颜色）
-	std::vector<Card::ColorName> available;
+	//算出所有可选的牌名（排除已记录的），从中随机选一个牌名
+	std::vector<Card::Name> namePool;
 	for (const auto& name : Card::allCards) {
 		if (std::ranges::find(record, name) != record.end()) continue;
-		if (Card::is_wild(name)) {
-			available.emplace_back(Card::Color::black, name);
-		}
-		else {
-			for (const auto& color : Card::colors) {
-				available.emplace_back(color, name);
-			}
-		}
+		namePool.push_back(name);
 	}
+	if (namePool.empty()) return false;
+	Card::Name targetName = unool::random::randomGet(namePool);
 
-	//随机选一个
-	Card targetCard(unool::random::randomGet(available));
+	//万能牌固定黑色，其他牌自选颜色
+	Card::Color targetColor;
+	if (Card::is_wild(targetName)) {
+		targetColor = Card::Color::black;
+	}
+	else {
+		auto colorOpt = carrier.chooseCardColor(
+			L"【补天】牌名是" + Card::to_wstring(targetName) + L"，选择颜色", true);
+		if (!colorOpt.has_value()) return false;
+		targetColor = colorOpt.value();
+	}
+	Card targetCard(targetColor, targetName);
 
 	//选择一张手牌变为此牌
 	auto cardOpt = carrier.chooseToOperate(
@@ -1591,7 +1600,7 @@ bool 叛党::content(Trigger& trigger) {
 	}
 	//选数量，0=取消
 	std::size_t count = carrier.ask(L"【讲解】选择弃牌数量", options, false,
-		std::chrono::milliseconds(60000));
+									std::chrono::milliseconds(60000));
 	if (count == 0) return false;
 
 	std::unordered_set<Card::Color> usedColors;
@@ -1601,9 +1610,9 @@ bool 叛党::content(Trigger& trigger) {
 			L"【讲解】选择第" + std::to_wstring(i + 1) + L"张牌弃置（颜色各不相同）",
 			1, false,
 			[&](const Card& c) {
-				return c.getColor() != Card::Color::no
-					&& !usedColors.contains(c.getColor());
-			}
+			return c.getColor() != Card::Color::no
+				&& !usedColors.contains(c.getColor());
+		}
 		);
 		if (result.empty()) break; //玩家取消
 		usedColors.insert(result[0].get().getColor());
@@ -1650,7 +1659,7 @@ bool 清洗::content(Trigger& trigger) {
 	options.push_back(L"弃置所有" + Card::to_wstring(colors[0]) + L"色牌");
 	options.push_back(L"弃置所有" + Card::to_wstring(colors[1]) + L"色牌");
 	std::size_t choice = carrier.ask(L"【清洗】选择弃置哪种颜色的手牌", options, false,
-		std::chrono::milliseconds(60000));
+									 std::chrono::milliseconds(60000));
 	if (choice == 0) return false; //0取消
 	Card::Color target = colors[choice - 1];
 
