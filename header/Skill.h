@@ -178,7 +178,7 @@ protected:
 	using ASkill::ASkill;
 };
 template<class Derived>
-std::unique_ptr<ASkill> ASkillImpl<Derived>::make(){
+std::unique_ptr<ASkill> ASkillImpl<Derived>::make() {
 	return std::make_unique<Derived>();
 }
 
@@ -983,6 +983,46 @@ public:
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::gain_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 爆缸 : public PSkillImpl<爆缸> {
+public:
+	爆缸() : PSkillImpl<爆缸>(
+		"爆缸",
+		"契定技，回合开始时，若你手中均为数字牌，可将其中一张变为同色的随机功能牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};
+
+class 叛党 : public PSkillImpl<叛党> {
+public:
+	叛党() : PSkillImpl<叛党>(
+		"叛党",
+		"每局游戏开始时，你可以弃置任意张颜色各不同的牌。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+class 清洗 : public PSkillImpl<清洗> {
+public:
+	清洗() : PSkillImpl<清洗>(
+		"清洗",
+		"限定技，回合开始时，若你手牌仅有两种颜色，你可以弃置一种颜色的所有手牌。"
+		"若你因此弃置了蓝色牌，回复两倍弃牌数点体力。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;

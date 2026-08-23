@@ -1536,3 +1536,137 @@ bool 水鬼::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
+
+bool 爆缸::filter(const Trigger& trigger) const {
+	Hand& hand = trigger.getCarrier().getHand();
+	return std::ranges::all_of(hand, &Card::isNumber);
+}
+bool 爆缸::content(Trigger& trigger) {
+	setForced(true);
+	std::optional card = trigger.getCarrier().chooseToOperate(
+		L"[爆缸] 选择一张数字牌变为同色的随机功能牌", true,
+		&Card::isNumber, [](Card& c) {
+		c.setName(unool::random::randomGet(Card::actionCards));
+	});
+	return true;
+}
+void 爆缸::reset() {
+	setForced(false);
+}
+
+bool 叛党::filter(const Trigger& trigger) const {
+	auto& carrier = trigger.getCarrier();
+	Hand& hand = carrier.getHand();
+	//手牌至少一张有色牌（颜色 != no）
+	for (const auto& c : hand) {
+		if (c->getColor() != Card::Color::no) return true;
+	}
+	return false;
+}
+bool 叛党::content(Trigger& trigger) {
+	auto& carrier = trigger.getCarrier();
+	Hand& hand = carrier.getHand();
+	//统计手牌中的不同颜色
+	std::unordered_set<Card::Color> colorSet;
+	for (const auto& c : hand) {
+		if (c->getColor() != Card::Color::no) {
+			colorSet.insert(c->getColor());
+		}
+	}
+	if (colorSet.empty()) return false;
+
+	//构造选项：1.弃1张 2.弃2张 ...
+	std::vector<std::wstring> options;
+	for (std::size_t i = 1; i <= colorSet.size(); ++i) {
+		options.push_back(L"弃" + std::to_wstring(i) + L"张颜色各不相同的牌");
+	}
+	//选数量，0=取消
+	std::size_t count = carrier.ask(L"【讲解】选择弃牌数量", options, false,
+		std::chrono::milliseconds(60000));
+	if (count == 0) return false;
+
+	std::unordered_set<Card::Color> usedColors;
+	std::size_t discarded = 0;
+	for (std::size_t i = 0; i < count; ++i) {
+		auto result = carrier.chooseToDiscard(
+			L"【讲解】选择第" + std::to_wstring(i + 1) + L"张牌弃置（颜色各不相同）",
+			1, false,
+			[&](const Card& c) {
+				return c.getColor() != Card::Color::no
+					&& !usedColors.contains(c.getColor());
+			}
+		);
+		if (result.empty()) break; //玩家取消
+		usedColors.insert(result[0].get().getColor());
+		++discarded;
+	}
+	if (discarded > 0) {
+		std::cout << "<技能> " << carrier.characterName() << "发动讲解，弃置了"
+			<< discarded << "张颜色各不相同的牌" << std::endl;
+		trigger.getGame().broadcastState();
+	}
+	return discarded > 0;
+}
+
+bool 清洗::filter(const Trigger& trigger) const {
+	auto& carrier = trigger.getCarrier();
+	Hand& hand = carrier.getHand();
+	//手牌仅有两种颜色（排除 Color::no）
+	std::unordered_set<Card::Color> colorSet;
+	for (const auto& c : hand) {
+		if (c->getColor() != Card::Color::no) {
+			colorSet.insert(c->getColor());
+		}
+	}
+	return colorSet.size() == 2;
+}
+bool 清洗::content(Trigger& trigger) {
+	auto& carrier = trigger.getCarrier();
+	auto& game = trigger.getGame();
+	Hand& hand = carrier.getHand();
+	//收集出现过的两种颜色
+	std::vector<Card::Color> colors;
+	std::unordered_set<Card::Color> colorSet;
+	for (const auto& c : hand) {
+		Card::Color col = c->getColor();
+		if (col != Card::Color::no && !colorSet.contains(col)) {
+			colorSet.insert(col);
+			colors.push_back(col);
+		}
+	}
+	if (colors.size() != 2) return false;
+
+	//ask 让玩家二选一：弃哪种颜色
+	std::vector<std::wstring> options;
+	options.push_back(L"弃置所有" + Card::to_wstring(colors[0]) + L"色牌");
+	options.push_back(L"弃置所有" + Card::to_wstring(colors[1]) + L"色牌");
+	std::size_t choice = carrier.ask(L"【清洗】选择弃置哪种颜色的手牌", options, false,
+		std::chrono::milliseconds(60000));
+	if (choice == 0) return false; //0取消
+	Card::Color target = colors[choice - 1];
+
+	//收集该颜色牌的下标
+	std::vector<std::size_t> indices;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].getColor() == target) indices.push_back(i);
+	}
+	std::ranges::sort(indices, std::greater{});
+	for (std::size_t idx : indices) {
+		carrier.discardByIndex(idx);
+	}
+
+	std::size_t discardCount = indices.size();
+	std::cout << "<技能> " << carrier.characterName() << "发动清洗，弃置了"
+		<< discardCount << "张" << Card::to_string(target) << "色牌" << std::endl;
+
+	//若弃置了蓝色牌，回复两倍弃牌数点体力
+	if (target == Card::Color::blue && discardCount > 0) {
+		std::size_t heal = 2 * discardCount;
+		carrier.recover(heal);
+		std::cout << "<技能> " << carrier.characterName() << "回复了"
+			<< heal << "点体力" << std::endl;
+	}
+
+	game.broadcastState();
+	return true;
+}
