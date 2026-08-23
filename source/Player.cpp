@@ -34,6 +34,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason)
 	if (reason == DrawReason::phase_draw) handSelectLast();
 
 	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
+	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, drawnCards, std::nullopt, number);
 	return drawnCards;
 }
 
@@ -71,6 +72,13 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	game.launchPSkills(PSkill::TriggerTime::use_card_end, *this, cardRef, std::nullopt);
 
 	return cardRef;
+}
+
+void Player::gainCard(std::unique_ptr<Card> card) {
+	hand->push_back(std::move(card));
+	std::vector<ref<Card>> gainedCards;
+	gainedCards.emplace_back(hand->back());
+	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, gainedCards);
 }
 
 void Player::discardByIndex(const std::size_t cardIndex) {

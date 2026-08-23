@@ -77,7 +77,7 @@ public:
 	void handSelectLast() { hand->selectLast(); }
 	void sortHand() { hand->sort(); }
 
-	void gainCard(std::unique_ptr<Card> card) { hand->push_back(std::move(card)); }
+	void gainCard(std::unique_ptr<Card> card);
 	Card& getCardByIndex(const std::size_t index) { return hand->getCardByIndex(index); }
 	void printHand() const { hand->print(); }
 	void displayHand(GameRenderer& renderer,

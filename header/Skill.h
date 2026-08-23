@@ -73,6 +73,7 @@ public:
 		damage_begin, damage_end,
 		recover_begin, recover_end,
 		draw_begin, draw_end,
+		gain_card_begin, gain_card_end,
 		discard_begin, discard_end,
 		recast_begin, recast_end,
 		ban_begin, ban_end,
@@ -977,8 +978,18 @@ public:
 	void reset() override;
 };
 
-
-
+class 水鬼 : public PSkillImpl<水鬼> {
+public:
+	水鬼() : PSkillImpl<水鬼>(
+		"水鬼",
+		"锁定技，你获得蓝色牌后，弃置这些蓝色牌，然后弃置一张其他牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::gain_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
 
 
 

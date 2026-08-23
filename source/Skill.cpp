@@ -1496,3 +1496,43 @@ void 补天::reset() {
 	PSkill::reset();
 	record.clear();
 }
+
+bool 水鬼::filter(const Trigger& trigger) const {
+	//至少一张获得的牌是蓝色
+	std::size_t blueCount = 0;
+	for (const auto& c : trigger.getCards()) {
+		if (c.get().getColor() == Card::Color::blue) ++blueCount;
+	}
+	if (blueCount == 0) return false;
+	//弃置蓝色牌后手牌非空（能弃置一张其他牌）
+	return trigger.getCarrier().handCount() > blueCount;
+}
+
+bool 水鬼::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	//找出获得的蓝色牌在手牌中的下标
+	std::vector<std::size_t> blueIndices;
+	for (const auto& c : trigger.getCards()) {
+		if (c.get().getColor() != Card::Color::blue) continue;
+		const Card* ptr = &c.get();
+		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+			if (&carrier.getCardByIndex(i) == ptr) {
+				blueIndices.push_back(i);
+				break;
+			}
+		}
+	}
+	//从大到小弃置（避免下标偏移）
+	std::ranges::sort(blueIndices, std::greater{});
+	for (std::size_t idx : blueIndices) {
+		carrier.discardByIndex(idx);
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动水鬼，弃置了"
+		<< blueIndices.size() << "张蓝色牌" << std::endl;
+	//发状态包，确保客户端渲染前有最新数据
+	trigger.getGame().broadcastState();
+	//弃置一张其他牌
+	carrier.chooseToDiscard(L"【水鬼】弃置一张其他牌", 1, true);
+	trigger.getGame().broadcastState();
+	return true;
+}

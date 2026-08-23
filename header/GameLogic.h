@@ -90,10 +90,6 @@ public:
 							  const std::function<void(Player&)>& operation);
 #pragma endregion
 
-#pragma region 调试输出
-	void print() const;
-#pragma endregion
-
 #pragma region 成员查询与修改
 	Pile& getPile();
 	Pile& getDiscardPile();
