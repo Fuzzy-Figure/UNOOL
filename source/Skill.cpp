@@ -1460,7 +1460,6 @@ bool 补天::filter(const Trigger& trigger) const {
 	}
 	return false;
 }
-
 bool 补天::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	Card::Name recordedName = trigger.getCard().getName();
@@ -1468,12 +1467,17 @@ bool 补天::content(Trigger& trigger) {
 	//记录牌名
 	record.push_back(recordedName);
 
-	//算出所有可选的牌名颜色组合（排除已记录的牌名）
+	//算出所有可选的牌名颜色组合（排除已记录的牌名，万能牌仅配black，其他牌配4种颜色）
 	std::vector<Card::ColorName> available;
 	for (const auto& name : Card::allCards) {
 		if (std::ranges::find(record, name) != record.end()) continue;
-		for (const auto& color : Card::colors) {
-			available.emplace_back(color, name);
+		if (Card::is_wild(name)) {
+			available.emplace_back(Card::Color::black, name);
+		}
+		else {
+			for (const auto& color : Card::colors) {
+				available.emplace_back(color, name);
+			}
 		}
 	}
 

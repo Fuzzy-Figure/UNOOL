@@ -1,6 +1,6 @@
 {
-	"candidateCount": 5,
-	//"characters": [ "金正日", "幺幺" ],
+	"candidateCount": 6,
+	"characters": [ "雨姐", "赵帷儒" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
 	"initHandCount": 8,
 	"server": {
