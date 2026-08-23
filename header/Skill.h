@@ -988,35 +988,3 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-
-class 近身搏击 : public PSkillImpl<近身搏击> {
-	std::shared_ptr<bool> effective;
-public:
-	近身搏击() : PSkillImpl<近身搏击>(
-		"近身搏击",
-		"当你打出【+2】后，目标失去X点体力，你回复35%X体力\n"
-		"（X为目标摸到的数字牌点数之和，向下取整）；\n"
-		"然后此技能失效至你发动【撑杆跳跃】。",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::gain_card_end
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-class 撑杆跳跃 : public PSkillImpl<撑杆跳跃> {
-	std::shared_ptr<bool> effective;
-public:
-	撑杆跳跃() : PSkillImpl<撑杆跳跃>(
-		"撑杆跳跃",
-		"出牌阶段，你可重铸【5】【0】【6】，然后从游戏外随机获得一张【+2】。",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-
-
-
