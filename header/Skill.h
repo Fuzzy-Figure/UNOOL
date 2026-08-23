@@ -971,7 +971,6 @@ public:
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
-	void reset() override;
 };
 
 class 水鬼 : public PSkillImpl<水鬼> {

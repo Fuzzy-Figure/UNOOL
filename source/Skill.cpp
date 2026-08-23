@@ -1467,6 +1467,16 @@ bool 补天::content(Trigger& trigger) {
 	//记录牌名
 	record.push_back(recordedName);
 
+	//提示已记录的牌名
+	if (!record.empty()) {
+		std::wstring hintText = L"【补天】已记录的牌名：";
+		for (std::size_t i = 0; i < record.size(); ++i) {
+			if (i > 0) hintText += L"、";
+			hintText += Card::to_wstring(record[i]);
+		}
+		carrier.hint(hintText);
+	}
+
 	//算出所有可选的牌名颜色组合（排除已记录的牌名，万能牌仅配black，其他牌配4种颜色）
 	std::vector<Card::ColorName> available;
 	for (const auto& name : Card::allCards) {
@@ -1496,10 +1506,6 @@ bool 补天::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
-void 补天::reset() {
-	PSkill::reset();
-	record.clear();
-}
 
 bool 水鬼::filter(const Trigger& trigger) const {
 	//至少一张获得的牌是蓝色
@@ -1511,7 +1517,6 @@ bool 水鬼::filter(const Trigger& trigger) const {
 	//弃置蓝色牌后手牌非空（能弃置一张其他牌）
 	return trigger.getCarrier().handCount() > blueCount;
 }
-
 bool 水鬼::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	//找出获得的蓝色牌在手牌中的下标
