@@ -17,8 +17,8 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::red, Name::number_7},     "cards/red/number_7.jpg"},
 	{{Color::red, Name::number_8},     "cards/red/number_8.jpg"},
 	{{Color::red, Name::number_9},     "cards/red/number_9.jpg"},
-	{{Color::red, Name::action_ban},   "cards/red/action_ban.jpg"},
 	{{Color::red, Name::action_rev},   "cards/red/action_rev.jpg"},
+	{{Color::red, Name::action_skip},  "cards/red/action_skip.jpg"},
 	{{Color::red, Name::action_draw2}, "cards/red/action_draw2.jpg"},
 
 	// 蓝色牌
@@ -32,8 +32,8 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::blue, Name::number_7},     "cards/blue/number_7.jpg"},
 	{{Color::blue, Name::number_8},     "cards/blue/number_8.jpg"},
 	{{Color::blue, Name::number_9},     "cards/blue/number_9.jpg"},
-	{{Color::blue, Name::action_ban},   "cards/blue/action_ban.jpg"},
 	{{Color::blue, Name::action_rev},   "cards/blue/action_rev.jpg"},
+	{{Color::blue, Name::action_skip},  "cards/blue/action_skip.jpg"},
 	{{Color::blue, Name::action_draw2}, "cards/blue/action_draw2.jpg"},
 
 	// 绿色牌
@@ -47,8 +47,8 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::green, Name::number_7},     "cards/green/number_7.jpg"},
 	{{Color::green, Name::number_8},     "cards/green/number_8.jpg"},
 	{{Color::green, Name::number_9},     "cards/green/number_9.jpg"},
-	{{Color::green, Name::action_ban},   "cards/green/action_ban.jpg"},
 	{{Color::green, Name::action_rev},   "cards/green/action_rev.jpg"},
+	{{Color::green, Name::action_skip},  "cards/green/action_skip.jpg"},
 	{{Color::green, Name::action_draw2}, "cards/green/action_draw2.jpg"},
 
 	// 黄色牌
@@ -62,8 +62,8 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::yellow, Name::number_7},     "cards/yellow/number_7.jpg"},
 	{{Color::yellow, Name::number_8},     "cards/yellow/number_8.jpg"},
 	{{Color::yellow, Name::number_9},     "cards/yellow/number_9.jpg"},
-	{{Color::yellow, Name::action_ban},   "cards/yellow/action_ban.jpg"},
 	{{Color::yellow, Name::action_rev},   "cards/yellow/action_rev.jpg"},
+	{{Color::yellow, Name::action_skip},  "cards/yellow/action_skip.jpg"},
 	{{Color::yellow, Name::action_draw2}, "cards/yellow/action_draw2.jpg"},
 
 	// 黑色牌
@@ -144,7 +144,7 @@ int Card::value() const {
 	case Name::number_8: return 8;
 	case Name::number_9: return 9;
 		//功能
-	case Name::action_ban:
+	case Name::action_skip:
 	case Name::action_draw2:
 	case Name::action_rev: return 20;
 		//万能
@@ -161,9 +161,9 @@ std::wstring Card::toWString() const {
 	return Card::to_wstring(color) + Card::to_wstring(name);
 }
 std::string Card::getImagePath() const {
-	if (auto it = imagePaths.find(std::tuple(color, name)); it != imagePaths.end())
+	if (auto it = imagePaths.find(std::pair(color, name)); it != imagePaths.end())
 		return it->second;
-	else throw std::invalid_argument("未找到图片路径");
+	else throw std::invalid_argument("未找到[" + toString() + "]的图片路径");
 }
 
 // 属性设置
@@ -198,7 +198,7 @@ void Card::displayInCenter(GameRenderer& renderer, const sf::Vector2f& cardSize)
 void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 	if (isEffective()) {
 		switch (getName()) {
-		case Name::action_ban:   Effect::ban(*this, source, target); break;
+		case Name::action_skip:   Effect::ban(*this, source, target); break;
 		case Name::action_rev:   Effect::rev(*this, game); break;
 		case Name::action_draw2: Effect::draw2(*this, source, target); break;
 		case Name::wild_pal:     Effect::pal(*this, game, source); break;
@@ -244,7 +244,7 @@ std::string Card::to_string(const Name& name) {
 	case Name::number_8: return "8";
 	case Name::number_9: return "9";
 		// 功能牌
-	case Name::action_ban:   return "封禁";
+	case Name::action_skip:   return "封禁";
 	case Name::action_rev:   return "反转";
 	case Name::action_draw2: return "+2";
 		//万能牌
@@ -270,7 +270,7 @@ std::wstring Card::to_wstring(const Name& name) {
 	case Name::number_8: return L"8";
 	case Name::number_9: return L"9";
 		// 功能牌
-	case Name::action_ban:   return L"封禁";
+	case Name::action_skip:   return L"封禁";
 	case Name::action_rev:   return L"反转";
 	case Name::action_draw2: return L"+2";
 		//万能牌
@@ -291,7 +291,7 @@ bool Card::is_number(const Card::Name name) {
 		|| name == Name::number_8 || name == Name::number_9;
 }
 bool Card::is_action(const Card::Name name) {
-	return name == Name::action_ban || name == Name::action_draw2
+	return name == Name::action_skip || name == Name::action_draw2
 		|| name == Name::action_rev;
 }
 bool Card::is_wild(const Card::Name name) {
@@ -515,7 +515,7 @@ std::unique_ptr<Pile> Pile::standard() {
 		for (const Card::Name name : Card::actionCards) {
 			auto newCard = std::make_unique<Card>(color, name);
 			//反转，封禁每种颜色4张
-			if (name == Card::Name::action_rev || name == Card::Name::action_ban)
+			if (name == Card::Name::action_rev || name == Card::Name::action_skip)
 				standard->push_back(std::move(newCard), 4);
 			//+2每种颜色5张
 			else if (name == Card::Name::action_draw2)

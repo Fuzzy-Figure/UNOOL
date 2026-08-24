@@ -17,8 +17,10 @@ using opt_ref = std::optional<ref<T>>;
 
 
 namespace unool {
-	//全局配置，首次调用时读取 config.json，之后返回缓存引用
-	const json& getConfig();
+	//全局配置，读取 config.json 并缓存；reloadConfig 可强制重读
+	json& getConfig();
+	//强制重新读取 config.json，刷新缓存
+	void reloadConfig();
 
 	inline constexpr auto alwaysTrue = [](auto&&...) noexcept { return true; };
 

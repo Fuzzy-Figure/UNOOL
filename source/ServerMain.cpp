@@ -96,6 +96,7 @@ int main() {
 	try {
 		while (true) {
 			std::cout << "[Server] 游戏开始！" << std::endl;
+			unool::reloadConfig();
 			initCharacters(gameLogic);
 			gameLogic.broadcastState();
 			gameLoop(serverNetwork, gameLogic);

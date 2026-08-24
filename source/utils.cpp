@@ -5,7 +5,7 @@
 #include <iostream>
 
 namespace unool {
-	const json& getConfig() {
+	json& getConfig() {
 		static json config = []() {
 			std::ifstream configFile("../config.json");
 			if (!configFile.is_open()) {
@@ -14,6 +14,14 @@ namespace unool {
 			return json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
+	}
+
+	void reloadConfig() {
+		std::ifstream configFile("../config.json");
+		if (!configFile.is_open()) {
+			throw std::runtime_error("无法打开配置文件 config.json");
+		}
+		getConfig() = json::parse(configFile, nullptr, true, true);
 	}
 
 	namespace string {

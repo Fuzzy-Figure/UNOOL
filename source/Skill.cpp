@@ -386,7 +386,7 @@ bool 卖棋::content(Trigger& trigger) {
 // ==================== 技能：耐克 ====================
 bool 耐克::filter(const Trigger& trigger) const {
 	Card& card = trigger.getCard();
-	if (!card.is(Card::Name::action_ban, Card::Name::action_draw2, Card::Name::wild_draw4))
+	if (!card.is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4))
 		return false;
 	auto lastOpt = trigger.getGame().lastCard();
 	if (!lastOpt.has_value()) return false;
@@ -537,7 +537,7 @@ bool 假酒::content(Trigger& trigger) {
 	Card::Color playedColor = trigger.getCard().getColor();
 
 	static const std::vector nonNumberNames = {
-		Card::Name::action_ban, Card::Name::action_rev, Card::Name::action_draw2,
+		Card::Name::action_skip, Card::Name::action_rev, Card::Name::action_draw2,
 		Card::Name::wild_pal, Card::Name::wild_draw4
 	};
 	static const std::vector colors = {
@@ -927,7 +927,7 @@ bool 淘汰::content(Trigger& trigger) {
 
 
 bool 光合::filter(const Trigger& trigger) const {
-	return trigger.getCard().is(Card::Name::action_ban, Card::Name::action_draw2);
+	return trigger.getCard().is(Card::Name::action_skip, Card::Name::action_draw2);
 }
 bool 光合::content(Trigger& trigger) {
 	Card& card = trigger.getCarrier().judge();

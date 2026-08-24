@@ -22,7 +22,7 @@ public:
 		no,
 		number_0, number_1, number_2, number_3, number_4,
 		number_5, number_6, number_7, number_8, number_9,
-		action_ban, action_rev, action_draw2, wild_pal, wild_draw4,
+		action_rev, action_skip, action_draw2, wild_pal, wild_draw4,
 		back
 	};
 	using ColorName = std::pair<Color, Name>;
@@ -34,16 +34,16 @@ public:
 	inline static constexpr std::array<Card::Color, 4> colors = {
 		Color::blue, Color::green, Color::red, Color::yellow
 	};
+	inline static constexpr std::array<Card::Name, 10> numberCardsFrom0 = {
+		Name::number_0, Name::number_1, Name::number_2, Name::number_3, Name::number_4,
+		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
+	};
 	inline static constexpr std::array<Card::Name, 10> numberCardsFrom1 = {
 		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
 		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0
 	};
-	inline static constexpr std::array<Card::Name, 10> numberCardsFrom0 = {
-		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
-		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
-	};
 	inline static constexpr std::array<Card::Name, 3> actionCards = {
-		Name::action_rev, Name::action_ban, Name::action_draw2
+		Name::action_rev, Name::action_skip, Name::action_draw2
 	};
 	inline static constexpr std::array<Card::Name, 2> wildCards = {
 		Name::wild_pal, Name::wild_draw4
@@ -51,7 +51,7 @@ public:
 	inline static constexpr std::array<Card::Name, 15> allCards = {
 		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
 		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
-		Name::action_rev, Name::action_ban, Name::action_draw2,
+		Name::action_rev, Name::action_skip, Name::action_draw2,
 		Name::wild_pal, Name::wild_draw4
 	};
 #pragma endregion
