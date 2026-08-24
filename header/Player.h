@@ -28,11 +28,11 @@ private:
 
 	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
 	sf::Keyboard::Scancode getInput() const { return currentInput; }
-	opt_ref<Card> chooseToUse();
+	opt_ref<Card> chooseToUse(ASkill::TriggerTime phase = ASkill::TriggerTime::never);
 
 public:
 	std::optional<std::size_t> chooseCard(std::function<bool(const Card&)> condition,
-										  bool forced);
+										  bool forced, ASkill::TriggerTime phase = ASkill::TriggerTime::never);
 #pragma region 玩家属性
 	Player(const std::size_t _id, GameLogic& _game, std::unique_ptr<Character> _character)
 		:id(_id), game(_game), character(std::move(_character)) {}
@@ -66,6 +66,8 @@ public:
 	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
 	bool hasPSkill(const std::string& name) const { return character->hasPSkill(name); }
+	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return character->getInstantSkills(); }
+	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
 #pragma endregion
 
 #pragma region 手牌操作 - 委托到 Hand

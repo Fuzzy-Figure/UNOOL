@@ -213,6 +213,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\AccountProtocol.h" />
+    <ClInclude Include="..\header\ASkill.h" />
     <ClInclude Include="..\header\Card.h" />
     <ClInclude Include="..\header\Character.h" />
     <ClInclude Include="..\header\Effect.h" />
@@ -221,6 +222,7 @@
     <ClInclude Include="..\header\GameState.h" />
     <ClInclude Include="..\header\ImageManager.h" />
     <ClInclude Include="..\header\Player.h" />
+    <ClInclude Include="..\header\PSkill.h" />
     <ClInclude Include="..\header\Skill.h" />
     <ClInclude Include="..\header\Socket.h" />
     <ClInclude Include="..\header\TextManager.h" />
@@ -229,6 +231,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\AccountProtocol.cpp" />
+    <ClCompile Include="..\source\ASkill.cpp" />
     <ClCompile Include="..\source\Card.cpp" />
     <ClCompile Include="..\source\Character.cpp" />
     <ClCompile Include="..\source\Effect.cpp" />
@@ -237,6 +240,7 @@
     <ClCompile Include="..\source\GameState.cpp" />
     <ClCompile Include="..\source\ImageManager.cpp" />
     <ClCompile Include="..\source\Player.cpp" />
+    <ClCompile Include="..\source\PSkill.cpp" />
     <ClCompile Include="..\source\ServerMain.cpp" />
     <ClCompile Include="..\source\Skill.cpp" />
     <ClCompile Include="..\source\Socket.cpp" />

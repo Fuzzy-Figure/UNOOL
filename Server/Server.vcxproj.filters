@@ -260,6 +260,12 @@
     <ClInclude Include="..\header\AccountProtocol.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\ASkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\PSkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\Card.cpp">
@@ -305,6 +311,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\source\AccountProtocol.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\PSkill.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ASkill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

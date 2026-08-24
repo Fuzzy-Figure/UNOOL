@@ -13,7 +13,8 @@ public:
 	struct Info {
 		Level level;
 		std::vector<PSkill::Factory> pSkills;
-		std::vector<ASkill::Factory> aSkills;
+		std::vector<std::function<std::unique_ptr<ASkillInstantBase>()>>    instantSkills;
+		std::vector<std::function<std::unique_ptr<ASkillTransformBase>()>> transformSkills;
 		std::size_t hp;
 		std::size_t maxHp = 0;
 	};
@@ -22,8 +23,9 @@ public:
 private:
 	std::string name;
 	std::string skin;
-	std::list<std::unique_ptr<PSkill>> pSkills;
-	std::list<std::unique_ptr<ASkill>> aSkills;
+	std::list<std::unique_ptr<PSkill>>            pSkills;
+	std::list<std::unique_ptr<ASkillInstantBase>>   instantSkills;
+	std::list<std::unique_ptr<ASkillTransformBase>> transformSkills;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
 
@@ -59,9 +61,12 @@ public:
 #pragma region 技能管理
 	std::vector<std::string> getPSkillsName() const;
 	std::vector<std::string> getASkillsName() const;
+	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return instantSkills; }
+	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
 	bool hasPSkill(const std::string& skillName) const;
 	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) const;
-	void addSkill(std::unique_ptr<ASkill> aSkill);
+	void addSkill(std::unique_ptr<ASkillInstantBase>   skill);
+	void addSkill(std::unique_ptr<ASkillTransformBase> skill);
 	void addSkill(std::unique_ptr<PSkill> pSkill);
 	void removeSkill(const std::string& name);
 	void resetSkills();

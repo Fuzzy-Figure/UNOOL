@@ -1,6 +1,7 @@
 #include "../header/Player.h"
 #include "../header/GameLogic.h"
 #include <thread>
+#include <iterator>
 
 void Player::takeDamage(std::size_t damage, opt_ref<Player> source) {
 	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damage);
@@ -129,7 +130,7 @@ void Player::phaseBegin() {
 //返回是否出牌
 bool Player::phaseUse1() {
 	game.launchPSkills(PSkill::TriggerTime::phase_use1_begin, *this);
-	auto card = chooseToUse();
+	auto card = chooseToUse(ASkill::TriggerTime::phase_use1);
 	if (card.has_value())
 		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this, card.value().get());
 	else
@@ -146,7 +147,7 @@ void Player::phaseDraw() {
 
 void Player::phaseUse2() {
 	game.launchPSkills(PSkill::TriggerTime::phase_use2_begin, *this);
-	chooseToUse();
+	chooseToUse(ASkill::TriggerTime::phase_use2);
 }
 
 void Player::phaseEnd() {
@@ -190,9 +191,23 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 // === 交互 ===
 
 std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> condition,
-											  bool forced) {
+											  bool forced, ASkill::TriggerTime phase) {
 	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
+	ASkillTransformBase* activeMode = nullptr;  //当前激活的转换型主动技
+
+	//收集当前阶段可发动的两类技能（即时 / 转换）
+	std::vector<ref<ASkillInstantBase>>   instantRefs;
+	std::vector<ref<ASkillTransformBase>> transformRefs;
+	if (phase != ASkill::TriggerTime::never) {
+		for (auto& s : getInstantSkills()) {
+			if (s->canTriggerAt(phase) && s->canUse()) instantRefs.emplace_back(*s);
+		}
+		for (auto& s : getTransformSkills()) {
+			if (s->canTriggerAt(phase) && s->canUse()) transformRefs.emplace_back(*s);
+		}
+	}
+
 	while (true) {
 		network.update();
 		auto inputOpt = network.receiveClientInput();
@@ -207,6 +222,46 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		sf::Keyboard::Scancode input = clientInput.key;
 		setInput(input);
 
+		//数字1-9：即时技发动 / 转换技切换（仅出牌阶段）
+		if (phase != ASkill::TriggerTime::never) {
+			std::size_t digit = 0;
+			switch (input) {
+			case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: digit = 1; break;
+			case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: digit = 2; break;
+			case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: digit = 3; break;
+			case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: digit = 4; break;
+			case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: digit = 5; break;
+			case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: digit = 6; break;
+			case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: digit = 7; break;
+			case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: digit = 8; break;
+			case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: digit = 9; break;
+			default: break;
+			}
+			if (digit > 0) {
+				std::size_t idx = digit - 1;  //0-based
+				//前 instantRefs.size() 个键：触发即时技
+				if (idx < instantRefs.size()) {
+					if (instantRefs[idx].get().tryActivate(game, *this)) {
+						game.broadcastState();
+					}
+				}
+				//后续键：切换转换技激活态
+				else if (idx - instantRefs.size() < transformRefs.size()) {
+					std::size_t tIdx = idx - instantRefs.size();
+					ASkillTransformBase& skill = transformRefs[tIdx].get();
+					if (activeMode == &skill) {
+						activeMode = nullptr;
+						network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);
+					}
+					else {
+						activeMode = &skill;
+						network.sendPlayerChoice(id, skill.getPrompt(), std::vector<std::wstring>(), false);
+					}
+				}
+				continue;
+			}
+		}
+
 		switch (input) {
 		case sf::Keyboard::Scancode::Space:
 			hand->setSelectedIndex(clientInput.selectedIndex);
@@ -216,14 +271,40 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		case sf::Keyboard::Scancode::Up:
 		case sf::Keyboard::Scancode::W:
 			hand->setSelectedIndex(clientInput.selectedIndex);
-			if (!handEmpty() && condition(hand->getSelectedCard())) {
-				game.clearOperatingPlayer();
-				return hand->getSelectedIndex();
+			if (!handEmpty()) {
+				if (activeMode != nullptr) {
+					//转换技：尝试转化选中的牌并打出（暂仅支持单牌转换）
+					Card& selected = (*hand)[hand->getSelectedIndex()];
+					if (activeMode->canSelect(selected) && activeMode->getCardCount() == 1) {
+						Card original = selected;  //备份原牌
+						std::vector<ref<Card>> cards;
+						cards.emplace_back(selected);
+						activeMode->transform(std::move(cards));
+						if (canUse(selected)) {
+							network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);  //清提示
+							game.clearOperatingPlayer();
+							return hand->getSelectedIndex();
+						}
+						else {
+							selected = original;  //还原
+							std::cout << "<" << activeMode->getName() << "> 转化后的牌不符合出牌规则" << std::endl;
+						}
+					}
+					else {
+						std::cout << "<" << activeMode->getName() << "> 选中的牌不能转化" << std::endl;
+					}
+				}
+				else if (condition(hand->getSelectedCard())) {
+					network.sendPlayerChoice(id, L"", {}, false);  //清提示
+					game.clearOperatingPlayer();
+					return hand->getSelectedIndex();
+				}
 			}
 			break;
 		case sf::Keyboard::Scancode::Down:
 		case sf::Keyboard::Scancode::S:
 			if (!forced) {
+				network.sendPlayerChoice(id, L"", {}, false);  //清提示
 				game.clearOperatingPlayer();
 				return std::nullopt;
 			}
@@ -234,8 +315,8 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 	}
 }
 
-opt_ref<Card> Player::chooseToUse() {
-	auto index = chooseCard([this](const Card& c) { return canUse(c); }, false);
+opt_ref<Card> Player::chooseToUse(ASkill::TriggerTime phase) {
+	auto index = chooseCard([this](const Card& c) { return canUse(c); }, false, phase);
 	if (index.has_value()) {
 		return useCardByIndex(index.value());
 	}
