@@ -67,9 +67,10 @@ bool GameRenderer::hasChoiceOptions() const {
 	return choice.has_value() && !choice->options.empty();
 }
 
-bool GameRenderer::isLocalTurn() const {
-	return !currentState.players.empty()
-		&& currentState.players[currentState.currentPlayerIndex].id == localPlayerId;
+bool GameRenderer::canSelectLocal() const {
+	return currentState.operatingPlayerId.has_value()
+		&& currentState.operatingPlayerId.value() == localPlayerId
+		&& !hasChoiceOptions();
 }
 
 void GameRenderer::updateCharInfo(std::size_t playerIndex, const std::string& fullText) {
@@ -128,9 +129,8 @@ void GameRenderer::renderPlayers() {
 			sf::Vector2f{ config.characterSize.x, 0 } :
 			sf::Vector2f{ config.characterSize.x, config.windowSize.y - config.characterSize.y };
 
-		bool isCurrentPlayer = currentState.players[currentState.currentPlayerIndex].id == playerState.id;
 		bool isLocalPlayer = playerState.id == localPlayerId;
-		bool canSelect = isLocalPlayer && !hasChoiceOptions() && (isLocalTurn() || isChoiceActive());
+		bool canSelect = isLocalPlayer && canSelectLocal();
 
 		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
 	}

@@ -580,8 +580,7 @@ bool 窃观::content(Trigger& trigger) {
 	Player& drawer = trigger.getPlayer();
 	const Card& card = trigger.getCard();
 	std::wstring title = L"【窃观】" + drawer.characterNameW()
-		+ L"获得了 " + Card::to_wstring(card.getColor())
-		+ L" " + Card::to_wstring(card.getName()) + L"（需确认）";
+		+ L"获得了 " + card.toWString();
 	carrier.hint(title);
 	return true;
 }

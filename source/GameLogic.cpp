@@ -310,7 +310,19 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.discardPile[i] = discardPile->getCardByIndex(i);
 	}
 
+	state.operatingPlayerId = operatingPlayerId;
+
 	return state;
+}
+
+void GameLogic::setOperatingPlayer(std::size_t playerId) {
+	operatingPlayerId = playerId;
+	broadcastState();
+}
+
+void GameLogic::clearOperatingPlayer() {
+	operatingPlayerId = std::nullopt;
+	broadcastState();
 }
 
 void GameLogic::flushCharInfo() {

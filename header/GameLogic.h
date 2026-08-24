@@ -26,6 +26,7 @@ private:
 	ServerNetwork& network;
 	std::array<bool, 2> charInfoDirty{ true, true };
 	std::size_t matchCount = 0;
+	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 #pragma endregion
 
 #pragma region 私有辅助方法
@@ -65,6 +66,9 @@ public:
 	void markCharInfoDirty(std::size_t playerId);
 	std::size_t getMatchCount() const { return matchCount; }
 	void clearMatchCount() { matchCount = 0; }
+	//设置/清除当前正在操作的玩家，并广播状态
+	void setOperatingPlayer(std::size_t playerId);
+	void clearOperatingPlayer();
 	ServerNetwork& getNetwork();
 	Player& currentPlayer() const;
 	GameState packStateForPlayer(std::size_t playerId) const;

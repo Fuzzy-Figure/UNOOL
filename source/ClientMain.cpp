@@ -263,10 +263,10 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				auto keyEvent = event->getIf<sf::Event::KeyPressed>();
 				if (keyEvent) {
 					auto sc = keyEvent->scancode;
-					if (!renderer.hasChoiceOptions() && (renderer.isLocalTurn() || renderer.isChoiceActive()) && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
+					if (renderer.canSelectLocal() && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
 						renderer.movePointerLeft(net.getPlayerId());
 					}
-					else if (!renderer.hasChoiceOptions() && (renderer.isLocalTurn() || renderer.isChoiceActive()) && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
+					else if (renderer.canSelectLocal() && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
 						renderer.movePointerRight(net.getPlayerId());
 					}
 					else {

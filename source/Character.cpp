@@ -104,10 +104,10 @@ std::string Character::skillsName() const {
 std::string Character::getSkillsText() const {
 	std::string result;
 	for (const auto& ps : pSkills) {
-		result += "【" + ps->getName() + "】\n" + ps->getInfo() + "\n";
+		result += "【" + ps->getName() + "】（被动技能）\n" + ps->getInfo() + "\n";
 	}
 	for (const auto& as : aSkills) {
-		result += "【" + as->getName() + "】\n" + as->getInfo() + "\n";
+		result += "【" + as->getName() + "】（主动技能）\n" + as->getInfo() + "\n";
 	}
 	return result;
 }
@@ -131,7 +131,7 @@ std::string Character::to_string(Level level) {
 	case Level::C: return "C";
 	case Level::D: return "D";
 	case Level::F: return "F";
-	default: return "?";
+	default:       return "?";
 	}
 }
 std::wstring Character::to_wstring(Level level) {
@@ -142,7 +142,7 @@ std::wstring Character::to_wstring(Level level) {
 	case Level::C: return L"C";
 	case Level::D: return L"D";
 	case Level::F: return L"F";
-	default: return L"?";
+	default:       return L"?";
 	}
 }
 std::string Character::getImagePath(const std::string& name, const std::string& skin) {

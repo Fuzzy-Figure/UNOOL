@@ -76,7 +76,7 @@ public:
 	std::size_t getSelectedIndex(std::size_t playerId) const;
 	bool isChoiceActive() const;
 	bool hasChoiceOptions() const;
-	bool isLocalTurn() const;
+	bool canSelectLocal() const; //本地玩家是否能选牌（自己是当前操作者且无选项拦截）
 	void setLocalPlayerId(std::size_t id) { localPlayerId = id; }
 	void updateCharInfo(std::size_t playerIndex, const std::string& fullText);
 	void display();

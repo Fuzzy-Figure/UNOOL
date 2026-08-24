@@ -34,6 +34,7 @@ struct GameState {
 	std::vector<PlayerState> players;
 	std::vector<Card> discardPile;
 	std::vector<std::size_t> seatOrder;
+	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家，nullopt=无人操作
 
 	friend sf::Packet& operator>>(sf::Packet& packet, GameState& state);
 	friend sf::Packet& operator<<(sf::Packet& packet, const GameState& state);

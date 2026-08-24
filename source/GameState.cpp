@@ -56,6 +56,17 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& state) {
 		packet >> state.seatOrder[i];
 	}
 
+	bool hasOperating;
+	packet >> hasOperating;
+	if (hasOperating) {
+		std::size_t opId;
+		packet >> opId;
+		state.operatingPlayerId = opId;
+	}
+	else {
+		state.operatingPlayerId = std::nullopt;
+	}
+
 	return packet;
 }
 
@@ -78,6 +89,11 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& state) {
 	packet << state.seatOrder.size();
 	for (const auto& seat : state.seatOrder) {
 		packet << seat;
+	}
+
+	packet << state.operatingPlayerId.has_value();
+	if (state.operatingPlayerId.has_value()) {
+		packet << state.operatingPlayerId.value();
 	}
 
 	return packet;

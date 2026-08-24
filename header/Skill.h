@@ -106,7 +106,7 @@ public:
 		Player& getCarrier() const { return carrier.get(); }
 		Player& getPlayer() const { return player.value().get(); }
 		Card& getCard() const {
-			if (cards.value().size() != 1)
+			if (cards.value().size() > 1)
 				std::cout << "[警告] 在cards含有多于一张牌的情况下调用getCard" << std::endl;
 			return cards.value().front().get();
 		}

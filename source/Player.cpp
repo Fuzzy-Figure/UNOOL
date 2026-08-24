@@ -192,6 +192,7 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> condition,
 											  bool forced) {
 	ServerNetwork& network = game.getNetwork();
+	game.setOperatingPlayer(id);
 	while (true) {
 		network.update();
 		auto inputOpt = network.receiveClientInput();
@@ -216,12 +217,14 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		case sf::Keyboard::Scancode::W:
 			hand->setSelectedIndex(clientInput.selectedIndex);
 			if (!handEmpty() && condition(hand->getSelectedCard())) {
+				game.clearOperatingPlayer();
 				return hand->getSelectedIndex();
 			}
 			break;
 		case sf::Keyboard::Scancode::Down:
 		case sf::Keyboard::Scancode::S:
 			if (!forced) {
+				game.clearOperatingPlayer();
 				return std::nullopt;
 			}
 			break;
@@ -385,6 +388,14 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
 	ServerNetwork& network = game.getNetwork();
 	std::wstring errorMsg;
+
+	//RAII: 进入/退出操作锁
+	struct OperatingGuard {
+		GameLogic& g;
+		bool active = true;
+		OperatingGuard(GameLogic& g_, std::size_t id) : g(g_) { g.setOperatingPlayer(id); }
+		~OperatingGuard() { if (active) g.clearOperatingPlayer(); }
+	} guard(game, id);
 
 	constexpr std::size_t PER_PAGE = 9;
 	const bool usePaging = options.size() > PER_PAGE;
