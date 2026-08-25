@@ -13,7 +13,7 @@ public:
 	struct Info {
 		Level level;
 		std::vector<PSkill::Factory> pSkills;
-		std::vector<std::function<std::unique_ptr<ASkillInstantBase>()>>    instantSkills;
+		std::vector<std::function<std::unique_ptr<ASkillInstantBase>()>> instantSkills;
 		std::vector<std::function<std::unique_ptr<ASkillTransformBase>()>> transformSkills;
 		std::size_t hp;
 		std::size_t maxHp = 0;
@@ -23,8 +23,8 @@ public:
 private:
 	std::string name;
 	std::string skin;
-	std::list<std::unique_ptr<PSkill>>            pSkills;
-	std::list<std::unique_ptr<ASkillInstantBase>>   instantSkills;
+	std::list<std::unique_ptr<PSkill>> pSkills;
+	std::list<std::unique_ptr<ASkillInstantBase>> instantSkills;
 	std::list<std::unique_ptr<ASkillTransformBase>> transformSkills;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;

@@ -119,7 +119,7 @@ public:
 	};
 	using Factory = std::function<std::unique_ptr<PSkill>()>;
 
-	virtual bool filter(const Trigger& trigger) const = 0;
+	virtual bool filter(const Trigger& trigger) const { return true; }
 	virtual bool content(Trigger& trigger) = 0;
 
 	//无子技能

@@ -25,9 +25,6 @@ bool 隐身::content(Trigger& trigger) {
 
 
 // ==================== 技能：顶置 ====================
-bool 顶置::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 顶置::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 	Pile& pile = game.getPile();
@@ -51,9 +48,6 @@ bool 顶置::content(Trigger& trigger) {
 
 
 // ==================== 技能：带派 ====================
-bool 带派::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 带派::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	std::size_t choice = carrier.ask(
@@ -124,9 +118,6 @@ bool 丑皇::content(Trigger& trigger) {
 
 
 // ==================== 技能：军国 ====================
-bool 军国::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 军国::content(Trigger& trigger) {
 	Player& player = trigger.getPlayer();
 	Player& carrier = trigger.getCarrier();
@@ -165,9 +156,6 @@ bool 家暴::content(Trigger& trigger) {
 
 
 // ==================== 技能：健身 ====================
-bool 健身::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 健身::content(Trigger& trigger) {
 	trigger.getCarrier().recover(5);
 	trigger.getGame().broadcastState();
@@ -223,9 +211,6 @@ bool 棍击::content(Trigger& trigger) {
 
 
 // ==================== 技能：神木 ====================
-bool 神木::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 神木::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 	game.getPile().push_front(Card::make(Card::Color::black, Card::Name::wild_pal), 9);
@@ -263,9 +248,6 @@ bool 雷剑::content(Trigger& trigger) {
 
 
 // ==================== 技能：买棋 ====================
-bool 买棋::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 买棋::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	carrier.takeDamage(10 * (trigger.getCount() - 1), trigger.getCarrier());
@@ -343,9 +325,6 @@ bool 爆破::content(Trigger& trigger) {
 
 
 // ==================== 技能：电音 ====================
-bool 电音::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 电音::content(Trigger& trigger) {
 	Hand& hand = trigger.getCarrier().getHand();
 	hand.forEachIf(&Card::isNumber, [](Card& card) {
@@ -358,9 +337,6 @@ bool 电音::content(Trigger& trigger) {
 
 
 // ==================== 技能：蒙面 ====================
-bool 蒙面::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 蒙面::content(Trigger& trigger) {
 	trigger.getNumber() = unool::math::ceil(trigger.getNumber() * 0.75);
 	return true;
@@ -407,9 +383,6 @@ bool 锐刻::content(Trigger& trigger) {
 
 
 // ==================== 技能：巨富 ====================
-bool 巨富::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 巨富::content(Trigger& trigger) {
 	trigger.getCarrier().draw(4); //初始8张 + 4张 = 12张
 	trigger.getGame().broadcastState();
@@ -656,9 +629,6 @@ bool 好火::content(Trigger& trigger) {
 
 
 //================== 森罗 =================
-bool 森罗::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 森罗::content(Trigger& trigger) {
 	trigger.getCarrier().getHand().forEachIf(
 		[](const Card& c) {
@@ -672,14 +642,10 @@ bool 森罗::content(Trigger& trigger) {
 
 //================大脚=====================
 bool 大脚::filter(const Trigger& trigger) const {
-	return trigger.getCarrier().handInclude([](const Card& c) {
-		return c.isWild();
-	});
+	return trigger.getCarrier().handInclude(&Card::isWild);
 }
 bool 大脚::content(Trigger& trigger) {
-	trigger.getCarrier().chooseToDiscard(L"弃置一张万能牌", 1, true, [](const Card& c) {
-		return c.isWild();
-	});
+	trigger.getCarrier().chooseToDiscard(L"弃置一张万能牌", 1, true, &Card::isWild);
 	trigger.getCarrier().getHand().forEachIf(
 		[](const Card& c) {
 		return c.getColor() != Card::Color::black;
@@ -876,9 +842,6 @@ bool 射门::content(Trigger& trigger) {
 }
 
 
-bool 招待::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 招待::content(Trigger& trigger) {
 	//选角色
 	Player& carrier = trigger.getCarrier();
@@ -1073,9 +1036,6 @@ bool 徒步::content(Trigger& trigger) {
 }
 
 // ==================== 技能：健忘 ====================
-bool 健忘::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 健忘::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
@@ -1102,10 +1062,6 @@ bool 健忘::content(Trigger& trigger) {
 }
 
 // ==================== 技能：豪赌 ====================
-bool 豪赌::filter(const Trigger& trigger) const {
-	(void)trigger;
-	return true;
-}
 bool 豪赌::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
@@ -1139,9 +1095,6 @@ bool 豪赌::content(Trigger& trigger) {
 
 
 // ==================== 技能：黑帮 ====================
-bool 黑帮::filter(const Trigger& trigger) const {
-	return true;
-}
 bool 黑帮::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	std::size_t X = trigger.getGame().getMatchCount();
@@ -1279,11 +1232,6 @@ bool 难题::content(Trigger& trigger) {
 
 
 // ==================== 技能：迷烟 ====================
-bool 迷烟::filter(const Trigger& trigger) const {
-	trigger.getGame().broadcastState();
-	return true;
-}
-
 bool 迷烟::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	Card& card = trigger.getCard();
@@ -1304,9 +1252,7 @@ bool 迷烟::content(Trigger& trigger) {
 	return true;
 }
 
-bool 创世::filter(const Trigger& trigger) const {
-	return true;
-}
+
 bool 创世::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	//收集手牌中已有的牌名
