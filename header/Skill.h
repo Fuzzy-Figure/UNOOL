@@ -214,7 +214,9 @@ template<class Derived> std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
 template<class Derived>
 class ASkillInstant : public ASkillInstantBase {
 public:
-	static std::unique_ptr<ASkillInstantBase> make() { return std::make_unique<Derived>(); }
+	static std::unique_ptr<ASkillInstantBase> make() { 
+		return std::make_unique<Derived>(); 
+	}
 	bool tryActivate(GameLogic& game, Player& player) final {
 		if (!canUse()) return false;
 		if (!content(game, player)) return false;
@@ -231,7 +233,9 @@ protected:
 template<class Derived>
 class ASkillTransform : public ASkillTransformBase {
 public:
-	static std::unique_ptr<ASkillTransformBase> make() { return std::make_unique<Derived>(); }
+	static std::unique_ptr<ASkillTransformBase> make() { 
+		return std::make_unique<Derived>();
+	}
 protected:
 	using ASkillTransformBase::ASkillTransformBase;
 };
