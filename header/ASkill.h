@@ -1,16 +1,14 @@
 #include "Skill.h"
 
-
-//主动技：摸牌 - 出牌阶段1，你可以摸一张牌（即时型）
-class 摸牌 : public ASkillInstant<摸牌> {
+class 徒步 : public ASkillInstant<徒步> {
 public:
-	摸牌() : ASkillInstant<摸牌>(
-		"摸牌",
-		"出牌阶段1，你可以摸一张牌。",
+	徒步() : ASkillInstant<徒步>(
+		"徒步",
+		"出牌阶段，你可以重铸一张牌并回复1点体力，若你重铸了数字牌，失去X点体力（X为此技能本局发动次数）。",
 		unlimited,
-		TriggerTime::phase_use1
+		TriggerTime::phase_use
 	) {}
-	bool content(GameLogic& game, Player& player) override;
+	bool content(GameLogic& game, Player& carrier) override;
 };
 
 //主动技：八爪 - 你可以将一张数字牌当作蓝色的8打出（转换型）

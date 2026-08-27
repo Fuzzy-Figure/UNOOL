@@ -403,7 +403,7 @@ std::optional<Card> GameLogic::lastCard() const {
 void GameLogic::checkRoundEnd() {
 	for (auto& player : players) {
 		std::size_t damage = player->handValue();
-		player->takeDamage(damage, std::nullopt);
+		player->damage(damage, std::nullopt);
 		std::cout << "玩家" << player->getId() << "扣除" << damage << "点体力，剩余" << player->getHp() << "/" << player->getMaxHp() << std::endl;
 	}
 }

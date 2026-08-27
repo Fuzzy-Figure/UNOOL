@@ -608,20 +608,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-class 徒步 : public PSkillImpl<徒步> {
-public:
-	徒步() : PSkillImpl<徒步>(
-		"徒步",
-		"契定技，你打出非数字牌后，可失去X点体力并重铸一张手牌（X为此技能本局发动次数）。",
-		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::use_card_end
-	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-	void reset() override { PSkill::reset(); setForced(false); }
-};
-
 class 健忘 : public PSkillImpl<健忘> {
 public:
 	健忘() : PSkillImpl<健忘>(
@@ -825,4 +811,34 @@ public:
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
+};
+
+class 落水 : public PSkillImpl<落水> {
+public:
+	落水() : PSkillImpl<落水>(
+		"落水",
+		"契定技，限定技，一名角色失去蓝色牌后，其从牌堆随机获得其他三种颜色的牌各一张。",
+		1, false,
+		TriggerPlayer::anybody,
+		TriggerTime::lose_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); setForced(false); }
+};
+
+class 骚扰 : public PSkillImpl<骚扰> {
+	bool disabled = false;
+public:
+	骚扰() : PSkillImpl<骚扰>(
+		"骚扰",
+		"回合结束时，你可以判定，若结果不为蓝色，你回复1点体力并重置【落水】使用次数；"
+		"否则你失去此技能至本局结束。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override { PSkill::reset(); disabled = false; }
 };

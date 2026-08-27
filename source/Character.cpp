@@ -8,7 +8,7 @@
 
 // ==================== 静态数据 ====================
 const std::unordered_map<std::string, Character::Info> Character::infos = {
-	{"白板",     {Level::F, {}, {摸牌::make}, {}, 1}},
+	{"白板",     {Level::F, {}, {}, {}, 1}},
 	{"特朗普",   {Level::D, {粪怒::make}, {}, {}, 145}},
 	{"棍母",     {Level::F, {隐身::make}, {}, {}, 100}},
 	{"夏搏",     {Level::F, {顶置::make}, {}, {}, 114}},
@@ -41,15 +41,15 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"二次元", {Level::F, {追番::make, 崩三::make}, {}, {}, 100}},
 	{"金正日", {Level::B, {望日::make, 慈父::make}, {}, {}, 188}},
 	{"金日成", {Level::C, {朔日::make}, {}, {}, 199}},
-	{"刘建龙", {Level::D, {徒步::make}, {}, {}, 250}},
+	{"刘建龙", {Level::D, {}, {徒步::make}, {}, 250}},
 	{"拜登",   {Level::A, {健忘::make}, {}, {}, 125}},
 	{"王耘浩", {Level::D, {豪赌::make}, {}, {}, 250}},
 	{"Bulbito Bandito Traktorito", {Level::B, {黑帮::make, 拖拉::make}, {}, {}, 225}},
 	{"烟刻瑯", {Level::D, {迷烟::make}, {}, {}, 175}},
-	//{"赵帷儒", {Level::S, {创世::make, 补天::make}, {}, {}, 200}},
 	{"幺幺",   {Level::F, {水鬼::make}, {}, {}, 88}},
 	{"蒋介石", {Level::F, {叛党::make}, {}, {}, 180}},
 	{"斯大林", {Level::C, {清洗::make}, {}, {}, 225}},
+	{"龚俊清", {Level::B, {落水::make, 骚扰::make}, {}, {}, 198}},
 	{"Blueberrini Octopussini", {Level::D, {}, {}, {八爪::make}, 100}},
 };
 
@@ -210,6 +210,12 @@ bool Character::hasPSkill(const std::string& skillName) const {
 	}
 	return false;
 }
+opt_ref<PSkill> Character::findPSkill(const std::string& skillName) {
+	for (auto& skill : pSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
+	return std::nullopt;
+}
 void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 							  PSkill::Trigger& trigger) const {
 	//遍历被动技能
@@ -267,7 +273,7 @@ std::size_t Character::getMaxHp() const {
 void Character::setHp(std::size_t newHp) {
 	hp = newHp;
 }
-void Character::takeDamage(std::size_t damage) {
+void Character::damage(std::size_t damage) {
 	if (hp <= damage) hp = 0;
 	else hp -= damage;
 }

@@ -64,6 +64,7 @@ public:
 	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return instantSkills; }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
 	bool hasPSkill(const std::string& skillName) const;
+	opt_ref<PSkill> findPSkill(const std::string& skillName);
 	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) const;
 	void addSkill(std::unique_ptr<ASkillInstantBase>   skill);
 	void addSkill(std::unique_ptr<ASkillTransformBase> skill);
@@ -76,7 +77,7 @@ public:
 	std::size_t getHp() const;
 	std::size_t getMaxHp() const;
 	void setHp(std::size_t newHp);
-	void takeDamage(std::size_t damage);
+	void damage(std::size_t damage);
 	void recover(std::size_t num);
 	bool isDead() const;
 #pragma endregion

@@ -66,7 +66,7 @@ bool 带派::content(Trigger& trigger) {
 	case 3:
 		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
-		carrier.takeDamage(25, carrier);
+		carrier.damage(25, carrier);
 		break;
 	}
 	trigger.getGame().broadcastState();
@@ -93,7 +93,7 @@ bool 割腕::filter(const Trigger& trigger) const {
 }
 bool 割腕::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	carrier.takeDamage(unool::random::randomSize_t(1, 5), carrier);
+	carrier.damage(unool::random::randomSize_t(1, 5), carrier);
 	trigger.getGame().broadcastState();
 	return true;
 }
@@ -122,9 +122,9 @@ bool 军国::content(Trigger& trigger) {
 	Player& player = trigger.getPlayer();
 	Player& carrier = trigger.getCarrier();
 	if (player != carrier) //其他角色：失去 1% 最大体力，向上取整
-		player.takeDamage(unool::math::ceil(player.getMaxHp() * 0.01), carrier);
+		player.damage(unool::math::ceil(player.getMaxHp() * 0.01), carrier);
 	else //自己：失去1体力
-		player.takeDamage(1, carrier);
+		player.damage(1, carrier);
 	return true;
 }
 
@@ -147,7 +147,7 @@ bool 家暴::content(Trigger& trigger) {
 
 	Player& target = targetOpt.value();
 	std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
-	target.takeDamage(damage, trigger.getCarrier());
+	target.damage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName() << "发动家暴，造成" << damage << "点伤害！" << std::endl;
 
 	game.broadcastState();
@@ -201,7 +201,7 @@ bool 棍击::content(Trigger& trigger) {
 
 	Player& target = targetOpt.value();
 	std::size_t damage = unool::math::pow(2, trigger.getCount());
-	target.takeDamage(damage, trigger.getCarrier());
+	target.damage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName()
 		<< "发动棍击，造成" << damage << "点伤害！" << std::endl;
 
@@ -250,7 +250,7 @@ bool 雷剑::content(Trigger& trigger) {
 // ==================== 技能：买棋 ====================
 bool 买棋::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	carrier.takeDamage(10 * (trigger.getCount() - 1), trigger.getCarrier());
+	carrier.damage(10 * (trigger.getCount() - 1), trigger.getCarrier());
 	if (unool::random::probability(0.5)) { //万能
 		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 	}
@@ -300,10 +300,10 @@ bool 轰炸::filter(const Trigger& trigger) const {
 bool 轰炸::content(Trigger& trigger) {
 	Player& target = trigger.getPlayer().next();
 	if (trigger.getCard().is(Card::Name::action_draw2)) {
-		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.getCarrier());
+		target.damage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.getCarrier());
 	}
 	else {
-		target.takeDamage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.getCarrier());
+		target.damage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.getCarrier());
 	}
 	return true;
 }
@@ -317,7 +317,7 @@ bool 爆破::content(Trigger& trigger) {
 	Player& player = trigger.getPlayer();
 	Hand& hand = player.getHand();
 	auto card = hand.takeCardByIndex(unool::random::randomSize_t(0, hand.count() - 1));
-	player.takeDamage(card->value(), trigger.getCarrier());
+	player.damage(card->value(), trigger.getCarrier());
 	std::cout << "爆破获取了 [" << *card << "]，造成了" << card->value() << "点伤害！" << std::endl;
 	trigger.getCarrier().gainCard(std::move(card));
 	return true;
@@ -724,7 +724,7 @@ bool 举报::content(Trigger& trigger) {
 	setForced(true);
 	Player& player = trigger.getPlayer();
 	Player& carrier = trigger.getCarrier();
-	player.takeDamage(unool::math::ceil(0.1 * player.getHp()), carrier);
+	player.damage(unool::math::ceil(0.1 * player.getHp()), carrier);
 	return true;
 }
 void 举报::reset() {
@@ -764,7 +764,7 @@ bool 金铲::filter(const Trigger& trigger) const {
 }
 bool 金铲::content(Trigger& trigger) {
 	trigger.getNumber() = 0;
-	trigger.getPlayer().takeDamage(1, trigger.getCarrier());
+	trigger.getPlayer().damage(1, trigger.getCarrier());
 	return true;
 }
 
@@ -1021,20 +1021,6 @@ bool 朔日::content(Trigger& trigger) {
 	return true;
 }
 
-// ==================== 技能：徒步 ====================
-bool 徒步::filter(const Trigger& trigger) const {
-	return !trigger.getCard().isNumber();
-}
-bool 徒步::content(Trigger& trigger) {
-	setForced(true);
-	Player& carrier = trigger.getCarrier();
-	std::size_t x = trigger.getCount();
-	carrier.takeDamage(x, carrier);
-	carrier.chooseToRecast(L"【徒步】重铸一张手牌", 1, true);
-	trigger.getGame().broadcastState();
-	return true;
-}
-
 // ==================== 技能：健忘 ====================
 bool 健忘::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
@@ -1086,7 +1072,7 @@ bool 豪赌::content(Trigger& trigger) {
 		}
 	}
 	else if (card.is(Card::Color::red)) {
-		carrier.takeDamage(5, carrier);
+		carrier.damage(5, carrier);
 	}
 
 	game.broadcastState();
@@ -1179,7 +1165,7 @@ bool 互质::content(Trigger& trigger) {
 		product *= c.value();
 	}
 	);
-	carrier.takeDamage(product, carrier);
+	carrier.damage(product, carrier);
 	return true;
 }
 
@@ -1540,6 +1526,72 @@ bool 清洗::content(Trigger& trigger) {
 			<< heal << "点体力" << std::endl;
 	}
 
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：落水 ====================
+bool 落水::filter(const Trigger& trigger) const {
+	return trigger.getCard().is(Card::Color::blue);
+}
+bool 落水::content(Trigger& trigger) {
+	setForced(true);
+	Player& player = trigger.getPlayer();
+	GameLogic& game = trigger.getGame();
+	Pile& pile = game.getPile();
+
+	//其他三种颜色
+	std::vector<Card::Color> otherColors;
+	for (auto c : Card::colors) {
+		if (c != Card::Color::blue) otherColors.push_back(c);
+	}
+
+	for (Card::Color targetColor : otherColors) {
+		//在牌堆中搜索此颜色的牌
+		std::vector<std::size_t> indices;
+		for (std::size_t i = 0; i < pile.count(); ++i) {
+			if (pile[i].getColor() == targetColor) indices.push_back(i);
+		}
+		if (indices.empty()) continue;
+		std::size_t pick = unool::random::randomSize_t(0, indices.size() - 1);
+		auto card = pile.takeCardByIndex(indices[pick]);
+		player.gainCard(std::move(card));
+	}
+
+	std::cout << "<技能> " << trigger.getCarrier().characterName()
+		<< "发动落水，" << player.characterName() << "从牌堆获得了其他三色牌各一张" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：骚扰 ====================
+bool 骚扰::filter(const Trigger& trigger) const {
+	return !disabled;
+}
+bool 骚扰::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	Card& result = carrier.judge();
+	if (result.is(Card::Color::blue)) {
+		//判定为蓝色：失去此技能至本局结束
+		disabled = true;
+		std::cout << "<技能> " << carrier.characterName()
+			<< "发动骚扰，判定为蓝色，失去此技能至本局结束" << std::endl;
+		game.broadcastState();
+		return true;
+	}
+
+	//判定非蓝色：回复1点体力
+	carrier.recover(1);
+	//重置【落水】使用次数（不改是否锁定）
+	if (auto opt = carrier.findPSkill("落水")) {
+		opt->get().resetCount();
+	}
+	std::cout << "<技能> " << carrier.characterName()
+		<< "发动骚扰，判定非蓝色，回复1点体力并重置落水次数" << std::endl;
 	game.broadcastState();
 	return true;
 }

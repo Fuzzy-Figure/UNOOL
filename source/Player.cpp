@@ -3,10 +3,10 @@
 #include <thread>
 #include <iterator>
 
-void Player::takeDamage(std::size_t damage, opt_ref<Player> source) {
-	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damage);
-	character->takeDamage(damage);
-	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damage);
+void Player::damage(std::size_t damageValue, opt_ref<Player> source) {
+	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damageValue);
+	character->damage(damageValue);
+	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damageValue);
 }
 
 void Player::recover(std::size_t num) {
@@ -238,13 +238,14 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 			default: break;
 			}
 			if (digit > 0) {
-				std::size_t idx = digit - 1;  //0-based
-				//前 instantRefs.size() 个键：触发即时技
-				if (idx < instantRefs.size()) {
-					if (instantRefs[idx].get().tryActivate(game, *this)) {
-						game.broadcastState();
-					}
-				}
+			std::size_t idx = digit - 1;  //0-based
+			hand->setSelectedIndex(clientInput.selectedIndex);
+			//前 instantRefs.size() 个键：触发即时技
+			if (idx < instantRefs.size()) {
+				instantRefs[idx].get().tryActivate(game, *this);
+				game.setOperatingPlayer(id);
+				game.broadcastState();
+			}
 				//后续键：切换转换技激活态
 				else if (idx - instantRefs.size() < transformRefs.size()) {
 					std::size_t tIdx = idx - instantRefs.size();
@@ -304,6 +305,7 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		case sf::Keyboard::Scancode::Down:
 		case sf::Keyboard::Scancode::S:
 			if (!forced) {
+				hand->setSelectedIndex(clientInput.selectedIndex);
 				network.sendPlayerChoice(id, L"", {}, false);  //清提示
 				game.clearOperatingPlayer();
 				return std::nullopt;
@@ -357,13 +359,14 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 	return discardedCards;
 }
 
-void Player::chooseToRecast(const std::wstring& title,
-							const std::size_t num, const bool forced,
-							const std::function<bool(const Card&)>& condition) {
+Player::RecastResult Player::chooseToRecast(const std::wstring& title,
+											const std::size_t num, const bool forced,
+											const std::function<bool(const Card&)>& condition) {
 	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
-	chooseToDiscard(title, num, forced, condition);
-	draw(num);
+	std::vector discarded = chooseToDiscard(title, num, forced, condition);
+	std::vector drawn = draw(discarded.size());
 	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
+	return RecastResult{ std::move(discarded), std::move(drawn) };
 }
 
 void Player::decree(const std::wstring& title,

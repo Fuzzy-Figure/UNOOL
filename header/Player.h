@@ -49,7 +49,7 @@ public:
 	Character::Level characterLevel() const { return character->getLevel(); }
 	std::size_t getHp() const { return character->getHp(); }
 	std::size_t getMaxHp() const { return character->getMaxHp(); }
-	void takeDamage(std::size_t damage, opt_ref<Player> source);
+	void damage(std::size_t damage, opt_ref<Player> source);
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	void resetSkills() { character->resetSkills(); }
@@ -66,6 +66,7 @@ public:
 	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
 	bool hasPSkill(const std::string& name) const { return character->hasPSkill(name); }
+	opt_ref<PSkill> findPSkill(const std::string& name) { return character->findPSkill(name); }
 	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
 #pragma endregion
@@ -121,7 +122,11 @@ public:
 										   const std::size_t num, const bool forced,
 										   const std::function<bool(const Card&)>& condition
 										   = unool::alwaysTrue);
-	void chooseToRecast(const std::wstring& title,
+	struct RecastResult {
+		std::vector<ref<Card>> discarded;
+		std::vector<ref<Card>> drawn;
+	};
+	RecastResult chooseToRecast(const std::wstring& title,
 						const std::size_t num, const bool forced,
 						const std::function<bool(const Card&)>& condition
 						= unool::alwaysTrue);

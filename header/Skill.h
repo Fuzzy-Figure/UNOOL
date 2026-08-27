@@ -34,6 +34,7 @@ public:
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
 	virtual void reset();
+	void resetCount() { count = 0; }
 };
 
 class PSkill : public Skill {
@@ -226,7 +227,7 @@ public:
 protected:
 	using ASkillInstantBase::ASkillInstantBase;
 	//具体技能效果，派生类实现
-	virtual bool content(GameLogic& game, Player& player) = 0;
+	virtual bool content(GameLogic& game, Player& carrier) = 0;
 };
 
 //转换型 CRTP 层：提供 make()
