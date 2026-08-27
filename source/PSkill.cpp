@@ -1220,8 +1220,10 @@ bool 难题::content(Trigger& trigger) {
 // ==================== 技能：迷烟 ====================
 bool 迷烟::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	Card& card = trigger.getCard();
-	carrier.showCard(card);
+	std::optional cardOpt = carrier.chooseToShow(L"[迷烟] 选择一张非万能牌", false, &Card::isNotWild);
+	if (!cardOpt.has_value()) return false;
+	Card& card = cardOpt.value().get();
+
 	std::optional targetOpt = carrier.chooseOtherPlayer(L"[迷烟] 选择一名其他玩家", false);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();

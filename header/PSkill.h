@@ -726,11 +726,11 @@ class 迷烟 : public PSkillImpl<迷烟> {
 public:
 	迷烟() : PSkillImpl<迷烟>(
 		"迷烟",
-		"摸牌阶段结束时，你可展示此阶段摸到的牌，"
+		"回合结束时，你可展示一张手牌，"
 		"令一名其他角色选择弃置一张万能牌或与你展示牌颜色相同的手牌，否则其摸一张牌。",
 		unlimited, false,
 		TriggerPlayer::self,
-		TriggerTime::phase_draw_end
+		TriggerTime::phase_end
 	) {}
 	bool content(Trigger& trigger) override;
 };

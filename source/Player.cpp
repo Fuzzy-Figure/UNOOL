@@ -238,14 +238,14 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 			default: break;
 			}
 			if (digit > 0) {
-			std::size_t idx = digit - 1;  //0-based
-			hand->setSelectedIndex(clientInput.selectedIndex);
-			//前 instantRefs.size() 个键：触发即时技
-			if (idx < instantRefs.size()) {
-				instantRefs[idx].get().tryActivate(game, *this);
-				game.setOperatingPlayer(id);
-				game.broadcastState();
-			}
+				std::size_t idx = digit - 1;  //0-based
+				hand->setSelectedIndex(clientInput.selectedIndex);
+				//前 instantRefs.size() 个键：触发即时技
+				if (idx < instantRefs.size()) {
+					instantRefs[idx].get().tryActivate(game, *this);
+					game.setOperatingPlayer(id);
+					game.broadcastState();
+				}
 				//后续键：切换转换技激活态
 				else if (idx - instantRefs.size() < transformRefs.size()) {
 					std::size_t tIdx = idx - instantRefs.size();
@@ -418,6 +418,12 @@ opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 	game.broadcastState();
 
 	return card;
+}
+
+opt_ref<Card> Player::chooseToShow(const std::wstring& title, bool forced, const std::function<bool(const Card&)>& condition) {
+	return chooseToOperate(title, forced, condition, [this](const Card& c) {
+		showCard(c);
+	});
 }
 
 opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,

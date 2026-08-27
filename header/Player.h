@@ -142,7 +142,8 @@ public:
 	opt_ref<Card> chooseToGive(const std::wstring& title, Player& target,
 							   bool forced, const std::function<bool(const Card&)>& condition
 							   = unool::alwaysTrue);
-
+	opt_ref<Card> chooseToShow(const std::wstring& title, bool forced,
+							   const std::function<bool(const Card&)>& condition);
 
 	[[nodiscard]] opt_ref<Player> choosePlayer(const std::wstring& title, bool forced,
 											   const std::function<bool(const Player&)>& condition

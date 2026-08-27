@@ -16,7 +16,7 @@ class 八爪 : public ASkillTransform<八爪> {
 public:
 	八爪() : ASkillTransform<八爪>(
 		"八爪",
-		"你可以将一张数字牌当作蓝色的8打出。",
+		"你可以将一张数字牌当作蓝8打出。",
 		unlimited,
 		TriggerTime::phase_use
 	) {}
