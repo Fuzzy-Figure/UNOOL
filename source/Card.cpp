@@ -506,20 +506,20 @@ std::unique_ptr<Pile> Pile::standard() {
 		//数字牌
 		for (const Card::Name name : Card::numberCardsFrom0) {
 			auto newCard = std::make_unique<Card>(color, name);
-			//1~9每种颜色4张
-			if (newCard->getName() != Card::Name::number_0) standard->push_back(std::move(newCard), 4);
-			//0每种颜色3张
-			else standard->push_back(std::move(newCard), 3);
+			//1~9每种颜色3张
+			if (newCard->getName() != Card::Name::number_0) standard->push_back(std::move(newCard), 3);
+			//0每种颜色2张
+			else standard->push_back(std::move(newCard), 2);
 		}
 		//功能牌
 		for (const Card::Name name : Card::actionCards) {
 			auto newCard = std::make_unique<Card>(color, name);
-			//反转，封禁每种颜色4张
+			//反转，封禁每种颜色3张
 			if (name == Card::Name::action_rev || name == Card::Name::action_skip)
-				standard->push_back(std::move(newCard), 4);
-			//+2每种颜色5张
+				standard->push_back(std::move(newCard), 3);
+			//+2每种颜色4张
 			else if (name == Card::Name::action_draw2)
-				standard->push_back(std::move(newCard), 5);
+				standard->push_back(std::move(newCard), 4);
 			else throw;
 		}
 	}
@@ -527,8 +527,8 @@ std::unique_ptr<Pile> Pile::standard() {
 	//黑牌
 	auto pal = std::make_unique<Card>(Card::Color::black, Card::Name::wild_pal);
 	auto draw4 = std::make_unique<Card>(Card::Color::black, Card::Name::wild_draw4);
-	standard->push_back(std::move(pal), 11);
-	standard->push_back(std::move(draw4), 10);
+	standard->push_back(std::move(pal), 10);
+	standard->push_back(std::move(draw4), 8);
 
 	//洗牌
 	standard->shuffle();
