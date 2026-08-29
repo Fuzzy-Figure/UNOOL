@@ -4,7 +4,7 @@
 
 ---
 
-## 🎮 项目简介
+## 项目简介
 
 UNOOL 是一款双人联机卡牌对战游戏。在标准 UNO 牌堆与出牌规则之上，本项目引入了**角色技能系统**：每位玩家在开局前从候选角色池中选取一名角色（含被动技能与主动技能），通过技能与卡牌的配合展开策略博弈。游戏采用**客户端/服务器（C/S）架构**，基于 TCP Socket 实现双端通信，支持账号注册/登录与积分排行。
 
@@ -18,16 +18,16 @@ UNOOL 是一款双人联机卡牌对战游戏。在标准 UNO 牌堆与出牌规
 
 ---
 
-## 🏗️ 技术架构
+## 🏗技术架构
 
 | 层级 | 技术选型 |
 |---|---|
-| 语言 | C++23（`/std:c++latest`） |
+| 语言 | C++23（`/std:c++23`） |
 | 图形渲染 | SFML 3.x（`sf::RenderWindow` / `sf::Texture` / `sf::Sprite` / `sf::Font` / `sf::Text`） |
 | 网络通信 | Windows Socket（`ws2_32.lib`）+ SFML Network（`sf::TcpListener` / `sf::TcpSocket` / `sf::Packet`） |
 | 数据序列化 | SFML `sf::Packet` 自定义 `operator<<` / `operator>>` |
 | 配置管理 | `nlohmann/json`（`config.json`，单头文件 `json.hpp`） |
-| 构建系统 | Visual Studio 2026（MSVC，`.sln` / `.vcxproj`） |
+| 构建系统 | Visual Studio 2026（MSVC，`.slnx` / `.vcxproj`） |
 | 平台 | Windows 10/11（控制台代码页强制 UTF-8） |
 
 ### 模块划分
@@ -39,69 +39,77 @@ UNOOL/
 ├── config.json                 # 运行时配置（窗口尺寸 / 牌尺寸 / 服务器 IP & 端口 / 候选角色数 / 初始手牌数）
 ├── README.md
 │
+├── header/                     # 头文件 (.h)
+│   ├── GameLogic.h             # 核心游戏规则（回合/座次/牌堆/技能触发）
+│   ├── Player.h                # 玩家逻辑（出牌/摸牌/交互/回合流程）
+│   ├── Character.h             # 角色数据与技能装配
+│   ├── Card.h                  # 卡牌定义、牌堆/手牌容器、序列化
+│   ├── Skill.h                 # 技能基类、被动/主动技能类定义
+│   ├── PSkill.h                # 被动技能实现
+│   ├── ASkill.h                # 主动技能实现
+│   ├── Effect.h                # 卡牌效果函数（封禁/反转/+2/变色/+4）
+│   ├── GameState.h             # 游戏状态序列化（PlayerState / GameState）
+│   ├── GameRenderer.h          # 客户端渲染器（角色/手牌/弃牌堆/选项框/信息框）
+│   ├── TextManager.h           # 文本渲染与自动折行
+│   ├── ImageManager.h          # 图片纹理缓存与绘制
+│   ├── Socket.h                # ServerNetwork / ClientNetwork 网络封装
+│   ├── AccountProtocol.h       # 账号协议包构造与解析
+│   ├── UserDB.h                # 用户数据库（JSON 文件持久化）
+│   └── utils.h                 # 工具函数（配置/字符串/随机/数学/输入）
+|
 ├── source/                     # 源代码 (.cpp)
 │   ├── ClientMain.cpp          # 客户端入口：账号阶段 → 游戏主循环
 │   ├── ServerMain.cpp          # 服务端入口：监听 → 初始化 → 回合循环
-│   ├── GameLogic.cpp           # 核心游戏规则（回合/座次/牌堆/技能触发）
-│   ├── Player.cpp              # 玩家逻辑（出牌/摸牌/交互/回合流程）
-│   ├── Character.cpp           # 角色数据与技能装配
-│   ├── Card.cpp                # 卡牌定义、牌堆/手牌容器、序列化
-│   ├── Skill.cpp               # 技能基类 + 全部被动/主动技能实现
-│   ├── Effect.cpp              # 卡牌效果函数（封禁/反转/+2/变色/+4）
-│   ├── GameState.cpp           # 游戏状态序列化（PlayerState / GameState）
-│   ├── GameRenderer.cpp        # 客户端渲染器（角色/手牌/弃牌堆/选项框/信息框）
-│   ├── TextManager.cpp         # 文本渲染与自动折行
-│   ├── ImageManager.cpp        # 图片纹理缓存与绘制
-│   ├── Socket.cpp              # ServerNetwork / ClientNetwork 网络封装
-│   ├── AccountProtocol.cpp     # 账号协议包构造与解析
-│   ├── UserDB.cpp              # 用户数据库（JSON 文件持久化）
-│   └── utils.cpp               # 工具函数（配置/字符串/随机/数学/输入）
-│
-├── header/                     # 头文件 (.h)
-│   ├── Player.h
-│   ├── GameLogic.h
-│   ├── Character.h
-│   ├── Card.h
-│   ├── Skill.h
-│   ├── Effect.h
-│   ├── GameState.h
-│   ├── GameRenderer.h
-│   ├── TextManager.h
-│   ├── ImageManager.h
-│   ├── Socket.h
-│   ├── AccountProtocol.h
-│   ├── UserDB.h
-│   └── utils.h
+│   ├── GameLogic.cpp           
+│   ├── Player.cpp              
+│   ├── Character.cpp           
+│   ├── Card.cpp                
+│   ├── Skill.cpp               
+│   ├── PSkill.cpp              
+│   ├── ASkill.cpp              
+│   ├── Effect.cpp              
+│   ├── GameState.cpp           
+│   ├── GameRenderer.cpp        
+│   ├── TextManager.cpp         
+│   ├── ImageManager.cpp        
+│   ├── Socket.cpp              
+│   ├── AccountProtocol.cpp     
+│   ├── UserDB.cpp              
+│   └── utils.cpp               
 │
 ├── cards/                      # 卡牌图片资源（按颜色分子目录 + back.jpg）
-│   ├── red/  blue/  green/  yellow/
+│   ├── red/                    # 红色牌
+│   ├── blue/                   # 蓝色牌
+│   ├── green/                  # 绿色牌
+│   ├── yellow/                 # 黄色牌
 │   ├── black/                  # 万能牌
-│   └── pointer.jpg             # 手牌选择指针
+│   ├── back/                   # 背面牌
+│   └── pointer/                # 手牌选择指针
+|       └──默认.jpg
 │
 ├── characters/                 # 角色图片资源（每个角色一个子目录，含皮肤 .jpg）
 │   ├── 特朗普/
-│   ├── 李阳/
-│   ├── 柯洁/
-│   └── ……
+│   ├── 棍母/
+│   └── ...
 │
-└── users.json                  # 运行时生成：用户账号数据（自动创建）
+└── userDatas.json              # 运行时生成，保存用户账号数据（自动创建）
 ```
 
 ---
 
-## 🎴 卡牌规则
+## 卡牌规则
 
 ### 牌堆构成（`Pile::standard()`）
 
 | 类别 | 颜色 | 牌名 | 每种数量 |
 |---|---|---|---|
-| 数字牌 | 红/蓝/绿/黄 | 0 | 3 张 |
-| 数字牌 | 红/蓝/绿/黄 | 1\~9 | 各 4 张 |
-| 功能牌 | 红/蓝/绿/黄 | 反转（Reverse） | 4 张 |
-| 功能牌 | 红/蓝/绿/黄 | 封禁（Skip） | 4 张 |
-| 功能牌 | 红/蓝/绿/黄 | +2（Draw2） | 5 张 |
-| 万能牌 | 黑 | 变色（Wild） | 11 张 |
-| 万能牌 | 黑 | +4（Wild Draw4） | 10 张 |
+| 数字牌 | 红/蓝/绿/黄 | 0 | 2 张 |
+| 数字牌 | 红/蓝/绿/黄 | 1\~9 | 各 3 张 |
+| 功能牌 | 红/蓝/绿/黄 | 反转（Reverse） | 3 张 |
+| 功能牌 | 红/蓝/绿/黄 | 封禁（Skip） | 3 张 |
+| 功能牌 | 红/蓝/绿/黄 | +2（Draw2） | 4 张 |
+| 万能牌 | 黑 | 变色（Wild） | 10 张 |
+| 万能牌 | 黑 | +4（Wild Draw4） | 8 张 |
 
 ### 出牌规则（`Player::canUse()`）
 
@@ -109,7 +117,7 @@ UNOOL/
 
 1. 当前无有效颜色（首张出牌）；
 2. 牌的颜色与**当前颜色**相同；
-3. 牌的牌名与**当前牌名**相同（同名牌可打出）；
+3. 牌的牌名与**当前牌名**相同；
 4. 打出的是万能牌（变色 / +4）。
 
 ### 卡牌效果
@@ -124,7 +132,7 @@ UNOOL/
 
 ---
 
-## 🧑‍🎤 角色技能系统
+## 角色技能系统
 
 ### 角色数据（`Character::infos`）
 
@@ -159,21 +167,20 @@ UNOOL/
 
 ### 部分角色示例
 
-| 角色 | 等级 | HP | 技能 | 简介 |
+| 角色 | <span style="white-space: nowrap;"> 等级 | <span style="white-space: nowrap;"> 体力 | <span style="white-space: nowrap;"> 技能 | 简介 |
 |---|---|---|---|---|
-| **棍母** | F | 110 | 隐身 | 锁定技：当你成为【+2】/【+4】的目标时，改为你的下家摸 1 张牌 |
-| **Tralalero Tralala** | C | 160 | 耐克 | 锁定技：若上一张牌为蓝色或万能牌，【封禁】、【+2】和【+4】对你无效 |
-| **Bombardiro Crocodilo** | A | 185 | 轰炸 | 锁定技：当你打出【+2】时，目标失去 2% 最大体力 |
-| **Alan Walker** | C | 230 | 电音 / 蒙面 | 电音：回合开始时，你可令手牌中所有数字牌变成随机数字；蒙面：锁定技，你失去体力时数值减少 30%（向下取整） |
+| **棍母** | F | 100 | 隐身 | 锁定技，当你成为【+2】/【+4】的目标时，改为你的下家摸 1 张牌 |
+| **Tralalero Tralala** | C | 160 | 耐克 | 锁定技，若上一张牌为蓝色或万能牌，【封禁】、【+2】和【+4】对你无效 |
+| **Bombardiro Crocodilo** | A | 185 | 轰炸 | 锁定技，当你打出【+2】/【+4】时，目标失去 2% / 4% 最大体力 |
+| **Alan Walker** | D | 175 | 电音<br>蒙面 | 电音：每局限 10 次，回合开始时，你可令手牌中所有数字牌变成随机数字并回复 1 点体力；<br>蒙面：锁定技，你失去体力时数值减少 25%（向下取整） |
 | **丁真** | C | 140 | 锐刻 | 当你打出【5】时，你可令一名角色摸 1 张牌；你可改为令其摸 5 张牌并失去此技能至本局结束 |
-| **Brr Brr Patapim** | B | 235 | 森罗 / 大脚 | 森罗：锁定技，游戏开始时将手中所有非黑色牌变为绿色；大脚：回合开始时，可弃置一张万能牌并发动一次【森罗】 |
-| **新关羽** | B | 210 | 过江 / 大盏 | 过江：锁定技，当你成为【+2】的目标时，来源摸 2 张牌；大盏：锁定技，回合开始时点数最小的数字牌均随机变大（至多变至 9），若全为【9】可将其中一张变为红色 |
+| **Brr Brr Patapim** | B | 185 | 森罗<br>大脚 | 森罗：锁定技，游戏开始时将手中所有非黑色牌变为绿色；<br>大脚：回合开始时，可弃置一张万能牌并发动一次【森罗】 |
+| **新关羽** | B | 210 | 过江<br>大盏 | 过江：锁定技，当你成为【+2】的目标时，来源摸 2 张牌；<br>大盏：锁定技，回合开始时，若你有数字牌，其中点数最小的牌均随机变大（至多变至 9），若全为【9】可将其中一张变为红色并回复 1 点体力 |
 
-> 完整角色列表与技能描述见 `Character::infos`（`Character.cpp`）与 `Skill.h` 中各技能类的构造函数。技能描述均直接取自源码，确保与运行行为一致。
-
+> 完整角色列表与技能描述见 `Character::infos`（`Character.cpp`）与 `PSkill.h` 、`ASkill.h` 中各技能类的构造函数。
 ---
 
-## 🔄 游戏流程
+## 游戏流程
 
 ### 服务端主循环（`ServerMain.cpp` → `GameLogic`）
 
@@ -233,7 +240,7 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ---
 
-## 🌐 网络通信协议
+## 网络通信协议
 
 ### 消息类型（`MessageType`，`Socket.h`）
 
@@ -272,7 +279,7 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ---
 
-## 🚀 构建与运行
+## 构建与运行
 
 ### 环境要求
 
@@ -300,12 +307,12 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ### 构建步骤
 
-1. 在 Visual Studio 2026 中打开 `UNOOL.sln`。
+1. 在 Visual Studio 2026 中打开 `UNOOL.slnx`。
 2. 选择配置：**Debug**（开发调试）或 **Release**（发布构建）。
 3. 菜单栏 → **生成 → 生成解决方案**（或按 `Ctrl+Shift+B`）。
 4. 产物位于 `x64/Debug/UNOOL.exe` 或 `x64/Release/UNOOL.exe`。
 
-> **提示**：确保运行时 `cards/`、`characters/`、`users.json`（首次运行自动创建）、`config.json` 位于可执行文件所在目录或其父目录（`ImageManager` 以可执行文件父目录为资源根路径 `UNOOL`）。
+> **提示**：确保运行时 `cards/`、`characters/`、`userDatas.json`（首次运行自动创建）、`config.json` 位于可执行文件所在目录或其父目录（`ImageManager` 以可执行文件父目录为资源根路径 `UNOOL`）。
 
 ### 配置说明（`config.json`）
 
@@ -318,8 +325,8 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
     "pointer":  { "width": 90,   "height": 135 },
     "character":{ "width": 315,  "height": 405 }
   },
-  "candidateCount": 3,
-  "initHandCount": 7
+  "candidateCount": 6,
+  "initHandCount": 8
 }
 ```
 
@@ -329,7 +336,7 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 | `size.window` | 客户端渲染窗口尺寸 |
 | `size.card` / `size.pointer` / `size.character` | 卡牌 / 选择指针 / 角色立绘的显示尺寸 |
 | `candidateCount` | 每名玩家的候选角色数量（Ban/Pick 阶段） |
-| `initHandCount` | 初始手牌数（「巨富」角色会覆盖为 12） |
+| `initHandCount` | 初始手牌数 |
 | `characters` | （可选）若指定，则双方直接使用该数组中的两个角色名，跳过随机候选与 Ban/Pick |
 
 ### 运行方式
@@ -341,7 +348,7 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ---
 
-## 🎹 客户端操作说明
+## 客户端操作说明
 
 | 按键 | 功能 |
 |---|---|
@@ -354,7 +361,7 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ---
 
-## 📝 开发说明
+## 开发说明
 
 ### 新增角色
 
@@ -376,6 +383,6 @@ Pick 阶段（一号位选角 → 二号位选角，可选皮肤）
 
 ---
 
-## 📄 License
+## License
 
 本项目为课程/个人学习项目，仅供交流与学习使用。角色名称与图片资源版权归各自原作者所有，卡牌规则灵感来源于经典 UNO 游戏。
