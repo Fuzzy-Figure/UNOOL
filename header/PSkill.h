@@ -300,16 +300,20 @@ public:
 };
 
 class 假酒 : public PSkillImpl<假酒> {
+	bool number = false, action = false, wild = false;
+	static const std::vector<Card::ColorName>& all();
 public:
 	假酒() : PSkillImpl<假酒>(
 		"假酒",
-		"你打出功能牌后，可随机获得一张不同颜色的非数字牌。",
+		"你打出功能牌后，可以随机获得一张牌。\n"
+		"若此时你已累计获得三种类型的牌，弃置两张牌并失去此技能至本局结束。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
+	void reset() override;
 };
 
 class 窃观 : public PSkillImpl<窃观> {
@@ -841,4 +845,35 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 	void reset() override { PSkill::reset(); disabled = false; }
+};
+
+class 犬子 : public PSkillImpl<犬子> {
+	mutable std::size_t numberCardCount = 0;
+public:
+	犬子() : PSkillImpl<犬子>(
+		"犬子",
+		"你每累计打出X张数字牌后（X为此技能发动次数，初始为1），可弃置一张牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};
+
+
+class 黑洞 : public PSkillImpl<黑洞> {
+	std::set<Card::Name> record;
+public:
+	黑洞() : PSkillImpl<黑洞>(
+		"黑洞",
+		"每种牌名限一次，回合开始时，你可以从弃牌堆顶4张牌中选择一张获得之。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
 };

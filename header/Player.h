@@ -119,7 +119,7 @@ public:
 
 #pragma region 交互
 	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
-										   const std::size_t num, const bool forced,
+										   std::size_t num, const bool forced,
 										   const std::function<bool(const Card&)>& condition
 										   = unool::alwaysTrue);
 	struct RecastResult {

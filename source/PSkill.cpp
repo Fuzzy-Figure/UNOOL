@@ -411,48 +411,55 @@ bool 破产::content(Trigger& trigger) {
 }
 
 
+const std::vector<Card::ColorName>& 假酒::all() {
+	static const std::vector<Card::ColorName> candidates = [] {
+		std::vector<Card::ColorName> result;
+
+		// 非黑色
+		for (Card::Color color : Card::colors) {
+			for (Card::Name name : Card::numberCardsFrom0) {
+				result.push_back({ color, name });
+			}
+			for (Card::Name name : Card::actionCards) {
+				result.push_back({ color, name });
+			}
+		}
+
+		// 黑色
+		for (Card::Name name : Card::wildCards) {
+			result.push_back({ Card::Color::black, name });
+		}
+		return result;
+	}();
+
+	return candidates;
+}
+
 // ==================== 技能：假酒 ====================
 bool 假酒::filter(const Trigger& trigger) const {
 	return trigger.getCard().isAction();
 }
 bool 假酒::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	Card::Color playedColor = trigger.getCard().getColor();
+	auto card = std::make_unique<Card>(unool::random::randomGet(all()));
+	if (card->isNumber()) number = true;
+	else if (card->isAction()) action = true;
+	else if (card->isWild()) wild = true;
 
-	static const std::vector nonNumberNames = {
-		Card::Name::action_skip, Card::Name::action_rev, Card::Name::action_draw2,
-		Card::Name::wild_pal, Card::Name::wild_draw4
-	};
-	static const std::vector colors = {
-		Card::Color::red, Card::Color::yellow, Card::Color::blue, Card::Color::green
-	};
+	carrier.gainCard(std::move(card));
 
-	//构建候选：不同颜色的非数字牌
-	std::vector<std::unique_ptr<Card>> candidates;
-	for (auto n : nonNumberNames) {
-		if (n == Card::Name::wild_pal || n == Card::Name::wild_draw4) {
-			//万能牌(黑色)：打出牌非黑色时候选
-			if (playedColor != Card::Color::black)
-				candidates.push_back(Card::make(Card::Color::black, n));
-		}
-		else {
-			//有色功能牌：颜色 != 打出牌颜色
-			for (auto c : colors) {
-				if (c != playedColor)
-					candidates.push_back(Card::make(c, n));
-			}
-		}
+	//弃牌
+	if (number && action && wild) {
+		carrier.chooseToDiscard(L"[假酒] 弃置两张牌", 2, true);
+		limit = 0;
 	}
-
-	if (candidates.empty()) return false;
-
-	std::size_t idx = unool::random::randomSize_t(0, candidates.size() - 1);
-	carrier.gainCard(std::move(candidates[idx]));
-	std::cout << "<技能> " << carrier.characterName() << "发动假酒，获得了一张不同颜色的非数字牌" << std::endl;
 	trigger.getGame().broadcastState();
 	return true;
 }
-
+void 假酒::reset() {
+	number = action = wild = false;
+	limit = unlimited;
+}
 
 // ==================== 技能：窃观 ====================
 bool 窃观::filter(const Trigger& trigger) const {
@@ -1596,4 +1603,63 @@ bool 骚扰::content(Trigger& trigger) {
 		<< "发动骚扰，判定非蓝色，回复1点体力并重置落水次数" << std::endl;
 	game.broadcastState();
 	return true;
+}
+
+
+// ==================== 技能：犬子 ====================
+bool 犬子::filter(const Trigger& trigger) const {
+	if (!trigger.getCard().isNumber()) return false;
+	++numberCardCount;
+	return numberCardCount >= count + 1;
+}
+bool 犬子::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	auto discarded = carrier.chooseToDiscard(L"[犬子] 选择一张牌弃置", 1, false);
+	if (discarded.empty()) return false;
+
+	numberCardCount = 0;
+	std::cout << "<技能> " << carrier.characterName() << "发动犬子，弃置了一张牌" << std::endl;
+	game.broadcastState();
+	return true;
+}
+void 犬子::reset() {
+	PSkill::reset();
+	numberCardCount = 0;
+}
+
+bool 黑洞::filter(const Trigger& trigger) const {
+	//前4张牌有未被记录的
+	Pile& discardPile = trigger.getGame().getDiscardPile();
+	for (const auto& card : discardPile | std::views::take(4)) {
+		if (!record.contains(card->getName())) return true;
+	}
+	return false;
+}
+bool 黑洞::content(Trigger& trigger) {
+	GameLogic& game = trigger.getGame();
+	Pile& discardPile = game.getDiscardPile();
+	std::vector<std::wstring> options;
+	for (const auto& card : discardPile | std::views::take(4)) {
+		if (const Card::Name name = card->getName();
+			!record.contains(name))
+			options.push_back(Card::to_wstring(name));
+	}
+	Player& carrier = trigger.getCarrier();
+	const std::size_t choice = carrier.ask(
+		L"[黑洞] 选择一张牌获得", options, false
+	);
+	if (choice == 0) return false;
+
+	std::unique_ptr<Card> card = discardPile.takeCardByIndex(choice - 1);
+	record.insert(card->getName());
+	carrier.gainCard(std::move(card));
+
+	game.broadcastState();
+	return true;
+}
+void 黑洞::reset() {
+	PSkill::reset();
+	record.clear();
 }

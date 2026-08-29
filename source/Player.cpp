@@ -330,10 +330,11 @@ opt_ref<Card> Player::chooseToUse(ASkill::TriggerTime phase) {
 }
 
 std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
-											   const std::size_t num, const bool forced,
+											   std::size_t num, const bool forced,
 											   const std::function<bool(const Card&)>& condition) {
 	std::vector<ref<Card>> discardedCards;
-	if (num > handCount()) return discardedCards;
+	if (const std::size_t _handCount = handCount(); num > _handCount) 
+		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
 	std::cout << "玩家" << id << "请选择弃置" << num << "张牌" << std::endl;

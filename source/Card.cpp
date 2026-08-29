@@ -307,7 +307,7 @@ std::ostream& operator<<(std::ostream& ostr, const Card& card) {
 // ==================== Cards 类 ====================
 
 // 修改容器
-[[nodiscard]] std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
+std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	if (index >= cards.size())
 		throw std::out_of_range("Cards::takeCardByIndex: index " + std::to_string(index) +
 								" out of range, size is " + std::to_string(cards.size()));
