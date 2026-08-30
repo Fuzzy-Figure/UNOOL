@@ -1663,3 +1663,116 @@ void 黑洞::reset() {
 	PSkill::reset();
 	record.clear();
 }
+
+bool 好事::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 好事::content(Trigger& trigger) {
+	trigger.getCarrier().showCard(trigger.getCard());
+	return true;
+}
+
+bool 压抑::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 压抑::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	std::optional targetOpt = carrier.choosePlayer(
+		L"[压抑] 选择一名角色", false
+	);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value();
+
+	//找出目标手牌中点数最大的数字牌
+	Hand& hand = target.getHand();
+	std::optional<Card::Name> maxName;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		Card& card = hand[i];
+		if (card.isNumber()) {
+			if (!maxName.has_value() || card.getName() > *maxName) {
+				maxName = card.getName();
+			}
+		}
+	}
+	if (!maxName.has_value()) {
+		std::cout << "<技能> " << carrier.characterName() << "发动压抑，"
+			<< target.characterName() << "手中无数字牌" << std::endl;
+		game.broadcastState();
+		return true;
+	}
+
+	//收集所有最大点数的牌的索引
+	std::vector<std::size_t> indices;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].isNumber() && hand[i].getName() == *maxName) {
+			indices.push_back(i);
+		}
+	}
+
+	//从后往前弃牌，避免索引偏移
+	for (auto it = indices.rbegin(); it != indices.rend(); ++it) {
+		target.discardByIndex(*it);
+	}
+
+	std::cout << "<技能> " << carrier.characterName() << "发动压抑，"
+		<< target.characterName() << "弃置了" << indices.size() << "张点数最大的数字牌" << std::endl;
+
+	//弃置牌数≥3张：失去10%最大体力（向上取整）
+	if (indices.size() >= 3) {
+		const std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
+		target.damage(damage, carrier);
+		std::cout << target.characterName() << "失去" << damage << "点体力" << std::endl;
+	}
+
+	game.broadcastState();
+	return true;
+}
+
+
+bool 捉奸_弃牌::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 捉奸_弃牌::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	if (carrier.discardByIndex(unool::random::randomSize_t(0, carrier.handCount())).is(Card::Color::red)) {
+		carrier.damage(unool::math::ceil(carrier.getHp() * 0.05), carrier);
+	}
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+bool 捉奸::content(Trigger& trigger) {
+	Hand& hand = trigger.getCarrier().getHand();
+	GameLogic& game = trigger.getGame();
+
+	//寻找非红的非万能牌下标
+	std::vector<std::size_t> notRedIndex;
+	for (const auto [i, c] : hand | std::views::enumerate) {
+		if (c->getColor() != Card::Color::red && c->isNotWild())
+			notRedIndex.push_back(i);
+	}
+
+	//寻找红牌下标
+	std::vector<std::size_t> redIndex;
+	for (const auto [i, c] : hand | std::views::enumerate) {
+		if (c->getColor() == Card::Color::red)
+			redIndex.push_back(i);
+	}
+
+	//变色
+	for (const std::size_t index : notRedIndex) {
+		hand[index].setColor(Card::Color::red);
+	}
+
+	static const std::array<Card::Color, 3> colors = {
+		Card::Color::blue, Card::Color::green, Card::Color::yellow
+	};
+	for (const std::size_t index : redIndex) {
+		hand[index].setColor(unool::random::randomGet(colors));
+	}
+
+	game.broadcastState();
+	return true;
+}

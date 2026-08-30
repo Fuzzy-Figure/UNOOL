@@ -31,6 +31,7 @@ public:
 	std::string getInfo() const { return info; }
 	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
 	std::size_t getCount() const { return count; }
+	void incrementCount() { ++count; }
 
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
@@ -193,8 +194,10 @@ public:
 	virtual std::size_t getCardCount() const { return 1; }
 	//某张牌能否被选入此次转化
 	virtual bool canSelect(const Card& c) const = 0;
-	//执行转化（cards 大小 == getCardCount()）
-	virtual void transform(std::vector<ref<Card>> cards) const = 0;
+	//执行转化（cards 大小 == getCardCount()）；返回 false 表示玩家取消（发动失败，牌还原，不计次数）
+	virtual bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const = 0;
+	//转化成功并打出后执行的附加效果（摸牌、扣血等）
+	virtual void addition(GameLogic& game, Player& carrier) const {}
 	//激活时右侧显示的提示文字
 	virtual std::wstring getPrompt() const = 0;
 protected:

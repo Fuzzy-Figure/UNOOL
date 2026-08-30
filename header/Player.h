@@ -96,7 +96,7 @@ public:
 	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 
 	Card& useCardByIndex(const std::size_t cardIndex);
-	void discardByIndex(const std::size_t cardIndex);
+	Card& discardByIndex(const std::size_t cardIndex);
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }

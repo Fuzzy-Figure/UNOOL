@@ -11,7 +11,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-//主动技：八爪 - 你可以将一张数字牌当作蓝色的8打出（转换型）
+
 class 八爪 : public ASkillTransform<八爪> {
 public:
 	八爪() : ASkillTransform<八爪>(
@@ -20,8 +20,39 @@ public:
 		unlimited,
 		TriggerTime::phase_use
 	) {}
-	std::size_t  getCardCount() const override { return 1; }
-	bool         canSelect(const Card& c) const override { return c.isNumber(); }
-	void         transform(std::vector<ref<Card>> cards) const override;
-	std::wstring getPrompt() const override { return L"将一张数字牌当作蓝8打出"; }
+	std::size_t getCardCount() const override;
+	bool canSelect(const Card& c) const override;
+	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
+	std::wstring getPrompt() const override;
+};
+
+
+class 我妈 : public ASkillTransform<我妈> {
+public:
+	我妈() : ASkillTransform<我妈>(
+		"我妈",
+		"每局游戏限三次，出牌阶段，你可将红色牌当作红【封禁】打出，然后摸一张牌。",
+		3,
+		TriggerTime::phase_use
+	) {}
+	std::size_t getCardCount() const override;
+	bool canSelect(const Card& c) const override;
+	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
+	void addition(GameLogic& game, Player& carrier) const override;
+	std::wstring getPrompt() const override;
+};
+
+
+class 曼巴 : public ASkillTransform<曼巴> {
+public:
+	曼巴() : ASkillTransform<曼巴>(
+		"曼巴",
+		"出牌阶段，你可将一张万能牌或【8】当作任意颜色的任意牌打出。",
+		unlimited,
+		TriggerTime::phase_use
+	) {}
+	std::size_t getCardCount() const override;
+	bool canSelect(const Card& c) const override;
+	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
+	std::wstring getPrompt() const override;
 };

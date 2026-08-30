@@ -52,6 +52,9 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"龚俊清", {Level::B, {落水::make, 骚扰::make}, {}, {}, 198}},
 	{"Blueberrini Octopussini", {Level::D, {}, {}, {八爪::make}, 100}},
 	{"霍金",   {Level::B, {黑洞::make}, {}, {}, 88}},
+	{"峰哥",   {Level::A, {好事::make, 压抑::make}, {}, {}, 255}},
+	{"包贝尔", {Level::B, {捉奸::make}, {}, {我妈::make}, 160}},
+	{"科比",   {Level::C, {}, {}, {曼巴::make}, 248}},
 };
 
 

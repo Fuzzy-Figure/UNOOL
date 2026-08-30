@@ -877,3 +877,56 @@ public:
 	bool content(Trigger& trigger) override;
 	void reset() override;
 };
+
+
+class 好事 : public PSkillImpl<好事> {
+public:
+	好事() : PSkillImpl<好事>(
+		"好事",
+		"锁定技，展示你摸牌阶段摸到的万能牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_draw_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+class 压抑 : public PSkillImpl<压抑> {
+public:
+	压抑() : PSkillImpl<压抑>(
+		"压抑",
+		"你打出万能牌结算后，可令一名角色弃置手中所有点数最大的数字牌，"
+		"若因此弃置牌数≥3张其失去10%最大体力（向上取整）。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+class 捉奸_弃牌 : public PSkillImpl<捉奸_弃牌> {
+public:
+	捉奸_弃牌() : PSkillImpl<捉奸_弃牌>(
+		"捉奸_弃牌",
+		"其他角色打出万能牌后，你随机弃置一张牌，若为红色你失去 5% 当前体力（向上取整）。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+class 捉奸 : public PSkillImpl<捉奸> {
+public:
+	捉奸() : PSkillImpl<捉奸>(
+		"捉奸",
+		"锁定技，回合结束时，你手中所有非红色牌变为红色，红色牌变为非红色。\n"
+		"其他角色打出万能牌后，你随机弃置一张牌，若为红色你失去 5% 当前体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		捉奸_弃牌::make()
+	) {}
+	bool content(Trigger& trigger) override;
+};

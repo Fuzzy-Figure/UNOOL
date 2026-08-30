@@ -82,12 +82,13 @@ void Player::gainCard(std::unique_ptr<Card> card) {
 	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, gainedCards);
 }
 
-void Player::discardByIndex(const std::size_t cardIndex) {
+Card& Player::discardByIndex(const std::size_t cardIndex) {
 	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	ref<Card> cardRef = *card;
 	game.putCardToDiscardPile(std::move(card));
 	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
+	return cardRef;
 }
 
 std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
@@ -280,15 +281,24 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 						Card original = selected;  //备份原牌
 						std::vector<ref<Card>> cards;
 						cards.emplace_back(selected);
-						activeMode->transform(std::move(cards));
-						if (canUse(selected)) {
-							network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);  //清提示
-							game.clearOperatingPlayer();
-							return hand->getSelectedIndex();
+						if (activeMode->transform(game, *this, std::move(cards))) {
+							if (canUse(selected)) {
+								//转化成功打出：执行附加效果，累加使用次数
+								activeMode->addition(game, *this);
+								activeMode->incrementCount();
+								network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);  //清提示
+								game.clearOperatingPlayer();
+								return hand->getSelectedIndex();
+							}
+							else {
+								selected = original;  //还原
+								std::cout << "<" << activeMode->getName() << "> 转化后的牌不符合出牌规则" << std::endl;
+							}
 						}
 						else {
-							selected = original;  //还原
-							std::cout << "<" << activeMode->getName() << "> 转化后的牌不符合出牌规则" << std::endl;
+							//玩家在transform交互中取消
+							selected = original;
+							std::cout << "<" << activeMode->getName() << "> 玩家取消转化" << std::endl;
 						}
 					}
 					else {
@@ -333,7 +343,7 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 											   std::size_t num, const bool forced,
 											   const std::function<bool(const Card&)>& condition) {
 	std::vector<ref<Card>> discardedCards;
-	if (const std::size_t _handCount = handCount(); num > _handCount) 
+	if (const std::size_t _handCount = handCount(); num > _handCount)
 		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
