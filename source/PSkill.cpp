@@ -411,28 +411,29 @@ bool 破产::content(Trigger& trigger) {
 }
 
 
-const std::vector<Card::ColorName>& 假酒::all() {
-	static const std::vector<Card::ColorName> candidates = [] {
-		std::vector<Card::ColorName> result;
-
-		// 非黑色
-		for (Card::Color color : Card::colors) {
-			for (Card::Name name : Card::numberCardsFrom0) {
-				result.push_back({ color, name });
-			}
-			for (Card::Name name : Card::actionCards) {
-				result.push_back({ color, name });
-			}
+Card::ColorName 假酒::randomCard() {
+	//随机颜色
+	const Card::Color color = unool::random::randomGet(Card::fiveColors);
+	//随机牌名
+	Card::Name name = Card::Name::no;
+	if (color != Card::Color::black) {
+		std::vector<Card::Name> nameCandidates;
+		for (const auto& x : Card::numberCardsFrom0) {
+			nameCandidates.push_back(x);
 		}
-
-		// 黑色
-		for (Card::Name name : Card::wildCards) {
-			result.push_back({ Card::Color::black, name });
+		for (const auto& x : Card::actionCards) {
+			nameCandidates.push_back(x);
 		}
-		return result;
-	}();
-
-	return candidates;
+		name = unool::random::randomGet(nameCandidates);
+	}
+	else {
+		std::vector<Card::Name> nameCandidates;
+		for (const auto& x : Card::wildCards) {
+			nameCandidates.push_back(x);
+		}
+		name = unool::random::randomGet(nameCandidates);
+	}
+	return { color, name };
 }
 
 // ==================== 技能：假酒 ====================
@@ -441,7 +442,7 @@ bool 假酒::filter(const Trigger& trigger) const {
 }
 bool 假酒::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	auto card = std::make_unique<Card>(unool::random::randomGet(all()));
+	auto card = std::make_unique<Card>(randomCard());
 	if (card->isNumber()) number = true;
 	else if (card->isAction()) action = true;
 	else if (card->isWild()) wild = true;
@@ -488,7 +489,7 @@ bool 生存::content(Trigger& trigger) {
 	if (x > 9) x = 9;
 	Card::Name targetName = static_cast<Card::Name>(static_cast<int>(Card::Name::number_0) + x);
 
-	Card::Color targetColor = unool::random::randomGet(Card::colors);
+	Card::Color targetColor = unool::random::randomGet(Card::fourColors);
 
 	std::unique_ptr<Card> target = Card::make(targetColor, targetName);
 	auto opt = carrier.chooseToOperate(
@@ -597,7 +598,7 @@ bool 炼兵::content(Trigger& trigger) {
 	if (i1 > i2) std::swap(i1, i2);
 	carrier.discardByIndex(i2);
 	carrier.discardByIndex(i1);
-	Card::Color color = unool::random::randomGet(Card::colors);
+	Card::Color color = unool::random::randomGet(Card::fourColors);
 	carrier.gainCard(Card::make(color, Card::Name::action_draw2));
 	usedNames.insert(target);
 	std::cout << "<技能> " << carrier.characterName() << "发动炼兵，弃两张"
@@ -1271,7 +1272,7 @@ bool 创世::content(Trigger& trigger) {
 	//选颜色
 	Card::Color selectedColor = Card::Color::black;
 	if (!Card::is_wild(selectedName)) {
-		std::vector<Card::Color> colorVec(Card::colors.begin(), Card::colors.end());
+		std::vector<Card::Color> colorVec(Card::fourColors.begin(), Card::fourColors.end());
 		auto colorOpt = carrier.chooseCardColor(L"【创世】选择颜色", false, colorVec);
 		if (!colorOpt.has_value()) return false;
 		selectedColor = colorOpt.value();
@@ -1552,7 +1553,7 @@ bool 落水::content(Trigger& trigger) {
 
 	//其他三种颜色
 	std::vector<Card::Color> otherColors;
-	for (auto c : Card::colors) {
+	for (auto c : Card::fourColors) {
 		if (c != Card::Color::blue) otherColors.push_back(c);
 	}
 
@@ -1736,7 +1737,7 @@ bool 捉奸_弃牌::filter(const Trigger& trigger) const {
 }
 bool 捉奸_弃牌::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	if (carrier.discardByIndex(unool::random::randomSize_t(0, carrier.handCount())).is(Card::Color::red)) {
+	if (carrier.discardByIndex(unool::random::randomSize_t(0, carrier.handCount() - 1)).is(Card::Color::red)) {
 		carrier.damage(unool::math::ceil(carrier.getHp() * 0.05), carrier);
 	}
 	trigger.getGame().broadcastState();

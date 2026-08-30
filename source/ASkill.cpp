@@ -38,13 +38,13 @@ std::size_t 我妈::getCardCount() const {
 }
 
 bool 我妈::canSelect(const Card& c) const {
-	return c.is(Card::Color::red);
+	return !c.is(Card::Color::red);
 }
 
 bool 我妈::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const {
 	if (cards.empty()) return false;
 	Card& c = cards.front().get();
-	c.setName(Card::Name::action_skip);
+	c.set(Card::Color::red, Card::Name::action_skip);
 	return true;
 }
 
@@ -54,7 +54,7 @@ void 我妈::addition(GameLogic& game, Player& carrier) const {
 }
 
 std::wstring 我妈::getPrompt() const {
-	return L"将一张红色牌当作红【封禁】打出";
+	return L"将一张非红色牌当作红【封禁】打出";
 }
 
 

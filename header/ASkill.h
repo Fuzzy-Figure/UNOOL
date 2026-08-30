@@ -31,7 +31,7 @@ class 我妈 : public ASkillTransform<我妈> {
 public:
 	我妈() : ASkillTransform<我妈>(
 		"我妈",
-		"每局游戏限三次，出牌阶段，你可将红色牌当作红【封禁】打出，然后摸一张牌。",
+		"每局游戏限三次，出牌阶段，你可将非红色牌当作红【封禁】打出，然后摸一张牌。",
 		3,
 		TriggerTime::phase_use
 	) {}

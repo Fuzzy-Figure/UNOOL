@@ -502,7 +502,7 @@ std::unique_ptr<Pile> Pile::standard() {
 	std::unique_ptr<Pile> standard = std::make_unique<Pile>();
 
 	//非万能牌
-	for (const Card::Color color : Card::colors) {
+	for (const Card::Color color : Card::fourColors) {
 		//数字牌
 		for (const Card::Name name : Card::numberCardsFrom0) {
 			auto newCard = std::make_unique<Card>(color, name);

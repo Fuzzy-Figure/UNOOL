@@ -301,7 +301,7 @@ public:
 
 class 假酒 : public PSkillImpl<假酒> {
 	bool number = false, action = false, wild = false;
-	static const std::vector<Card::ColorName>& all();
+	static Card::ColorName randomCard();
 public:
 	假酒() : PSkillImpl<假酒>(
 		"假酒",
