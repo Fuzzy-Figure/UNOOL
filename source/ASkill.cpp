@@ -85,3 +85,50 @@ bool 曼巴::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 std::wstring 曼巴::getPrompt() const {
 	return L"将一张万能牌或【8】当作任意颜色的任意牌打出";
 }
+
+bool 摘罩::content(GameLogic& game, Player& carrier) {
+	//1. 展示一张未展示过点数的数字牌
+	auto cardOpt = carrier.chooseToShow(L"[摘罩] 展示一张数字牌", false, [this](const Card& c) {
+		return c.isNumber() && !record.contains(c.getName());
+	});
+	if (!cardOpt.has_value()) return false;
+	Card& card = cardOpt.value().get();
+	Card::Name point = card.getName();
+
+	//2. 选一名其他角色，令其展示相同点数的牌
+	auto targetOpt = carrier.chooseOtherPlayer(L"[摘罩] 选择一名其他角色", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+	record.insert(point);  //技能确认发动，记录已展示点数
+
+	//3. 检查目标是否有相同点数的牌，有则令其展示
+	bool targetShowed = false;
+	for (std::size_t i = 0; i < target.handCount(); ++i) {
+		if (target.getCardByIndex(i).getName() == point) {
+			targetShowed = true;
+			break;
+		}
+	}
+	if (targetShowed) {
+		auto otherCardOpt = target.chooseToShow(
+			L"[摘罩] 展示一张" + Card::to_wstring(point), false,
+			[point](const Card& c) { return c.getName() == point; }
+		);
+		targetShowed = otherCardOpt.has_value();
+	}
+
+	//4. 若目标未展示牌，carrier 可任意更改所展示牌的颜色
+	if (!targetShowed) {
+		auto color = carrier.chooseCardColor(L"[摘罩] 更改你展示的牌的颜色", false);
+		if (color.has_value()) {
+			card.setColor(color.value());
+			game.broadcastState();
+		}
+	}
+	return true;
+}
+
+void 摘罩::reset() {
+	Skill::reset();
+	record.clear();
+}

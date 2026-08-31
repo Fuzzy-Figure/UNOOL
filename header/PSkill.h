@@ -930,3 +930,7 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
+
+/*翟钊 F
+体力：130
+*/

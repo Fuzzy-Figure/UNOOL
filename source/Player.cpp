@@ -76,6 +76,7 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 }
 
 void Player::gainCard(std::unique_ptr<Card> card) {
+	game.launchPSkills(PSkill::TriggerTime::gain_card_begin, *this);
 	hand->push_back(std::move(card));
 	std::vector<ref<Card>> gainedCards;
 	gainedCards.emplace_back(hand->back());

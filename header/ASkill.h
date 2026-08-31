@@ -56,3 +56,18 @@ public:
 	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
 	std::wstring getPrompt() const override;
 };
+
+class 摘罩 : public ASkillInstant<摘罩> {
+	std::unordered_set<Card::Name> record;
+public:
+	摘罩() : ASkillInstant<摘罩>(
+		"摘罩",
+		"出牌阶段，你可以展示未展示过点数的数字牌，令一名其他角色展示相同点数的牌；\n"
+		"若其未展示牌，你可任意更改此牌颜色。",
+		unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+
