@@ -48,7 +48,7 @@ namespace unool {
 					std::to_string(std::ranges::size(range)) + "个元素");
 
 			if (n == 0 || std::ranges::empty(range)) return {};
-
+			
 			std::vector<ref<T>> all_refs;
 			for (auto& elem : range)
 				all_refs.emplace_back(elem);
