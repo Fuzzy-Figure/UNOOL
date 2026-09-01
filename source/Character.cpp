@@ -7,7 +7,7 @@
 
 
 // ==================== 静态数据 ====================
-const std::unordered_map<std::string, Character::Info> Character::infos = {
+const std::unordered_map<std::string, Character::Info> Character::infos ={
 	{"白板",     {Level::F, {},           {}, {}, 1}},
 	{"特朗普",   {Level::D, {粪怒::make}, {}, {}, 145}},
 	{"棍母",     {Level::F, {隐身::make}, {}, {}, 100}},
@@ -52,12 +52,13 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"龚俊清", {Level::B, {落水::make, 骚扰::make}, {}, {}, 198}},
 	{"Blueberrini Octopussini", {Level::D, {}, {}, {八爪::make}, 100}},
 	{"闫传学", {Level::A, {犬子::make}, {}, {}, 222}},
-	{"霍金",   {Level::B, {黑洞::make}, {}, {}, 88}},
+	{"霍金",   {Level::C, {黑洞::make}, {}, {}, 88}},
 	{"峰哥",   {Level::A, {好事::make, 压抑::make}, {}, {}, 255}},
 	{"包贝尔", {Level::B, {捉奸::make}, {}, {我妈::make}, 160}},
 	{"科比",   {Level::C, {}, {}, {曼巴::make}, 248}},
 	{"翟钊",   {Level::F, {}, {摘罩::make}, {}, 130}},
 	{"田淑丽", {Level::C, {}, {还击::make}, {}, 145}},
+	{"虎哥",   {Level::F, {有活::make}, {}, {}, 275}},
 };
 
 

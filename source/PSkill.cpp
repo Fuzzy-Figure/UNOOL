@@ -1101,6 +1101,21 @@ bool 黑帮::content(Trigger& trigger) {
 	return true;
 }
 
+// ==================== 技能：有活 ====================
+bool 有活::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t X = trigger.getGame().getMatchCount();
+
+	carrier.draw(2, Player::DrawReason::skill);
+	std::cout << "<技能> " << carrier.characterName() << "发动有活，摸了2张牌" << std::endl;
+
+	carrier.chooseToDiscard(L"[有活] 弃置" + std::to_wstring(X) + L"张牌", X, true);
+	std::cout << "<技能> " << carrier.characterName() << "发动有活，弃置了" << X << "张牌" << std::endl;
+
+	trigger.getGame().broadcastState();
+	return true;
+}
+
 // ==================== 技能：拖拉 ====================
 bool 拖拉::filter(const Trigger& trigger) const {
 	return trigger.getCard().isWild();
@@ -1509,8 +1524,7 @@ bool 清洗::content(Trigger& trigger) {
 	std::vector<std::wstring> options;
 	options.push_back(L"弃置所有" + Card::to_wstring(colors[0]) + L"色牌");
 	options.push_back(L"弃置所有" + Card::to_wstring(colors[1]) + L"色牌");
-	std::size_t choice = carrier.ask(L"【清洗】选择弃置哪种颜色的手牌", options, false,
-									 std::chrono::milliseconds(60000));
+	std::size_t choice = carrier.ask(L"【清洗】选择弃置哪种颜色的手牌", options, false);
 	if (choice == 0) return false; //0取消
 	Card::Color target = colors[choice - 1];
 

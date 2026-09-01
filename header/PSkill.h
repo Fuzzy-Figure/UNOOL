@@ -653,6 +653,20 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
+
+class 有活 : public PSkillImpl<有活> {
+public:
+	有活() : PSkillImpl<有活>(
+		"有活",
+		"锁定技，每局游戏开始时，你摸两张牌并弃置X张牌（X为当前局数）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin
+	) {}
+	bool content(Trigger& trigger) override;
+};
+
+
 class 拖拉 : public PSkillImpl<拖拉> {
 public:
 	拖拉() : PSkillImpl<拖拉>(
