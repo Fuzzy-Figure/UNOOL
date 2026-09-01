@@ -232,6 +232,8 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	chooseSkinAndSet(*players[playerId], charName);
+	markCharInfoDirty(playerId);
+	broadcastState();
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
