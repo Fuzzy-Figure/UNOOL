@@ -896,7 +896,7 @@ public:
 	压抑() : PSkillImpl<压抑>(
 		"压抑",
 		"你打出万能牌结算后，可令一名角色弃置手中所有点数最大的数字牌，"
-		"若因此弃置牌数≥3张其失去10%最大体力（向上取整）。",
+		"若因此弃置牌数≥2张其失去10%最大体力（向上取整）。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -930,7 +930,3 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
-
-/*翟钊 F
-体力：130
-*/

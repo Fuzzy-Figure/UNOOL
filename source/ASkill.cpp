@@ -1,5 +1,6 @@
 #include "../header/ASkill.h"
 #include "../header/GameLogic.h"
+#include "../header/utils.h"
 
 
 bool 徒步::content(GameLogic& game, Player& carrier) {
@@ -131,4 +132,41 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 void 摘罩::reset() {
 	Skill::reset();
 	record.clear();
+}
+
+
+// ==================== 技能：还击 ====================
+bool 还击::content(GameLogic& game, Player& carrier) {
+	//1. 选一名其他角色
+	auto targetOpt = carrier.chooseOtherPlayer(L"[还击] 选择一名其他角色", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	const std::size_t n = target.handCount();
+	if (n == 0) {
+		std::cout << "<还击> 目标无手牌" << std::endl;
+		return false;
+	}
+
+	//2. 取半数手牌（向上取整，至少保留一张）
+	std::size_t takeCount = unool::math::ceil(static_cast<double>(n) * 0.5);
+	if (takeCount >= n) takeCount = n - 1;
+	if (takeCount == 0) return false;
+
+	//3. 随机拿牌
+	for (std::size_t i = 0; i < takeCount; ++i) {
+		std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
+		carrier.gainCard(target.takeCardByIndex(idx));
+	}
+	game.broadcastState();
+
+	//4. 交还等量张牌（forced=true，强制完成义务）
+	for (std::size_t i = 0; i < takeCount; ++i) {
+		carrier.chooseToGive(
+			L"[还击] 交还一张牌给" + target.characterNameW(),
+			target, true
+		);
+	}
+	game.broadcastState();
+	return true;
 }

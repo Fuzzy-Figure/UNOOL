@@ -71,3 +71,15 @@ public:
 	void reset() override;
 };
 
+
+class 还击 : public ASkillInstant<还击> {
+public:
+	还击() : ASkillInstant<还击>(
+		"还击",
+		"限定技，出牌阶段，随机获得一名其他角色半数手牌（向上取整，至少保留一张），然后交还给其等量张牌。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

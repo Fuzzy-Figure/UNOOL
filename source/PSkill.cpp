@@ -1720,8 +1720,8 @@ bool 压抑::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动压抑，"
 		<< target.characterName() << "弃置了" << indices.size() << "张点数最大的数字牌" << std::endl;
 
-	//弃置牌数≥3张：失去10%最大体力（向上取整）
-	if (indices.size() >= 3) {
+	//弃置牌数≥2张：失去10%最大体力（向上取整）
+	if (indices.size() >= 2) {
 		const std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
 		target.damage(damage, carrier);
 		std::cout << target.characterName() << "失去" << damage << "点体力" << std::endl;
