@@ -426,7 +426,7 @@ opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 	ref<Card> card = hand->getCardByIndex(index.value());
 
 	give(target, takeCardByIndex(index.value()));
-	std::cout << "玩家" << id << "给了" << target.characterName() << "一张" << card.get().toString() << std::endl;
+	std::cout << characterName() << "给了" << target.characterName() << "一张" << card.get().toString() << std::endl;
 	game.broadcastState();
 
 	return card;

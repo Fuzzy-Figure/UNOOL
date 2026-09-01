@@ -163,7 +163,8 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 	//4. 交还等量张牌（forced=true，强制完成义务）
 	for (std::size_t i = 0; i < takeCount; ++i) {
 		carrier.chooseToGive(
-			L"[还击] 交还一张牌给" + target.characterNameW(),
+			L"[还击] 交还一张牌给" + target.characterNameW()
+			+ L"（" + std::to_wstring(i + 1) + L"/" + std::to_wstring(takeCount) + L"）",
 			target, true
 		);
 	}
