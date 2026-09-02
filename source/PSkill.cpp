@@ -1798,3 +1798,105 @@ bool 捉奸::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：爬竿_伤害（子技能） ====================
+bool 爬竿_伤害::filter(const Trigger& trigger) const {
+	return trigger.getPlayer().getId() == *targetId
+		&& !trigger.getPlayer().getHasUsed();
+}
+bool 爬竿_伤害::content(Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	std::size_t damage = target.getMaxHp() / 100; //1%最大体力向下取整
+	if (damage > 0) target.damage(damage, trigger.getCarrier());
+	std::cout << "<技能> " << trigger.getCarrier().characterName()
+		<< "发动爬竿，" << target.characterName() << "失去" << damage << "点体力" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：爬竿（主技能） ====================
+bool 爬竿::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	auto targetOpt = carrier.chooseOtherPlayer(L"[爬竿] 选择一名其他角色", true);
+	if (!targetOpt.has_value()) return false;
+	*targetId = targetOpt->get().getId();
+	std::cout << "<技能> " << carrier.characterName() << "发动爬竿，选择了"
+		<< targetOpt->get().characterName() << std::endl;
+	return true;
+}
+
+// ==================== 技能：渊涡 ====================
+bool 渊涡::filter(const Trigger& trigger) const {
+	return !trigger.getCarrier().getHasUsed();
+}
+bool 渊涡::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	carrier.recover(1);
+	std::cout << "<技能> " << carrier.characterName() << "发动渊涡，回复1点体力" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：没座 ====================
+bool 没座::filter(const Trigger& trigger) const {
+	const auto& hand = trigger.getCarrier().getHand();
+	 const bool hasRed = hand.include([](const Card& c) {
+		 return c.getColor() == Card::Color::red;
+	 });
+	//没红且手牌为1时不触发；其余情况触发
+	return hasRed || trigger.getCarrier().handCount() != 1;
+}
+bool 没座::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+	const auto& hand = carrier.getHand();
+	const bool hasRed = std::ranges::any_of(hand, [](const auto& c) {
+		return c->getColor() == Card::Color::red;
+	});
+	if (!hasRed) {
+		//没红牌：摸一张
+		carrier.draw(1);
+		std::cout << "<技能> " << carrier.characterName() << "发动没座，摸了一张牌" << std::endl;
+	} else {
+		//有红牌：可弃一张非红色牌
+		auto discarded = carrier.chooseToDiscard(L"[没座] 弃置一张非红色牌", 1, false,
+			[](const Card& c) { return c.getColor() != Card::Color::red; });
+		if (discarded.empty()) return false; //玩家取消
+		std::cout << "<技能> " << carrier.characterName() << "发动没座，弃置了一张非红色牌" << std::endl;
+	}
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：空空 ====================
+bool 空空::filter(const Trigger& trigger) const {
+	const auto& hand = trigger.getCarrier().getHand();
+	return std::ranges::any_of(hand, [](const auto& c) {
+		return c->getColor() == Card::Color::red;
+	});
+}
+bool 空空::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+	Hand& hand = carrier.getHand();
+	//收集红色牌下标
+	std::vector<std::size_t> redIndices;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].getColor() == Card::Color::red) redIndices.push_back(i);
+	}
+	if (redIndices.empty()) return false;
+	//从后往前弃置（避免索引偏移）
+	std::ranges::sort(redIndices, std::greater{});
+	for (std::size_t idx : redIndices) {
+		carrier.discardByIndex(idx);
+	}
+	//摸等量牌（重铸）
+	carrier.draw(redIndices.size());
+	std::cout << "<技能> " << carrier.characterName() << "发动空空，重铸了"
+		<< redIndices.size() << "张红色牌" << std::endl;
+	game.broadcastState();
+	return true;
+}

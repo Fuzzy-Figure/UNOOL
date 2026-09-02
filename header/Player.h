@@ -24,6 +24,7 @@ private:
 	std::unique_ptr<Character> character = nullptr;
 	GameLogic& game;
 	bool banned = false;
+	bool hasUsed = false;
 	sf::Keyboard::Scancode currentInput = sf::Keyboard::Scancode::Unknown;
 
 	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
@@ -59,6 +60,7 @@ public:
 #pragma region 手牌查询 - 委托到 Hand
 	std::size_t handCount() const { return hand->count(); }
 	bool handEmpty() const { return hand->empty(); }
+	bool getHasUsed() const { return hasUsed; }
 	std::size_t handSelectedIndex() const { return hand->getSelectedIndex(); }
 	const Card& handSelectedCard() const { return hand->getSelectedCard(); }
 	std::size_t handValue() const { return hand->value(); }

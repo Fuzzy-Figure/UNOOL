@@ -48,6 +48,7 @@ std::vector<ref<Card>> Player::drawTo(const std::size_t num, const DrawReason re
 //返回使用牌的引用
 Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
+	hasUsed = true;
 	std::cout << "玩家" << id << "打出了：" << card->toString() << std::endl;
 
 	game.launchPSkills(PSkill::TriggerTime::use_card_begin, *this, *card);
@@ -157,6 +158,7 @@ void Player::phaseEnd() {
 }
 
 bool Player::turn() {
+	hasUsed = false;
 	phaseBegin();
 	game.broadcastState();
 	bool used = false;

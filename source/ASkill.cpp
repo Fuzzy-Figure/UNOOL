@@ -65,7 +65,7 @@ std::size_t 曼巴::getCardCount() const {
 }
 
 bool 曼巴::canSelect(const Card& c) const {
-	return c.isWild() || c.is(Card::Name::number_8);
+	return c.is(Card::Name::number_8);
 }
 
 bool 曼巴::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const {
@@ -75,8 +75,10 @@ bool 曼巴::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 	auto color = carrier.chooseCardColor(L"[曼巴] 选择颜色", false);
 	if (!color.has_value()) return false;
 
-	std::vector<Card::Name> allNames(Card::allCards.begin(), Card::allCards.end());
-	auto name = carrier.chooseCardName(L"[曼巴] 选择牌名", false, allNames);
+	std::vector<Card::Name> names;
+	names.append_range(Card::numberCardsFrom0);
+	names.append_range(Card::actionCards);
+	auto name = carrier.chooseCardName(L"[曼巴] 选择牌名", false, names);
 	if (!name.has_value()) return false;
 
 	c.set(color.value(), name.value());

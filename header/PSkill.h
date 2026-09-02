@@ -944,3 +944,79 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
+
+
+//爬竿_伤害（子技能）：目标角色未出牌的回合结束时，失去1%最大体力
+class 爬竿_伤害 : public PSkillImpl<爬竿_伤害> {
+	std::shared_ptr<std::size_t> targetId;
+public:
+	爬竿_伤害(std::shared_ptr<std::size_t> t)
+		: PSkillImpl<爬竿_伤害>(
+			"爬竿_伤害",
+			"锁定技，目标角色本局每个未出过牌的回合结束时，失去1%最大体力（向下取整）。",
+			unlimited, true,
+			TriggerPlayer::anybody, TriggerTime::phase_end
+		), targetId(std::move(t)) {}
+
+	static std::unique_ptr<PSkill> makeWith(std::shared_ptr<std::size_t> t) {
+		return std::make_unique<爬竿_伤害>(std::move(t));
+	}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//爬竿（主技能）：每局开始选目标，与子技能共享 targetId
+class 爬竿 : public PSkillImpl<爬竿> {
+	std::shared_ptr<std::size_t> targetId;
+public:
+	爬竿() : 爬竿(std::make_shared<std::size_t>(static_cast<std::size_t>(-1))) {}
+	爬竿(std::shared_ptr<std::size_t> t)
+		: PSkillImpl<爬竿>(
+			"爬竿",
+			"锁定技，每局游戏开始时，选择一名其他角色，该角色本局每个未出过牌的回合结束时，其失去1%最大体力（向下取整）。",
+			unlimited, true,
+			TriggerPlayer::self, TriggerTime::game_begin,
+			爬竿_伤害::makeWith(t)
+		), targetId(t) {}
+	bool content(Trigger& trigger) override;
+};
+
+//渊涡：你每个未出过牌的回合结束时，回复1点体力
+class 渊涡 : public PSkillImpl<渊涡> {
+public:
+	渊涡() : PSkillImpl<渊涡>(
+		"渊涡",
+		"锁定技，你每个未出过牌的回合结束时，回复1点体力。",
+		unlimited, true,
+		TriggerPlayer::self, TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//没座：回合开始时，没红牌则摸一张（手牌为1时不触发），有红牌则可弃一张非红色牌
+class 没座 : public PSkillImpl<没座> {
+public:
+	没座() : PSkillImpl<没座>(
+		"没座",
+		"回合开始时，若你手中没有红色牌，你摸一张牌（手牌数为1时不触发）；"
+		"若你手中有红色牌，你可以弃置一张其他颜色的牌。",
+		unlimited, true,
+		TriggerPlayer::self, TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//空空：锁定技，回合结束时，重铸手中所有红色牌
+class 空空 : public PSkillImpl<空空> {
+public:
+	空空() : PSkillImpl<空空>(
+		"空空",
+		"锁定技，回合结束时，你重铸手中所有红色牌。",
+		unlimited, true,
+		TriggerPlayer::self, TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
