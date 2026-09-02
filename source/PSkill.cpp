@@ -295,15 +295,18 @@ bool 耐克::content(Trigger& trigger) {
 
 // ==================== 技能：轰炸 ====================
 bool 轰炸::filter(const Trigger& trigger) const {
-	return trigger.getCard().is(Card::Name::action_draw2, Card::Name::wild_draw4);
+	return trigger.getCard().is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4);
 }
 bool 轰炸::content(Trigger& trigger) {
 	Player& target = trigger.getPlayer().next();
-	if (trigger.getCard().is(Card::Name::action_draw2)) {
+	if (trigger.getCard().is(Card::Name::wild_draw4)) {
+		target.damage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.getCarrier());
+	}
+	else if (trigger.getCard().is(Card::Name::action_draw2)) {
 		target.damage(unool::math::ceil(target.getMaxHp() * 0.02), trigger.getCarrier());
 	}
 	else {
-		target.damage(unool::math::ceil(target.getMaxHp() * 0.04), trigger.getCarrier());
+		target.damage(unool::math::ceil(target.getMaxHp() * 0.01), trigger.getCarrier());
 	}
 	return true;
 }
@@ -1656,10 +1659,14 @@ bool 黑洞::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 	Pile& discardPile = game.getDiscardPile();
 	std::vector<std::wstring> options;
-	for (const auto& card : discardPile | std::views::take(4)) {
+	std::vector<std::size_t> validIndices;
+	for (std::size_t i = 0; const auto& card : discardPile | std::views::take(4)) {
 		if (const Card::Name name = card->getName();
-			!record.contains(name))
+			!record.contains(name)) {
 			options.push_back(Card::to_wstring(name));
+			validIndices.push_back(i);
+		}
+		++i;
 	}
 	Player& carrier = trigger.getCarrier();
 	const std::size_t choice = carrier.ask(
@@ -1667,7 +1674,7 @@ bool 黑洞::content(Trigger& trigger) {
 	);
 	if (choice == 0) return false;
 
-	std::unique_ptr<Card> card = discardPile.takeCardByIndex(choice - 1);
+	std::unique_ptr<Card> card = discardPile.takeCardByIndex(validIndices[choice - 1]);
 	record.insert(card->getName());
 	carrier.gainCard(std::move(card));
 

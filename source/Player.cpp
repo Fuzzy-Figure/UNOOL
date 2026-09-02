@@ -454,6 +454,7 @@ opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,
 	}
 	std::size_t choice = ask(title, options, forced);
 
+	if (choice == 0) return std::nullopt;
 	return candidates[choice - 1];
 }
 opt_ref<Player> Player::chooseOtherPlayer(const std::wstring& title, bool forced,

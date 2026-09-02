@@ -215,7 +215,7 @@ class 轰炸 : public PSkillImpl<轰炸> {
 public:
 	轰炸() : PSkillImpl<轰炸>(
 		"轰炸",
-		"锁定技，当你打出【+2】/【+4】时，目标失去2%/4%最大体力。",
+		"锁定技，当你打出【+4】/【+2】/【封禁】时，目标失去4%/2%/1%最大体力（向上取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::use_card_begin
