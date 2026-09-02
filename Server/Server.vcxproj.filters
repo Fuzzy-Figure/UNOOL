@@ -233,9 +233,6 @@
     <ClInclude Include="..\header\GameState.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\ImageManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\Player.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -245,13 +242,7 @@
     <ClInclude Include="..\header\Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\TextManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\utils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\GameRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\header\UserDB.h">
@@ -264,6 +255,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\header\PSkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\GameRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\ImageManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\TextManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -283,22 +283,13 @@
     <ClCompile Include="..\source\GameState.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\ImageManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\source\Skill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\source\Socket.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\TextManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\source\utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\source\GameRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\source\Player.cpp">
@@ -319,15 +310,30 @@
     <ClCompile Include="..\source\ASkill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\source\TextManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ImageManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\GameRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ClientMain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\config.json">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\.gitignore">
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\userDatas.json">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\client_config.json">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\server_config.json">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

@@ -6,10 +6,10 @@
 #include <chrono>
 #include <thread>
 
-// 根据 config.json 初始化角色（指定或随机）
+// 根据 server_config.json 初始化角色（指定或随机）
 static void initCharacters(GameLogic& gameLogic) {
-	if (unool::getConfig().contains("characters")) {
-		const auto& chars = unool::getConfig()["characters"];
+	if (unool::getServerConfig().contains("characters")) {
+		const auto& chars = unool::getServerConfig()["characters"];
 		if (chars.size() != 2)
 			throw std::invalid_argument("指定角色时，角色数量必须为2");
 		gameLogic.initPlayers({ chars[0], chars[1] });
@@ -96,7 +96,7 @@ int main() {
 	try {
 		while (true) {
 			std::cout << "[Server] 游戏开始！" << std::endl;
-			unool::reloadConfig();
+			unool::reloadServerConfig();
 			initCharacters(gameLogic);
 			gameLogic.broadcastState();
 			gameLoop(serverNetwork, gameLogic);

@@ -5,23 +5,42 @@
 #include <iostream>
 
 namespace unool {
-	json& getConfig() {
+	json& getServerConfig() {
 		static json config = []() {
-			std::ifstream configFile("../config.json");
+			std::ifstream configFile("../server_config.json");
 			if (!configFile.is_open()) {
-				throw std::runtime_error("无法打开配置文件 config.json");
+				throw std::runtime_error("无法打开配置文件 server_config.json");
 			}
 			return json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
 	}
 
-	void reloadConfig() {
-		std::ifstream configFile("../config.json");
+	void reloadServerConfig() {
+		std::ifstream configFile("../server_config.json");
 		if (!configFile.is_open()) {
-			throw std::runtime_error("无法打开配置文件 config.json");
+			throw std::runtime_error("无法打开配置文件 server_config.json");
 		}
-		getConfig() = json::parse(configFile, nullptr, true, true);
+		getServerConfig() = json::parse(configFile, nullptr, true, true);
+	}
+
+	json& getClientConfig() {
+		static json config = []() {
+			std::ifstream configFile("../client_config.json");
+			if (!configFile.is_open()) {
+				throw std::runtime_error("无法打开配置文件 client_config.json");
+			}
+			return json::parse(configFile, nullptr, true, true);
+		}();
+		return config;
+	}
+
+	void reloadClientConfig() {
+		std::ifstream configFile("../client_config.json");
+		if (!configFile.is_open()) {
+			throw std::runtime_error("无法打开配置文件 client_config.json");
+		}
+		getClientConfig() = json::parse(configFile, nullptr, true, true);
 	}
 
 	namespace string {

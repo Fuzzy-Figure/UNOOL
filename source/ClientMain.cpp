@@ -363,7 +363,7 @@ int main(int argc, char* argv[]) {
 	std::cout << windowTitleWithBrackets << " 启动客户端..." << std::endl;
 
 	ClientNetwork clientNetwork;
-	const auto& config = unool::getConfig();
+	const auto& config = unool::getClientConfig();
 	std::string ipAddress = config["server"]["ip"];
 	unsigned short port = config["server"]["port"];
 

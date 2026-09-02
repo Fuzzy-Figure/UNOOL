@@ -236,6 +236,7 @@
     <ClCompile Include="..\source\ASkill.cpp" />
     <ClCompile Include="..\source\Card.cpp" />
     <ClCompile Include="..\source\Character.cpp" />
+    <ClCompile Include="..\source\ClientMain.cpp" />
     <ClCompile Include="..\source\Effect.cpp" />
     <ClCompile Include="..\source\GameLogic.cpp" />
     <ClCompile Include="..\source\GameRenderer.cpp" />
@@ -252,7 +253,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
-    <None Include="..\config.json" />
+    <None Include="..\client_config.json" />
+    <None Include="..\server_config.json" />
     <None Include="..\userDatas.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

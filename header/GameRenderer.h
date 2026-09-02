@@ -19,7 +19,7 @@ public:
 		sf::Vector2f characterSize = { 315, 405 };
 		std::string windowName;
 		Config(const std::string& _windowName) :windowName(_windowName) {
-			const auto& config = unool::getConfig();
+			const auto& config = unool::getClientConfig();
 			const auto& size = config["size"];
 			windowSize = { size["window"]["width"], size["window"]["height"] };
 			cardSize = { size["card"]["width"], size["card"]["height"] };

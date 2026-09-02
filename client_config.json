@@ -1,8 +1,5 @@
 {
-	"candidateCount": 7,
-	//"characters": [ "烟刻瑯", "Bombardiro Crocodilo" ],
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
-	"initHandCount": 8,
 	"server": {
 		"ip": "120.226.44.187",
 		"port": 14341

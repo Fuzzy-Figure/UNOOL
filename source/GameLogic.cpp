@@ -142,7 +142,7 @@ void GameLogic::initPlayers() {
 	std::size_t secondSeatId = getSeatPlayerId(1);
 
 	//选候选角色
-	const std::size_t candidateCount = unool::getConfig()["candidateCount"];
+	const std::size_t candidateCount = unool::getServerConfig()["candidateCount"];
 	SelectionState state;
 	auto allChars = randomChooseCharacters(candidateCount * 2);
 	for (std::size_t i = 0; i < 2; ++i) {
@@ -423,7 +423,7 @@ void GameLogic::resetRound() {
 		// 重置手牌
 		player->clearHand();
 		// 初始手牌
-		player->draw(unool::getConfig()["initHandCount"]);
+		player->draw(unool::getServerConfig()["initHandCount"]);
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁

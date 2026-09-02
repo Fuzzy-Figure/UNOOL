@@ -4,7 +4,7 @@
 
 TextManager::TextManager(sf::RenderWindow& _window)
 	:window(_window) {
-	const auto& config = unool::getConfig();
+	const auto& config = unool::getClientConfig();
 	if (!font.openFromFile(config["fonts"])) {
 		std::cout << "错误：加载字体失败" << std::endl;
 	}
