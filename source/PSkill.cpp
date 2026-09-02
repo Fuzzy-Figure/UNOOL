@@ -89,7 +89,7 @@ bool 寒魄::content(Trigger& trigger) {
 
 // ==================== 技能：割腕 ====================
 bool 割腕::filter(const Trigger& trigger) const {
-	return trigger.getCard().getColor() == Card::Color::red;
+	return trigger.getCard().is(Card::Color::red);
 }
 bool 割腕::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
@@ -552,7 +552,7 @@ std::map<Card::Name, std::size_t> 炼兵::buildPairs(Player& carrier) const {
 	std::map<Card::Name, std::size_t> cnt;
 	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
 		const Card& c = carrier.getHand().getCardByIndex(i);
-		if (c.getColor() == Card::Color::black) continue;
+		if (c.is(Card::Color::black)) continue;
 		if (c.isWild()) continue;
 		cnt[c.getName()]++;
 	}
@@ -1389,7 +1389,7 @@ bool 水鬼::filter(const Trigger& trigger) const {
 	//至少一张获得的牌是蓝色
 	std::size_t blueCount = 0;
 	for (const auto& c : trigger.getCards()) {
-		if (c.get().getColor() == Card::Color::blue) ++blueCount;
+		if (c.get().is(Card::Color::blue)) ++blueCount;
 	}
 	if (blueCount == 0) return false;
 	//弃置蓝色牌后手牌非空（能弃置一张其他牌）
@@ -1468,7 +1468,7 @@ bool 叛党::content(Trigger& trigger) {
 		options.push_back(L"弃" + std::to_wstring(i) + L"张颜色各不相同的牌");
 	}
 	//选数量，0=取消
-	std::size_t count = carrier.ask(L"【讲解】选择弃牌数量", options, false,
+	std::size_t count = carrier.ask(L"【叛党】选择弃牌数量", options, false,
 									std::chrono::milliseconds(60000));
 	if (count == 0) return false;
 
@@ -1476,7 +1476,7 @@ bool 叛党::content(Trigger& trigger) {
 	std::size_t discarded = 0;
 	for (std::size_t i = 0; i < count; ++i) {
 		auto result = carrier.chooseToDiscard(
-			L"【讲解】选择第" + std::to_wstring(i + 1) + L"张牌弃置（颜色各不相同）",
+			L"【叛党】选择第" + std::to_wstring(i + 1) + L"张牌弃置（颜色各不相同）",
 			1, false,
 			[&](const Card& c) {
 			return c.getColor() != Card::Color::no
@@ -1488,7 +1488,7 @@ bool 叛党::content(Trigger& trigger) {
 		++discarded;
 	}
 	if (discarded > 0) {
-		std::cout << "<技能> " << carrier.characterName() << "发动讲解，弃置了"
+		std::cout << "<技能> " << carrier.characterName() << "发动叛党，弃置了"
 			<< discarded << "张颜色各不相同的牌" << std::endl;
 		trigger.getGame().broadcastState();
 	}
@@ -1779,7 +1779,7 @@ bool 捉奸::content(Trigger& trigger) {
 	//寻找红牌下标
 	std::vector<std::size_t> redIndex;
 	for (const auto [i, c] : hand | std::views::enumerate) {
-		if (c->getColor() == Card::Color::red)
+		if (c->is(Card::Color::red))
 			redIndex.push_back(i);
 	}
 
@@ -1842,9 +1842,9 @@ bool 渊涡::content(Trigger& trigger) {
 // ==================== 技能：没座 ====================
 bool 没座::filter(const Trigger& trigger) const {
 	const auto& hand = trigger.getCarrier().getHand();
-	 const bool hasRed = hand.include([](const Card& c) {
-		 return c.getColor() == Card::Color::red;
-	 });
+	const bool hasRed = hand.include([](const Card& c) {
+		return c.is(Card::Color::red);
+	});
 	//没红且手牌为1时不触发；其余情况触发
 	return hasRed || trigger.getCarrier().handCount() != 1;
 }
@@ -1852,17 +1852,18 @@ bool 没座::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 	const auto& hand = carrier.getHand();
-	const bool hasRed = std::ranges::any_of(hand, [](const auto& c) {
-		return c->getColor() == Card::Color::red;
+	const bool hasRed = hand.include([](const Card& c) {
+		return c.is(Card::Color::red);
 	});
 	if (!hasRed) {
 		//没红牌：摸一张
 		carrier.draw(1);
 		std::cout << "<技能> " << carrier.characterName() << "发动没座，摸了一张牌" << std::endl;
-	} else {
+	}
+	else {
 		//有红牌：可弃一张非红色牌
 		auto discarded = carrier.chooseToDiscard(L"[没座] 弃置一张非红色牌", 1, false,
-			[](const Card& c) { return c.getColor() != Card::Color::red; });
+												 [](const Card& c) { return !c.is(Card::Color::red); });
 		if (discarded.empty()) return false; //玩家取消
 		std::cout << "<技能> " << carrier.characterName() << "发动没座，弃置了一张非红色牌" << std::endl;
 	}
@@ -1874,8 +1875,8 @@ bool 没座::content(Trigger& trigger) {
 // ==================== 技能：空空 ====================
 bool 空空::filter(const Trigger& trigger) const {
 	const auto& hand = trigger.getCarrier().getHand();
-	return std::ranges::any_of(hand, [](const auto& c) {
-		return c->getColor() == Card::Color::red;
+	return hand.include([](const Card& c) {
+		return c.is(Card::Color::red);
 	});
 }
 bool 空空::content(Trigger& trigger) {
@@ -1885,7 +1886,7 @@ bool 空空::content(Trigger& trigger) {
 	//收集红色牌下标
 	std::vector<std::size_t> redIndices;
 	for (std::size_t i = 0; i < hand.count(); ++i) {
-		if (hand[i].getColor() == Card::Color::red) redIndices.push_back(i);
+		if (hand[i].is(Card::Color::red)) redIndices.push_back(i);
 	}
 	if (redIndices.empty()) return false;
 	//从后往前弃置（避免索引偏移）
