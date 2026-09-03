@@ -17,7 +17,7 @@ bool 装弹::content(GameLogic& game, Player& carrier) {
 	std::ranges::sample(
 		hand | std::views::transform([](const auto& p) { return std::ref(*p); }),
 		std::back_inserter(cards),
-		static_cast<int>(unool::math::floor(hand.count() / 3.0)),
+		unool::math::floor(hand.count() / 3.0),
 		unool::random::rng
 	);
 	for (Card& c : cards) {
