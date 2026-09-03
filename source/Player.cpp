@@ -555,7 +555,8 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		sf::Keyboard::Scancode input = clientInput.key;
 		setInput(input);
 
-		if (usePaging && (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right)) {
+		if (usePaging && (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right
+						  || input == sf::Keyboard::Scancode::A || input == sf::Keyboard::Scancode::D)) {
 			if (input == sf::Keyboard::Scancode::Left) {
 				if (currentPage > 0) --currentPage;
 			}

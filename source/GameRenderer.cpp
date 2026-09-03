@@ -143,13 +143,15 @@ void GameRenderer::renderDiscardPile() {
 		sf::Vector2f currentCardPos{ config.windowSize.x / 2.0f - config.cardSize.x / 2,
 									 config.windowSize.y / 2.0f - config.cardSize.y / 2 };
 		lastCard.display(*this, currentCardPos, config.cardSize);
-		//下方写 DiscardReason
+		//下方写 DiscardReason（按真实字宽水平居中于卡牌下方）
 		const std::wstring reasonText = Card::to_wstring(lastCard.getDiscardReason());
 		if (!reasonText.empty()) {
 			const sf::Vector2f textSize{ 18, 30 };
 			const float textPad = 8.0f;
+			const sf::Vector2f actualTextSize = textMgr.measureText(reasonText, static_cast<unsigned int>(textSize.y));
+			const float cardCenterX = currentCardPos.x + config.cardSize.x / 2.0f;
 			const sf::Vector2f textPos{
-				currentCardPos.x + config.cardSize.x / 2.0f - textSize.x,
+				cardCenterX - actualTextSize.x / 2.0f,
 				currentCardPos.y + config.cardSize.y + textPad
 			};
 			displayText(reasonText, textPos, textSize);
@@ -168,8 +170,10 @@ void GameRenderer::renderDiscardPile() {
 			histCard.display(*this, historyPos, historySize);
 			const std::wstring histReason = Card::to_wstring(histCard.getDiscardReason());
 			if (!histReason.empty()) {
+				const sf::Vector2f actualTextSize = textMgr.measureText(histReason, static_cast<unsigned int>(historyTextSize.y));
+				const float cardCenterX = historyPos.x + historySize.x / 2.0f;
 				const sf::Vector2f textPos{
-					historyPos.x + historySize.x / 2.0f - historyTextSize.x,
+					cardCenterX - actualTextSize.x / 2.0f,
 					historyPos.y + historySize.y + historyTextPad
 				};
 				displayText(histReason, textPos, historyTextSize);
