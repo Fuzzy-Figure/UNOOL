@@ -1667,7 +1667,7 @@ bool 好事::filter(const Trigger& trigger) const {
 }
 bool 好事::content(Trigger& trigger) {
 	trigger.getCarrier().showCard(trigger.getCard());
-	trigger.getCarrier().recover(10);
+	trigger.getCarrier().recover(5);
 	return true;
 }
 

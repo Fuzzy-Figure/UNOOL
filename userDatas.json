@@ -12,7 +12,7 @@
     "wins": 11
   },
   "Lazer": {
-    "losses": 56,
+    "losses": 58,
     "password": "114",
     "points": 867,
     "wins": 63
@@ -20,7 +20,7 @@
   "fuzzy figure": {
     "losses": 63,
     "password": "123",
-    "points": 770,
-    "wins": 56
+    "points": 805,
+    "wins": 58
   }
 }

@@ -896,7 +896,7 @@ class 好事 : public PSkillImpl<好事> {
 public:
 	好事() : PSkillImpl<好事>(
 		"好事",
-		"锁定技，摸牌阶段摸到万能牌后，展示之，并回复10体力。",
+		"锁定技，摸牌阶段摸到万能牌后，展示之并回复5点体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_draw_end
@@ -908,10 +908,10 @@ class 压抑 : public PSkillImpl<压抑> {
 public:
 	压抑() : PSkillImpl<压抑>(
 		"压抑",
-		"你打出万能牌结算后，可令一名角色弃置手中所有点数最大的数字牌，"
+		"一名角色打出万能牌结算后，你可选择一名角色弃置手中所有点数最大的数字牌，"
 		"若因此弃置牌数≥2张其失去10%最大体力（向上取整）。",
 		unlimited, false,
-		TriggerPlayer::self,
+		TriggerPlayer::anybody,
 		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
