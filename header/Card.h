@@ -7,6 +7,7 @@
 #include <random>
 #include <map>
 #include "Effect.h"
+#include "utils.h"
 
 class GameRenderer;
 class GameLogic;
@@ -73,6 +74,22 @@ public:
 	static std::unique_ptr<Card> make(const std::unique_ptr<Card>& otherPtr);
 	static const Card back;
 #pragma endregion
+
+#pragma region 随机牌
+	using CardMemFn = bool (Card::*)() const;
+	// 全牌池（只建一次）
+	static const std::vector<Card::ColorName>& getAllCards();
+	struct CardMemFnHash {
+		std::size_t operator()(CardMemFn fn) const noexcept {
+			return std::hash<uintptr_t>{}(std::bit_cast<uintptr_t>(fn));
+		}
+	};
+	static std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash>& getPoolCache();
+
+	static Card::ColorName randomCard(const std::function<bool(const Card&)>& condition
+									  = unool::alwaysTrue);
+#pragma endregion
+
 
 #pragma region 属性查询
 	Color getColor() const;

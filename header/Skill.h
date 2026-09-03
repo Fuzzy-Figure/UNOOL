@@ -224,12 +224,15 @@ public:
 	}
 	bool tryActivate(GameLogic& game, Player& player) final {
 		if (!canUse()) return false;
+		if (!filter(game, player)) return false;
 		if (!content(game, player)) return false;
 		++count;
 		return true;
 	}
 protected:
 	using ASkillInstantBase::ASkillInstantBase;
+	//发动条件检查，默认永真；派生类可重写做前置状态判断
+	virtual bool filter(const GameLogic& game, const Player& carrier) const { return true; }
 	//具体技能效果，派生类实现
 	virtual bool content(GameLogic& game, Player& carrier) = 0;
 };

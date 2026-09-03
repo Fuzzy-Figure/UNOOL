@@ -1,5 +1,17 @@
 #include "Skill.h"
 
+class 装弹 : public ASkillInstant<装弹> {
+public:
+	装弹() : ASkillInstant<装弹>(
+		"装弹",
+		"限定技，出牌阶段，若你手中没有封禁类牌且手牌数≤9，\n"
+		"你可以将三分之一的手牌变为随机的非数字牌（向下取整）。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
 class 徒步 : public ASkillInstant<徒步> {
 public:
 	徒步() : ASkillInstant<徒步>(
@@ -47,7 +59,7 @@ class 曼巴 : public ASkillTransform<曼巴> {
 public:
 	曼巴() : ASkillTransform<曼巴>(
 		"曼巴",
-		"出牌阶段，你可将一张万能牌或【8】当作任意颜色的任意牌打出。",
+		"出牌阶段，你可将一张【8】当作任意基础颜色的任意牌打出。",
 		unlimited,
 		TriggerTime::phase_use
 	) {}

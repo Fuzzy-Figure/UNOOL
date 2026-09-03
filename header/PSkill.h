@@ -18,7 +18,7 @@ class 隐身 : public PSkillImpl<隐身> {
 public:
 	隐身() : PSkillImpl<隐身>(
 		"隐身",
-		"当你成为【+2】/【+4】的目标时，改为你的下家摸1张牌。",
+		"锁定技，当你成为【+2】/【+4】的目标时，改为你的下家摸1张牌。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
@@ -55,8 +55,8 @@ class 寒魄 : public PSkillImpl<寒魄> {
 public:
 	寒魄() : PSkillImpl<寒魄>(
 		"寒魄",
-		"限定技，你打出牌后，若你手牌数为1，你可令最后一张手牌变为你打出的牌。",
-		1, false,
+		"你打出牌后，若你手牌数为1，你可令最后一张手牌变为你打出的牌。",
+		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
@@ -301,7 +301,6 @@ public:
 
 class 假酒 : public PSkillImpl<假酒> {
 	bool number = false, action = false, wild = false;
-	static Card::ColorName randomCard();
 public:
 	假酒() : PSkillImpl<假酒>(
 		"假酒",

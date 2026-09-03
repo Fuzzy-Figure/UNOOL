@@ -3,6 +3,28 @@
 #include "../header/utils.h"
 
 
+bool 装弹::filter(const GameLogic& game, const Player& carrier) const {
+	const Hand& hand = carrier.getHand();
+	return hand.count() <= 9
+		&& hand.exclude([](const Card& c) {
+		return c.is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4);
+	});
+}
+
+bool 装弹::content(GameLogic& game, Player& carrier) {
+	Hand& hand = carrier.getHand();
+	std::vector<std::size_t> changeIndices;
+	std::ranges::sample(
+		std::views::iota(0, static_cast<int>(hand.count())),
+		std::back_inserter(changeIndices),
+		static_cast<int>(unool::math::floor(hand.count() / 3.0)),
+		unool::random::rng
+	);
+	for (const std::size_t index : changeIndices) {
+		hand[index].set(Card::randomCard(&Card::isNotNumber));
+	}
+	return true;
+}
 bool 徒步::content(GameLogic& game, Player& carrier) {
 	Player::RecastResult result = carrier.chooseToRecast(L"[徒步] 重铸一张牌", 1, false);
 	if (result.discarded.size() == 0) return false;
@@ -90,8 +112,12 @@ std::wstring 曼巴::getPrompt() const {
 }
 
 bool 摘罩::content(GameLogic& game, Player& carrier) {
+	std::wstring recordStr;
+	for (const Card::Name& name : record) {
+		recordStr += Card::to_wstring(name) + L',';
+	}
 	//1. 展示一张未展示过点数的数字牌
-	auto cardOpt = carrier.chooseToShow(L"[摘罩] 展示一张数字牌", false, [this](const Card& c) {
+	auto cardOpt = carrier.chooseToShow(L"[摘罩] 展示一张数字牌\n已展示：" + recordStr, false, [this](const Card& c) {
 		return c.isNumber() && !record.contains(c.getName());
 	});
 	if (!cardOpt.has_value()) return false;
@@ -173,3 +199,4 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 	game.broadcastState();
 	return true;
 }
+

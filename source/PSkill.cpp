@@ -414,30 +414,6 @@ bool 破产::content(Trigger& trigger) {
 }
 
 
-Card::ColorName 假酒::randomCard() {
-	//随机颜色
-	const Card::Color color = unool::random::randomGet(Card::fiveColors);
-	//随机牌名
-	Card::Name name = Card::Name::no;
-	if (color != Card::Color::black) {
-		std::vector<Card::Name> nameCandidates;
-		for (const auto& x : Card::numberCardsFrom0) {
-			nameCandidates.push_back(x);
-		}
-		for (const auto& x : Card::actionCards) {
-			nameCandidates.push_back(x);
-		}
-		name = unool::random::randomGet(nameCandidates);
-	}
-	else {
-		std::vector<Card::Name> nameCandidates;
-		for (const auto& x : Card::wildCards) {
-			nameCandidates.push_back(x);
-		}
-		name = unool::random::randomGet(nameCandidates);
-	}
-	return { color, name };
-}
 
 // ==================== 技能：假酒 ====================
 bool 假酒::filter(const Trigger& trigger) const {
@@ -445,7 +421,7 @@ bool 假酒::filter(const Trigger& trigger) const {
 }
 bool 假酒::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	auto card = std::make_unique<Card>(randomCard());
+	auto card = std::make_unique<Card>(Card::randomCard());
 	if (card->isNumber()) number = true;
 	else if (card->isAction()) action = true;
 	else if (card->isWild()) wild = true;
@@ -1691,6 +1667,7 @@ bool 好事::filter(const Trigger& trigger) const {
 }
 bool 好事::content(Trigger& trigger) {
 	trigger.getCarrier().showCard(trigger.getCard());
+	trigger.getCarrier().recover(10);
 	return true;
 }
 

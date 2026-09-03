@@ -93,6 +93,65 @@ std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
 	return make(*otherPtr);
 }
 
+// 全牌池（只建一次）
+const std::vector<Card::ColorName>& Card::getAllCards() {
+	static const std::vector<Card::ColorName> allCards = [] {
+		std::vector<Card::ColorName> pool;
+		for (auto c : Card::fiveColors) {
+			if (c == Card::Color::black) {
+				for (auto n : Card::wildCards) pool.emplace_back(c, n);
+			}
+			else {
+				for (auto n : Card::numberCardsFrom0) pool.emplace_back(c, n);
+				for (auto n : Card::actionCards) pool.emplace_back(c, n);
+			}
+		}
+		return pool;
+	}();
+	return allCards;
+}
+
+std::unordered_map<Card::CardMemFn, std::vector<Card::ColorName>, Card::CardMemFnHash>& Card::getPoolCache() {
+	static std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash> cache;
+	return cache;
+}
+
+Card::ColorName Card::randomCard(const std::function<bool(const Card&)>& condition) {
+	const auto& all = getAllCards();
+
+	// 尝试提取成员函数指针
+	if (auto target = condition.target<CardMemFn>()) {
+		CardMemFn memFn = *target;
+		auto& cache = getPoolCache();
+
+		auto it = cache.find(memFn);
+		//缓存未命中，计算候选池
+		if (it == cache.end()) {
+			std::vector<ColorName> filtered;
+			for (const auto& cn : all) {
+				if (condition(Card(cn))) filtered.push_back(cn);
+			}
+			if (filtered.empty()) {
+				throw std::runtime_error("randomCard: 没有牌满足该条件");
+			}
+			it = cache.emplace(memFn, std::move(filtered)).first;
+		}
+		return unool::random::randomGet(it->second);
+	}
+
+	// Fallback：无法提取成员函数指针（如带捕获的 Lambda）
+	// 直接算，不缓存（或者你也可以选择抛异常/警告）
+	std::vector<ColorName> temp;
+	for (const auto& cn : all) {
+		if (condition(Card(cn))) temp.push_back(cn);
+	}
+	if (temp.empty()) {
+		throw std::runtime_error("randomCard: 没有牌满足该条件");
+	}
+	return unool::random::randomGet(temp);
+}
+
+
 // 属性查询
 bool Card::operator<(const Card& other) const {
 	if (color != other.color)
@@ -129,6 +188,7 @@ bool Card::isWild() const {
 bool Card::isNotWild() const {
 	return !is_wild(name);
 }
+
 
 int Card::value() const {
 	switch (name) {
