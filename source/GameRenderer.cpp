@@ -146,7 +146,7 @@ void GameRenderer::renderDiscardPile() {
 		//下方写 DiscardReason（按真实字宽水平居中于卡牌下方）
 		const std::wstring reasonText = Card::to_wstring(lastCard.getDiscardReason());
 		if (!reasonText.empty()) {
-			const sf::Vector2f textSize{ 18, 30 };
+			const sf::Vector2f textSize{ 20, 40 };
 			const float textPad = 8.0f;
 			const sf::Vector2f actualTextSize = textMgr.measureText(reasonText, static_cast<unsigned int>(textSize.y));
 			const float cardCenterX = currentCardPos.x + config.cardSize.x / 2.0f;
@@ -163,7 +163,7 @@ void GameRenderer::renderDiscardPile() {
 								 config.windowSize.y / 2.0f - historySize.y / 2 };
 		size_t historyCount = currentState.discardPile.size() - 1;
 		if (historyCount > 3) historyCount = 3;
-		const sf::Vector2f historyTextSize{ 14, 24 };
+		const sf::Vector2f historyTextSize{ 20, 40 };
 		const float historyTextPad = 6.0f;
 		for (size_t i = 1; i <= historyCount; ++i) {
 			const Card& histCard = currentState.discardPile[i];
