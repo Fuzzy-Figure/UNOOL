@@ -13,15 +13,15 @@ bool 装弹::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 装弹::content(GameLogic& game, Player& carrier) {
 	Hand& hand = carrier.getHand();
-	std::vector<std::size_t> changeIndices;
+	std::vector<ref<Card>> cards;
 	std::ranges::sample(
-		std::views::iota(0, static_cast<int>(hand.count())),
-		std::back_inserter(changeIndices),
+		hand | std::views::transform([](const auto& p) { return std::ref(*p); }),
+		std::back_inserter(cards),
 		static_cast<int>(unool::math::floor(hand.count() / 3.0)),
 		unool::random::rng
 	);
-	for (const std::size_t index : changeIndices) {
-		hand[index].set(Card::randomCard(&Card::isNotNumber));
+	for (Card& c : cards) {
+		c.set(Card::randomCard(&Card::isNotNumber));
 	}
 	return true;
 }

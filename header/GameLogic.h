@@ -43,7 +43,7 @@ private:
 	static std::vector<CharacterEntry> randomChooseCharacters(std::size_t n);
 	static void chooseSkinAndSet(Player& player, const std::string& charName);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
-	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, SelectionState& state);
+	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
 #pragma endregion
 
