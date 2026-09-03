@@ -896,7 +896,7 @@ class 好事 : public PSkillImpl<好事> {
 public:
 	好事() : PSkillImpl<好事>(
 		"好事",
-		"锁定技，展示你摸牌阶段摸到的万能牌。",
+		"锁定技，摸牌阶段摸到万能牌后，展示之，并回复10体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_draw_end
