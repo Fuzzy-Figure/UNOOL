@@ -36,14 +36,14 @@ private:
 	using CharacterEntry = std::pair<std::string, Character::Info>;
 	struct SelectionState {
 		std::vector<CharacterEntry> cands[2];
-		std::optional<std::size_t> bannedIdx[2];
+		std::vector<std::size_t> bannedIdx[2];
 	};
 
 	static std::wstring formatCharacterLabelW(const CharacterEntry& entry);
 	static std::vector<CharacterEntry> randomChooseCharacters(std::size_t n);
 	static void chooseSkinAndSet(Player& player, const std::string& charName);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
-	void banPhase(std::size_t bannerId, std::size_t targetId, SelectionState& state);
+	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
 #pragma endregion
 

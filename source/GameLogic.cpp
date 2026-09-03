@@ -7,6 +7,7 @@
 #include <ranges>
 #include <algorithm>
 #include <variant>
+#include <format>
 
 //获取curIndex的下一个玩家的id（curIndex不一定是当前回合玩家的id）
 std::size_t GameLogic::nextPlayerIndex(const std::size_t curIndex) const {
@@ -152,9 +153,34 @@ void GameLogic::initPlayers() {
 		);
 	}
 
-	//Ban环节：一号位先ban对方候选，然后二号位ban
-	banPhase(firstSeatId, secondSeatId, state);
-	banPhase(secondSeatId, firstSeatId, state);
+	//Ban环节：玩家A先连续ban banCount次，再一次性告诉B；然后B同理，最后提示A
+	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::wstring>& labels) -> std::wstring {
+		if (labels.empty()) return players[targetId]->characterNameW() + L"没有禁用你的任何角色";
+		std::wstring msg = L"对方禁用了你的角色：\n";
+		for (std::size_t i = 0; i < labels.size(); ++i) {
+			if (i > 0) msg += L"\n";
+			msg += labels[i];
+		}
+		return msg;
+	};
+
+	const std::size_t banCount = unool::getServerConfig().value("banCount", 0);
+
+	std::vector<std::wstring> bannedByA;
+	bannedByA.reserve(banCount);
+	for (std::size_t b = 0; b < banCount; ++b) {
+		auto label = banPhase(firstSeatId, secondSeatId, b, state);
+		if (label.has_value()) bannedByA.push_back(std::move(*label));
+	}
+	players[secondSeatId]->hint(formatBanSummary(secondSeatId, bannedByA));
+
+	std::vector<std::wstring> bannedByB;
+	bannedByB.reserve(banCount);
+	for (std::size_t b = 0; b < banCount; ++b) {
+		auto label = banPhase(secondSeatId, firstSeatId, b, state);
+		if (label.has_value()) bannedByB.push_back(std::move(*label));
+	}
+	players[firstSeatId]->hint(formatBanSummary(firstSeatId, bannedByB));
 
 	//选角环节：一号位先选，然后二号位选
 	selectCharacter(firstSeatId, state);
@@ -192,21 +218,25 @@ std::vector<GameLogic::CharacterEntry> GameLogic::randomChooseCharacters(std::si
 	return result;
 }
 
-void GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, SelectionState& state) {
+std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, SelectionState& state) {
 	std::vector<std::wstring> banOpts;
-	for (const auto& ch : state.cands[targetId]) {
-		banOpts.push_back(formatCharacterLabelW(ch));
+	std::vector<std::size_t> validIndices;
+	for (std::size_t i = 0; i < state.cands[targetId].size(); ++i) {
+		const bool alreadyBanned = std::ranges::contains(state.bannedIdx[targetId], i);
+		if (alreadyBanned) continue;
+		banOpts.push_back(formatCharacterLabelW(state.cands[targetId][i]));
+		validIndices.push_back(i);
 	}
-	std::size_t banChoice = players[bannerId]->ask(
-		L"禁用对方的一个角色：", banOpts, false, 30000ms);
-	if (banChoice > 0) {
-		state.bannedIdx[targetId] = banChoice - 1;
-		std::wstring bannedCharLabel = formatCharacterLabelW(state.cands[targetId][banChoice - 1]);
-		players[targetId]->hint(L"对方禁用了你的角色：" + bannedCharLabel);
+	//候选池<=1时无需再ban
+	if (validIndices.size() <= 1) return std::nullopt;
+	const std::wstring title = std::format(L"第{}次禁用对方的一个角色：", banIndex + 1);
+	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 30000ms);
+	if (banChoice > 0 && banChoice <= validIndices.size()) {
+		const std::size_t targetIdx = validIndices[banChoice - 1];
+		state.bannedIdx[targetId].push_back(targetIdx);
+		return formatCharacterLabelW(state.cands[targetId][targetIdx]);
 	}
-	else {
-		players[targetId]->hint(L"对方未禁用你的任何角色");
-	}
+	return std::nullopt;
 }
 
 void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
@@ -225,7 +255,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	std::vector<std::wstring> opts;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
-		if (state.bannedIdx[playerId].has_value() && state.bannedIdx[playerId].value() == i) continue;
+		if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
 		opts.push_back(formatCharacterLabelW(state.cands[playerId][i]));
 		validIndices.push_back(i);
 	}

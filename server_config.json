@@ -1,5 +1,6 @@
 {
-	"candidateCount": 7,
-	"characters": [ "梅西", "闫传学" ],
-	"initHandCount": 8
+  "banCount": 2,
+  "candidateCount": 10,
+  //"characters": [ "梅西", "闫传学" ],
+  "initHandCount": 8
 }
