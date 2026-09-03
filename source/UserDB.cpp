@@ -82,8 +82,8 @@ void UserDB::load() {
 		return;
 	}
 	try {
-		nlohmann::json j;
-		j = nlohmann::json::parse(file, nullptr, true, true);
+		json j;
+		j = json::parse(file, nullptr, true, true);
 		users_ = j.get<std::unordered_map<std::string, UserInfo>>();
 	} catch (const std::exception& e) {
 		std::cerr << "[UserDB] 解析 " << DATA_FILE << " 失败: " << e.what() << std::endl;
@@ -92,7 +92,7 @@ void UserDB::load() {
 }
 
 void UserDB::save() const {
-	nlohmann::json j = users_;
+	json j = users_;
 	std::ofstream file(DATA_FILE);
 	if (!file.is_open()) {
 		std::cerr << "[UserDB] 无法写入 " << DATA_FILE << std::endl;

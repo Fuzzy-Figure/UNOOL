@@ -581,7 +581,9 @@ std::unique_ptr<Pile> Pile::standard() {
 		for (const Card::Name name : Card::numberCardsFrom0) {
 			auto newCard = std::make_unique<Card>(color, name);
 			//1~9每种颜色3张
-			if (newCard->getName() != Card::Name::number_0) standard->push_back(std::move(newCard), 3);
+			if (newCard->getName() != Card::Name::number_0) {
+				standard->push_back(std::move(newCard), 3);
+			}
 			//0每种颜色2张
 			else standard->push_back(std::move(newCard), 2);
 		}
@@ -589,12 +591,11 @@ std::unique_ptr<Pile> Pile::standard() {
 		for (const Card::Name name : Card::actionCards) {
 			auto newCard = std::make_unique<Card>(color, name);
 			//反转，封禁每种颜色3张
-			if (name == Card::Name::action_rev || name == Card::Name::action_skip)
+			if (name == Card::Name::action_rev || name == Card::Name::action_skip) {
 				standard->push_back(std::move(newCard), 3);
+			}
 			//+2每种颜色4张
-			else if (name == Card::Name::action_draw2)
-				standard->push_back(std::move(newCard), 4);
-			else throw;
+			else standard->push_back(std::move(newCard), 4);
 		}
 	}
 
@@ -641,8 +642,8 @@ void Pile::shuffle() {
 // ==================== Packet 序列化 ====================
 sf::Packet& operator<<(sf::Packet& packet, const Card& card) {
 	packet << static_cast<int>(card.getColor())
-		   << static_cast<int>(card.getName())
-		   << static_cast<int>(card.getDiscardReason());
+		<< static_cast<int>(card.getName())
+		<< static_cast<int>(card.getDiscardReason());
 	return packet;
 }
 sf::Packet& operator>>(sf::Packet& packet, Card& card) {
