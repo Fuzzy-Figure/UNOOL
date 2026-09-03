@@ -87,7 +87,9 @@ std::unique_ptr<Card> Card::make(const Color _color, const Name _name) {
 	return std::make_unique<Card>(_color, _name);
 }
 std::unique_ptr<Card> Card::make(const Card& other) {
-	return std::make_unique<Card>(other.getColor(), other.getName());
+	auto c = std::make_unique<Card>(other.getColor(), other.getName());
+	c->setDiscardReason(other.getDiscardReason());
+	return c;
 }
 std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
 	return make(*otherPtr);
@@ -236,6 +238,7 @@ void Card::setName(const Name newName) {
 void Card::set(const Card& other) {
 	setColor(other.getColor());
 	setName(other.getName());
+	setDiscardReason(other.getDiscardReason());
 }
 void Card::set(const Color color, const Name name) {
 	setColor(color);
@@ -343,6 +346,16 @@ std::wstring Card::to_wstring(const Name& name) {
 	}
 }
 
+std::wstring Card::to_wstring(const DiscardReason reason) {
+	switch (reason) {
+	case DiscardReason::use:     return L"打出";
+	case DiscardReason::discard: return L"弃置";
+	case DiscardReason::judge:   return L"判定";
+	case DiscardReason::none:
+	default:                     return L"";
+	}
+}
+
 bool Card::is_number(const Card::Name name) {
 	return name == Name::number_0 || name == Name::number_1
 		|| name == Name::number_2 || name == Name::number_3
@@ -357,6 +370,7 @@ bool Card::is_action(const Card::Name name) {
 bool Card::is_wild(const Card::Name name) {
 	return name == Name::wild_pal || name == Name::wild_draw4;
 }
+
 
 // 友元流输出
 std::ostream& operator<<(std::ostream& ostr, const Card& card) {
@@ -613,6 +627,10 @@ std::unique_ptr<Pile> Pile::standard() {
 }
 void Pile::recycle(Pile& other) {
 	cards = std::move(other.cards);
+	//回收进牌堆，重置入弃牌堆的原因
+	for (auto& card : cards) {
+		card->setDiscardReason(Card::DiscardReason::none);
+	}
 	shuffle();
 }
 void Pile::shuffle() {
@@ -622,14 +640,17 @@ void Pile::shuffle() {
 
 // ==================== Packet 序列化 ====================
 sf::Packet& operator<<(sf::Packet& packet, const Card& card) {
-	packet << static_cast<int>(card.getColor()) << static_cast<int>(card.getName());
+	packet << static_cast<int>(card.getColor())
+		   << static_cast<int>(card.getName())
+		   << static_cast<int>(card.getDiscardReason());
 	return packet;
 }
 sf::Packet& operator>>(sf::Packet& packet, Card& card) {
-	int colorInt, nameInt;
-	if (packet >> colorInt >> nameInt) {
+	int colorInt, nameInt, reasonInt;
+	if (packet >> colorInt >> nameInt >> reasonInt) {
 		card.setColor(static_cast<Card::Color>(colorInt));
 		card.setName(static_cast<Card::Name>(nameInt));
+		card.setDiscardReason(static_cast<Card::DiscardReason>(reasonInt));
 	}
 	return packet;
 }

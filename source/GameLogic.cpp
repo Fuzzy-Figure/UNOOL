@@ -391,8 +391,10 @@ void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 
 
 //返回置入弃牌堆的牌的引用
-Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card) {
-	std::cout << "[" << *card << "] 进入了弃牌堆" << std::endl;
+Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason) {
+	card->setDiscardReason(reason);
+	std::cout << "[" << *card << "](" << unool::string::to_utf8(Card::to_wstring(reason))
+		<< ") 进入了弃牌堆" << std::endl;
 	discardPile->push_front(std::move(card));
 	return discardPile->front();
 }

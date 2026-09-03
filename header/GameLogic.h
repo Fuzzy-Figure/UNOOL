@@ -124,7 +124,7 @@ public:
 #pragma endregion
 
 #pragma region 弃牌堆管理
-	Card& putCardToDiscardPile(std::unique_ptr<Card> card);
+	Card& putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason);
 	std::optional<Card> lastCard() const;
 #pragma endregion
 

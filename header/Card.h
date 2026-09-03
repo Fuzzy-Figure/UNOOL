@@ -26,6 +26,12 @@ public:
 		action_rev, action_skip, action_draw2, wild_pal, wild_draw4,
 		back
 	};
+	enum class DiscardReason {
+		none,   //没进入弃牌堆（手中/牌堆/通用场景默认值）
+		use,    //打出
+		discard,//弃置
+		judge   //判定
+	};
 	using ColorName = std::pair<Color, Name>;
 	struct TupleHash {
 		std::size_t operator()(const ColorName& t) const {
@@ -64,6 +70,7 @@ private:
 	Color color = Color::no;
 	Name name = Name::no;
 	bool effective = true;
+	DiscardReason discardReason = DiscardReason::none;
 
 public:
 #pragma region 构造 / 静态工厂
@@ -95,6 +102,7 @@ public:
 	Color getColor() const;
 	Name getName() const;
 	ColorName getColorName() const;
+	DiscardReason getDiscardReason() const { return discardReason; }
 
 	template<typename... Colors> requires (std::same_as<Colors, Color> && ...)
 		bool is(const Colors... colors) const {
@@ -122,6 +130,7 @@ public:
 #pragma region 属性设置
 	void setColor(const Color newColor);
 	void setName(const Name newName);
+	void setDiscardReason(DiscardReason r) { discardReason = r; }
 	void set(const Card& other);
 	void set(const Color color, const Name name);
 	void set(const ColorName& cn);
@@ -144,6 +153,7 @@ public:
 	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::wstring to_wstring(const Name& name);
+	static std::wstring to_wstring(const DiscardReason reason);
 	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
 	static bool is_number(const Card::Name name);
 	static bool is_action(const Card::Name name);

@@ -138,10 +138,22 @@ void GameRenderer::renderPlayers() {
 
 void GameRenderer::renderDiscardPile() {
 	if (!currentState.discardPile.empty()) {
+		//当前牌（顶牌）
 		const Card& lastCard = currentState.discardPile.front();
 		sf::Vector2f currentCardPos{ config.windowSize.x / 2.0f - config.cardSize.x / 2,
 									 config.windowSize.y / 2.0f - config.cardSize.y / 2 };
 		lastCard.display(*this, currentCardPos, config.cardSize);
+		//下方写 DiscardReason
+		const std::wstring reasonText = Card::to_wstring(lastCard.getDiscardReason());
+		if (!reasonText.empty()) {
+			const sf::Vector2f textSize{ 18, 30 };
+			const float textPad = 8.0f;
+			const sf::Vector2f textPos{
+				currentCardPos.x + config.cardSize.x / 2.0f - textSize.x,
+				currentCardPos.y + config.cardSize.y + textPad
+			};
+			displayText(reasonText, textPos, textSize);
+		}
 
 		// 历史牌：缩小至 60%，紧邻当前牌左侧从新到旧排列（向左展开），垂直居中
 		sf::Vector2f historySize{ config.cardSize.x * 0.6f, config.cardSize.y * 0.6f };
@@ -149,8 +161,19 @@ void GameRenderer::renderDiscardPile() {
 								 config.windowSize.y / 2.0f - historySize.y / 2 };
 		size_t historyCount = currentState.discardPile.size() - 1;
 		if (historyCount > 3) historyCount = 3;
+		const sf::Vector2f historyTextSize{ 14, 24 };
+		const float historyTextPad = 6.0f;
 		for (size_t i = 1; i <= historyCount; ++i) {
-			currentState.discardPile[i].display(*this, historyPos, historySize);
+			const Card& histCard = currentState.discardPile[i];
+			histCard.display(*this, historyPos, historySize);
+			const std::wstring histReason = Card::to_wstring(histCard.getDiscardReason());
+			if (!histReason.empty()) {
+				const sf::Vector2f textPos{
+					historyPos.x + historySize.x / 2.0f - historyTextSize.x,
+					historyPos.y + historySize.y + historyTextPad
+				};
+				displayText(histReason, textPos, historyTextSize);
+			}
 			historyPos.x -= historySize.x;
 		}
 	}
