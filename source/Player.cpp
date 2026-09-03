@@ -246,7 +246,13 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 				hand->setSelectedIndex(clientInput.selectedIndex);
 				//前 instantRefs.size() 个键：触发即时技
 				if (idx < instantRefs.size()) {
-					instantRefs[idx].get().tryActivate(game, *this);
+					ASkillInstantBase& skill = instantRefs[idx].get();
+					const std::size_t confirm = ask(
+						L"是否发动\u3010" + skill.getNameW() + L"\u3011\uFF1F",
+						{ L"是", L"否" }, false);
+					if (confirm == 1) {
+						skill.tryActivate(game, *this);
+					}
 					game.setOperatingPlayer(id);
 					game.broadcastState();
 				}

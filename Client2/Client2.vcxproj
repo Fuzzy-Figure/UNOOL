@@ -55,6 +55,9 @@
     <ClInclude Include="..\header\UserDB.h" />
     <ClInclude Include="..\header\utils.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\client_config.json" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

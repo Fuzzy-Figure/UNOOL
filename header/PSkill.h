@@ -531,18 +531,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-class 招待 : public PSkillImpl<招待> {
-public:
-	招待() : PSkillImpl<招待>(
-		"招待",
-		"限定技，回合开始时，你可以将一张牌交给一名其他角色。",
-		1, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool content(Trigger& trigger) override;
-};
-
 class 追番 : public PSkillImpl<追番> {
 public:
 	追番() : PSkillImpl<追番>(

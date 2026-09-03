@@ -5,7 +5,7 @@ public:
 	装弹() : ASkillInstant<装弹>(
 		"装弹",
 		"限定技，出牌阶段，若你手中没有封禁类牌且手牌数≤9，\n"
-		"你可以将三分之一的手牌变为随机的非数字牌（向下取整）。",
+		"你可以将一半手牌变为随机的非数字牌（向下取整）。",
 		1,
 		TriggerTime::phase_use
 	) {}
@@ -23,6 +23,17 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+
+class 招待 : public ASkillInstant<招待> {
+public:
+	招待() : ASkillInstant<招待>(
+		"招待",
+		"限定技，出牌阶段，你可以将一张牌交给一名其他角色。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
 
 class 八爪 : public ASkillTransform<八爪> {
 public:

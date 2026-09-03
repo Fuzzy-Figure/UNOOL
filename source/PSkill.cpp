@@ -829,19 +829,6 @@ bool 射门::content(Trigger& trigger) {
 }
 
 
-bool 招待::content(Trigger& trigger) {
-	//选角色
-	Player& carrier = trigger.getCarrier();
-	std::optional targetOpt = carrier.chooseOtherPlayer(L"[招待] 选择一名其他角色", true);
-	if (!targetOpt.has_value()) return false;
-	Player& target = targetOpt.value();
-
-	//给牌
-	carrier.chooseToGive(L"选择一张手牌交给" + target.characterNameW(), target, true);
-	return true;
-}
-
-
 // ==================== 技能：追番 ====================
 bool 追番::filter(const Trigger& trigger) const {
 	//先检测手中是否有点数≤5的数字牌

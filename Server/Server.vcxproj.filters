@@ -327,9 +327,6 @@
     <None Include="..\userDatas.json">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\client_config.json">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\server_config.json">
       <Filter>资源文件</Filter>
     </None>

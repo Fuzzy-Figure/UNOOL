@@ -230,7 +230,7 @@ std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_
 	//候选池<=1时无需再ban
 	if (validIndices.size() <= 1) return std::nullopt;
 	const std::wstring title = std::format(L"禁用对方的角色（{}/{}）：", banIndex + 1, banCount);
-	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 30000ms);
+	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 60s);
 	if (banChoice > 0 && banChoice <= validIndices.size()) {
 		const std::size_t targetIdx = validIndices[banChoice - 1];
 		state.bannedIdx[targetId].push_back(targetIdx);

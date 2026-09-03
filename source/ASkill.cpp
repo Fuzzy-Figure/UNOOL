@@ -17,7 +17,7 @@ bool 装弹::content(GameLogic& game, Player& carrier) {
 	std::ranges::sample(
 		hand | std::views::transform([](const auto& cardPtr) { return std::ref(*cardPtr); }),
 		std::back_inserter(cards),
-		unool::math::floor(hand.count() / 3.0),
+		unool::math::floor(hand.count() / 2.0),
 		unool::random::rng
 	);
 	for (Card& c : cards) {
@@ -33,6 +33,17 @@ bool 徒步::content(GameLogic& game, Player& carrier) {
 	if (result.discarded.front().get().isNumber()) {
 		carrier.damage(getCount(), carrier);
 	}
+	return true;
+}
+
+
+// ==================== 技能：招待 ====================
+bool 招待::content(GameLogic& game, Player& carrier) {
+	std::optional targetOpt = carrier.chooseOtherPlayer(L"[招待] 选择一名其他角色", true);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	carrier.chooseToGive(L"选择一张手牌交给" + target.characterNameW(), target, true);
 	return true;
 }
 
