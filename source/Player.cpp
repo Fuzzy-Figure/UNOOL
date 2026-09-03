@@ -385,7 +385,7 @@ Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
 	std::vector discarded = chooseToDiscard(title, num, forced, condition);
 	std::vector drawn = draw(discarded.size());
-	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
 	return RecastResult{ std::move(discarded), std::move(drawn) };
 }
 
