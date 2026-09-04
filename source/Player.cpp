@@ -170,16 +170,20 @@ bool Player::turn() {
 	}
 
 	if (game.isGameOver()) return handEmpty();
+	if (handEmpty()) return true;
 
 	used = phaseUse1();
 	if (game.isGameOver()) return handEmpty();
+	if (handEmpty()) return true;
 
 	if (!used) {
 		phaseDraw();
 		if (game.isGameOver()) return handEmpty();
+		if (handEmpty()) return true;
 		game.broadcastState();
 		phaseUse2();
 		if (game.isGameOver()) return handEmpty();
+		if (handEmpty()) return true;
 	}
 
 PhaseEnd:

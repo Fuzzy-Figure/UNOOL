@@ -1865,3 +1865,8 @@ bool 空空::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+bool 暗忍::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	carrier.damage(1, carrier);
+}

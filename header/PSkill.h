@@ -1007,3 +1007,15 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+class 暗忍 : public PSkillImpl<暗忍> {
+public:
+	暗忍() : PSkillImpl<暗忍>(
+		"暗忍",
+		"锁定技，回合结束时，你失去1点体力并将随机一张手牌变为【封禁】。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(Trigger& trigger) override;
+};
