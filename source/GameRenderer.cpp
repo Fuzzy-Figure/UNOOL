@@ -1,7 +1,6 @@
 #include "../header/GameRenderer.h"
 #include "../header/Card.h"
 #include "../header/Character.h"
-#include "../header/Skill.h"
 #include <algorithm>
 #include <fstream>
 #include <ranges>
@@ -132,7 +131,7 @@ void GameRenderer::renderPlayers() {
 		bool isLocalPlayer = playerState.id == localPlayerId;
 		bool canSelect = isLocalPlayer && canSelectLocal();
 
-		playerState.hand.display(*this, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
+		displayHand(playerState.hand, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
 	}
 }
 
@@ -142,7 +141,7 @@ void GameRenderer::renderDiscardPile() {
 		const Card& lastCard = currentState.discardPile.front();
 		sf::Vector2f currentCardPos{ config.windowSize.x / 2.0f - config.cardSize.x / 2,
 									 config.windowSize.y / 2.0f - config.cardSize.y / 2 };
-		lastCard.display(*this, currentCardPos, config.cardSize);
+		displayCard(lastCard, currentCardPos, config.cardSize);
 		//下方写 DiscardReason（按真实字宽水平居中于卡牌下方）
 		const std::wstring reasonText = Card::to_wstring(lastCard.getDiscardReason());
 		if (!reasonText.empty()) {
@@ -167,7 +166,7 @@ void GameRenderer::renderDiscardPile() {
 		const float historyTextPad = 6.0f;
 		for (size_t i = 1; i <= historyCount; ++i) {
 			const Card& histCard = currentState.discardPile[i];
-			histCard.display(*this, historyPos, historySize);
+			displayCard(histCard, historyPos, historySize);
 			const std::wstring histReason = Card::to_wstring(histCard.getDiscardReason());
 			if (!histReason.empty()) {
 				const sf::Vector2f actualTextSize = textMgr.measureText(histReason, static_cast<unsigned int>(historyTextSize.y));
@@ -316,6 +315,40 @@ void GameRenderer::displayImageInCenter(const std::string& path, const sf::Vecto
 	imageMgr.displayImage(path, pos, size);
 }
 
+void GameRenderer::displayCard(const Card& card, const sf::Vector2f& pos, const sf::Vector2f& cardSize) {
+	displayImage(card.getImagePath(), pos, cardSize);
+}
+
+void GameRenderer::displayCardInCenter(const Card& card, const sf::Vector2f& cardSize) {
+	displayImageInCenter(card.getImagePath(), cardSize);
+}
+
+void GameRenderer::displayHand(const Hand& hand, const sf::Vector2f& pos, const sf::Vector2f& cardSize,
+							   const sf::Vector2f& pointerSize, bool canSelect) {
+	bool displayPointer = pointerSize != sf::Vector2f{ 0, 0 };
+	const std::size_t foldCardWidth = static_cast<std::size_t>(cardSize.x / 3);
+	std::size_t dx = 0;
+	std::size_t selectedPos = 0;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		displayCard(hand[i], { pos.x + dx, pos.y }, cardSize);
+		if (displayPointer && hand.getSelectedIndex() == i) {
+			selectedPos = dx;
+			dx += static_cast<std::size_t>(cardSize.x);
+		}
+		else {
+			dx += foldCardWidth;
+		}
+	}
+	if (displayPointer && !hand.empty() && canSelect) {
+		displayImage(
+			"cards/pointer/默认.jpg",
+			{ pos.x + selectedPos + cardSize.x / 2 - pointerSize.x / 2,
+			pos.y + cardSize.y },
+			pointerSize
+		);
+	}
+}
+
 bool GameRenderer::windowIsOpen() const {
 	return window->isOpen();
 }
@@ -329,8 +362,23 @@ std::optional<sf::Event> GameRenderer::pollEvent() {
 }
 
 void GameRenderer::setChoicePrompt(const Choice& prompt) {
-	choice = prompt;
-	countdownClock.restart();
+	const bool isSameAsk = choice.has_value()
+		&& choice->title == prompt.title
+		&& choice->forced == prompt.forced
+		&& choice->totalPages == prompt.totalPages;
+	if (isSameAsk) {
+		// 翻页 / 错误提示更新：保留原有倒计时，仅刷新可变字段
+		choice->options = prompt.options;
+		choice->currentPage = prompt.currentPage;
+		choice->totalPages = prompt.totalPages;
+		choice->errorMsg = prompt.errorMsg;
+		// timeoutMs / title / forced 保持不变
+	}
+	else {
+		// 新的 ask：完整赋值并重启倒计时
+		choice = prompt;
+		countdownClock.restart();
+	}
 }
 
 void GameRenderer::clearChoicePrompt() {

@@ -107,6 +107,12 @@ public:
 	void displayImageInCenter(const std::string& path,
 							  const sf::Vector2f& size);
 
+	//显示卡牌
+	void displayCard(const Card& card, const sf::Vector2f& pos, const sf::Vector2f& cardSize);
+	void displayCardInCenter(const Card& card, const sf::Vector2f& cardSize);
+	void displayHand(const Hand& hand, const sf::Vector2f& pos, const sf::Vector2f& cardSize,
+					 const sf::Vector2f& pointerSize = { 0,0 }, bool canSelect = false);
+
 	bool windowIsOpen() const;
 	void closeWindow();
 	std::optional<sf::Event> pollEvent();

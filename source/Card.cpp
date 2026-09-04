@@ -1,6 +1,4 @@
 #include "../header/Card.h"
-#include "../header/GameRenderer.h"
-#include "../header/ImageManager.h"
 #include "../header/utils.h"
 
 
@@ -247,14 +245,6 @@ void Card::set(const Color color, const Name name) {
 void Card::set(const ColorName& cn) {
 	setColor(cn.first);
 	setName(cn.second);
-}
-
-// 显示
-void Card::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize) const {
-	renderer.displayImage(getImagePath(), pos, cardSize);
-}
-void Card::displayInCenter(GameRenderer& renderer, const sf::Vector2f& cardSize) const {
-	renderer.displayImageInCenter(getImagePath(), cardSize);
 }
 
 // 效果控制
@@ -504,32 +494,6 @@ void Hand::print() const {
 	if (!empty()) std::cout << "；当前选择了第" << getSelectedIndex() << "张牌：" << getSelectedCard();
 	std::cout << std::endl;
 }
-void Hand::display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize, bool canSelect) const {
-	bool displayPointer = pointerSize != sf::Vector2f{ 0, 0 };
-	const std::size_t foldCardWidth = static_cast<std::size_t>(cardSize.x / 3);
-	std::size_t dx = 0;
-	std::size_t selectedPos = 0;
-	for (std::size_t i = 0; i < count(); ++i) {
-		cards[i]->display(renderer, { pos.x + dx, pos.y }, cardSize);
-		if (displayPointer && selectedIndex == i) {
-			selectedPos = dx;
-			dx += static_cast<std::size_t>(cardSize.x);
-		}
-		else {
-			dx += foldCardWidth;
-		}
-	}
-
-	if (displayPointer && !empty() && canSelect) {
-		renderer.displayImage(
-			"cards/pointer/默认.jpg",
-			{ pos.x + selectedPos + cardSize.x / 2 - pointerSize.x / 2,
-			pos.y + cardSize.y },
-			pointerSize
-		);
-	}
-}
-
 // 工具方法
 std::size_t Hand::value() const {
 	std::size_t value = 0;

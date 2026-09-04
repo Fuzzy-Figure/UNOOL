@@ -85,12 +85,6 @@ public:
 	void gainCard(std::unique_ptr<Card> card);
 	Card& getCardByIndex(const std::size_t index) { return hand->getCardByIndex(index); }
 	void printHand() const { hand->print(); }
-	void displayHand(GameRenderer& renderer,
-					 const sf::Vector2f& startPos,
-					 const sf::Vector2f& cardSize,
-					 const sf::Vector2f& pointerSize = { 0,0 }) const {
-		hand->display(renderer, startPos, cardSize, pointerSize);
-	}
 #pragma endregion
 
 #pragma region 游戏逻辑

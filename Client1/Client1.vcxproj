@@ -39,17 +39,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\AccountProtocol.h" />
-    <ClInclude Include="..\header\ASkill.h" />
     <ClInclude Include="..\header\Card.h" />
     <ClInclude Include="..\header\Character.h" />
     <ClInclude Include="..\header\Effect.h" />
-    <ClInclude Include="..\header\GameLogic.h" />
     <ClInclude Include="..\header\GameRenderer.h" />
     <ClInclude Include="..\header\GameState.h" />
     <ClInclude Include="..\header\ImageManager.h" />
     <ClInclude Include="..\header\Player.h" />
-    <ClInclude Include="..\header\PSkill.h" />
-    <ClInclude Include="..\header\Skill.h" />
     <ClInclude Include="..\header\Socket.h" />
     <ClInclude Include="..\header\TextManager.h" />
     <ClInclude Include="..\header\UserDB.h" />

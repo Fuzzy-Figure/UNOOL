@@ -9,7 +9,6 @@
 #include "Effect.h"
 #include "utils.h"
 
-class GameRenderer;
 class GameLogic;
 
 
@@ -136,11 +135,6 @@ public:
 	void set(const ColorName& cn);
 #pragma endregion
 
-#pragma region 显示
-	void display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize) const;
-	void displayInCenter(GameRenderer& renderer, const sf::Vector2f& cardSize) const;
-#pragma endregion
-
 #pragma region 效果控制
 	void applyEffect(GameLogic& game, Player& source, Player& target);
 	void cancelEffect() { effective = false; }
@@ -248,7 +242,6 @@ public:
 #pragma region 排序 / 输出
 	void sort();
 	void print() const;
-	void display(GameRenderer& renderer, const sf::Vector2f& pos, const sf::Vector2f& cardSize, const sf::Vector2f& pointerSize = { 0,0 }, bool canSelect = false) const;
 #pragma endregion
 
 #pragma region 工具方法

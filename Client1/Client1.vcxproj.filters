@@ -80,9 +80,6 @@
     <ClInclude Include="..\header\Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\Skill.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\Player.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -95,9 +92,6 @@
     <ClInclude Include="..\header\GameRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\GameLogic.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\Effect.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -108,12 +102,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\header\AccountProtocol.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\ASkill.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\PSkill.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
