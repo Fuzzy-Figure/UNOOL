@@ -54,6 +54,10 @@ public:
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	void resetSkills() { character->resetSkills(); }
+	void addSkill(std::unique_ptr<ASkillInstantBase>   skill) { character->addSkill(std::move(skill)); }
+	void addSkill(std::unique_ptr<ASkillTransformBase> skill) { character->addSkill(std::move(skill)); }
+	void addSkill(std::unique_ptr<PSkill>              pSkill){ character->addSkill(std::move(pSkill)); }
+	void removeSkill(const std::string& name)                 { character->removeSkill(name); }
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }
 #pragma endregion
 

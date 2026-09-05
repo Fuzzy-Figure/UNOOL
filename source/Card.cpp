@@ -141,14 +141,14 @@ Card::ColorName Card::randomCard(const std::function<bool(const Card&)>& conditi
 
 	// Fallback：无法提取成员函数指针（如带捕获的 Lambda）
 	// 直接算，不缓存（或者你也可以选择抛异常/警告）
-	std::vector<ColorName> temp;
+	std::vector<ColorName> candidatePool;
 	for (const auto& cn : all) {
-		if (condition(Card(cn))) temp.push_back(cn);
+		if (condition(Card(cn))) candidatePool.push_back(cn);
 	}
-	if (temp.empty()) {
+	if (candidatePool.empty()) {
 		throw std::runtime_error("randomCard: 没有牌满足该条件");
 	}
-	return unool::random::randomGet(temp);
+	return unool::random::randomGet(candidatePool);
 }
 
 

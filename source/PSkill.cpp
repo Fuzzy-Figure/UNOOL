@@ -222,24 +222,20 @@ bool 神木::content(Trigger& trigger) {
 
 // ==================== 技能：雷剑 ====================
 bool 雷剑::filter(const Trigger& trigger) const {
-	return trigger.getCard().getName() == Card::Name::action_rev;
+	return trigger.getCard().is(Card::Name::action_rev);
 }
 bool 雷剑::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	Card& card = trigger.getCard();
 	Card::Color color = card.getColor();
 
-	auto discarded = carrier.chooseToDiscard(
-		L"弃置一张" + Card::to_wstring(color) + L"色数字牌", 1,
-		false, [color](const Card& c)->bool {
-		return c.isNumber() && c.getColor() == color;
-	});
+	auto discarded = carrier.chooseToDiscard(L"弃置一张数字牌", 1, false, &Card::isNumber);
 
 	if (!discarded.empty()) {
 		std::size_t value = discarded.front().get().value();
 		carrier.recover(value);
 		std::cout << "<技能> " << carrier.characterName()
-			<< "发动雷剑，弃置 [" << discarded.front().get() << "] 并回复" << value << "点体力！" << std::endl;
+			<< "发动雷剑，弃置 [" << discarded.front().get() << "] 并回复" << value << "点体力！！！！！！！！！！！！！" << std::endl;
 		trigger.getGame().broadcastState();
 		return true;
 	}
@@ -1820,9 +1816,11 @@ bool 没座::content(Trigger& trigger) {
 		return c.is(Card::Color::red);
 	});
 	if (!hasRed) {
-		//没红牌：摸一张
-		carrier.draw(1);
-		std::cout << "<技能> " << carrier.characterName() << "发动没座，摸了一张牌" << std::endl;
+		//没红牌：随机获得一张红色牌
+		carrier.gainCard(std::make_unique<Card>(Card::randomCard([](const Card& c) {
+			return c.is(Card::Color::red);
+		})));
+		std::cout << "<技能> " << carrier.characterName() << "发动没座，随机获得了一张红牌" << std::endl;
 	}
 	else {
 		//有红牌：可弃一张非红色牌
@@ -1866,7 +1864,41 @@ bool 空空::content(Trigger& trigger) {
 	return true;
 }
 
+// ==================== 技能：暗忍 ====================
+bool 暗忍::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handInclude(&Card::isNotWild);
+}
+
 bool 暗忍::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	carrier.damage(1, carrier);
+	//收集非万能牌索引（颜色不变，仅改牌名为封禁）
+	Hand& hand = carrier.getHand();
+	std::vector<std::size_t> nonWildIndices;
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].isNotWild()) nonWildIndices.push_back(i);
+	}
+	if (!nonWildIndices.empty()) {
+		std::size_t pick = nonWildIndices[unool::random::randomSize_t(0, nonWildIndices.size() - 1)];
+		Card& c = carrier.getCardByIndex(pick);
+		c.setName(Card::Name::action_skip);
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力并将一张非万能牌变为【封禁】" << std::endl;
+	}
+	else {
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力（无非万能牌可变）" << std::endl;
+	}
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+// ==================== 技能：暗忍_改 ====================
+bool 暗忍_改::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	if (!carrier.handEmpty()) {
+		Card& c = carrier.getCardByIndex(unool::random::randomSize_t(0, carrier.handCount() - 1));
+		c.setName(Card::Name::action_skip);
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍_改，将一张手牌变为【封禁】" << std::endl;
+	}
+	trigger.getGame().broadcastState();
+	return true;
 }

@@ -106,3 +106,14 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+class 舞爪 : public ASkillInstant<舞爪> {
+public:
+	舞爪() : ASkillInstant<舞爪>(
+		"舞爪",
+		"限定技，出牌阶段，你可以将手牌摸至十张并回复两倍摸牌数点体力，然后本局【暗忍】移除失去体力的效果。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

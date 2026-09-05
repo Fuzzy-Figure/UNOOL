@@ -165,7 +165,7 @@ class 雷剑 : public PSkillImpl<雷剑> {
 public:
 	雷剑() : PSkillImpl<雷剑>(
 		"雷剑",
-		"你打出【反转】后，可弃置一张同色数字牌并回复此牌分值点体力。",
+		"你打出【反转】后，可弃置一张数字牌并回复此牌分值点体力。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -986,7 +986,7 @@ class 没座 : public PSkillImpl<没座> {
 public:
 	没座() : PSkillImpl<没座>(
 		"没座",
-		"回合开始时，若你手中没有红色牌，你摸一张牌（手牌数为1时不触发）；"
+		"回合开始时，若你手中没有红色牌，你随机获得一张红色牌（手牌数为1时不触发）；"
 		"若你手中有红色牌，你可以弃置一张其他颜色的牌。",
 		unlimited, true,
 		TriggerPlayer::self, TriggerTime::phase_begin
@@ -1012,7 +1012,21 @@ class 暗忍 : public PSkillImpl<暗忍> {
 public:
 	暗忍() : PSkillImpl<暗忍>(
 		"暗忍",
-		"锁定技，回合结束时，你失去1点体力并将随机一张手牌变为【封禁】。",
+		"锁定技，回合结束时，你失去1点体力并将随机一张非万能牌变为【封禁】（颜色不变）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//暗忍_改：移除失体力效果后由【舞爪】替换【暗忍】所得，仅将随机一张手牌变为【封禁】
+class 暗忍_改 : public PSkillImpl<暗忍_改> {
+public:
+	暗忍_改() : PSkillImpl<暗忍_改>(
+		"暗忍",
+		"锁定技，回合结束时，你将随机一张手牌变为【封禁】。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end

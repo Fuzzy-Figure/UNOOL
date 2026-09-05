@@ -1,5 +1,6 @@
 #include "../header/ASkill.h"
 #include "../header/GameLogic.h"
+#include "../header/PSkill.h"
 #include "../header/utils.h"
 
 
@@ -207,6 +208,19 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 			target, true
 		);
 	}
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：舞爪 ====================
+bool 舞爪::content(GameLogic& game, Player& carrier) {
+	auto drawn = carrier.drawTo(10, Player::DrawReason::skill);
+	carrier.recover(2 * drawn.size());
+	carrier.removeSkill("暗忍");
+	carrier.addSkill(暗忍_改::make());
+	std::cout << "<技能> " << carrier.characterName() << "发动舞爪，摸"
+		<< drawn.size() << "张，回复" << (2 * drawn.size()) << "点体力，【暗忍】移除失体力效果" << std::endl;
 	game.broadcastState();
 	return true;
 }
