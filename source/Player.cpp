@@ -252,7 +252,7 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 				if (idx < instantRefs.size()) {
 					ASkillInstantBase& skill = instantRefs[idx].get();
 					const std::size_t confirm = ask(
-						L"是否发动\u3010" + skill.getNameW() + L"\u3011\uFF1F",
+						L"是否发动【" + skill.getNameW() + L"【？",
 						{ L"是", L"否" }, false);
 					if (confirm == 1) {
 						skill.tryActivate(game, *this);

@@ -1033,3 +1033,22 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
+
+//治病：其他角色首次打出某种牌名的非数字牌时，大中医三选一（无效/弃牌/摸牌），剩余多选项则移除本次所选
+class 治病 : public PSkillImpl<治病> {
+	std::unordered_set<Card::Name> playedNames;   //本局已触发过的非数字牌名
+	std::vector<std::size_t> options{ 1, 2, 3 };    //剩余可选项编号
+public:
+	治病() : PSkillImpl<治病>(
+		"治病",
+		"锁定技，其他角色首次打出一种牌名的非数字牌时，你选择一项：\n"
+		"1.此牌无效；2.你弃置一张牌；3.其摸一张牌。\n"
+		"若此时剩余多个选项，移除你本次选择的选项。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};

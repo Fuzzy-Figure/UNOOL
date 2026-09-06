@@ -7,7 +7,8 @@ bool 粪怒::filter(const Trigger& trigger) const {
 }
 bool 粪怒::content(Trigger& trigger) {
 	trigger.getPlayer().draw(
-		std::min(trigger.getCarrier().handCount(), 5ull)
+		std::min(trigger.getCarrier().handCount(), 5ull),
+		Player::DrawReason::skill
 	);
 	return true;
 }
@@ -19,7 +20,7 @@ bool 隐身::filter(const Trigger& trigger) const {
 }
 bool 隐身::content(Trigger& trigger) {
 	trigger.getCard().cancelEffect();
-	trigger.getSource().draw(1);
+	trigger.getSource().draw(1, Player::DrawReason::skill);
 	return true;
 }
 
@@ -367,11 +368,11 @@ bool 锐刻::content(Trigger& trigger) {
 	Player& target = candidates[targetChoice - 1].get();
 
 	if (choice == 1) {
-		target.draw(1);
+		target.draw(1, Player::DrawReason::skill);
 		std::cout << "<技能> " << carrier.characterName() << "发动锐刻，令" << target.characterName() << "摸1张牌" << std::endl;
 	}
 	else {
-		target.draw(5);
+		target.draw(5, Player::DrawReason::skill);
 		disabled = true;
 		std::cout << "<技能> " << carrier.characterName() << "发动锐刻，令" << target.characterName()
 			<< "摸5张牌，失去此技能至本局结束" << std::endl;
@@ -383,7 +384,7 @@ bool 锐刻::content(Trigger& trigger) {
 
 // ==================== 技能：巨富 ====================
 bool 巨富::content(Trigger& trigger) {
-	trigger.getCarrier().draw(4); //初始8张 + 4张 = 12张
+	trigger.getCarrier().draw(4, Player::DrawReason::skill); //初始8张 + 4张 = 12张
 	trigger.getGame().broadcastState();
 	return true;
 }
@@ -645,7 +646,7 @@ bool 过江::filter(const Trigger& trigger) const {
 	return trigger.getCard().is(Card::Name::action_draw2);
 }
 bool 过江::content(Trigger& trigger) {
-	trigger.getSource().draw(2);
+	trigger.getSource().draw(2, Player::DrawReason::skill);
 	return true;
 }
 
@@ -790,11 +791,11 @@ bool 光合::filter(const Trigger& trigger) const {
 bool 光合::content(Trigger& trigger) {
 	Card& card = trigger.getCarrier().judge();
 	if (card.isNumber()) {
-		trigger.getSource().draw(1);
+		trigger.getSource().draw(1, Player::DrawReason::skill);
 	}
 	else if (card.isAction()) {
 		trigger.getCard().cancelEffect();
-		if (trigger.getCard().is(Card::Name::action_draw2)) trigger.getCarrier().draw(2);
+		if (trigger.getCard().is(Card::Name::action_draw2)) trigger.getCarrier().draw(2, Player::DrawReason::skill);
 	}
 	return true;
 }
@@ -818,7 +819,7 @@ bool 射门::content(Trigger& trigger) {
 			target.chooseToDiscard(L"[射门] 弃置一张牌", 1, true);
 		}
 		else {
-			target.draw(1);
+			target.draw(1, Player::DrawReason::skill);
 		}
 	}
 	return true;
@@ -1220,7 +1221,7 @@ bool 迷烟::content(Trigger& trigger) {
 		return c.getColor() == card.getColor() || c.isWild();
 	});
 	if (discard.size() == 0) { //没弃牌，摸一张
-		target.draw(1);
+		target.draw(1, Player::DrawReason::skill);
 	}
 	return true;
 }
@@ -1857,7 +1858,7 @@ bool 空空::content(Trigger& trigger) {
 		carrier.discardByIndex(idx);
 	}
 	//摸等量牌（重铸）
-	carrier.draw(redIndices.size());
+	carrier.draw(redIndices.size(), Player::DrawReason::skill);
 	std::cout << "<技能> " << carrier.characterName() << "发动空空，重铸了"
 		<< redIndices.size() << "张红色牌" << std::endl;
 	game.broadcastState();
@@ -1904,11 +1905,72 @@ bool 暗忍_改::content(Trigger& trigger) {
 		std::size_t pick = nonWildIndices[unool::random::randomSize_t(0, nonWildIndices.size() - 1)];
 		Card& c = carrier.getCardByIndex(pick);
 		c.setName(Card::Name::action_skip);
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力并将一张非万能牌变为【封禁】" << std::endl;
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍_改，将一张非万能牌变为【封禁】" << std::endl;
 	}
 	else {
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力（无非万能牌可变）" << std::endl;
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍_改（无非万能牌可变）" << std::endl;
 	}
 	trigger.getGame().broadcastState();
 	return true;
+}
+
+
+// ==================== 技能：治病 ====================
+bool 治病::filter(const Trigger& trigger) const {
+	const Card& c = trigger.getCard();
+	if (!c.isNotNumber()) return false;
+	return !playedNames.contains(c.getName());
+}
+
+bool 治病::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Player& player = trigger.getPlayer();
+	Card& card = trigger.getCard();
+
+	//记录该牌名已首次触发
+	playedNames.insert(card.getName());
+
+	//构建当前剩余选项文字
+	std::vector<std::wstring> optionTexts;
+	for (std::size_t opt : options) {
+		switch (opt) {
+		case 1: optionTexts.emplace_back(L"此牌无效"); break;
+		case 2: optionTexts.emplace_back(L"你弃置一张牌"); break;
+		case 3: optionTexts.emplace_back(L"其摸一张牌"); break;
+		}
+	}
+
+	std::size_t choiceIdx = carrier.ask(L"【治病】选择一项：", optionTexts, true);
+	std::size_t chosenOpt = options[choiceIdx];
+
+	switch (chosenOpt) {
+	case 1: //此牌无效
+		card.cancelEffect();
+		std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
+			<< player.characterName() << "打出的" << card.toString() << "无效" << std::endl;
+		break;
+	case 2: //你弃置一张牌
+		carrier.chooseToDiscard(L"【治病】弃置一张牌", 1, true);
+		std::cout << "<技能> " << carrier.characterName() << "发动治病，弃置一张牌" << std::endl;
+		break;
+	case 3: //其摸一张牌
+		player.draw(1, Player::DrawReason::skill);
+		std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
+			<< player.characterName() << "摸一张牌" << std::endl;
+		break;
+	}
+
+	//若此时剩余多个选项，移除本次所选
+	if (options.size() > 1) {
+		options.erase(options.begin() + choiceIdx);
+	}
+
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+void 治病::reset() {
+	PSkill::reset();
+	playedNames.clear();
+	options = { 1, 2, 3 };
 }
