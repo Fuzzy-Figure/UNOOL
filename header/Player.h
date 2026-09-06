@@ -30,6 +30,18 @@ private:
 	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
 	sf::Keyboard::Scancode getInput() const { return currentInput; }
 	opt_ref<Card> chooseToUse(ASkill::TriggerTime phase = ASkill::TriggerTime::never);
+	//收集当前阶段可发动的即时技与转换技
+	void collectAvailableSkills(ASkill::TriggerTime phase,
+								std::vector<ref<ASkillInstantBase>>& instantRefs,
+								std::vector<ref<ASkillTransformBase>>& transformRefs);
+	//处理数字键1-9：即时技发动 / 转换技切换；返回true表示已处理（continue）
+	bool handleDigitKey(sf::Keyboard::Scancode input,
+						const std::vector<ref<ASkillInstantBase>>& instantRefs,
+						const std::vector<ref<ASkillTransformBase>>& transformRefs,
+						ASkillTransformBase*& activeMode);
+	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
+	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
+											 ASkillTransformBase* activeMode);
 
 public:
 	std::optional<std::size_t> chooseCard(std::function<bool(const Card&)> condition,
@@ -56,8 +68,8 @@ public:
 	void resetSkills() { character->resetSkills(); }
 	void addSkill(std::unique_ptr<ASkillInstantBase>   skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<ASkillTransformBase> skill) { character->addSkill(std::move(skill)); }
-	void addSkill(std::unique_ptr<PSkill>              pSkill){ character->addSkill(std::move(pSkill)); }
-	void removeSkill(const std::string& name)                 { character->removeSkill(name); }
+	void addSkill(std::unique_ptr<PSkill>              pSkill) { character->addSkill(std::move(pSkill)); }
+	void removeSkill(const std::string& name) { character->removeSkill(name); }
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }
 #pragma endregion
 
@@ -73,7 +85,7 @@ public:
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
 	bool hasPSkill(const std::string& name) const { return character->hasPSkill(name); }
 	opt_ref<PSkill> findPSkill(const std::string& name) { return character->findPSkill(name); }
-	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return character->getInstantSkills(); }
+	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
 #pragma endregion
 
@@ -127,9 +139,9 @@ public:
 		std::vector<ref<Card>> drawn;
 	};
 	RecastResult chooseToRecast(const std::wstring& title,
-						const std::size_t num, const bool forced,
-						const std::function<bool(const Card&)>& condition
-						= unool::alwaysTrue);
+								const std::size_t num, const bool forced,
+								const std::function<bool(const Card&)>& condition
+								= unool::alwaysTrue);
 	void decree(const std::wstring& title,
 				const std::size_t num, const bool forced,
 				const std::function<bool(const Card&)>& condition

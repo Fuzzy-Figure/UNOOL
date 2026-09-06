@@ -986,10 +986,10 @@ class 没座 : public PSkillImpl<没座> {
 public:
 	没座() : PSkillImpl<没座>(
 		"没座",
-		"回合开始时，若你手中没有红色牌，你随机获得一张红色牌（手牌数为1时不触发）；"
+		"回合结束时，若你手中没有红色牌，你随机获得一张红色牌（手牌数为1时不触发）；"
 		"若你手中有红色牌，你可以弃置一张其他颜色的牌。",
 		unlimited, true,
-		TriggerPlayer::self, TriggerTime::phase_begin
+		TriggerPlayer::self, TriggerTime::phase_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -1000,9 +1000,9 @@ class 空空 : public PSkillImpl<空空> {
 public:
 	空空() : PSkillImpl<空空>(
 		"空空",
-		"锁定技，回合结束时，你重铸手中所有红色牌。",
+		"锁定技，回合开始时，你重铸手中所有红色牌。",
 		unlimited, true,
-		TriggerPlayer::self, TriggerTime::phase_end
+		TriggerPlayer::self, TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
