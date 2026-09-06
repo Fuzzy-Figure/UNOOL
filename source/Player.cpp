@@ -261,25 +261,14 @@ void Player::collectAvailableSkills(ASkill::TriggerTime phase,
 }
 
 bool Player::handleDigitKey(sf::Keyboard::Scancode input,
-							const std::vector<ref<ASkillInstantBase>>& instantRefs,
-							const std::vector<ref<ASkillTransformBase>>& transformRefs,
-							ASkillTransformBase*& activeMode) {
-	std::size_t digit = 0;
-	switch (input) {
-	case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: digit = 1; break;
-	case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: digit = 2; break;
-	case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: digit = 3; break;
-	case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: digit = 4; break;
-	case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: digit = 5; break;
-	case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: digit = 6; break;
-	case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: digit = 7; break;
-	case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: digit = 8; break;
-	case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: digit = 9; break;
-	default: return false;
-	}
+	const std::vector<ref<ASkillInstantBase>>& instantRefs,
+	const std::vector<ref<ASkillTransformBase>>& transformRefs,
+	ASkillTransformBase*& activeMode) {
+	auto digit = digitFromScancode(input);
+	if (!digit.has_value() || digit.value() == 0) return false;
 
 	ServerNetwork& network = game.getNetwork();
-	std::size_t idx = digit - 1;  //0-based
+	std::size_t idx = digit.value() - 1;  //0-based
 	//前 instantRefs.size() 个键：触发即时技
 	if (idx < instantRefs.size()) {
 		ASkillInstantBase& skill = instantRefs[idx].get();
@@ -550,6 +539,17 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		network.sendPlayerChoice(id, title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages);
 	};
 
+	//生成"超出范围"错误提示（分页/非分页复用，消除重复）
+	auto rangeErrorMsg = [&]() -> std::wstring {
+		const std::wstring minOpt = forced ? L"1" : L"0";
+		if (usePaging) {
+			return L"超出范围，请输入" + minOpt + L"-" +
+				std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
+				L"范围内的数字（<-->翻页）";
+		}
+		return L"超出范围，请输入" + minOpt + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
+	};
+
 	sendPage();
 
 	sf::Clock clock;
@@ -590,106 +590,32 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 			continue;
 		}
 
-		std::size_t choice = 0;
-		bool isValidDigit = false;
-
-		switch (input) {
-		case sf::Keyboard::Scancode::Num0:
-		case sf::Keyboard::Scancode::Numpad0:
-			choice = 0;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num1:
-		case sf::Keyboard::Scancode::Numpad1:
-			choice = 1;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num2:
-		case sf::Keyboard::Scancode::Numpad2:
-			choice = 2;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num3:
-		case sf::Keyboard::Scancode::Numpad3:
-			choice = 3;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num4:
-		case sf::Keyboard::Scancode::Numpad4:
-			choice = 4;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num5:
-		case sf::Keyboard::Scancode::Numpad5:
-			choice = 5;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num6:
-		case sf::Keyboard::Scancode::Numpad6:
-			choice = 6;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num7:
-		case sf::Keyboard::Scancode::Numpad7:
-			choice = 7;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num8:
-		case sf::Keyboard::Scancode::Numpad8:
-			choice = 8;
-			isValidDigit = true;
-			break;
-		case sf::Keyboard::Scancode::Num9:
-		case sf::Keyboard::Scancode::Numpad9:
-			choice = 9;
-			isValidDigit = true;
-			break;
-		default:
-			isValidDigit = false;
-			break;
-		}
-
-		if (usePaging && isValidDigit) {
-			if (choice == 0) {
-				// 0 = 取消，保持不变
-			}
-			else {
-				const std::size_t realIndex = currentPage * PER_PAGE + (choice - 1);
-				if (realIndex >= options.size()) {
-					errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
-						std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-						L"范围内的数字（<-->翻页）";
-					sendPage();
-					continue;
-				}
-				choice = realIndex + 1;
-			}
-		}
-
-		if (!isValidDigit) {
-			if (usePaging) {
-				errorMsg = L"无效输入，请输入数字0-9或使用<-->翻页";
-			}
-			else {
-				errorMsg = L"无效输入，请输入数字0-9";
-			}
+		//数字键解析
+		auto digit = digitFromScancode(input);
+		if (!digit.has_value()) {
+			errorMsg = usePaging ? L"无效输入，请输入数字0-9或使用<-->翻页"
+								 : L"无效输入，请输入数字0-9";
 			sendPage();
 			continue;
+		}
+		std::size_t choice = digit.value();
+
+		//分页下换算真实索引（0 表示取消，不换算）
+		if (usePaging && choice != 0) {
+			const std::size_t realIndex = currentPage * PER_PAGE + (choice - 1);
+			if (realIndex >= options.size()) {
+				errorMsg = rangeErrorMsg();
+				sendPage();
+				continue;
+			}
+			choice = realIndex + 1;
 		}
 
 		if (choice > options.size()) {
-			if (usePaging) {
-				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" +
-					std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-					L"范围内的数字（<-->翻页）";
-			}
-			else {
-				errorMsg = L"超出范围，请输入" + std::wstring(forced ? L"1" : L"0") + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
-			}
+			errorMsg = rangeErrorMsg();
 			sendPage();
 			continue;
 		}
-
 		if (forced && choice == 0) {
 			errorMsg = L"必须选择一个选项，请重新输入";
 			sendPage();
@@ -701,6 +627,22 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		if (choice != 0)
 			std::cout << unool::string::to_utf8(options[choice - 1]) << std::endl;
 		return choice;
+	}
+}
+
+std::optional<std::size_t> Player::digitFromScancode(sf::Keyboard::Scancode input) {
+	switch (input) {
+	case sf::Keyboard::Scancode::Num0: case sf::Keyboard::Scancode::Numpad0: return 0;
+	case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: return 1;
+	case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: return 2;
+	case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: return 3;
+	case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: return 4;
+	case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: return 5;
+	case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: return 6;
+	case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: return 7;
+	case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: return 8;
+	case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: return 9;
+	default: return std::nullopt;
 	}
 }
 
