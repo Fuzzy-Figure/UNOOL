@@ -1081,7 +1081,7 @@ public:
 	连营(std::shared_ptr<std::set<Card::Type>> _triggered)
 		: PSkillImpl<连营>(
 			"连营",
-			"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再获得一张此类别的牌。",
+			"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再随机获得一张此类别的牌。",
 			unlimited, false,
 			TriggerPlayer::self,
 			TriggerTime::lose_card_end,
