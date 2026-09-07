@@ -1,26 +1,26 @@
 {
-	"1": {
-		"losses": 12,
-		"password": "1",
-		"points": 213,
-		"wins": 10
-	},
-	"2": {
-		"losses": 10,
-		"password": "2",
-		"points": 122,
-		"wins": 12
-	},
-	"Lazer": {
-		"losses": 67,
-		"password": "114",
-		"points": 991,
-		"wins": 73
-	},
-	"fuzzy figure": {
-		"losses": 73,
-		"password": "123",
-		"points": 968,
-		"wins": 67
-	}
+  "1": {
+    "losses": 12,
+    "password": "1",
+    "points": 213,
+    "wins": 10
+  },
+  "2": {
+    "losses": 10,
+    "password": "2",
+    "points": 122,
+    "wins": 12
+  },
+  "Lazer": {
+    "losses": 68,
+    "password": "114",
+    "points": 1003,
+    "wins": 74
+  },
+  "fuzzy figure": {
+    "losses": 74,
+    "password": "123",
+    "points": 978,
+    "wins": 68
+  }
 }

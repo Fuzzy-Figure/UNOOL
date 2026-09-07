@@ -1940,7 +1940,7 @@ bool 治病::content(Trigger& trigger) {
 		}
 	}
 
-	std::size_t choiceIdx = carrier.ask(L"【治病】选择一项：", optionTexts, true);
+	std::size_t choiceIdx = carrier.ask(L"【治病】对方打出了" + card.toWString() + L"，选择一项：", optionTexts, true);
 	std::size_t chosenOpt = options[choiceIdx];
 
 	switch (chosenOpt) {
