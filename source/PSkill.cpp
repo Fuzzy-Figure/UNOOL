@@ -1941,7 +1941,7 @@ bool 治病::content(Trigger& trigger) {
 	}
 
 	std::size_t choiceIdx = carrier.ask(L"【治病】对方打出了" + card.toWString() + L"，选择一项：", optionTexts, true);
-	std::size_t chosenOpt = options[choiceIdx];
+	std::size_t chosenOpt = options[choiceIdx - 1];
 
 	switch (chosenOpt) {
 	case 1: //此牌无效
@@ -1962,7 +1962,7 @@ bool 治病::content(Trigger& trigger) {
 
 	//若此时剩余多个选项，移除本次所选
 	if (options.size() > 1) {
-		options.erase(options.begin() + choiceIdx);
+		options.erase(options.begin() + (choiceIdx - 1));
 	}
 
 	trigger.getGame().broadcastState();
