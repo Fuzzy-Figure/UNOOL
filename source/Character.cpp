@@ -63,6 +63,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos ={
 	{"杨坤",   {Level::C, {没座::make, 空空::make}, {}, {}, 240}},
 	{"大脚忍者", {Level::A, {暗忍::make}, {舞爪::make}, {}, 280}},
 	{"大中医",   {Level::A, {治病::make}, {}, {}, 100}},
+	{"新陆逊",   {Level::B, {[]{ return 连营::makeWith(std::make_unique<困界_子>()); }, 困界::make}, {}, {}, 150}},
 };
 
 

@@ -1052,3 +1052,53 @@ public:
 	bool content(Trigger& trigger) override;
 	void reset() override;
 };
+
+class 困界_子;  //前向声明
+
+//连营：失去某类别最后一张手牌后，可弃另一类别一张牌并从游戏外获得该类别一张牌（每类别每局限一次）
+class 连营 : public PSkillImpl<连营> {
+public:
+	enum class Category { number, action, wild };
+private:
+	std::shared_ptr<std::set<Category>> triggered_ = std::make_shared<std::set<Category>>();
+public:
+	连营();
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+	static Category categoryOf(const Card& c) {
+		if (c.isWild()) return Category::wild;
+		if (c.isAction()) return Category::action;
+		return Category::number;
+	}
+	static std::unique_ptr<PSkill> makeWith(std::unique_ptr<困界_子> sub);
+};
+
+//困界_子：连营的隐藏子技能，承载困界实际效果（空描述，不在技能列表显示）
+class 困界_子 : public PSkillImpl<困界_子> {
+private:
+	std::shared_ptr<std::set<连营::Category>> triggered_;
+public:
+	困界_子() : PSkillImpl<困界_子>(
+		"困界", "",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	void setTriggered(std::shared_ptr<std::set<连营::Category>> t) { triggered_ = std::move(t); }
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//困界：显示壳，仅展示描述，永不触发（TriggerTime::never）
+class 困界 : public PSkillImpl<困界> {
+public:
+	困界() : PSkillImpl<困界>(
+		"困界",
+		"觉醒技，回合结束时，若你【连营】中所有类别均已触发过，你可令一名角色重铸手中一种类别的所有牌，然后你重铸另一种类别的所有牌。",
+		unlimited, false,
+		TriggerPlayer::nobody,
+		TriggerTime::never
+	) {}
+	bool content(Trigger& trigger) override { return true; }
+};
