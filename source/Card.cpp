@@ -167,6 +167,30 @@ Card::Color Card::getColor() const {
 Card::Name Card::getName() const {
 	return name;
 }
+Card::Type Card::getType() const {
+	switch (name) {
+		//数字
+	case Name::number_0:
+	case Name::number_1:
+	case Name::number_2:
+	case Name::number_3:
+	case Name::number_4:
+	case Name::number_5:
+	case Name::number_6:
+	case Name::number_7:
+	case Name::number_8:
+	case Name::number_9: return Type::number;
+		//功能
+	case Name::action_skip:
+	case Name::action_draw2:
+	case Name::action_rev: return Type::action;
+		//万能
+	case Name::wild_pal:
+	case Name::wild_draw4: return Type::wild;
+		//其他
+	default: return Type::unknown;
+	}
+}
 Card::ColorName Card::getColorName() const {
 	return std::make_pair(color, name);
 }
@@ -333,6 +357,16 @@ std::wstring Card::to_wstring(const Name& name) {
 	case Name::back:         return L"背面";
 	case Name::no:           return L"无";
 	default:                 return L"未知";
+	}
+}
+
+std::wstring Card::to_wstring(const Type& type) {
+	switch (type) {
+	case Type::number:  return L"数字牌";
+	case Type::action:  return L"功能牌";
+	case Type::wild:    return L"万能牌";
+	case Type::unknown:
+	default:            return L"未知类型";
 	}
 }
 

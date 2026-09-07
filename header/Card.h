@@ -25,6 +25,9 @@ public:
 		action_rev, action_skip, action_draw2, wild_pal, wild_draw4,
 		back
 	};
+	enum class Type {
+		unknown, number, action, wild
+	};
 	enum class DiscardReason {
 		none,   //没进入弃牌堆（手中/牌堆/通用场景默认值）
 		use,    //打出
@@ -100,6 +103,7 @@ public:
 #pragma region 属性查询
 	Color getColor() const;
 	Name getName() const;
+	Type getType() const;
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
 
@@ -147,6 +151,7 @@ public:
 	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::wstring to_wstring(const Name& name);
+	static std::wstring to_wstring(const Type& type);
 	static std::wstring to_wstring(const DiscardReason reason);
 	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
 	static bool is_number(const Card::Name name);

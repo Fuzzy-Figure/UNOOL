@@ -1976,78 +1976,50 @@ void 治病::reset() {
 }
 
 
-// ==================== 技能：连营 ====================
-连营::连营() : PSkillImpl<连营>(
-	"连营",
-	"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再获得一张此类别的牌。",
-	unlimited, false,
-	TriggerPlayer::self,
-	TriggerTime::lose_card_end
-) {}
-
-std::unique_ptr<PSkill> 连营::makeWith(std::unique_ptr<困界_子> sub) {
-	auto p = std::make_unique<连营>();
-	sub->setTriggered(p->triggered_);
-	p->subSkills.push_back(std::move(sub));
-	return p;
-}
 
 bool 连营::filter(const Trigger& trigger) const {
 	if (!trigger.hasPlayer() || !trigger.hasCards()) return false;
 	if (trigger.getCarrier().getId() != trigger.getPlayer().getId()) return false;
 	const Card& c = trigger.getCard();
-	Category cat = categoryOf(c);
-	if (triggered_->count(cat)) return false;  //该类别已触发过
+	Card::Type cat = c.getType();
+	if (triggered->count(cat)) return false;  //该类别已触发过
 	//失去后手牌中该类别牌数为0（最后一张）
 	return !trigger.getCarrier().handInclude(
-		[cat](const Card& hc) { return categoryOf(hc) == cat; });
+		[cat](const Card& hc) { return hc.getType() == cat; });
 }
 
 bool 连营::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	const Card& lost = trigger.getCard();
-	Category lostCat = categoryOf(lost);
+	Card::Type lostCat = lost.getType();
 
 	//弃置另一类别的一张牌
 	auto discarded = carrier.chooseToDiscard(
 		L"【连营】弃置另一类别的一张牌", 1, false,
-		[lostCat](const Card& c) { return categoryOf(c) != lostCat; });
+		[lostCat](const Card& c) { return c.getType() != lostCat; });
 	if (discarded.empty()) return false;  //玩家取消
 
 	//从游戏外获得该类别一张牌
 	Card::ColorName cn = Card::randomCard([lostCat](const Card& c) {
-		return categoryOf(c) == lostCat;
+		return c.getType() == lostCat;
 	});
 	carrier.gainCard(Card::make(cn));
 
-	triggered_->insert(lostCat);
+	triggered->insert(lostCat);
 	std::cout << "<技能> " << carrier.characterName() << "发动连营，弃置一张牌并获得一张"
-		<< (lostCat == Category::wild ? "万能" : lostCat == Category::action ? "功能" : "数字") << "牌" << std::endl;
+		<< (lostCat == Card::Type::wild ? "万能" : lostCat == Card::Type::action ? "功能" : "数字") << "牌" << std::endl;
 	trigger.getGame().broadcastState();
 	return true;
 }
 
 void 连营::reset() {
 	PSkill::reset();
-	triggered_->clear();
+	triggered->clear();
 	for (auto& sub : subSkills) sub->reset();
 }
 
-
-// ==================== 技能：困界（隐藏子技能，实际效果） ====================
-namespace {
-	std::wstring lianyingCategoryName(连营::Category c) {
-		switch (c) {
-		case 连营::Category::number: return L"数字牌";
-		case 连营::Category::action: return L"功能牌";
-		case 连营::Category::wild:   return L"万能牌";
-		}
-		return L"";
-	}
-}
-
 bool 困界_子::filter(const Trigger& trigger) const {
-	return triggered_ && triggered_->size() >= 3;
+	return triggered && triggered->size() >= 3;
 }
 
 bool 困界_子::content(Trigger& trigger) {
@@ -2060,8 +2032,8 @@ bool 困界_子::content(Trigger& trigger) {
 	Player& target = targetOpt.value().get();
 
 	//重铸某类别所有牌的局部函数
-	auto recastAll = [&game](Player& p, 连营::Category cat) {
-		auto cond = [cat](const Card& c) { return 连营::categoryOf(c) == cat; };
+	auto recastAll = [&game](Player& p, Card::Type cat) {
+		auto cond = [cat](const Card& c) { return c.getType() == cat; };
 		std::size_t cnt = 0;
 		for (std::size_t i = 0; i < p.handCount(); ++i)
 			if (cond(p.getCardByIndex(i))) ++cnt;
@@ -2078,21 +2050,21 @@ bool 困界_子::content(Trigger& trigger) {
 	std::size_t catAIdx = carrier.ask(
 		L"【困界】选择" + target.characterNameW() + L"重铸的类别",
 		{ L"数字牌", L"功能牌", L"万能牌" }, true);
-	连营::Category catA = static_cast<连营::Category>(catAIdx - 1);
+	Card::Type catA = static_cast<Card::Type>(catAIdx);
 	recastAll(target, catA);
 
 	//3. 选自己重铸的类别（必须不同于 catA）
 	std::vector<std::wstring> otherNames;
-	std::vector<连营::Category> otherCats;
-	for (int i = 0; i < 3; ++i) {
-		连营::Category c = static_cast<连营::Category>(i);
+	std::vector<Card::Type> otherCats;
+	for (int i = 1; i <= 3; ++i) {
+		Card::Type c = static_cast<Card::Type>(i);
 		if (c != catA) {
-			otherNames.push_back(lianyingCategoryName(c));
+			otherNames.push_back(Card::to_wstring(c));
 			otherCats.push_back(c);
 		}
 	}
 	std::size_t catBIdx = carrier.ask(L"【困界】选择自己重铸的类别", otherNames, true);
-	连营::Category catB = otherCats[catBIdx - 1];
+	Card::Type catB = otherCats[catBIdx - 1];
 	recastAll(carrier, catB);
 
 	std::cout << "<技能> " << carrier.characterName() << "发动困界" << std::endl;

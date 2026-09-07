@@ -1053,42 +1053,45 @@ public:
 	void reset() override;
 };
 
-class 困界_子;  //前向声明
-
-//连营：失去某类别最后一张手牌后，可弃另一类别一张牌并从游戏外获得该类别一张牌（每类别每局限一次）
-class 连营 : public PSkillImpl<连营> {
-public:
-	enum class Category { number, action, wild };
-private:
-	std::shared_ptr<std::set<Category>> triggered_ = std::make_shared<std::set<Category>>();
-public:
-	连营();
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-	void reset() override;
-	static Category categoryOf(const Card& c) {
-		if (c.isWild()) return Category::wild;
-		if (c.isAction()) return Category::action;
-		return Category::number;
-	}
-	static std::unique_ptr<PSkill> makeWith(std::unique_ptr<困界_子> sub);
-};
 
 //困界_子：连营的隐藏子技能，承载困界实际效果（空描述，不在技能列表显示）
 class 困界_子 : public PSkillImpl<困界_子> {
 private:
-	std::shared_ptr<std::set<连营::Category>> triggered_;
+	std::shared_ptr<std::set<Card::Type>> triggered;
 public:
-	困界_子() : PSkillImpl<困界_子>(
-		"困界", "",
-		1, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_end
-	) {}
-	void setTriggered(std::shared_ptr<std::set<连营::Category>> t) { triggered_ = std::move(t); }
+	困界_子(std::shared_ptr<std::set<Card::Type>> _triggered)
+		: PSkillImpl<困界_子>(
+			"困界", "",
+			1, false,
+			TriggerPlayer::self,
+			TriggerTime::phase_end
+		), triggered(std::move(_triggered)) {}
+	static std::unique_ptr<PSkill> makeWith(std::shared_ptr<std::set<Card::Type>> t) {
+		return std::make_unique<困界_子>(std::move(t));
+	}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+class 连营 : public PSkillImpl<连营> {
+private:
+	std::shared_ptr<std::set<Card::Type>> triggered = std::make_shared<std::set<Card::Type>>();
+public:
+	连营() : 连营(std::make_shared<std::set<Card::Type>>()) {}
+	连营(std::shared_ptr<std::set<Card::Type>> _triggered)
+		: PSkillImpl<连营>(
+			"连营",
+			"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再获得一张此类别的牌。",
+			unlimited, false,
+			TriggerPlayer::self,
+			TriggerTime::lose_card_end,
+			困界_子::makeWith(_triggered)
+		), triggered(_triggered) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};
+
 
 //困界：显示壳，仅展示描述，永不触发（TriggerTime::never）
 class 困界 : public PSkillImpl<困界> {
