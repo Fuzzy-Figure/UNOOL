@@ -2071,3 +2071,27 @@ bool 困界_子::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：四麻 ====================
+bool 四麻::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handCount() != 4;
+}
+
+bool 四麻::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+	std::size_t cnt = carrier.handCount();
+	if (cnt > 4) {
+		carrier.chooseToDiscard(L"【四麻】弃置牌调整至四张", cnt - 4, true);
+		std::cout << "<技能> " << carrier.characterName() << "发动四麻，弃置了"
+			<< (cnt - 4) << "张牌" << std::endl;
+	}
+	else if (cnt < 4) {
+		carrier.draw(4 - cnt, Player::DrawReason::skill);
+		std::cout << "<技能> " << carrier.characterName() << "发动四麻，摸了"
+			<< (4 - cnt) << "张牌" << std::endl;
+	}
+	game.broadcastState();
+	return true;
+}

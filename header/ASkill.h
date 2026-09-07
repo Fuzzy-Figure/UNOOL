@@ -117,3 +117,15 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+class 四霸 : public ASkillInstant<四霸> {
+public:
+	四霸() : ASkillInstant<四霸>(
+		"四霸",
+		"出牌阶段，你可以弃置三张【4】。",
+		unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

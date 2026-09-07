@@ -1105,3 +1105,17 @@ public:
 	) {}
 	bool content(Trigger& trigger) override { return true; }
 };
+
+//四麻：锁定技，回合结束时，将手牌调整至四张
+class 四麻 : public PSkillImpl<四麻> {
+public:
+	四麻() : PSkillImpl<四麻>(
+		"四麻",
+		"锁定技，回合结束时，将手牌调整至四张。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

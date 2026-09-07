@@ -64,6 +64,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos ={
 	{"大脚忍者", {Level::A, {暗忍::make}, {舞爪::make}, {}, 280}},
 	{"大中医",   {Level::A, {治病::make}, {}, {}, 100}},
 	{"新陆逊",   {Level::B, {连营::make, 困界::make}, {}, {}, 150}},
+	{"电棍",     {Level::F, {四麻::make}, {四霸::make}, {}, 144}},
 };
 
 

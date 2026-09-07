@@ -225,3 +225,22 @@ bool 舞爪::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：四霸 ====================
+bool 四霸::filter(const GameLogic& game, const Player& carrier) const {
+	std::size_t cnt = 0;
+	const Hand& hand = carrier.getHand();
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].is(Card::Name::number_4)) ++cnt;
+	}
+	return cnt >= 3;
+}
+
+bool 四霸::content(GameLogic& game, Player& carrier) {
+	carrier.chooseToDiscard(L"【四霸】弃置三张【4】", 3, true,
+		[](const Card& c) { return c.is(Card::Name::number_4); });
+	std::cout << "<技能> " << carrier.characterName() << "发动四霸，弃置了三张【4】" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
