@@ -1026,7 +1026,7 @@ class 暗忍_改 : public PSkillImpl<暗忍_改> {
 public:
 	暗忍_改() : PSkillImpl<暗忍_改>(
 		"暗忍",
-		"锁定技，回合结束时，你将随机一张手牌变为【封禁】。",
+		"锁定技，回合结束时，你将随机一张非万能牌变为【封禁】（颜色不变）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end
