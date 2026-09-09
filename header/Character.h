@@ -28,6 +28,7 @@ private:
 	std::list<std::unique_ptr<ASkillTransformBase>> transformSkills;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
+	std::size_t damageMultiplier = 1;
 
 public:
 #pragma region 构造 / 工厂
@@ -80,6 +81,11 @@ public:
 	void damage(std::size_t damage);
 	void recover(std::size_t num);
 	bool isDead() const;
+#pragma endregion
+
+#pragma region 伤害倍率
+	std::size_t getDamageMultiplier() const { return damageMultiplier; }
+	void setDamageMultiplier(std::size_t m) { damageMultiplier = m; }
 #pragma endregion
 
 #pragma region 静态数据

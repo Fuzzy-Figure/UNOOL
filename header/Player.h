@@ -68,6 +68,8 @@ public:
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	void resetSkills() { character->resetSkills(); }
+	std::size_t getDamageMultiplier() const { return character->getDamageMultiplier(); }
+	void setDamageMultiplier(std::size_t m) { character->setDamageMultiplier(m); }
 	void addSkill(std::unique_ptr<ASkillInstantBase>   skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<ASkillTransformBase> skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<PSkill>              pSkill) { character->addSkill(std::move(pSkill)); }

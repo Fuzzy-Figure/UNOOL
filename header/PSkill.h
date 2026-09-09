@@ -1119,3 +1119,17 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//爆射：锁定技，打出牌后，若手牌数恰为某其他角色两倍，弃置至多两张牌并对一名其他角色造成6点伤害
+class 爆射 : public PSkillImpl<爆射> {
+public:
+	爆射() : PSkillImpl<爆射>(
+		"爆射",
+		"锁定技，你打出牌后，若你手牌数恰为一名其他角色的两倍，你弃置至多两张牌并对一名其他角色造成6点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

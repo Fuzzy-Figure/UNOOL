@@ -2095,3 +2095,39 @@ bool 四麻::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：爆射 ====================
+bool 爆射::filter(const Trigger& trigger) const {
+	const Player& carrier = trigger.getCarrier();
+	std::size_t myCount = carrier.handCount();
+	const GameLogic& game = trigger.getGame();
+	for (const Player& other : game.getPlayersExcludeId(carrier.getId())) {
+		if (myCount == other.handCount() * 2) return true;
+	}
+	return false;
+}
+
+bool 爆射::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	// 1. 弃置至多两张牌（forced=false，玩家可随时取消，已弃的牌保留）
+	carrier.chooseToDiscard(L"【爆射】弃置至多两张牌", 2, false);
+
+	// 2. 选择一名其他角色
+	auto targetOpt = carrier.chooseOtherPlayer(L"【爆射】选择一名角色造成6点伤害", true);
+	if (!targetOpt.has_value()) {
+		std::cout << "<技能> " << carrier.characterName() << "发动爆射，但未选择目标" << std::endl;
+		game.broadcastState();
+		return true;
+	}
+	Player& target = targetOpt.value().get();
+
+	// 3. 造成6点伤害
+	target.damage(6, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "发动爆射，对"
+		<< target.characterName() << "造成6点伤害" << std::endl;
+	game.broadcastState();
+	return true;
+}

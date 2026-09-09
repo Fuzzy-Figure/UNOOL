@@ -244,3 +244,14 @@ bool 四霸::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：装币 ====================
+bool 装币::content(GameLogic& game, Player& carrier) {
+	auto drawn = carrier.drawTo(18, Player::DrawReason::skill);
+	carrier.setDamageMultiplier(carrier.getDamageMultiplier() + 1);
+	std::cout << "<技能> " << carrier.characterName() << "发动装币，摸"
+		<< drawn.size() << "张，伤害倍率提升至" << carrier.getDamageMultiplier() << std::endl;
+	game.broadcastState();
+	return true;
+}
+

@@ -129,3 +129,14 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+class 装币 : public ASkillInstant<装币> {
+public:
+	装币() : ASkillInstant<装币>(
+		"装币",
+		"限定技，出牌阶段，你可以将手牌摸至十八张，并令你本局造成伤害倍率+1。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

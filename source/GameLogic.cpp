@@ -435,10 +435,33 @@ std::optional<Card> GameLogic::lastCard() const {
 }
 
 void GameLogic::checkRoundEnd() {
+	// 查找胜者（手牌为空）与败者
+	Player* winner = nullptr;
+	Player* loser = nullptr;
 	for (auto& player : players) {
-		std::size_t damage = player->handValue();
-		player->damage(damage, std::nullopt);
-		std::cout << "玩家" << player->getId() << "扣除" << damage << "点体力，剩余" << player->getHp() << "/" << player->getMaxHp() << std::endl;
+		if (player->handEmpty()) {
+			winner = player.get();
+		}
+		else {
+			loser = player.get();
+		}
+	}
+	// 正常情况：一胜一败
+	if (winner && loser) {
+		std::size_t damage = loser->handValue() * winner->getDamageMultiplier();
+		loser->damage(damage, *winner);
+		std::cout << "玩家" << winner->getId() << "对玩家" << loser->getId()
+			<< "造成" << damage << "点伤害（败者手牌value " << loser->handValue()
+			<< " × 倍率 " << winner->getDamageMultiplier() << "），"
+			<< "玩家" << loser->getId() << "剩余" << loser->getHp() << "/" << loser->getMaxHp() << std::endl;
+	}
+	else {
+		// 兜底：双方都未空手或都已空手，维持原双方各扣自己手牌value的逻辑
+		for (auto& player : players) {
+			std::size_t damage = player->handValue();
+			player->damage(damage, std::nullopt);
+			std::cout << "玩家" << player->getId() << "扣除" << damage << "点体力，剩余" << player->getHp() << "/" << player->getMaxHp() << std::endl;
+		}
 	}
 }
 
@@ -460,6 +483,8 @@ void GameLogic::resetRound() {
 		player->resetSkills();
 		//取消封禁
 		player->unban();
+		// 重置伤害倍率
+		player->setDamageMultiplier(1);
 	}
 	// 重置当前颜色
 	currentColor = Card::Color::no;
