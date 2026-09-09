@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include "Skill.h"
 
 class Character {
@@ -29,6 +30,7 @@ private:
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
 	std::size_t damageMultiplier = 1;
+	std::unordered_set<std::string> marks;
 
 public:
 #pragma region 构造 / 工厂
@@ -86,6 +88,14 @@ public:
 #pragma region 伤害倍率
 	std::size_t getDamageMultiplier() const { return damageMultiplier; }
 	void setDamageMultiplier(std::size_t m) { damageMultiplier = m; }
+#pragma endregion
+
+#pragma region 标记
+	bool hasMark(const std::string& m) const { return marks.contains(m); }
+	void addMark(const std::string& m) { marks.insert(m); }
+	void removeMark(const std::string& m) { marks.erase(m); }
+	const std::unordered_set<std::string>& getMarks() const { return marks; }
+	void clearMarks() { marks.clear(); }
 #pragma endregion
 
 #pragma region 静态数据

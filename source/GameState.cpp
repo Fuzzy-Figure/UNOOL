@@ -7,19 +7,34 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 		skin = other.skin;
 		hp = other.hp;
 		maxHp = other.maxHp;
+		marks = other.marks;
 		hand = other.hand.clone();
 	}
 	return *this;
 }
 
 sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
-	return packet >> state.id >> state.hand >> state.characterName >> state.skin
+	packet >> state.id >> state.hand >> state.characterName >> state.skin
 		>> state.hp >> state.maxHp;
+	std::size_t markCount;
+	packet >> markCount;
+	state.marks.clear();
+	for (std::size_t i = 0; i < markCount; ++i) {
+		std::string m;
+		packet >> m;
+		state.marks.insert(m);
+	}
+	return packet;
 }
 
 sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
-	return packet << state.id << state.hand << state.characterName << state.skin
+	packet << state.id << state.hand << state.characterName << state.skin
 		<< state.hp << state.maxHp;
+	packet << state.marks.size();
+	for (const std::string& m : state.marks) {
+		packet << m;
+	}
+	return packet;
 }
 
 sf::Packet& operator>>(sf::Packet& packet, GameState& state) {

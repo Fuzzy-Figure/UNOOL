@@ -140,3 +140,15 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+class 幽愈 : public ASkillInstant<幽愈> {
+public:
+	幽愈() : ASkillInstant<幽愈>(
+		"幽愈",
+		"限定技，出牌阶段，若你有\"幽灵\"标记，你可以移去并回复10点体力。",
+		1,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

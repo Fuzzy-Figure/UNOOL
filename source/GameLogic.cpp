@@ -320,6 +320,7 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.players[i].skin = pl->skin();
 		state.players[i].hp = pl->getHp();
 		state.players[i].maxHp = pl->getMaxHp();
+		state.players[i].marks = pl->getMarks();
 
 		if (pl->getId() == playerId) {
 			for (const auto& card : pl->getHand()) {
@@ -485,6 +486,8 @@ void GameLogic::resetRound() {
 		player->unban();
 		// 重置伤害倍率
 		player->setDamageMultiplier(1);
+		// 清空标记
+		player->clearMarks();
 	}
 	// 重置当前颜色
 	currentColor = Card::Color::no;

@@ -255,3 +255,17 @@ bool 装币::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：幽愈 ====================
+bool 幽愈::filter(const GameLogic& game, const Player& carrier) const {
+	return carrier.hasMark("幽灵");
+}
+
+bool 幽愈::content(GameLogic& game, Player& carrier) {
+	carrier.removeMark("幽灵");
+	carrier.recover(10);
+	std::cout << "<技能> " << carrier.characterName() << "发动幽愈，移去\"幽灵\"标记并回复10点体力" << std::endl;
+	game.broadcastState();
+	return true;
+}
+

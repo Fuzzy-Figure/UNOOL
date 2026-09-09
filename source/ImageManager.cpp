@@ -41,6 +41,19 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 	window.draw(sprite);
 }
 
+// 获取纹理原始尺寸
+sf::Vector2u ImageManager::getTextureSize(const std::string& path) {
+	const std::string absolutePath = UNOOL + path;
+	if (auto it = textureCache.find(absolutePath); it == textureCache.end()) {
+		auto texture = std::make_unique<sf::Texture>();
+		if (!texture->loadFromFile(unool::string::to_utf16(absolutePath))) {
+			throw std::runtime_error("[ImageManager] 纹理加载失败，路径：" + absolutePath);
+		}
+		textureCache.emplace(absolutePath, std::move(texture));
+	}
+	return textureCache[absolutePath]->getSize();
+}
+
 
 
 

@@ -1133,3 +1133,37 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//灵爆_子：打出有目标的牌时，若有幽灵标记则移去并对目标造成10点伤害
+class 灵爆_子 : public PSkillImpl<灵爆_子> {
+public:
+	灵爆_子() : PSkillImpl<灵爆_子>(
+		"灵爆_子", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//灵爆：累计打出三张牌后获得"幽灵"标记（限一个）；拥有标记期间不计数，标记移去后重新累计
+class 灵爆 : public PSkillImpl<灵爆> {
+private:
+	std::shared_ptr<std::size_t> playCount = std::make_shared<std::size_t>(0);
+public:
+	灵爆() : 灵爆(std::make_shared<std::size_t>(0)) {}
+	灵爆(std::shared_ptr<std::size_t> _playCount)
+		: PSkillImpl<灵爆>(
+			"灵爆",
+			"你累计打出三张牌后，获得\"幽灵\"标记（限一个）。\n"
+			"你打出有目标的牌时，若你有\"幽灵\"标记，则移去并对目标造成10点伤害。",
+			unlimited, true,
+			TriggerPlayer::self,
+			TriggerTime::use_card_end,
+			灵爆_子::make()
+		), playCount(std::move(_playCount)) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};

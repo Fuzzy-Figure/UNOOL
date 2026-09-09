@@ -2131,3 +2131,48 @@ bool 爆射::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：灵爆 ====================
+bool 灵爆::filter(const Trigger& trigger) const {
+	//拥有幽灵标记期间不计数
+	return !trigger.getCarrier().hasMark("幽灵");
+}
+
+bool 灵爆::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	++(*playCount);
+	std::cout << "<技能> " << carrier.characterName() << "灵爆计数：" << *playCount << "/3" << std::endl;
+	if (*playCount >= 3) {
+		carrier.addMark("幽灵");
+		*playCount = 0;
+		std::cout << "<技能> " << carrier.characterName() << "灵爆触发，获得\"幽灵\"标记" << std::endl;
+	}
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+void 灵爆::reset() {
+	PSkill::reset();
+	*playCount = 0;
+}
+
+
+// ==================== 技能：灵爆_子 ====================
+bool 灵爆_子::filter(const Trigger& trigger) const {
+	const Card& c = trigger.getCard();
+	//有目标的牌：封禁/+2/+4
+	bool isTargeted = c.is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4);
+	return isTargeted && trigger.getCarrier().hasMark("幽灵");
+}
+
+bool 灵爆_子::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Player& target = carrier.next();
+	carrier.removeMark("幽灵");
+	target.damage(10, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "发动灵爆，移去\"幽灵\"标记并对"
+		<< target.characterName() << "造成10点伤害" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}

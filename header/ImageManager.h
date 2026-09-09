@@ -14,4 +14,7 @@ public:
 	void displayImage(const std::string& path,
 					  const sf::Vector2f& pos,
 					  const sf::Vector2f& size);
+
+	// 获取纹理原始尺寸（自动加载并缓存）
+	sf::Vector2u getTextureSize(const std::string& path);
 };

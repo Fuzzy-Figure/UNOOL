@@ -2,6 +2,7 @@
 #include "../header/Card.h"
 #include "../header/Character.h"
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <ranges>
 #include <unordered_map>
@@ -96,6 +97,17 @@ void GameRenderer::renderPlayers() {
 		if (playerState.id == 0) charPos = { 0,0 };
 		else if (playerState.id == 1) charPos = { 0,config.windowSize.y - config.characterSize.y };
 		displayImage(Character::getImagePath(playerState.characterName, playerState.skin), charPos, config.characterSize);
+
+		//标记（覆盖在角色图右上角，等比缩放至角色图面积的1/12）
+		if (playerState.marks.contains("幽灵")) {
+			const std::string markPath = "marks\\幽灵.jpg";
+			sf::Vector2u texSize = imageMgr.getTextureSize(markPath);
+			float targetArea = config.characterSize.x * config.characterSize.y / 12.0f;
+			float scale = std::sqrt(targetArea / (static_cast<float>(texSize.x) * texSize.y));
+			sf::Vector2f markSize = { texSize.x * scale, texSize.y * scale };
+			sf::Vector2f markPos = { charPos.x + config.characterSize.x - markSize.x, charPos.y };
+			displayImage(markPath, markPos, markSize);
+		}
 
 		//座次编号
 		if (!currentState.seatOrder.empty()) {
