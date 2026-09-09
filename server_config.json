@@ -1,6 +1,6 @@
 {
 	"banCount": 2,
 	"candidateCount": 10,
-	"characters": [ "格斯", "8比特" ],
+	//"characters": [ "格斯", "8比特" ],
 	"initHandCount": 8
 }

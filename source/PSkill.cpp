@@ -1936,7 +1936,7 @@ bool 治病::content(Trigger& trigger) {
 		switch (opt) {
 		case 1: optionTexts.emplace_back(L"此牌无效"); break;
 		case 2: optionTexts.emplace_back(L"你弃置一张牌"); break;
-		case 3: optionTexts.emplace_back(L"其摸一张牌"); break;
+		case 3: optionTexts.emplace_back(L"其摸两张牌"); break;
 		}
 	}
 
@@ -1953,10 +1953,10 @@ bool 治病::content(Trigger& trigger) {
 		carrier.chooseToDiscard(L"【治病】弃置一张牌", 1, true);
 		std::cout << "<技能> " << carrier.characterName() << "发动治病，弃置一张牌" << std::endl;
 		break;
-	case 3: //其摸一张牌
-		player.draw(1, Player::DrawReason::skill);
+	case 3: //其摸两张牌
+		player.draw(2, Player::DrawReason::skill);
 		std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-			<< player.characterName() << "摸一张牌" << std::endl;
+			<< player.characterName() << "摸两张牌" << std::endl;
 		break;
 	}
 
@@ -2068,6 +2068,8 @@ bool 困界_子::content(Trigger& trigger) {
 	recastAll(carrier, catB);
 
 	std::cout << "<技能> " << carrier.characterName() << "发动困界" << std::endl;
+	// 重置连营：清空已触发类别，使一技能可再次为所有类别触发
+	triggered->clear();
 	game.broadcastState();
 	return true;
 }
