@@ -665,3 +665,51 @@ void Player::showCard(const Card& card) {
 		p.hint(unool::string::to_utf16(characterName()) + L"展示了" + card.toWString());
 	});
 }
+
+std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool forced) {
+	//防御性检查：发起者无数字牌则不能发动
+	if (!handInclude(&Card::isNumber)) return std::nullopt;
+
+	//目标无数字牌，直接判其输
+	if (!target.handInclude(&Card::isNumber)) {
+		std::cout << "<拼点> " << characterName() << "与" << target.characterName()
+			<< "拼点，" << target.characterName() << "无数字牌，直接判负" << std::endl;
+		game.broadcastState();
+		return CompareResult::win;
+	}
+
+	//发起者选一张数字牌
+	auto myIdx = chooseCard(&Card::isNumber, forced);
+	if (!myIdx.has_value()) return std::nullopt;  //发起者取消
+	Card& myCard = getHand().getCardByIndex(myIdx.value());
+
+	//目标选一张数字牌（强制）
+	auto tgtIdx = target.chooseCard(&Card::isNumber, true);
+	//目标有数字牌且forced=true，必有返回
+	Card& tgtCard = target.getHand().getCardByIndex(tgtIdx.value());
+
+	//展示双方结果
+	showCard(myCard);
+	target.showCard(tgtCard);
+
+	int myVal = myCard.value();
+	int tgtVal = tgtCard.value();
+	std::cout << "<拼点> " << characterName() << "(" << myVal << ") vs "
+		<< target.characterName() << "(" << tgtVal << ")，";
+
+	CompareResult result;
+	if (myVal > tgtVal) {
+		result = CompareResult::win;
+		std::cout << characterName() << "赢" << std::endl;
+	}
+	else if (myVal < tgtVal) {
+		result = CompareResult::lose;
+		std::cout << characterName() << "输" << std::endl;
+	}
+	else {
+		result = CompareResult::draw;
+		std::cout << "双方平局" << std::endl;
+	}
+	game.broadcastState();
+	return result;
+}

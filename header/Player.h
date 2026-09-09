@@ -183,6 +183,11 @@ public:
 	[[nodiscard]] Card& judge();
 	void showCard(const Card& card);
 
+	//拼点结果
+	enum class CompareResult { win, lose, draw };
+	//拼点：双方秘密选一张数字牌比点数；发起者无数字牌返回nullopt（不能发动），目标无数字牌判其输
+	[[nodiscard]] std::optional<CompareResult> comparePoint(Player& target, bool forced);
+
 #pragma endregion
 
 #pragma region 回合流程
