@@ -32,6 +32,8 @@ public:
 	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
 	std::size_t getCount() const { return count; }
 	void incrementCount() { ++count; }
+	limit_t getLimit() const { return limit; }
+	void setLimit(const limit_t& v) { limit = v; }
 
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;

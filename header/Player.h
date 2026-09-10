@@ -18,6 +18,10 @@ public:
 		phase_draw,
 		skill
 	};
+	enum class DrawPosition {
+		top,
+		bottom
+	};
 private:
 	std::size_t id = 0;
 	std::unique_ptr<Hand> hand = std::make_unique<Hand>();
@@ -70,6 +74,10 @@ public:
 	void resetSkills() { character->resetSkills(); }
 	std::size_t getDamageMultiplier() const { return character->getDamageMultiplier(); }
 	void setDamageMultiplier(std::size_t m) { character->setDamageMultiplier(m); }
+	std::size_t getWins() const { return character->getWins(); }
+	std::size_t getLosses() const { return character->getLosses(); }
+	void incrementWins() { character->incrementWins(); }
+	void incrementLosses() { character->incrementLosses(); }
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
 	void addMark(const std::string& m) { character->addMark(m); }
 	void removeMark(const std::string& m) { character->removeMark(m); }
@@ -113,7 +121,8 @@ public:
 #pragma endregion
 
 #pragma region 游戏逻辑
-	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown);
+	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown,
+								const DrawPosition position = DrawPosition::top);
 	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 
 	Card& useCardByIndex(const std::size_t cardIndex);

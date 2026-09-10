@@ -152,3 +152,16 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//炫技：出牌阶段，从牌堆顶或底摸两张，将一张置于牌堆底；若两牌同色可弃两张令加速+1
+class 炫技 : public ASkillInstant<炫技> {
+public:
+	炫技() : ASkillInstant<炫技>(
+		"炫技",
+		"出牌阶段，你可以从牌堆顶或牌堆底摸两张牌，然后将其中一张置于牌堆底。\n"
+		"若你因此获得的牌颜色相同，可弃置两张牌并令【加速】本局可发动次数+1。",
+		unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

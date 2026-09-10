@@ -67,6 +67,8 @@ const std::unordered_map<std::string, Character::Info> Character::infos ={
 	/*神*/{"电棍",     {Level::F, {四麻::make}, {四霸::make}, {}, 44}},
 	{"8比特",    {Level::S, {爆射::make}, {装币::make}, {}, 288}},
 	{"格斯",     {Level::B, {灵爆::make}, {幽愈::make}, {}, 100}},
+	{"斯图",     {Level::A, {加速::make}, {炫技::make}, {}, 120}},
+	{"大司马",   {Level::C, {走位::make}, {}, {}, 150}},
 };
 
 

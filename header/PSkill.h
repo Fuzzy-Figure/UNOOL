@@ -1167,3 +1167,46 @@ public:
 	bool content(Trigger& trigger) override;
 	void reset() override;
 };
+
+//加速：每局游戏限零次，成为牌的目标时可发动一次炫技并令此牌无效
+class 加速 : public PSkillImpl<加速> {
+public:
+	加速() : PSkillImpl<加速>(
+		"加速",
+		"每局游戏限零次，你成为牌的目标时，可以发动一次【炫技】并令此牌无效。",
+		0, false,
+		TriggerPlayer::self,
+		TriggerTime::card_target_begin
+	) {}
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};
+
+//走位：回合开始时，决议至多X张牌（X为已输局数，至多3）；若未因此决议牌，失去此技能并获芜湖
+class 走位 : public PSkillImpl<走位> {
+public:
+	走位() : PSkillImpl<走位>(
+		"走位",
+		"回合开始时，你可以决议至多X张牌（X为你已输局数且至多为3）；\n"
+		"若你未因此决议牌，则失去此技能并获得【芜湖】。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(Trigger& trigger) override;
+};
+
+//芜湖：限定技，出牌阶段，声明颜色+牌名组合，从牌堆获得一张匹配牌
+class 芜湖 : public PSkillImpl<芜湖> {
+public:
+	芜湖() : PSkillImpl<芜湖>(
+		"芜湖",
+		"限定技，出牌阶段，你可以声明一个牌名和颜色的组合（万能牌为黑色），\n"
+		"若牌堆中已无此牌名和颜色组合的牌，此技能视为未发动过且你可弃置一张牌；\n"
+		"若有，你获得一张。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_use1_begin
+	) {}
+	bool content(Trigger& trigger) override;
+};

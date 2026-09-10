@@ -18,8 +18,9 @@ void Player::recover(std::size_t num) {
 
 // === 游戏逻辑 ===
 
-std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason) {
-	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌" << std::endl;
+std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position) {
+	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌（"
+		<< (position == DrawPosition::top ? "顶" : "底") << "）" << std::endl;
 	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
 	if (hasPSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
 
@@ -27,7 +28,12 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason)
 	drawnCards.reserve(number);
 
 	for (std::size_t i = 0; i < number; ++i) {
-		auto cardPtr = game.getPile().take_front(game.getDiscardPile());
+		std::unique_ptr<Card> cardPtr;
+		if (position == DrawPosition::top) {
+			cardPtr = game.getPile().take_front(game.getDiscardPile());
+		} else {
+			cardPtr = game.getPile().take_back(game.getDiscardPile());
+		}
 		hand->push_back(std::move(cardPtr));
 		drawnCards.emplace_back(hand->back());
 	}

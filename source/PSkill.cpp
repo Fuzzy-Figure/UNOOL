@@ -1,5 +1,7 @@
 #include "../header/PSkill.h"
 #include "../header/GameLogic.h"
+#include <algorithm>
+#include <optional>
 
 // ==================== 技能：粪怒 ====================
 bool 粪怒::filter(const Trigger& trigger) const {
@@ -2176,5 +2178,144 @@ bool 灵爆_子::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动灵爆，移去\"幽灵\"标记并对"
 		<< target.characterName() << "造成10点伤害" << std::endl;
 	trigger.getGame().broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：加速 ====================
+bool 加速::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//发动一次炫技
+	for (auto& s : carrier.getInstantSkills()) {
+		if (s->getName() == "炫技") {
+			s->tryActivate(game, carrier);
+			break;
+		}
+	}
+
+	//令此牌无效
+	trigger.getCard().cancelEffect();
+	std::cout << "<技能> " << carrier.characterName() << "发动加速，发动炫技并令此牌无效" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+void 加速::reset() {
+	setLimit(0);
+	PSkill::reset();
+}
+
+
+// ==================== 技能：走位 ====================
+bool 走位::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//X = 已输局数，至多3
+	std::size_t X = std::min(carrier.getLosses(), std::size_t{ 3 });
+
+	//未输过（X=0）：失去走位+获得芜湖
+	if (X == 0) {
+		carrier.removeSkill("走位");
+		carrier.addSkill(芜湖::make());
+		game.markCharInfoDirty(carrier.getId());
+		std::cout << "<技能> " << carrier.characterName() << "未输过局，失去【走位】并获得【芜湖】" << std::endl;
+		game.broadcastState();
+		return true;
+	}
+
+	//询问决议几张（0..X）
+	std::vector<std::wstring> opts;
+	opts.push_back(L"不决议");
+	for (std::size_t i = 1; i <= X; ++i) {
+		opts.push_back(L"决议" + std::to_wstring(i) + L"张");
+	}
+	std::size_t choice = carrier.ask(L"【走位】决议至多" + std::to_wstring(X) + L"张牌", opts, false);
+
+	//玩家取消或选0张：失去走位+获得芜湖
+	if (choice == 0 || choice == 1) {
+		carrier.removeSkill("走位");
+		carrier.addSkill(芜湖::make());
+		game.markCharInfoDirty(carrier.getId());
+		std::cout << "<技能> " << carrier.characterName() << "未决议牌，失去【走位】并获得【芜湖】" << std::endl;
+		game.broadcastState();
+		return true;
+	}
+
+	//决议 N 张
+	std::size_t N = choice - 1;  //choice=2对应N=1
+	carrier.decree(L"【走位】决议牌", N, true);
+	std::cout << "<技能> " << carrier.characterName() << "发动走位，决议了" << N << "张牌" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：芜湖 ====================
+bool 芜湖::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//先选颜色
+	std::size_t colorChoice = carrier.ask(L"【芜湖】声明颜色", { L"红", L"黄", L"绿", L"蓝", L"黑" }, true);
+	Card::Color targetColor;
+	std::vector<Card::Name> nameOpts;
+	if (colorChoice <= 4) {
+		//基础四色
+		switch (colorChoice) {
+		case 1: targetColor = Card::Color::red;    break;
+		case 2: targetColor = Card::Color::yellow; break;
+		case 3: targetColor = Card::Color::green;  break;
+		case 4: targetColor = Card::Color::blue;   break;
+		}
+		nameOpts = {
+			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2,
+			Card::Name::number_3, Card::Name::number_4, Card::Name::number_5,
+			Card::Name::number_6, Card::Name::number_7, Card::Name::number_8,
+			Card::Name::number_9, Card::Name::action_skip, Card::Name::action_draw2,
+			Card::Name::action_rev
+		};
+	} else {
+		//黑色（万能牌）
+		targetColor = Card::Color::black;
+		nameOpts = { Card::Name::wild_pal, Card::Name::wild_draw4 };
+	}
+
+	//选牌名
+	std::vector<std::wstring> nameStrs;
+	for (auto n : nameOpts) nameStrs.push_back(Card::to_wstring(n));
+	std::size_t nameChoice = carrier.ask(L"【芜湖】声明牌名", nameStrs, true);
+	Card::Name targetName = nameOpts[nameChoice - 1];
+
+	std::cout << "<技能> " << carrier.characterName() << "发动芜湖，声明"
+		<< Card::to_string(targetColor) << Card::to_string(targetName) << std::endl;
+
+	//从牌堆底向牌堆顶检索，找最后一张匹配的
+	Pile& pile = game.getPile();
+	std::optional<std::size_t> matchIdx;
+	for (std::size_t i = 0; i < pile.count(); ++i) {
+		const Card& c = pile[i];
+		if (c.getColor() == targetColor && c.getName() == targetName) {
+			matchIdx = i;  //记录最后一个匹配的索引
+		}
+	}
+
+	if (matchIdx.has_value()) {
+		//有匹配：获得一张
+		auto card = pile.takeCardByIndex(matchIdx.value());
+		Card* cardPtr = card.get();
+		carrier.gainCard(std::move(card));
+		std::cout << "<技能> " << carrier.characterName() << "从牌堆获得"
+			<< cardPtr->toString() << std::endl;
+	} else {
+		//无匹配：视为未发动过，可弃一张
+		resetCount();
+		carrier.chooseToDiscard(L"【芜湖】牌堆无此牌，弃置一张牌", 1, false);
+		std::cout << "<技能> " << carrier.characterName() << "声明牌堆无此牌，芜湖视为未发动" << std::endl;
+	}
+
+	game.broadcastState();
 	return true;
 }

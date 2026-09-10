@@ -449,6 +449,8 @@ void GameLogic::checkRoundEnd() {
 	}
 	// 正常情况：一胜一败
 	if (winner && loser) {
+		winner->incrementWins();
+		loser->incrementLosses();
 		std::size_t damage = loser->handValue() * winner->getDamageMultiplier();
 		loser->damage(damage, *winner);
 		std::cout << "玩家" << winner->getId() << "对玩家" << loser->getId()

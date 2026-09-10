@@ -30,6 +30,8 @@ private:
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
 	std::size_t damageMultiplier = 1;
+	std::size_t wins = 0;
+	std::size_t losses = 0;
 	std::unordered_set<std::string> marks;
 
 public:
@@ -88,6 +90,10 @@ public:
 #pragma region 伤害倍率
 	std::size_t getDamageMultiplier() const { return damageMultiplier; }
 	void setDamageMultiplier(std::size_t m) { damageMultiplier = m; }
+	std::size_t getWins() const { return wins; }
+	std::size_t getLosses() const { return losses; }
+	void incrementWins() { ++wins; }
+	void incrementLosses() { ++losses; }
 #pragma endregion
 
 #pragma region 标记

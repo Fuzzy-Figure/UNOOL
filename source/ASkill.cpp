@@ -269,3 +269,46 @@ bool 幽愈::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：炫技 ====================
+bool 炫技::content(GameLogic& game, Player& carrier) {
+	//选牌堆顶或底
+	std::size_t pos = carrier.ask(L"【炫技】从牌堆顶或牌堆底摸两张", { L"牌堆顶", L"牌堆底" }, false);
+	if (pos == 0) return false;  //玩家取消
+	Player::DrawPosition dp = (pos == 1) ? Player::DrawPosition::top : Player::DrawPosition::bottom;
+
+	//摸两张（触发draw_begin/end）
+	carrier.draw(2, Player::DrawReason::skill, dp);
+
+	//两张在hand末尾，记录颜色
+	std::size_t idx1 = carrier.getHand().count() - 2;
+	std::size_t idx2 = carrier.getHand().count() - 1;
+	Card::Color c1 = carrier.getHand()[idx1].getColor();
+	Card::Color c2 = carrier.getHand()[idx2].getColor();
+
+	//选一张置于牌堆底
+	std::size_t put = carrier.ask(L"【炫技】将一张牌置于牌堆底",
+		{ carrier.getHand()[idx1].toWString(), carrier.getHand()[idx2].toWString() }, true);
+	std::size_t putIdx = (put == 1) ? idx1 : idx2;
+	game.getPile().push_back(carrier.takeCardByIndex(putIdx));
+	std::cout << "<技能> " << carrier.characterName() << "发动炫技，摸2张并置1张于牌堆底" << std::endl;
+
+	//若两牌同色且手牌>=2，可弃两张令加速+1
+	if (c1 == c2 && carrier.handCount() >= 2) {
+		std::size_t choice = carrier.ask(L"【炫技】两牌同色，是否弃置两张令【加速】+1？",
+			{ L"弃两张", L"不弃" }, false);
+		if (choice == 1) {
+			carrier.chooseToDiscard(L"【炫技】弃置两张牌", 2, true);
+			if (auto sp = carrier.findPSkill("加速"); sp.has_value()) {
+				auto& acc = sp.value().get();
+				acc.setLimit(acc.getLimit().value() + 1);
+				std::cout << "<技能> " << carrier.characterName() << "的【加速】可发动次数+1，当前="
+					<< acc.getLimit().value() << std::endl;
+			}
+		}
+	}
+
+	game.broadcastState();
+	return true;
+}
+
