@@ -87,7 +87,8 @@ PSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
 // **********************
 //         主动技
 // **********************
-ASkill::ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit, TriggerTime _triggerTime)
-	:Skill(_name, _info, _limit), triggerTime(_triggerTime) {}
+ASkill::ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+			   const limit_t& _phaseLimit, TriggerTime _triggerTime)
+	:Skill(_name, _info, _limit), triggerTime(_triggerTime), phaseLimit(_phaseLimit) {}
 
 

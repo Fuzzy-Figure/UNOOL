@@ -133,6 +133,9 @@ void Player::ban(Player& source, Card& card) {
 // === 回合流程 ===
 
 void Player::phaseBegin() {
+	//重置所有主动技的阶段内使用次数（每回合开始）
+	for (auto& s : getInstantSkills()) s->resetPhaseCount();
+	for (auto& s : getTransformSkills()) s->resetPhaseCount();
 	game.launchPSkills(PSkill::TriggerTime::phase_begin, *this);
 }
 

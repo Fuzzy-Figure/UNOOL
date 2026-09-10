@@ -166,18 +166,28 @@ public:
 		phase_use,   //出牌阶段（1和2均可）
 	};
 
-	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit, TriggerTime _triggerTime = TriggerTime::never);
+	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+		   const limit_t& _phaseLimit, TriggerTime _triggerTime);
 
-	//是否还能发动（次数限制检查）
-	bool canUse() const { return !limit.has_value() || count < limit.value(); }
+	//是否还能发动（局次数+阶段次数双重检查）
+	bool canUse() const {
+		if (limit.has_value() && count >= limit.value()) return false;
+		if (phaseLimit.has_value() && phaseCount >= phaseLimit.value()) return false;
+		return true;
+	}
 	//判断当前阶段能否发动
 	bool canTriggerAt(TriggerTime currentPhase) const {
 		if (triggerTime == TriggerTime::never) return false;
 		if (triggerTime == TriggerTime::phase_use) return currentPhase == TriggerTime::phase_use1 || currentPhase == TriggerTime::phase_use2;
 		return triggerTime == currentPhase;
 	}
+	//重置阶段内使用次数（每回合开始时调用）
+	void resetPhaseCount() { phaseCount = 0; }
 private:
 	TriggerTime triggerTime;
+protected:
+	limit_t phaseLimit;   //每回合可发动次数限制，nullopt代表无限制
+	std::size_t phaseCount = 0;
 };
 
 //即时型主动技抽象接口：按数字键直接发动
@@ -229,6 +239,7 @@ public:
 		if (!filter(game, player)) return false;
 		if (!content(game, player)) return false;
 		++count;
+		++phaseCount;
 		return true;
 	}
 protected:

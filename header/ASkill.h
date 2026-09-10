@@ -6,7 +6,7 @@ public:
 		"装弹",
 		"限定技，出牌阶段，若你手中没有封禁类牌且手牌数≤9，\n"
 		"你可以将一半手牌变为随机的非数字牌（向下取整）。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier) const override;
@@ -17,7 +17,7 @@ public:
 	徒步() : ASkillInstant<徒步>(
 		"徒步",
 		"出牌阶段，你可以重铸一张牌并回复1点体力，若你重铸了数字牌，失去X点体力（X为此技能本局发动次数）。",
-		unlimited,
+		unlimited, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -29,7 +29,7 @@ public:
 	招待() : ASkillInstant<招待>(
 		"招待",
 		"限定技，出牌阶段，你可以将一张牌交给一名其他角色。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -40,7 +40,7 @@ public:
 	八爪() : ASkillTransform<八爪>(
 		"八爪",
 		"你可以将一张数字牌当作蓝【8】打出。",
-		unlimited,
+		unlimited, unlimited,
 		TriggerTime::phase_use
 	) {}
 	std::size_t getCardCount() const override;
@@ -55,7 +55,7 @@ public:
 	我妈() : ASkillTransform<我妈>(
 		"我妈",
 		"每局游戏限三次，出牌阶段，你可将非红色牌当作红【封禁】打出，然后摸一张牌。",
-		3,
+		3, unlimited,
 		TriggerTime::phase_use
 	) {}
 	std::size_t getCardCount() const override;
@@ -71,7 +71,7 @@ public:
 	曼巴() : ASkillTransform<曼巴>(
 		"曼巴",
 		"出牌阶段，你可将一张【8】当作任意基础颜色的任意牌打出。",
-		unlimited,
+		unlimited, unlimited,
 		TriggerTime::phase_use
 	) {}
 	std::size_t getCardCount() const override;
@@ -87,7 +87,7 @@ public:
 		"摘罩",
 		"出牌阶段，你可以展示未展示过点数的数字牌，令一名其他角色展示相同点数的牌；\n"
 		"若其未展示牌，你可任意更改此牌颜色。",
-		unlimited,
+		unlimited, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -100,7 +100,7 @@ public:
 	还击() : ASkillInstant<还击>(
 		"还击",
 		"限定技，出牌阶段，随机获得一名其他角色半数手牌（向上取整，至少保留一张），然后交还给其等量张牌。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -111,7 +111,7 @@ public:
 	舞爪() : ASkillInstant<舞爪>(
 		"舞爪",
 		"限定技，出牌阶段，你可以将手牌摸至十张并回复两倍摸牌数点体力，然后本局【暗忍】移除失去体力的效果。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -122,7 +122,7 @@ public:
 	四霸() : ASkillInstant<四霸>(
 		"四霸",
 		"出牌阶段，你可以弃置三张【4】。",
-		unlimited,
+		unlimited, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier) const override;
@@ -134,7 +134,7 @@ public:
 	装币() : ASkillInstant<装币>(
 		"装币",
 		"限定技，出牌阶段，你可以将手牌摸至十八张，并令你本局造成伤害倍率+1。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
@@ -145,7 +145,7 @@ public:
 	幽愈() : ASkillInstant<幽愈>(
 		"幽愈",
 		"限定技，出牌阶段，若你有\"幽灵\"标记，你可以移去并回复10点体力。",
-		1,
+		1, unlimited,
 		TriggerTime::phase_use
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier) const override;
@@ -157,9 +157,9 @@ class 炫技 : public ASkillInstant<炫技> {
 public:
 	炫技() : ASkillInstant<炫技>(
 		"炫技",
-		"出牌阶段，你可以从牌堆顶或牌堆底摸两张牌，然后将其中一张置于牌堆底。\n"
+		"每回合限一次，出牌阶段，你可以从牌堆顶或牌堆底摸两张牌，然后将其中一张置于牌堆底。\n"
 		"若你因此获得的牌颜色相同，可弃置两张牌并令【加速】本局可发动次数+1。",
-		unlimited,
+		unlimited, 1,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;

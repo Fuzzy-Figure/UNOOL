@@ -236,16 +236,19 @@ opt_ref<PSkill> Character::findPSkill(const std::string& skillName) {
 }
 void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 							  PSkill::Trigger& trigger) const {
-	//遍历被动技能
-	for (auto& pSkill : pSkills) {
-		//如果时机和角色都符合，则发动
+	//先收集要发动的技能指针，避免content中修改pSkills导致迭代器失效
+	std::vector<PSkill*> toLaunch;
+	for (const auto& pSkill : pSkills) {
 		if (pSkill->matchTrigger(currentTriggerTime, trigger))
-			pSkill->launch(trigger);
-		//子技能
-		for (auto& sub : pSkill->subSkills) {
+			toLaunch.push_back(pSkill.get());
+		for (const auto& sub : pSkill->subSkills) {
 			if (sub->matchTrigger(currentTriggerTime, trigger))
-				sub->launch(trigger);
+				toLaunch.push_back(sub.get());
 		}
+	}
+	//遍历指针列表发动；即使某个技能在content中销毁自身，也不影响后续技能
+	for (PSkill* skill : toLaunch) {
+		skill->launch(trigger);
 	}
 }
 void Character::addSkill(std::unique_ptr<ASkillInstantBase> skill) {
