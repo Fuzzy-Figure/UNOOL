@@ -2381,3 +2381,98 @@ void 白虎::reset() {
 	triggeredPlayers.clear();
 	PSkill::reset();
 }
+
+
+// ==================== 技能：易主 ====================
+bool 易主::filter(const Trigger& trigger) const {
+	if (phaseCount >= 1) return false;
+	if (!trigger.hasNumber()) return false;
+	return trigger.getNumber() == 2;
+}
+
+bool 易主::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//弃置刚获得的两张牌
+	std::vector<ref<Card>> gainedCards = trigger.getCards();
+	for (auto& cardRef : gainedCards) {
+		//找到手中对应的牌并弃置
+		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+			if (&carrier.getCardByIndex(i) == &cardRef.get()) {
+				carrier.discardByIndex(i);
+				break;
+			}
+		}
+	}
+	std::cout << "<技能> " << carrier.characterName() << "发动易主，弃置获得的两张牌" << std::endl;
+
+	//渡荆可发动次数+1
+	if (auto sp = carrier.findPSkill("渡荆"); sp.has_value()) {
+		auto& dj = sp.value().get();
+		dj.setLimit(dj.getLimit().value() + 1);
+		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="
+			<< dj.getLimit().value() << std::endl;
+	}
+
+	++phaseCount;
+	game.broadcastState();
+	return true;
+}
+
+void 易主::reset() {
+	phaseCount = 0;
+	PSkill::reset();
+}
+
+
+// ==================== 技能：渡荆 ====================
+bool 渡荆::filter(const Trigger& trigger) const {
+	const Player& carrier = trigger.getCarrier();
+	//检查手牌数全场最多
+	std::size_t myCount = carrier.handCount();
+	for (const auto& p : trigger.getGame().getPlayers()) {
+		if (&p.get() == &carrier) continue;
+		if (p.get().handCount() > myCount) return false;
+	}
+	return true;
+}
+
+bool 渡荆::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//选一名其他角色拼点
+	auto targetOpt = carrier.chooseOtherPlayer(L"【渡荆】选择一名角色拼点", true);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	//拼点（carrier是发起者）
+	auto result = carrier.comparePoint(target, true);
+	if (!result) return false;
+
+	std::cout << "<技能> " << carrier.characterName() << "与" << target.characterName() << "拼点" << std::endl;
+
+	//没赢的（lose或draw）获得随机+2
+	auto giveRandomDraw2 = [&game](Player& p) {
+		Card::Color color = unool::random::randomGet(Card::fourColors);
+		auto card = Card::make(color, Card::Name::action_draw2);
+		std::cout << "<技能> " << p.characterName() << "拼点未赢，从游戏外获得" << card->toString() << std::endl;
+		p.gainCard(std::move(card));
+		};
+
+	if (*result == Player::CompareResult::lose) {
+		//carrier没赢
+		giveRandomDraw2(carrier);
+	} else if (*result == Player::CompareResult::draw) {
+		//平局，双方都没赢
+		giveRandomDraw2(carrier);
+		giveRandomDraw2(target);
+	} else {
+		//carrier赢，target没赢
+		giveRandomDraw2(target);
+	}
+
+	game.broadcastState();
+	return true;
+}

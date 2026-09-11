@@ -1242,3 +1242,36 @@ public:
 	bool content(Trigger& trigger) override;
 	void reset() override;
 };
+
+
+//易主：每回合限一次，一次性获得恰好2张牌时，可弃置这些牌并令渡荆+1
+class 易主 : public PSkillImpl<易主> {
+public:
+	易主() : PSkillImpl<易主>(
+		"易主",
+		"每回合限一次，你一次性获得两张牌时，可弃置这些牌，然后【渡荆】本局游戏可发动次数+1。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::gain_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+private:
+	std::size_t phaseCount = 0;
+};
+
+//渡荆：每局限一次，回合结束时若手牌全场最多，与一名其他角色拼点，没赢的获得随机+2
+class 渡荆 : public PSkillImpl<渡荆> {
+public:
+	渡荆() : PSkillImpl<渡荆>(
+		"渡荆",
+		"每局游戏限一次，回合结束时，若你手牌数全场最多，\n"
+		"可与其他角色拼点：没赢的角色从游戏外获得一张随机颜色的【+2】。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

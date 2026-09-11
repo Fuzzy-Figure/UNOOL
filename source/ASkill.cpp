@@ -238,7 +238,7 @@ bool 四霸::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 四霸::content(GameLogic& game, Player& carrier) {
 	carrier.chooseToDiscard(L"【四霸】弃置三张【4】", 3, true,
-		[](const Card& c) { return c.is(Card::Name::number_4); });
+							[](const Card& c) { return c.is(Card::Name::number_4); });
 	std::cout << "<技能> " << carrier.characterName() << "发动四霸，弃置了三张【4】" << std::endl;
 	game.broadcastState();
 	return true;
@@ -263,8 +263,9 @@ bool 幽愈::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 幽愈::content(GameLogic& game, Player& carrier) {
 	carrier.removeMark("幽灵");
-	carrier.recover(10);
-	std::cout << "<技能> " << carrier.characterName() << "发动幽愈，移去\"幽灵\"标记并回复10点体力" << std::endl;
+	const std::size_t recoverValue = unool::math::floor(0.15 * (carrier.getMaxHp() - carrier.getHp()));
+	carrier.recover(recoverValue);
+	std::cout << "<技能> " << carrier.characterName() << "发动幽愈，移去\"幽灵\"标记并回复" << recoverValue << "体力" << std::endl;
 	game.broadcastState();
 	return true;
 }
@@ -288,7 +289,7 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 
 	//选一张置于牌堆底
 	std::size_t put = carrier.ask(L"【炫技】将一张牌置于牌堆底",
-		{ carrier.getHand()[idx1].toWString(), carrier.getHand()[idx2].toWString() }, true);
+								  { carrier.getHand()[idx1].toWString(), carrier.getHand()[idx2].toWString() }, true);
 	std::size_t putIdx = (put == 1) ? idx1 : idx2;
 	game.getPile().push_back(carrier.takeCardByIndex(putIdx));
 	std::cout << "<技能> " << carrier.characterName() << "发动炫技，摸2张并置1张于牌堆底" << std::endl;
@@ -296,7 +297,7 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	//若两牌同色且手牌>=2，可弃两张令加速+1
 	if (c1 == c2 && carrier.handCount() >= 2) {
 		std::size_t choice = carrier.ask(L"【炫技】两牌同色，是否弃置两张令【加速】+1？",
-			{ L"弃两张", L"不弃" }, false);
+										 { L"弃两张", L"不弃" }, false);
 		if (choice == 1) {
 			carrier.chooseToDiscard(L"【炫技】弃置两张牌", 2, true);
 			if (auto sp = carrier.findPSkill("加速"); sp.has_value()) {
