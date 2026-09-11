@@ -312,3 +312,35 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：调羹 ====================
+bool 调羹::filter(const GameLogic& game, const Player& carrier) const {
+	return carrier.handInclude(&Card::isNumber);
+}
+
+bool 调羹::content(GameLogic& game, Player& carrier) {
+	carrier.draw(1, Player::DrawReason::skill);
+	game.broadcastState();
+
+	auto idxOpt = carrier.chooseCard(&Card::isNumber, false);
+	if (!idxOpt) return false;
+
+	auto card = carrier.takeCardByIndex(*idxOpt);
+	carrier.showCard(*card);
+	std::cout << "<技能> " << carrier.characterName() << "展示" << card->toString() << std::endl;
+
+	auto targetOpt = carrier.chooseOtherPlayer(L"【调羹】令一名角色获得此牌", true);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	std::size_t value = card->value();
+	carrier.give(target, std::move(card));
+	std::cout << "<技能> " << carrier.characterName() << "将牌交给" << target.characterName() << std::endl;
+
+	target.recover(value);
+	std::cout << "<技能> " << target.characterName() << "回复" << value << "点体力" << std::endl;
+
+	game.broadcastState();
+	return true;
+}
+

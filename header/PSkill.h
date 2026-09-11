@@ -1210,3 +1210,35 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
+
+
+//九一：任意角色打出9/1后，可弃一张9/1
+class 九一 : public PSkillImpl<九一> {
+public:
+	九一() : PSkillImpl<九一>(
+		"九一",
+		"任意角色打出【9】/【1】后，你可弃置一张【9】/【1】。",
+		unlimited, false,
+		TriggerPlayer::anybody,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//白虎：每局每名角色限一次，回合开始时若其仅剩一张牌，令其获得一张指定颜色牌名的9/1
+class 白虎 : public PSkillImpl<白虎> {
+	std::unordered_set<std::size_t> triggeredPlayers;
+public:
+	白虎() : PSkillImpl<白虎>(
+		"白虎",
+		"每局每名角色限一次，一名角色回合开始时，若其仅剩一张牌，\n"
+		"你可令其获得一张你指定颜色牌名的【9】/【1】。",
+		unlimited, false,
+		TriggerPlayer::anybody,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+	void reset() override;
+};

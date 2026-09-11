@@ -165,3 +165,17 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//调羹：每局限三次，摸一张，展示数字牌给其他角色并回复其分值体力
+class 调羹 : public ASkillInstant<调羹> {
+public:
+	调羹() : ASkillInstant<调羹>(
+		"调羹",
+		"每局游戏限三次，出牌阶段，你可以摸一张牌，展示一张数字牌令一名角色获得之，\n"
+		"并令其回复此牌分值点体力。",
+		3, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

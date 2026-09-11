@@ -60,17 +60,17 @@ bool 带派::content(Trigger& trigger) {
 		L"都获得并失去25体力"
 		}, true);
 	switch (choice) {
-	case 1:
-		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
-		break;
-	case 2:
-		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
-		break;
-	case 3:
-		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
-		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
-		carrier.damage(25, carrier);
-		break;
+		case 1:
+			carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+			break;
+		case 2:
+			carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
+			break;
+		case 3:
+			carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+			carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
+			carrier.damage(25, carrier);
+			break;
 	}
 	trigger.getGame().broadcastState();
 	return true;
@@ -1007,11 +1007,11 @@ bool 健忘::content(Trigger& trigger) {
 	std::size_t choice = carrier.ask(L"【健忘】请选择新的公共颜色", options, true);
 	Card::Color newColor;
 	switch (choice) {
-	case 1: newColor = Card::Color::blue; break;
-	case 2: newColor = Card::Color::red; break;
-	case 3: newColor = Card::Color::green; break;
-	case 4: newColor = Card::Color::yellow; break;
-	default: newColor = Card::Color::blue; break;
+		case 1: newColor = Card::Color::blue; break;
+		case 2: newColor = Card::Color::red; break;
+		case 3: newColor = Card::Color::green; break;
+		case 4: newColor = Card::Color::yellow; break;
+		default: newColor = Card::Color::blue; break;
 	}
 	game.setCurrentColor(newColor);
 	std::cout << "<技能> " << carrier.characterName() << "发动健忘，将公共颜色改为"
@@ -1936,9 +1936,9 @@ bool 治病::content(Trigger& trigger) {
 	std::vector<std::wstring> optionTexts;
 	for (std::size_t opt : options) {
 		switch (opt) {
-		case 1: optionTexts.emplace_back(L"此牌无效"); break;
-		case 2: optionTexts.emplace_back(L"你弃置一张牌"); break;
-		case 3: optionTexts.emplace_back(L"其摸两张牌"); break;
+			case 1: optionTexts.emplace_back(L"此牌无效"); break;
+			case 2: optionTexts.emplace_back(L"你弃置一张牌"); break;
+			case 3: optionTexts.emplace_back(L"其摸两张牌"); break;
 		}
 	}
 
@@ -1946,20 +1946,20 @@ bool 治病::content(Trigger& trigger) {
 	std::size_t chosenOpt = options[choiceIdx - 1];
 
 	switch (chosenOpt) {
-	case 1: //此牌无效
-		card.cancelEffect();
-		std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-			<< player.characterName() << "打出的" << card.toString() << "无效" << std::endl;
-		break;
-	case 2: //你弃置一张牌
-		carrier.chooseToDiscard(L"【治病】弃置一张牌", 1, true);
-		std::cout << "<技能> " << carrier.characterName() << "发动治病，弃置一张牌" << std::endl;
-		break;
-	case 3: //其摸两张牌
-		player.draw(2, Player::DrawReason::skill);
-		std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-			<< player.characterName() << "摸两张牌" << std::endl;
-		break;
+		case 1: //此牌无效
+			card.cancelEffect();
+			std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
+				<< player.characterName() << "打出的" << card.toString() << "无效" << std::endl;
+			break;
+		case 2: //你弃置一张牌
+			carrier.chooseToDiscard(L"【治病】弃置一张牌", 1, true);
+			std::cout << "<技能> " << carrier.characterName() << "发动治病，弃置一张牌" << std::endl;
+			break;
+		case 3: //其摸两张牌
+			player.draw(2, Player::DrawReason::skill);
+			std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
+				<< player.characterName() << "摸两张牌" << std::endl;
+			break;
 	}
 
 	//若此时剩余多个选项，移除本次所选
@@ -2265,10 +2265,10 @@ bool 芜湖::content(Trigger& trigger) {
 	if (colorChoice <= 4) {
 		//基础四色
 		switch (colorChoice) {
-		case 1: targetColor = Card::Color::red;    break;
-		case 2: targetColor = Card::Color::yellow; break;
-		case 3: targetColor = Card::Color::green;  break;
-		case 4: targetColor = Card::Color::blue;   break;
+			case 1: targetColor = Card::Color::red;    break;
+			case 2: targetColor = Card::Color::yellow; break;
+			case 3: targetColor = Card::Color::green;  break;
+			case 4: targetColor = Card::Color::blue;   break;
 		}
 		nameOpts = {
 			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2,
@@ -2277,7 +2277,8 @@ bool 芜湖::content(Trigger& trigger) {
 			Card::Name::number_9, Card::Name::action_skip, Card::Name::action_draw2,
 			Card::Name::action_rev
 		};
-	} else {
+	}
+	else {
 		//黑色（万能牌）
 		targetColor = Card::Color::black;
 		nameOpts = { Card::Name::wild_pal, Card::Name::wild_draw4 };
@@ -2309,13 +2310,74 @@ bool 芜湖::content(Trigger& trigger) {
 		carrier.gainCard(std::move(card));
 		std::cout << "<技能> " << carrier.characterName() << "从牌堆获得"
 			<< cardPtr->toString() << std::endl;
-	} else {
+	}
+	else {
 		//无匹配：视为未发动过，可弃一张
 		resetCount();
-		carrier.chooseToDiscard(L"【芜湖】牌堆无此牌，弃置一张牌", 1, false);
+		carrier.chooseToDiscard(L"牌堆无此牌，弃置一张牌", 1, false);
 		std::cout << "<技能> " << carrier.characterName() << "声明牌堆无此牌，芜湖视为未发动" << std::endl;
 	}
 
 	game.broadcastState();
 	return true;
+}
+
+
+// ==================== 技能：九一 ====================
+bool 九一::filter(const Trigger& trigger) const {
+	const Card& c = trigger.getCard();
+	if (!(c.is(Card::Name::number_9, Card::Name::number_1))) return false;
+	return trigger.getCarrier().handInclude(&Card::isNumber);
+}
+
+bool 九一::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	carrier.chooseToDiscard(L"弃置一张【9】或【1】", 1, false,
+							[](const Card& c) { return c.is(Card::Name::number_9, Card::Name::number_1); });
+	std::cout << "<技能> " << carrier.characterName() << "发动九一" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：白虎 ====================
+bool 白虎::filter(const Trigger& trigger) const {
+	const Player& target = trigger.getPlayer();
+	if (triggeredPlayers.contains(target.getId())) return false;
+	return target.handCount() == 1;
+}
+
+bool 白虎::content(Trigger& trigger) {
+	Player& caster = trigger.getCarrier();   //唐伯虎（技能持有者）
+	Player& target = trigger.getPlayer();     //回合开始的角色
+	GameLogic& game = trigger.getGame();
+
+	//caster 选颜色
+	auto colorOpt = caster.chooseCardColor(L"发动【白虎】，选择一个颜色", true,
+										   { Card::Color::red, Card::Color::yellow, Card::Color::green, Card::Color::blue });
+	if (!colorOpt) return false;
+	Card::Color color = *colorOpt;
+
+	//caster 选牌名（9或1）
+	auto nameOpt = caster.chooseCardName(L"选择一个牌名", true,
+										 { Card::Name::number_9, Card::Name::number_1 });
+	if (!nameOpt) return false;
+	Card::Name name = *nameOpt;
+
+	//新建一张牌给目标
+	auto card = Card::make(color, name);
+	std::cout << "<技能> " << caster.characterName() << "发动白虎，令" << target.characterName()
+		<< "获得" << card->toString() << std::endl;
+	target.gainCard(std::move(card));
+
+	triggeredPlayers.insert(target.getId());
+	game.broadcastState();
+	return true;
+}
+
+void 白虎::reset() {
+	triggeredPlayers.clear();
+	PSkill::reset();
 }
