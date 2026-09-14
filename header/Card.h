@@ -40,32 +40,10 @@ public:
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
-	inline static constexpr std::array<Card::Color, 4> fourColors = {
-		Color::blue, Color::green, Color::red, Color::yellow
-	};
-	inline static constexpr std::array<Card::Color, 5> fiveColors = {
-		Color::blue, Color::green, Color::red, Color::yellow, Color::black
-	};
-	inline static constexpr std::array<Card::Name, 10> numberCardsFrom0 = {
-		Name::number_0, Name::number_1, Name::number_2, Name::number_3, Name::number_4,
-		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
-	};
-	inline static constexpr std::array<Card::Name, 10> numberCardsFrom1 = {
-		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
-		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0
-	};
-	inline static constexpr std::array<Card::Name, 3> actionCards = {
-		Name::action_rev, Name::action_skip, Name::action_draw2
-	};
-	inline static constexpr std::array<Card::Name, 2> wildCards = {
-		Name::wild_pal, Name::wild_draw4
-	};
-	inline static constexpr std::array<Card::Name, 15> allCards = {
-		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
-		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
-		Name::action_rev, Name::action_skip, Name::action_draw2,
-		Name::wild_pal, Name::wild_draw4
-	};
+#pragma endregion
+
+#pragma region 静态数据
+
 #pragma endregion
 
 private:
@@ -81,7 +59,6 @@ public:
 	static std::unique_ptr<Card> make(const Color, const Name);
 	static std::unique_ptr<Card> make(const Card& other);
 	static std::unique_ptr<Card> make(const std::unique_ptr<Card>& otherPtr);
-	static const Card back;
 #pragma endregion
 
 #pragma region 随机牌
@@ -146,17 +123,47 @@ public:
 	bool isEffective() const { return effective; }
 #pragma endregion
 
-#pragma region 静态转换 / 静态数据 / 静态方法
+#pragma region 静态转换 / 静态方法
 	static std::string to_string(const Color& color);
 	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::wstring to_wstring(const Name& name);
 	static std::wstring to_wstring(const Type& type);
 	static std::wstring to_wstring(const DiscardReason reason);
-	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
 	static bool is_number(const Card::Name name);
 	static bool is_action(const Card::Name name);
 	static bool is_wild(const Card::Name name);
+#pragma endregion
+
+#pragma region 静态数据
+	inline static constexpr std::array<Card::Color, 4> fourColors = {
+		Color::blue, Color::green, Color::red, Color::yellow
+	};
+	inline static constexpr std::array<Card::Color, 5> fiveColors = {
+		Color::blue, Color::green, Color::red, Color::yellow, Color::black
+	};
+	inline static constexpr std::array<Card::Name, 10> numberCardsFrom0 = {
+		Name::number_0, Name::number_1, Name::number_2, Name::number_3, Name::number_4,
+		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
+	};
+	inline static constexpr std::array<Card::Name, 10> numberCardsFrom1 = {
+		Name::number_1, Name::number_2, Name::number_3, Name::number_4, Name::number_5,
+		Name::number_6, Name::number_7, Name::number_8, Name::number_9, Name::number_0
+	};
+	inline static constexpr std::array<Card::Name, 3> actionCards = {
+		Name::action_rev, Name::action_skip, Name::action_draw2
+	};
+	inline static constexpr std::array<Card::Name, 2> wildCards = {
+		Name::wild_pal, Name::wild_draw4
+	};
+	inline static constexpr std::array<Card::Name, 15> allCards = {
+		Name::number_0, Name::number_1, Name::number_2, Name::number_3,Name::number_4,
+		Name::number_5, Name::number_6, Name::number_7, Name::number_8, Name::number_9,
+		Name::action_rev, Name::action_skip, Name::action_draw2,
+		Name::wild_pal, Name::wild_draw4
+	};
+	static const Card back;
+	static const std::unordered_map<ColorName, std::string, TupleHash> imagePaths;
 #pragma endregion
 };
 

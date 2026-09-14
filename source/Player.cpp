@@ -31,7 +31,8 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		std::unique_ptr<Card> cardPtr;
 		if (position == DrawPosition::top) {
 			cardPtr = game.getPile().take_front(game.getDiscardPile());
-		} else {
+		}
+		else {
 			cardPtr = game.getPile().take_back(game.getDiscardPile());
 		}
 		hand->push_back(std::move(cardPtr));
@@ -239,21 +240,21 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 			continue;
 
 		switch (input) {
-		case sf::Keyboard::Scancode::Space:
-			sortHand();
-			game.broadcastState();
-			break;
-		case sf::Keyboard::Scancode::Up:
-		case sf::Keyboard::Scancode::W:
-			if (auto result = handleConfirm(condition, activeMode); result.has_value())
-				return result.value();
-			break;
-		case sf::Keyboard::Scancode::Down:
-		case sf::Keyboard::Scancode::S:
-			if (!forced) return std::nullopt;
-			break;
-		default:
-			break;
+			case sf::Keyboard::Scancode::Space:
+				sortHand();
+				game.broadcastState();
+				break;
+			case sf::Keyboard::Scancode::Up:
+			case sf::Keyboard::Scancode::W:
+				if (auto result = handleConfirm(condition, activeMode); result.has_value())
+					return result.value();
+				break;
+			case sf::Keyboard::Scancode::Down:
+			case sf::Keyboard::Scancode::S:
+				if (!forced) return std::nullopt;
+				break;
+			default:
+				break;
 		}
 	}
 }
@@ -271,9 +272,9 @@ void Player::collectAvailableSkills(ASkill::TriggerTime phase,
 }
 
 bool Player::handleDigitKey(sf::Keyboard::Scancode input,
-	const std::vector<ref<ASkillInstantBase>>& instantRefs,
-	const std::vector<ref<ASkillTransformBase>>& transformRefs,
-	ASkillTransformBase*& activeMode) {
+							const std::vector<ref<ASkillInstantBase>>& instantRefs,
+							const std::vector<ref<ASkillTransformBase>>& transformRefs,
+							ASkillTransformBase*& activeMode) {
 	auto digit = digitFromScancode(input);
 	if (!digit.has_value() || digit.value() == 0) return false;
 
@@ -604,7 +605,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		auto digit = digitFromScancode(input);
 		if (!digit.has_value()) {
 			errorMsg = usePaging ? L"无效输入，请输入数字0-9或使用<-->翻页"
-								 : L"无效输入，请输入数字0-9";
+				: L"无效输入，请输入数字0-9";
 			sendPage();
 			continue;
 		}
@@ -642,17 +643,17 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 
 std::optional<std::size_t> Player::digitFromScancode(sf::Keyboard::Scancode input) {
 	switch (input) {
-	case sf::Keyboard::Scancode::Num0: case sf::Keyboard::Scancode::Numpad0: return 0;
-	case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: return 1;
-	case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: return 2;
-	case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: return 3;
-	case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: return 4;
-	case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: return 5;
-	case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: return 6;
-	case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: return 7;
-	case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: return 8;
-	case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: return 9;
-	default: return std::nullopt;
+		case sf::Keyboard::Scancode::Num0: case sf::Keyboard::Scancode::Numpad0: return 0;
+		case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: return 1;
+		case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: return 2;
+		case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: return 3;
+		case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: return 4;
+		case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: return 5;
+		case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: return 6;
+		case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: return 7;
+		case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: return 8;
+		case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: return 9;
+		default: return std::nullopt;
 	}
 }
 

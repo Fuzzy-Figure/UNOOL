@@ -2351,7 +2351,7 @@ bool 白虎::filter(const Trigger& trigger) const {
 
 bool 白虎::content(Trigger& trigger) {
 	Player& caster = trigger.getCarrier();   //唐伯虎（技能持有者）
-	Player& target = trigger.getPlayer();     //回合开始的角色
+	Player& target = trigger.getPlayer();    //回合开始的角色
 	GameLogic& game = trigger.getGame();
 
 	//caster 选颜色
@@ -2473,6 +2473,45 @@ bool 渡荆::content(Trigger& trigger) {
 		giveRandomDraw2(target);
 	}
 
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：返现 ====================
+bool 返现::filter(const Trigger& trigger) const {
+	const Player& carrier = trigger.getCarrier();
+	for (const auto& c : carrier.getHand()) {
+		if (!c->is(Card::Color::yellow)) return true;
+	}
+	return false;
+}
+
+bool 返现::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//收集非黄色牌下标
+	std::vector<std::size_t> nonYellowIndices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (!carrier.getCardByIndex(i).is(Card::Color::yellow)) nonYellowIndices.push_back(i);
+	}
+	if (nonYellowIndices.empty()) return false;
+
+	//从后往前弃置（避免索引偏移）
+	std::ranges::sort(nonYellowIndices, std::greater{});
+	for (std::size_t idx : nonYellowIndices) {
+		carrier.discardByIndex(idx);
+	}
+
+	//摸等量牌（重铸）
+	carrier.draw(nonYellowIndices.size(), Player::DrawReason::skill);
+
+	//回复等量体力
+	carrier.recover(nonYellowIndices.size());
+
+	std::cout << "<技能> " << carrier.characterName() << "发动返现，重铸了"
+		<< nonYellowIndices.size() << "张非黄色牌，回复" << nonYellowIndices.size() << "点体力" << std::endl;
 	game.broadcastState();
 	return true;
 }

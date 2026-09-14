@@ -345,3 +345,39 @@ bool 调羹::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：挥金 ====================
+bool 挥金::filter(const GameLogic& game, const Player& carrier) const {
+	if (carrier.handCount() < 3) return false;
+	//手中有黄色牌且其类型未用过
+	for (const auto& c : carrier.getHand()) {
+		if (c->is(Card::Color::yellow) && !usedTypes.contains(c->getType())) return true;
+	}
+	return false;
+}
+
+bool 挥金::content(GameLogic& game, Player& carrier) {
+	//选目标
+	auto targetOpt = carrier.chooseOtherPlayer(L"【挥金】选择一名角色交牌", false);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	//选黄色牌（类型未用过）
+	auto cardOpt = carrier.chooseToGive(L"【挥金】交一张黄色牌", target, false,
+		[this](const Card& c) { return c.is(Card::Color::yellow) && !usedTypes.contains(c.getType()); });
+	if (!cardOpt) return false;
+
+	//记录已用类型
+	usedTypes.insert(cardOpt->get().getType());
+	std::cout << "<技能> " << carrier.characterName() << "发动挥金，交出"
+		<< cardOpt->get().toString() << std::endl;
+
+	game.broadcastState();
+	return true;
+}
+
+void 挥金::reset() {
+	usedTypes.clear();
+	ASkill::reset();
+}
+

@@ -179,3 +179,18 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//挥金：每种类型限一次，出牌阶段，若手牌数≥3，可将一张黄色手牌交给一名其他角色
+class 挥金 : public ASkillInstant<挥金> {
+	std::set<Card::Type> usedTypes;
+public:
+	挥金() : ASkillInstant<挥金>(
+		"挥金",
+		"每种类型限一次，出牌阶段，若你手牌数≥3，你可以将一张黄色手牌交给一名其他角色。",
+		unlimited, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+

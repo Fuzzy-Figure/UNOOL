@@ -1275,3 +1275,17 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//返现：限定技，结束阶段，重铸所有非黄色手牌并回复等量体力
+class 返现 : public PSkillImpl<返现> {
+public:
+	返现() : PSkillImpl<返现>(
+		"返现",
+		"限定技，结束阶段，你可以重铸所有非黄色手牌，并回复重铸牌数点体力。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
