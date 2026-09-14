@@ -383,11 +383,6 @@ void 挥金::reset() {
 
 
 // ==================== 技能：再生 ====================
-bool 再生::filter(const GameLogic& game, const Player& carrier) const {
-	//可发动（即使没有绿色牌也允许，弃0张）
-	return carrier.getHp() < 50;
-}
-
 bool 再生::content(GameLogic& game, Player& carrier) {
 	std::size_t beforeHp = carrier.getHp();
 

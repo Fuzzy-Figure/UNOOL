@@ -1983,33 +1983,33 @@ bool 连营::filter(const Trigger& trigger) const {
 	if (!trigger.hasPlayer() || !trigger.hasCards()) return false;
 	if (trigger.getCarrier().getId() != trigger.getPlayer().getId()) return false;
 	const Card& c = trigger.getCard();
-	Card::Type cat = c.getType();
-	if (triggered->count(cat)) return false;  //该类别已触发过
+	Card::Type type = c.getType();
+	if (triggered->count(type)) return false;  //该类别已触发过
 	//失去后手牌中该类别牌数为0（最后一张）
 	return !trigger.getCarrier().handInclude(
-		[cat](const Card& hc) { return hc.getType() == cat; });
+		[type](const Card& hc) { return hc.getType() == type; });
 }
 
 bool 连营::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	const Card& lost = trigger.getCard();
-	Card::Type lostCat = lost.getType();
+	Card::Type lostType = lost.getType();
 
 	//弃置另一类别的一张牌
 	auto discarded = carrier.chooseToDiscard(
 		L"【连营】弃置另一类别的一张牌", 1, false,
-		[lostCat](const Card& c) { return c.getType() != lostCat; });
+		[lostType](const Card& c) { return c.getType() != lostType; });
 	if (discarded.empty()) return false;  //玩家取消
 
 	//从游戏外获得该类别一张牌
-	Card::ColorName cn = Card::randomCard([lostCat](const Card& c) {
-		return c.getType() == lostCat;
+	Card::ColorName cn = Card::randomCard([lostType](const Card& c) {
+		return c.getType() == lostType;
 	});
 	carrier.gainCard(Card::make(cn));
 
-	triggered->insert(lostCat);
+	triggered->insert(lostType);
 	std::cout << "<技能> " << carrier.characterName() << "发动连营，弃置一张牌并获得一张"
-		<< (lostCat == Card::Type::wild ? "万能" : lostCat == Card::Type::action ? "功能" : "数字") << "牌" << std::endl;
+		<< (lostType == Card::Type::wild ? "万能" : lostType == Card::Type::action ? "功能" : "数字") << "牌" << std::endl;
 	trigger.getGame().broadcastState();
 	return true;
 }
@@ -2034,8 +2034,8 @@ bool 困界_子::content(Trigger& trigger) {
 	Player& target = targetOpt.value().get();
 
 	//重铸某类别所有牌的局部函数
-	auto recastAll = [&game](Player& p, Card::Type cat) {
-		auto cond = [cat](const Card& c) { return c.getType() == cat; };
+	auto recastAll = [&game](Player& p, Card::Type type_) {
+		auto cond = [type_](const Card& c) { return c.getType() == type_; };
 		std::size_t cnt = 0;
 		for (std::size_t i = 0; i < p.handCount(); ++i)
 			if (cond(p.getCardByIndex(i))) ++cnt;
@@ -2049,25 +2049,25 @@ bool 困界_子::content(Trigger& trigger) {
 	};
 
 	//2. 选目标重铸的类别
-	std::size_t catAIdx = carrier.ask(
+	std::size_t typeAIdx = carrier.ask(
 		L"【困界】选择" + target.characterNameW() + L"重铸的类别",
 		{ L"数字牌", L"功能牌", L"万能牌" }, true);
-	Card::Type catA = static_cast<Card::Type>(catAIdx);
-	recastAll(target, catA);
+	Card::Type typeA = static_cast<Card::Type>(typeAIdx);
+	recastAll(target, typeA);
 
-	//3. 选自己重铸的类别（必须不同于 catA）
+	//3. 选自己重铸的类别（必须不同于 typeA）
 	std::vector<std::wstring> otherNames;
-	std::vector<Card::Type> otherCats;
+	std::vector<Card::Type> otherTypes;
 	for (int i = 1; i <= 3; ++i) {
 		Card::Type c = static_cast<Card::Type>(i);
-		if (c != catA) {
+		if (c != typeA) {
 			otherNames.push_back(Card::to_wstring(c));
-			otherCats.push_back(c);
+			otherTypes.push_back(c);
 		}
 	}
-	std::size_t catBIdx = carrier.ask(L"【困界】选择自己重铸的类别", otherNames, true);
-	Card::Type catB = otherCats[catBIdx - 1];
-	recastAll(carrier, catB);
+	std::size_t typeBIdx = carrier.ask(L"【困界】选择自己重铸的类别", otherNames, true);
+	Card::Type typeB = otherTypes[typeBIdx - 1];
+	recastAll(carrier, typeB);
 
 	std::cout << "<技能> " << carrier.characterName() << "发动困界" << std::endl;
 	// 重置连营：清空已触发类别，使一技能可再次为所有类别触发
@@ -2459,16 +2459,18 @@ bool 渡荆::content(Trigger& trigger) {
 		auto card = Card::make(color, Card::Name::action_draw2);
 		std::cout << "<技能> " << p.characterName() << "拼点未赢，从游戏外获得" << card->toString() << std::endl;
 		p.gainCard(std::move(card));
-		};
+	};
 
 	if (*result == Player::CompareResult::lose) {
 		//carrier没赢
 		giveRandomDraw2(carrier);
-	} else if (*result == Player::CompareResult::draw) {
+	}
+	else if (*result == Player::CompareResult::draw) {
 		//平局，双方都没赢
 		giveRandomDraw2(carrier);
 		giveRandomDraw2(target);
-	} else {
+	}
+	else {
 		//carrier赢，target没赢
 		giveRandomDraw2(target);
 	}

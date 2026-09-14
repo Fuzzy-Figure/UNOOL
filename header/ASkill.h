@@ -204,7 +204,6 @@ public:
 		1, unlimited,
 		TriggerTime::phase_use
 	) {}
-	bool filter(const GameLogic& game, const Player& carrier) const override;
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
