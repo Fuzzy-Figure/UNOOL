@@ -381,3 +381,42 @@ void 挥金::reset() {
 	ASkill::reset();
 }
 
+
+// ==================== 技能：再生 ====================
+bool 再生::filter(const GameLogic& game, const Player& carrier) const {
+	//可发动（即使没有绿色牌也允许，弃0张）
+	return carrier.getHp() < 50;
+}
+
+bool 再生::content(GameLogic& game, Player& carrier) {
+	std::size_t beforeHp = carrier.getHp();
+
+	//弃置所有绿色牌
+	std::vector<std::size_t> greenIndices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getCardByIndex(i).is(Card::Color::green)) greenIndices.push_back(i);
+	}
+	std::ranges::sort(greenIndices, std::greater{});
+	for (std::size_t idx : greenIndices) {
+		carrier.discardByIndex(idx);
+	}
+
+	//回复至50点
+	if (carrier.getHp() < 50) {
+		carrier.recover(50 - carrier.getHp());
+	}
+
+	std::size_t healed = carrier.getHp() - beforeHp;
+	std::cout << "<技能> " << carrier.characterName() << "发动再生，弃置"
+		<< greenIndices.size() << "张绿色牌，回复" << healed << "点体力（至50）" << std::endl;
+
+	//若回复≤25，次数改为2
+	if (healed <= 25) {
+		setLimit(2);
+		std::cout << "<技能> " << carrier.characterName() << "的【再生】回复不超过25，可发动次数改为2" << std::endl;
+	}
+
+	game.broadcastState();
+	return true;
+}
+

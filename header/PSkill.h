@@ -1289,3 +1289,17 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//尖刺：锁定技，受到伤害后，对一名其他角色造成等量伤害并回复1点体力
+class 尖刺 : public PSkillImpl<尖刺> {
+public:
+	尖刺() : PSkillImpl<尖刺>(
+		"尖刺",
+		"锁定技，你受到伤害后，对一名其他角色造成等量伤害并回复1点体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::damage_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

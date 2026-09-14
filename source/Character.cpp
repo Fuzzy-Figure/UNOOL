@@ -73,6 +73,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos ={
 	{"唐伯虎",   {Level::C, {九一::make, 白虎::make}, {}, {}, 91}},
 	{"新吕蒙",   {Level::B, {易主::make, 渡荆::make}, {}, {}, 170}},
 	{"格里夫",   {Level::C, {返现::make}, {挥金::make}, {}, 200}},
+	{"斯派克",   {Level::A, {尖刺::make}, {再生::make}, {}, 50}},
 };
 
 

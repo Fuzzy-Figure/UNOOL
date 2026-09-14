@@ -2515,3 +2515,28 @@ bool 返现::content(Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：尖刺 ====================
+bool 尖刺::filter(const Trigger& trigger) const {
+	return trigger.hasNumber();
+}
+
+bool 尖刺::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+	std::size_t dmg = trigger.getNumber();
+
+	//选一名其他角色造成等量伤害
+	auto targetOpt = carrier.chooseOtherPlayer(L"【尖刺】选择一名角色造成" + std::to_wstring(dmg) + L"点伤害", true);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	target.damage(dmg, carrier);
+	carrier.recover(1);
+
+	std::cout << "<技能> " << carrier.characterName() << "发动尖刺，对"
+		<< target.characterName() << "造成" << dmg << "点伤害，回复1点体力" << std::endl;
+	game.broadcastState();
+	return true;
+}

@@ -194,3 +194,17 @@ public:
 	void reset() override;
 };
 
+//再生：限定技，出牌阶段，弃置所有绿色牌回复至50点；若回复≤25则次数改为2
+class 再生 : public ASkillInstant<再生> {
+public:
+	再生() : ASkillInstant<再生>(
+		"再生",
+		"限定技，出牌阶段，你可以弃置手中所有绿色牌将生命值回复至50点；\n"
+		"若你因此回复生命不超过25，此技能本局可发动次数改为2。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
