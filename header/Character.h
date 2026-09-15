@@ -68,8 +68,6 @@ public:
 #pragma endregion
 
 #pragma region 技能管理
-	std::vector<std::string> getPSkillsName() const;
-	std::vector<std::string> getASkillsName() const;
 	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return instantSkills; }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
 	bool hasSkill(const std::string& skillName) const;

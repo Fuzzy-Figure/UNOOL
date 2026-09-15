@@ -256,23 +256,6 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 
 
 // ==================== 技能管理 ====================
-std::vector<std::string> Character::getPSkillsName() const {
-	std::vector<std::string> names;
-	for (const auto& skill : pSkills) {
-		names.push_back(skill->getName());
-	}
-	return names;
-}
-std::vector<std::string> Character::getASkillsName() const {
-	std::vector<std::string> names;
-	for (const auto& skill : instantSkills) {
-		names.push_back(skill->getName());
-	}
-	for (const auto& skill : transformSkills) {
-		names.push_back(skill->getName());
-	}
-	return names;
-}
 bool Character::hasSkill(const std::string& skillName) const {
 	for (const auto& skill : pSkills) {
 		if (skill->getName() == skillName) return true;
