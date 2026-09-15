@@ -300,7 +300,7 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 										 { L"弃两张", L"不弃" }, false);
 		if (choice == 1) {
 			carrier.chooseToDiscard(L"【炫技】弃置两张牌", 2, true);
-			if (auto sp = carrier.findPSkill("加速"); sp.has_value()) {
+			if (auto sp = carrier.findSkill("加速"); sp.has_value()) {
 				auto& acc = sp.value().get();
 				acc.setLimit(acc.getLimit().value() + 1);
 				std::cout << "<技能> " << carrier.characterName() << "的【加速】可发动次数+1，当前="

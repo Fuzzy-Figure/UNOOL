@@ -22,7 +22,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌（"
 		<< (position == DrawPosition::top ? "顶" : "底") << "）" << std::endl;
 	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
-	if (hasPSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
+	if (hasSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
 
 	std::vector<ref<Card>> drawnCards;
 	drawnCards.reserve(number);

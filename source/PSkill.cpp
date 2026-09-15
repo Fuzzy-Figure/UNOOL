@@ -1576,7 +1576,7 @@ bool 骚扰::content(Trigger& trigger) {
 	//判定非蓝色：回复1点体力
 	carrier.recover(1);
 	//重置【落水】使用次数（不改是否锁定）
-	if (auto opt = carrier.findPSkill("落水")) {
+	if (auto opt = carrier.findSkill("落水")) {
 		opt->get().resetCount();
 	}
 	std::cout << "<技能> " << carrier.characterName()
@@ -2408,7 +2408,7 @@ bool 易主::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动易主，弃置获得的两张牌" << std::endl;
 
 	//渡荆可发动次数+1
-	if (auto sp = carrier.findPSkill("渡荆"); sp.has_value()) {
+	if (auto sp = carrier.findSkill("渡荆"); sp.has_value()) {
 		auto& dj = sp.value().get();
 		dj.setLimit(dj.getLimit().value() + 1);
 		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="

@@ -100,8 +100,8 @@ public:
 	bool handSatisfy(const std::function<bool(const Cards&)>& condition) const { return hand->satisfy(condition); }
 	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
-	bool hasPSkill(const std::string& name) const { return character->hasPSkill(name); }
-	opt_ref<PSkill> findPSkill(const std::string& name) { return character->findPSkill(name); }
+	bool hasSkill(const std::string& name) const { return character->hasSkill(name); }
+	opt_ref<Skill> findSkill(const std::string& name) { return character->findSkill(name); }
 	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
 #pragma endregion

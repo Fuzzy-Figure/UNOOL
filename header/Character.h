@@ -72,8 +72,8 @@ public:
 	std::vector<std::string> getASkillsName() const;
 	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return instantSkills; }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
-	bool hasPSkill(const std::string& skillName) const;
-	opt_ref<PSkill> findPSkill(const std::string& skillName);
+	bool hasSkill(const std::string& skillName) const;
+	opt_ref<Skill> findSkill(const std::string& skillName);
 	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) const;
 	void addSkill(std::unique_ptr<ASkillInstantBase>   skill);
 	void addSkill(std::unique_ptr<ASkillTransformBase> skill);

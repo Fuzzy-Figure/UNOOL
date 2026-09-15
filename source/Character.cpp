@@ -273,14 +273,26 @@ std::vector<std::string> Character::getASkillsName() const {
 	}
 	return names;
 }
-bool Character::hasPSkill(const std::string& skillName) const {
+bool Character::hasSkill(const std::string& skillName) const {
 	for (const auto& skill : pSkills) {
+		if (skill->getName() == skillName) return true;
+	}
+	for (const auto& skill : instantSkills) {
+		if (skill->getName() == skillName) return true;
+	}
+	for (const auto& skill : transformSkills) {
 		if (skill->getName() == skillName) return true;
 	}
 	return false;
 }
-opt_ref<PSkill> Character::findPSkill(const std::string& skillName) {
+opt_ref<Skill> Character::findSkill(const std::string& skillName) {
 	for (auto& skill : pSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
+	for (const auto& skill : instantSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
+	for (const auto& skill : transformSkills) {
 		if (skill->getName() == skillName) return *skill;
 	}
 	return std::nullopt;
