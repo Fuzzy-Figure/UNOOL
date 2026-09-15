@@ -1,6 +1,10 @@
 {
   "banCount": 2,
   "candidateCount": 10,
-  "characters": [ "斯派克", "8比特" ],
-  "initHandCount": 8
+  //"characters": [ "斯派克", "8比特" ],
+  "initHandCount": 8,
+  "shielded": {
+    "characters": [],
+    "groups": [ "网络", "实验" ]
+  }
 }

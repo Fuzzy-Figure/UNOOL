@@ -7,75 +7,74 @@
 
 
 // ==================== 静态数据 ====================
-const std::unordered_map<std::string, Character::Info> Character::infos ={
-	{"白板",     {Level::F, {},           {}, {}, 1}},
-	/*神*/{"特朗普",   {Level::D, {粪怒::make}, {}, {}, 145}},
-	/*神-掌门人*/{"棍母",     {Level::F, {隐身::make}, {}, {}, 100}},
-	/*神*/{"夏搏",     {Level::F, {顶置::make}, {}, {}, 114}},
-	/*牢*/{"雨姐",     {Level::D, {带派::make}, {}, {}, 275}},
-	/*牢*/{"神里绫华", {Level::D, {寒魄::make}, {}, {}, 140}},
-	/*牢*/{"瑜伽一",   {Level::F, {割腕::make, 丑皇::make}, {}, {}, 230}},
-	{"李阳",     {Level::C, {军国::make, 家暴::make}, {}, {}, 185}},
-	/*牢*/{"薛维旭",   {Level::D, {健身::make, 做题::make}, {}, {}, 190}},
-	{"Tung Tung Tung Tung Tung Tung Tung Tung Tung Sahur", {Level::S, {棍击::make, 神木::make}, {}, {}, 100}},
-	/*牢-掌门人*/{"雷电将军", {Level::D, {雷剑::make}, {}, {}, 140}},
-	{"王天一",   {Level::C, {买棋::make, 卖棋::make}, {}, {}, 140}},
-	{"Tralalero Tralala",    {Level::C, {耐克::make}, {}, {}, 160}},
-	{"Bombardiro Crocodilo", {Level::A, {轰炸::make}, {装弹::make}, {}, 185}},
-	{"Bumbumbini Guzzini",   {Level::A, {爆破::make}, {装弹::make}, {}, 185}},
-	/*牢*/{"Alan Walker", {Level::D, {电音::make, 蒙面::make}, {}, {}, 175}},
-	{"丁真",        {Level::C, {锐刻::make}, {}, {}, 140}},
-	/*牢*/{"代增玉",      {Level::F, {巨富::make, 破产::make}, {}, {}, 275}},
-	/*牢*/{"潘子",        {Level::F, {假酒::make}, {}, {}, 120}},
-	{"土语",        {Level::D, {窃观::make}, {}, {}, 195}},
-	{"Notch",       {Level::C, {生存::make, 创造::make}, {}, {}, 140}},
-	{"新诸葛亮",    {Level::B, {炼兵::make, 好火::make}, {}, {}, 77}},
-	{"Brr Brr Patapim", {Level::B, {森罗::make, 大脚::make}, {}, {}, 185}},
-	{"新关羽", {Level::B, {过江::make, 大盏::make}, {}, {}, 210}},
-	{"卞相壹", {Level::B, {举报::make, 猥琐::make}, {}, {}, 160}},
-	{"柯洁",   {Level::B, {棋王::make, 金铲::make}, {}, {}, 160}},
-	{"老友",   {Level::A, {淘汰::make}, {}, {}, 160}},
-	{"屎軖",   {Level::A, {}, {招待::make}, {}, 160}},
-	/*牢*/{"植物人", {Level::F, {光合::make}, {}, {}, 200}},
-	{"梅西",   {Level::B, {射门::make}, {}, {}, 220}},
-	{"二次元", {Level::F, {追番::make, 崩三::make}, {}, {}, 100}},
-	{"金正日", {Level::B, {望日::make, 慈父::make}, {}, {}, 188}},
-	{"金日成", {Level::C, {朔日::make}, {}, {}, 199}},
-	{"刘建龙", {Level::D, {}, {徒步::make}, {}, 250}},
-	{"拜登",   {Level::A, {健忘::make}, {}, {}, 125}},
-	/*神*/{"王耘浩", {Level::D, {豪赌::make}, {}, {}, 250}},
-	{"Bulbito Bandito Traktorito", {Level::B, {黑帮::make, 拖拉::make}, {}, {}, 225}},
-	{"烟刻瑯", {Level::B, {迷烟::make}, {}, {}, 175}},
-	/*神*/{"幺幺",   {Level::F, {水鬼::make}, {}, {}, 88}},
-	/*神*/{"蒋介石", {Level::F, {叛党::make}, {}, {}, 180}},
-	/*神*/{"斯大林", {Level::C, {清洗::make}, {}, {}, 225}},
-	{"龚俊清", {Level::B, {落水::make, 骚扰::make}, {}, {}, 198}},
-	/*神*/{"Blueberrini Octopussini", {Level::D, {}, {}, {八爪::make}, 100}},
-	{"闫传学", {Level::A, {犬子::make}, {}, {}, 222}},
-	{"霍金",   {Level::C, {黑洞::make}, {}, {}, 88}},
-	{"峰哥",   {Level::A, {好事::make, 压抑::make}, {}, {}, 255}},
-	{"包贝尔", {Level::B, {捉奸::make}, {}, {我妈::make}, 160}},
-	{"科比",   {Level::C, {}, {}, {曼巴::make}, 248}},
-	{"翟钊",   {Level::F, {}, {摘罩::make}, {}, 130}},
-	{"田淑丽", {Level::C, {}, {还击::make}, {}, 145}},
-	{"虎哥",   {Level::F, {有活::make}, {}, {}, 275}},
-	{"大章鱼", {Level::C, {爬竿::make, 渊涡::make}, {}, {}, 275}},
-	{"杨坤",   {Level::C, {没座::make, 空空::make}, {}, {}, 240}},
-	//{"大脚忍者", {Level::A, {暗忍::make}, {舞爪::make}, {}, 280}},
-	{"大中医",   {Level::A, {治病::make}, {}, {}, 100}},
-	{"新陆逊",   {Level::B, {连营::make, 困界::make}, {}, {}, 150}},
-	/*神*/{"电棍",     {Level::F, {四麻::make}, {四霸::make}, {}, 44}},
-	{"8比特",    {Level::S, {爆射::make}, {装币::make}, {}, 288}},
-	{"格斯",     {Level::B, {灵爆::make}, {幽愈::make}, {}, 100}},
-	{"斯图",     {Level::A, {加速::make}, {炫技::make}, {}, 120}},
-	{"大司马",   {Level::C, {走位::make}, {}, {}, 150}},
-	{"新静姝",   {Level::B, {}, {调羹::make}, {}, 166}},
-	{"唐伯虎",   {Level::C, {九一::make, 白虎::make}, {}, {}, 91}},
-	{"新吕蒙",   {Level::B, {易主::make, 渡荆::make}, {}, {}, 170}},
-	{"格里夫",   {Level::C, {返现::make}, {挥金::make}, {}, 200}},
-	{"斯派克",   {Level::A, {尖刺::make}, {再生::make}, {}, 50}},
+const std::unordered_map<std::string, Character::Info> Character::infos = {
+	{"白板",     {"其他",          Level::F, {},           {}, {}, 1}},
+	{"特朗普",   {"元首",           Level::D, {粪怒::make}, {}, {}, 145}},
+	{"棍母",     {"网络",           Level::F, {隐身::make}, {}, {}, 100}},
+	{"夏搏",     {"实验",           Level::F, {顶置::make}, {}, {}, 114}},
+	{"雨姐",     {"网络",           Level::D, {带派::make}, {}, {}, 275}},
+	{"神里绫华", {"原神",           Level::D, {寒魄::make}, {}, {}, 140}},
+	{"瑜伽一",   {"实验",           Level::F, {割腕::make, 丑皇::make}, {}, {}, 230}},
+	{"李阳",     {"网络",          Level::C, {军国::make, 家暴::make}, {}, {}, 185}},
+	{"薛维旭",   {"实验",           Level::D, {健身::make, 做题::make}, {}, {}, 190}},
+	{"Tung Tung Tung Tung Tung Tung Tung Tung Tung Sahur", {"山海经", Level::S, {棍击::make, 神木::make}, {}, {}, 100}},
+	{"雷电将军", {"原神",           Level::D, {雷剑::make}, {}, {}, 140}},
+	{"王天一",   {"网络",          Level::C, {买棋::make, 卖棋::make}, {}, {}, 140}},
+	{"Tralalero Tralala",    {"山海经", Level::C, {耐克::make}, {}, {}, 160}},
+	{"Bombardiro Crocodilo", {"山海经", Level::A, {轰炸::make}, {装弹::make}, {}, 185}},
+	{"Bumbumbini Guzzini",   {"山海经", Level::A, {爆破::make}, {装弹::make}, {}, 185}},
+	{"Alan Walker", {"网络",  Level::D, {电音::make, 蒙面::make}, {}, {}, 175}},
+	{"丁真",        {"网络",  Level::C, {锐刻::make}, {}, {}, 140}},
+	{"代增玉",      {"实验",  Level::F, {巨富::make, 破产::make}, {}, {}, 275}},
+	{"潘子",        {"网络",  Level::F, {假酒::make}, {}, {}, 120}},
+	{"土语",        {"实验",  Level::D, {窃观::make}, {}, {}, 195}},
+	{"Notch",       {"网络",  Level::C, {生存::make, 创造::make}, {}, {}, 140}},
+	{"新诸葛亮",    {"新三国", Level::B, {炼兵::make, 好火::make}, {}, {}, 77}},
+	{"Brr Brr Patapim", {"山海经", Level::B, {森罗::make, 大脚::make}, {}, {}, 185}},
+	{"新关羽", {"新三国", Level::B, {过江::make, 大盏::make}, {}, {}, 210}},
+	{"卞相壹", {"网络", Level::B, {举报::make, 猥琐::make}, {}, {}, 160}},
+	{"柯洁",   {"网络", Level::B, {棋王::make, 金铲::make}, {}, {}, 160}},
+	{"老友",   {"实验", Level::A, {淘汰::make}, {}, {}, 160}},
+	{"屎軖",   {"实验", Level::A, {}, {招待::make}, {}, 160}},
+	{"植物人", {"实验", Level::F, {光合::make}, {}, {}, 200}},
+	{"梅西",   {"网络", Level::B, {射门::make}, {}, {}, 220}},
+	{"二次元", {"原神", Level::F, {追番::make, 崩三::make}, {}, {}, 100}},
+	{"金正日", {"元首", Level::B, {望日::make, 慈父::make}, {}, {}, 188}},
+	{"金日成", {"元首", Level::C, {朔日::make}, {}, {}, 199}},
+	{"刘建龙", {"网络", Level::D, {}, {徒步::make}, {}, 250}},
+	{"拜登",   {"元首", Level::A, {健忘::make}, {}, {}, 125}},
+	{"王耘浩", {"实验", Level::D, {豪赌::make}, {}, {}, 250}},
+	{"Bulbito Bandito Traktorito", {"山海经", Level::B, {黑帮::make, 拖拉::make}, {}, {}, 225}},
+	{"烟刻瑯", {"实验", Level::B, {迷烟::make}, {}, {}, 175}},
+	{"幺幺",   {"网络", Level::F, {水鬼::make}, {}, {}, 88}},
+	{"蒋介石", {"元首", Level::F, {叛党::make}, {}, {}, 180}},
+	{"斯大林", {"元首", Level::C, {清洗::make}, {}, {}, 225}},
+	{"龚俊清", {"网络", Level::B, {落水::make, 骚扰::make}, {}, {}, 198}},
+	{"Blueberrini Octopussini", {"山海经", Level::D, {}, {}, {八爪::make}, 100}},
+	{"闫传学", {"实验", Level::A, {犬子::make}, {}, {}, 222}},
+	{"霍金",   {"网络", Level::C, {黑洞::make}, {}, {}, 88}},
+	{"峰哥",   {"网络", Level::A, {好事::make, 压抑::make}, {}, {}, 255}},
+	{"包贝尔", {"网络", Level::B, {捉奸::make}, {}, {我妈::make}, 160}},
+	{"科比",   {"网络", Level::C, {}, {}, {曼巴::make}, 248}},
+	{"翟钊",   {"实验", Level::F, {}, {摘罩::make}, {}, 130}},
+	{"田淑丽", {"实验", Level::C, {}, {还击::make}, {}, 145}},
+	{"虎哥",   {"网络", Level::F, {有活::make}, {}, {}, 275}},
+	{"大章鱼", {"实验", Level::C, {爬竿::make, 渊涡::make}, {}, {}, 275}},
+	{"杨坤",   {"网络", Level::C, {没座::make, 空空::make}, {}, {}, 240}},
+	//{"大脚忍者", {"网络", Level::A, {暗忍::make}, {舞爪::make}, {}, 280}},
+	{"大中医",   {"实验",     Level::A, {治病::make}, {}, {}, 100}},
+	{"新陆逊",   {"新三国",   Level::B, {连营::make, 困界::make}, {}, {}, 150}},
+	{"电棍",     {"网络",     Level::F, {四麻::make}, {四霸::make}, {}, 44}},
+	{"8比特",    {"荒野乱斗", Level::S, {爆射::make}, {装币::make}, {}, 288}},
+	{"格斯",     {"荒野乱斗", Level::B, {灵爆::make}, {幽愈::make}, {}, 100}},
+	{"斯图",     {"荒野乱斗", Level::A, {加速::make}, {炫技::make}, {}, 120}},
+	{"大司马",   {"网络",     Level::C, {走位::make}, {}, {}, 150}},
+	{"新静姝",   {"新三国",   Level::B, {}, {调羹::make}, {}, 166}},
+	{"唐伯虎",   {"网络",     Level::C, {九一::make, 白虎::make}, {}, {}, 91}},
+	{"新吕蒙",   {"新三国",   Level::B, {易主::make, 渡荆::make}, {}, {}, 170}},
+	{"格里夫",   {"荒野乱斗", Level::C, {返现::make}, {挥金::make}, {}, 200}},
+	{"斯派克",   {"荒野乱斗", Level::A, {尖刺::make}, {再生::make}, {}, 50}},
 };
-
 
 // ==================== 构造 / 工厂 ====================
 Character::Character(const std::string& _name,
@@ -160,32 +159,42 @@ bool Character::operator==(const Character& other) const {
 // ==================== 静态工具 ====================
 std::string Character::to_string(Level level) {
 	switch (level) {
-	case Level::S: return "S";
-	case Level::A: return "A";
-	case Level::B: return "B";
-	case Level::C: return "C";
-	case Level::D: return "D";
-	case Level::F: return "F";
-	default:       return "?";
+		case Level::S: return "S";
+		case Level::A: return "A";
+		case Level::B: return "B";
+		case Level::C: return "C";
+		case Level::D: return "D";
+		case Level::F: return "F";
+		default:       return "?";
 	}
 }
 std::wstring Character::to_wstring(Level level) {
 	switch (level) {
-	case Level::S: return L"S";
-	case Level::A: return L"A";
-	case Level::B: return L"B";
-	case Level::C: return L"C";
-	case Level::D: return L"D";
-	case Level::F: return L"F";
-	default:       return L"?";
+		case Level::S: return L"S";
+		case Level::A: return L"A";
+		case Level::B: return L"B";
+		case Level::C: return L"C";
+		case Level::D: return L"D";
+		case Level::F: return L"F";
+		default:       return L"?";
 	}
 }
 std::string Character::getImagePath(const std::string& name, const std::string& skin) {
-	return "characters/" + name + "/" + skin + ".jpg";
+	auto it = infos.find(name);
+	if (it == infos.end()) {
+		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+	}
+	const std::string& group = it->second.group;
+	return "images/characters/" + group + "/" + name + "/" + skin + ".jpg";
 }
 std::vector<std::string> Character::getSkins(const std::string& name) {
 	namespace fs = std::filesystem;
-	const fs::path dir = fs::path(L"../characters") / unool::string::to_utf16(name);
+	auto it = infos.find(name);
+	if (it == infos.end()) {
+		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+	}
+	const std::string& group = it->second.group;
+	const fs::path dir = fs::path(L"../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
 	if (!fs::exists(dir) || !fs::is_directory(dir)) {
 		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录不存在");
 	}
@@ -206,6 +215,43 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 		return name1 < name2;
 	});
 	return skins;
+}
+
+std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
+	//加载被屏蔽的角色和分组
+	const std::unordered_set<std::string> shieldedCharacters = [] {
+		std::vector chars = unool::getServerConfig()["shielded"]["characters"].get<std::vector<std::string>>();
+		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
+	}();
+	const std::unordered_set<std::string> shieldedGroups = [] {
+		std::vector chars = unool::getServerConfig()["shielded"]["groups"].get<std::vector<std::string>>();
+		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
+	}();
+
+	//构造可用角色
+	auto filteredChars = Character::infos | std::views::filter(
+		[&shieldedCharacters, &shieldedGroups](const std::pair<std::string, Character::Info>& info) {
+		//过滤掉白板和被屏蔽的角色
+		return info.first != "白板"
+			&& !shieldedCharacters.contains(info.first)
+			&& !shieldedGroups.contains(info.second.group);
+	});
+	const std::size_t filteredCharsSize = std::ranges::distance(filteredChars);
+
+	//判断可用角色数量是否足够
+	if (n > filteredCharsSize) {
+		throw std::invalid_argument(
+			"候选角色数量(" + std::to_string(n) + ")"
+			"不能超过可选角色数量(" + std::to_string(filteredCharsSize) + ")"
+		);
+	}
+
+	//抽角色
+	std::vector<Entry> result;
+	result.reserve(n);
+	std::ranges::sample(filteredChars, std::back_inserter(result), n, unool::random::rng);
+	std::ranges::shuffle(result, unool::random::rng);
+	return result;
 }
 
 

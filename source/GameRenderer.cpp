@@ -100,7 +100,7 @@ void GameRenderer::renderPlayers() {
 
 		//标记（覆盖在角色图右上角，等比缩放至角色图面积的1/12）
 		if (playerState.marks.contains("幽灵")) {
-			const std::string markPath = "marks\\幽灵.jpg";
+			const std::string markPath = "images/marks/幽灵.jpg";
 			sf::Vector2u texSize = imageMgr.getTextureSize(markPath);
 			float targetArea = config.characterSize.x * config.characterSize.y / 12.0f;
 			float scale = std::sqrt(targetArea / (static_cast<float>(texSize.x) * texSize.y));
@@ -353,7 +353,7 @@ void GameRenderer::displayHand(const Hand& hand, const sf::Vector2f& pos, const 
 	}
 	if (displayPointer && !hand.empty() && canSelect) {
 		displayImage(
-			"cards/pointer/默认.jpg",
+			"images/cards/pointer/默认.jpg",
 			{ pos.x + selectedPos + cardSize.x / 2 - pointerSize.x / 2,
 			pos.y + cardSize.y },
 			pointerSize

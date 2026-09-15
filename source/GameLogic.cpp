@@ -145,7 +145,7 @@ void GameLogic::initPlayers() {
 	//选候选角色
 	const std::size_t candidateCount = unool::getServerConfig()["candidateCount"];
 	SelectionState state;
-	auto allChars = randomChooseCharacters(candidateCount * 2);
+	auto allChars = Character::randomChooseCharacters(candidateCount * 2);
 	for (std::size_t i = 0; i < 2; ++i) {
 		state.cands[i].assign(
 			allChars.begin() + i * candidateCount,
@@ -197,26 +197,13 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 	throw std::logic_error("座位号无效");
 }
 
-std::wstring GameLogic::formatCharacterLabelW(const CharacterEntry& entry) {
+std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
 	return unool::string::to_utf16(
 		entry.first + "（" + Character::to_string(entry.second.level) + "）"
 	);
 }
 
-std::vector<GameLogic::CharacterEntry> GameLogic::randomChooseCharacters(std::size_t n) {
-	if (n > Character::infos.size() - 1) {
-		throw std::invalid_argument("候选角色数量不能超过已有角色数量（不含白板）");
-	}
 
-	auto filteredChars = Character::infos | std::views::filter([](const auto& kv) {
-		return kv.first != "白板";
-	});
-	std::vector<CharacterEntry> result;
-	result.reserve(n);
-	std::ranges::sample(filteredChars, std::back_inserter(result), n, unool::random::rng);
-	std::ranges::shuffle(result, unool::random::rng);
-	return result;
-}
 
 std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state) {
 	std::vector<std::wstring> banOpts;

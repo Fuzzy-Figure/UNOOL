@@ -12,6 +12,7 @@ class Character {
 public:
 	enum class Level { S, A, B, C, D, F };
 	struct Info {
+		std::string group;
 		Level level;
 		std::vector<PSkill::Factory> pSkills;
 		std::vector<std::function<std::unique_ptr<ASkillInstantBase>()>> instantSkills;
@@ -19,6 +20,7 @@ public:
 		std::size_t hp;
 		std::size_t maxHp = 0;
 	};
+	using Entry = std::pair<std::string, Info>;
 #pragma endregion
 
 private:
@@ -61,6 +63,8 @@ public:
 	static std::wstring to_wstring(Level level);
 	static std::string getImagePath(const std::string& name, const std::string& skin = "默认");
 	static std::vector<std::string> getSkins(const std::string& name);
+
+	static std::vector<Entry> randomChooseCharacters(std::size_t n);
 #pragma endregion
 
 #pragma region 技能管理
