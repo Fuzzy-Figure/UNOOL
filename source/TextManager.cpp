@@ -121,8 +121,7 @@ void TextManager::displayTextInRight(const std::wstring& text,
 									 const sf::Color& color) {
 	const sf::Vector2f actualSize = measureText(text, static_cast<unsigned int>(size.y));
 	const sf::Vector2u windowSize = window.getSize();
-	constexpr float margin = 20.0f;
-	const float x = windowSize.x - actualSize.x - margin;
+	const float x = windowSize.x - actualSize.x;
 	const float y = (windowSize.y - actualSize.y) / 2.f;
 
 	displayText(text, { std::max(0.f, x), std::max(0.f, y) }, size, color);
@@ -132,8 +131,7 @@ void TextManager::displayTextInUpRight(const std::wstring& text,
 									   const sf::Color& color) {
 	const sf::Vector2f actualSize = measureText(text, static_cast<unsigned int>(size.y));
 	const sf::Vector2u windowSize = window.getSize();
-	constexpr float margin = 20.0f;
-	const float x = windowSize.x - actualSize.x - margin;
+	const float x = windowSize.x - actualSize.x;
 
 	displayText(text, { std::max(0.f, x), 0 }, size, color);
 }
@@ -143,8 +141,7 @@ void TextManager::displayTextInLeft(const std::wstring& text,
 									const sf::Color& color) {
 	const sf::Vector2f actualSize = measureText(text, static_cast<unsigned int>(size.y));
 	const sf::Vector2u windowSize = window.getSize();
-	constexpr float margin = 20.0f;
 	const float y = (windowSize.y - actualSize.y) / 2.f;
 
-	displayText(text, { margin, std::max(0.f, y) }, size, color);
+	displayText(text, { 0, std::max(0.f, y) }, size, color);
 }

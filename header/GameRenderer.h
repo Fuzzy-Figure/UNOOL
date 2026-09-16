@@ -99,7 +99,7 @@ public:
 	void displayTextInLeft(const std::wstring& text,
 						   const sf::Vector2f& size = { 20,40 },
 						   const sf::Color& color = sf::Color::Black);
-	
+
 	//显示图片
 	void displayImage(const std::string& path,
 					  const sf::Vector2f& pos,
@@ -111,7 +111,7 @@ public:
 	void displayCard(const Card& card, const sf::Vector2f& pos, const sf::Vector2f& cardSize);
 	void displayCardInCenter(const Card& card, const sf::Vector2f& cardSize);
 	void displayHand(const Hand& hand, const sf::Vector2f& pos, const sf::Vector2f& cardSize,
-					 const sf::Vector2f& pointerSize = { 0,0 }, bool canSelect = false);
+					 const sf::Vector2f& pointerSize = { 0,0 }, const bool canSelect = false);
 
 	bool windowIsOpen() const;
 	void closeWindow();

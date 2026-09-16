@@ -109,30 +109,38 @@ void GameRenderer::renderPlayers() {
 			displayImage(markPath, markPos, markSize);
 		}
 
-		//座次编号
+		//座次、体力
 		if (!currentState.seatOrder.empty()) {
+			//座位号
 			std::size_t seat = currentState.seatOrder[playerState.id];
 			std::wstring seatText = (seat == 0) ? L"一号位" : L"二号位";
-			sf::Vector2f seatPos;
+			//体力
+			std::wstring hpText = L"体力：" + std::to_wstring(playerState.hp) + L"/" + std::to_wstring(playerState.maxHp);
+			//显示
+			sf::Vector2f pos;
 			if (playerState.id == 0) {
-				seatPos = { charPos.x, charPos.y + config.characterSize.y };
+				pos = { charPos.x, charPos.y + config.characterSize.y };
 			}
 			else {
-				seatPos = { charPos.x, charPos.y - 50 };
+				pos = { charPos.x, charPos.y - 50 };
 			}
-			displayText(seatText, seatPos);
+			displayText(seatText + L"，" + hpText, pos);
 		}
 
-		//体力值
-		std::wstring hpText = L"体力：" + std::to_wstring(playerState.hp) + L"/" + std::to_wstring(playerState.maxHp);
-		sf::Vector2f hpPos;
+		const bool isLocalPlayer = playerState.id == localPlayerId;
+		//手牌信息
+		std::wstring cardsInfoText = std::to_wstring(playerState.hand.count()) + L"张牌";
+		if (isLocalPlayer) {
+			cardsInfoText += L"，总价值" + std::to_wstring(playerState.hand.value());
+		}
+		sf::Vector2f cardsInfoPos;
 		if (playerState.id == 0) {
-			hpPos = { charPos.x, charPos.y + config.characterSize.y + 50 };
+			cardsInfoPos = { charPos.x, charPos.y + config.characterSize.y + 50 };
 		}
 		else {
-			hpPos = { charPos.x, charPos.y - 100 };
+			cardsInfoPos = { charPos.x, charPos.y - 100 };
 		}
-		displayText(hpText, hpPos);
+		displayText(cardsInfoText, cardsInfoPos);
 
 		//手牌
 		const sf::Vector2f& handDisplayPos =
@@ -140,8 +148,7 @@ void GameRenderer::renderPlayers() {
 			sf::Vector2f{ config.characterSize.x, 0 } :
 			sf::Vector2f{ config.characterSize.x, config.windowSize.y - config.characterSize.y };
 
-		bool isLocalPlayer = playerState.id == localPlayerId;
-		bool canSelect = isLocalPlayer && canSelectLocal();
+		const bool canSelect = isLocalPlayer && canSelectLocal();
 
 		displayHand(playerState.hand, handDisplayPos, config.cardSize, isLocalPlayer ? config.pointerSize : sf::Vector2f{ 0, 0 }, canSelect);
 	}
@@ -336,7 +343,7 @@ void GameRenderer::displayCardInCenter(const Card& card, const sf::Vector2f& car
 }
 
 void GameRenderer::displayHand(const Hand& hand, const sf::Vector2f& pos, const sf::Vector2f& cardSize,
-							   const sf::Vector2f& pointerSize, bool canSelect) {
+							   const sf::Vector2f& pointerSize, const bool canSelect) {
 	bool displayPointer = pointerSize != sf::Vector2f{ 0, 0 };
 	const std::size_t foldCardWidth = static_cast<std::size_t>(cardSize.x / 3);
 	std::size_t dx = 0;
