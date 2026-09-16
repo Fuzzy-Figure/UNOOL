@@ -628,9 +628,6 @@ bool 森罗::content(Trigger& trigger) {
 
 
 //================大脚=====================
-bool 大脚::filter(const Trigger& trigger) const {
-	return trigger.getCarrier().handInclude(&Card::isWild);
-}
 bool 大脚::content(Trigger& trigger) {
 	trigger.getCarrier().chooseToDiscard(L"弃置一张万能牌", 1, true, &Card::isWild);
 	trigger.getCarrier().getHand().forEachIf(
@@ -897,12 +894,12 @@ bool 望日::content(Trigger& trigger) {
 	return true;
 }
 
-// ==================== 技能：慈父 ====================
-bool 慈父::filter(const Trigger& trigger) const {
+// ==================== 技能：慈父_子（望日子技能） ====================
+bool 慈父_子::filter(const Trigger& trigger) const {
 	const Card& c = trigger.getCard();
 	return c.is(Card::Color::yellow) && c.is(Card::Name::number_9);
 }
-bool 慈父::content(Trigger& trigger) {
+bool 慈父_子::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
 	std::cout << "<技能> " << carrier.characterName() << "发动慈父，获得一张【+4】" << std::endl;
@@ -1589,9 +1586,8 @@ bool 骚扰::content(Trigger& trigger) {
 
 // ==================== 技能：犬子 ====================
 bool 犬子::filter(const Trigger& trigger) const {
-	if (!trigger.getCard().isNumber()) return false;
-	++numberCardCount;
-	return numberCardCount >= count + 1;
+	++playCount;
+	return playCount >= count + 1;
 }
 bool 犬子::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
@@ -1600,14 +1596,14 @@ bool 犬子::content(Trigger& trigger) {
 	auto discarded = carrier.chooseToDiscard(L"[犬子] 选择一张牌弃置", 1, false);
 	if (discarded.empty()) return false;
 
-	numberCardCount = 0;
+	playCount = 0;
 	std::cout << "<技能> " << carrier.characterName() << "发动犬子，弃置了一张牌" << std::endl;
 	game.broadcastState();
 	return true;
 }
 void 犬子::reset() {
 	PSkill::reset();
-	numberCardCount = 0;
+	playCount = 0;
 }
 
 bool 黑洞::filter(const Trigger& trigger) const {
@@ -1840,30 +1836,19 @@ bool 没座::content(Trigger& trigger) {
 
 // ==================== 技能：空空 ====================
 bool 空空::filter(const Trigger& trigger) const {
-	const auto& hand = trigger.getCarrier().getHand();
-	return hand.include([](const Card& c) {
-		return c.is(Card::Color::red);
-	});
+	return trigger.getCarrier().handInclude(&Card::isAction);
 }
 bool 空空::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
-	Hand& hand = carrier.getHand();
-	//收集红色牌下标
-	std::vector<std::size_t> redIndices;
-	for (std::size_t i = 0; i < hand.count(); ++i) {
-		if (hand[i].is(Card::Color::red)) redIndices.push_back(i);
-	}
-	if (redIndices.empty()) return false;
-	//从后往前弃置（避免索引偏移）
-	std::ranges::sort(redIndices, std::greater{});
-	for (std::size_t idx : redIndices) {
-		carrier.discardByIndex(idx);
-	}
-	//摸等量牌（重铸）
-	carrier.draw(redIndices.size(), Player::DrawReason::skill);
-	std::cout << "<技能> " << carrier.characterName() << "发动空空，重铸了"
-		<< redIndices.size() << "张红色牌" << std::endl;
+	auto cardRef = carrier.chooseToOperate(
+		L"【空空】选择一张功能牌变为红色的【封禁】", false,
+		&Card::isAction, [](Card&) {});
+	if (!cardRef.has_value()) return false;
+	Card& card = cardRef->get();
+	card.setColor(Card::Color::red);
+	card.setName(Card::Name::action_skip);
+	std::cout << "<技能> " << carrier.characterName() << "发动空空，将一张功能牌变为红色的【封禁】" << std::endl;
 	game.broadcastState();
 	return true;
 }

@@ -405,7 +405,6 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
 
@@ -491,10 +490,10 @@ class 淘汰 : public PSkillImpl<淘汰> {
 public:
 	淘汰() : PSkillImpl<淘汰>(
 		"淘汰",
-		"每局游戏共限五次：\n"
+		"每局游戏共限六次：\n"
 		"你打出数字牌后，可弃置一张点数小于等于该牌一半（向下取整）的同色数字牌；\n"
 		"你打出功能牌后，可从游戏外随机获得一张同色的功能牌。",
-		5, false,
+		6, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
@@ -559,26 +558,30 @@ public:
 };
 
 
-class 望日 : public PSkillImpl<望日> {
+//慈父_子：望日的隐藏子技能，承载慈父效果（打出黄色9后获得+4）
+class 慈父_子 : public PSkillImpl<慈父_子> {
 public:
-	望日() : PSkillImpl<望日>(
-		"望日",
-		"锁定技，回合开始时，令一张黄色牌点数+1（至多为9）。",
-		unlimited, true,
+	慈父_子() : PSkillImpl<慈父_子>(
+		"慈父_子", "",
+		unlimited, false,
 		TriggerPlayer::self,
-		TriggerTime::phase_begin
+		TriggerTime::use_card_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
-class 慈父 : public PSkillImpl<慈父> {
+
+//望日：锁定技，回合开始时令黄色牌点数+1；打出黄色9后可获+4（由慈父_子承载）
+class 望日 : public PSkillImpl<望日> {
 public:
-	慈父() : PSkillImpl<慈父>(
-		"慈父",
+	望日() : PSkillImpl<望日>(
+		"望日",
+		"锁定技，回合开始时，令一张黄色牌点数+1（至多为9）。\n"
 		"你打出黄色【9】后，可以获得一张【+4】。",
-		unlimited, false,
+		unlimited, true,
 		TriggerPlayer::self,
-		TriggerTime::use_card_end
+		TriggerTime::phase_begin,
+		慈父_子::make()
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -849,11 +852,11 @@ public:
 };
 
 class 犬子 : public PSkillImpl<犬子> {
-	mutable std::size_t numberCardCount = 0;
+	mutable std::size_t playCount = 0;
 public:
 	犬子() : PSkillImpl<犬子>(
 		"犬子",
-		"你每累计打出X张数字牌后（X为此技能发动次数，初始为1），可弃置一张牌。",
+		"你每累计打出X张牌后（X为此技能发动次数，初始为1），可弃置一张牌。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -995,14 +998,14 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-//空空：锁定技，回合结束时，重铸手中所有红色牌
+//空空：每局限两次，回合结束时，可将一张功能牌变为红色的【封禁】
 class 空空 : public PSkillImpl<空空> {
 public:
 	空空() : PSkillImpl<空空>(
 		"空空",
-		"锁定技，回合开始时，你重铸手中所有红色牌。",
-		unlimited, true,
-		TriggerPlayer::self, TriggerTime::phase_begin
+		"每局游戏限两次，回合结束时，你可以将一张功能牌变为红色的【封禁】。",
+		2, false,
+		TriggerPlayer::self, TriggerTime::phase_end
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
