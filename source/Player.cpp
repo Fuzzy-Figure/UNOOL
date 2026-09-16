@@ -4,6 +4,9 @@
 #include <iterator>
 
 void Player::damage(std::size_t damageValue, opt_ref<Player> source) {
+	if (source.has_value()) {
+		damageValue *= source.value().get().getDamageMultiplier();
+	}
 	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damageValue);
 	character->damage(damageValue);
 	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damageValue);

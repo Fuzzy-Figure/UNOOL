@@ -5,6 +5,12 @@
     "points": 213,
     "wins": 10
   },
+  "12": {
+    "losses": 0,
+    "password": "231",
+    "points": 38,
+    "wins": 2
+  },
   "2": {
     "losses": 10,
     "password": "2",
@@ -22,5 +28,11 @@
     "password": "123",
     "points": 1048,
     "wins": 72
+  },
+  "fuzzy figure2": {
+    "losses": 2,
+    "password": "1",
+    "points": 0,
+    "wins": 0
   }
 }
