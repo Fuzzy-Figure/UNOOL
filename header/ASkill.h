@@ -207,3 +207,19 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//手枪：每回合限一次，出牌阶段，对一名其他角色造成1点伤害（伤害值由【弹暴】递增）
+class 手枪 : public ASkillInstant<手枪> {
+private:
+	std::size_t damageValue = 1;
+	friend class 弹暴;
+public:
+	手枪() : ASkillInstant<手枪>(
+		"手枪",
+		"每回合限一次，出牌阶段，你可以对一名其他角色造成1点伤害。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+

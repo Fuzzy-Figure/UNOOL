@@ -74,6 +74,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"新吕蒙",   {"新三国",   Level::B, {易主::make, 渡荆::make}, {}, {}, 170}},
 	{"格里夫",   {"荒野乱斗", Level::C, {返现::make}, {挥金::make}, {}, 200}},
 	{"斯派克",   {"荒野乱斗", Level::A, {尖刺::make}, {再生::make}, {}, 50}},
+	{"柯尔特",   {"荒野乱斗", Level::F, {弹暴::make}, {手枪::make}, {}, 150}},
 };
 
 // ==================== 构造 / 工厂 ====================

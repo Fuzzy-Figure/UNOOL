@@ -1,4 +1,5 @@
 #include "../header/PSkill.h"
+#include "../header/ASkill.h"
 #include "../header/GameLogic.h"
 #include <algorithm>
 #include <optional>
@@ -2540,5 +2541,51 @@ bool 尖刺::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动尖刺，对"
 		<< target.characterName() << "造成" << dmg << "点伤害，回复1点体力" << std::endl;
 	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：弹暴 ====================
+bool 弹暴::filter(const Trigger& trigger) const {
+	const Player& carrier = trigger.getCarrier();
+	return carrier.handInclude(&Card::isWild);
+}
+
+bool 弹暴::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//弃置一张万能牌；取消则返还可用次数（PSkill::launch 会回退 count）
+	auto discarded = carrier.chooseToDiscard(L"【弹暴】弃置一张万能牌", 1, false, &Card::isWild);
+	if (discarded.empty()) return false;
+
+	//X = 此技能本局发动次数（count 已由 launch 在 content 前自增）
+	const std::size_t X = getCount();
+
+	//找到【手枪】
+	auto sp = carrier.findSkill("手枪");
+	if (!sp.has_value()) return false;
+	手枪& handgun = static_cast<手枪&>(sp.value().get());
+
+	//循环 X 次：选角色 -> 造成伤害（取消则继续循环）
+	for (std::size_t i = 0; i < X; ++i) {
+		auto targetOpt = carrier.chooseOtherPlayer(
+			L"【弹暴】选择一名其他角色造成" + std::to_wstring(handgun.damageValue)
+			+ L"点伤害（" + std::to_wstring(i + 1) + L"/" + std::to_wstring(X) + L"）",
+			false);
+		if (!targetOpt.has_value()) continue;  //玩家取消，继续下一次循环
+		Player& target = *targetOpt;
+
+		target.damage(handgun.damageValue, carrier);
+		std::cout << "<技能> " << carrier.characterName() << "发动弹暴，对"
+			<< target.characterName() << "造成" << handgun.damageValue << "点伤害" << std::endl;
+		game.broadcastState();
+	}
+
+	//【手枪】本局伤害值+1
+	handgun.damageValue += 1;
+	std::cout << "<技能> " << carrier.characterName() << "的【手枪】本局伤害值+1，当前="
+		<< handgun.damageValue << std::endl;
+
 	return true;
 }

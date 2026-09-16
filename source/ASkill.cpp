@@ -415,3 +415,22 @@ bool 再生::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：手枪 ====================
+bool 手枪::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer(L"【手枪】选择一名其他角色造成" + std::to_wstring(damageValue) + L"点伤害", false);
+	if (!targetOpt.has_value()) return false;  //取消，返还可用次数（tryActivate 不累加 count）
+	Player& target = *targetOpt;
+
+	target.damage(damageValue, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "发动手枪，对"
+		<< target.characterName() << "造成" << damageValue << "点伤害" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+void 手枪::reset() {
+	damageValue = 1;
+	ASkill::reset();
+}
+

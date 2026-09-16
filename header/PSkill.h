@@ -1303,3 +1303,18 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//弹暴：回合结束时，可弃一张万能牌发动X次手枪（X为本局发动次数），然后手枪伤害+1
+class 弹暴 : public PSkillImpl<弹暴> {
+public:
+	弹暴() : PSkillImpl<弹暴>(
+		"弹暴",
+		"回合结束时，你可以弃置一张万能牌，发动X次【手枪】，然后【手枪】本局伤害值+1\n"
+		"（X为此技能本局发动次数）。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
