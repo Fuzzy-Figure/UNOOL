@@ -339,11 +339,18 @@ std::size_t Character::getMaxHp() const {
 	return maxHp;
 }
 void Character::setHp(std::size_t newHp) {
-	hp = newHp;
+	hp = std::min(newHp, maxHp);
 }
-void Character::damage(std::size_t damage) {
-	if (hp <= damage) hp = 0;
-	else hp -= damage;
+std::size_t Character::damage(std::size_t damage) {
+	std::size_t actualDamageValue = damage;
+	if (hp <= damage) {
+		actualDamageValue = hp;
+		hp = 0;
+	}
+	else {
+		hp -= damage;
+	}
+	return actualDamageValue;
 }
 void Character::recover(std::size_t num) {
 	hp = std::min(hp + num, maxHp);

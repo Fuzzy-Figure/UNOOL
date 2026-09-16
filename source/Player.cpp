@@ -3,13 +3,14 @@
 #include <thread>
 #include <iterator>
 
-void Player::damage(std::size_t damageValue, opt_ref<Player> source) {
+std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
 	if (source.has_value()) {
 		damageValue *= source.value().get().getDamageMultiplier();
 	}
 	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damageValue);
-	character->damage(damageValue);
+	const std::size_t actualDamageValue = character->damage(damageValue);
 	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damageValue);
+	return actualDamageValue;
 }
 
 void Player::recover(std::size_t num) {

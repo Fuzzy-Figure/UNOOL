@@ -438,12 +438,11 @@ void GameLogic::checkRoundEnd() {
 	if (winner && loser) {
 		winner->incrementWins();
 		loser->incrementLosses();
-		std::size_t damage = loser->handValue() * winner->getDamageMultiplier();
-		loser->damage(damage, *winner);
-		std::cout << "玩家" << winner->getId() << "对玩家" << loser->getId()
-			<< "造成" << damage << "点伤害（败者手牌value " << loser->handValue()
-			<< " × 倍率 " << winner->getDamageMultiplier() << "），"
-			<< "玩家" << loser->getId() << "剩余" << loser->getHp() << "/" << loser->getMaxHp() << std::endl;
+		const std::size_t actualDamageValue = loser->damage(loser->handValue(), *winner);
+		std::cout << winner->characterName() << "对" << loser->characterName()
+			<< "造成" << actualDamageValue << "点伤害（败者手牌价值 " << loser->handValue()
+			<< " * 倍率 " << winner->getDamageMultiplier() << "），"
+			<< loser->characterName() << "剩余" << loser->getHp() << "/" << loser->getMaxHp() << std::endl;
 	}
 	else {
 		// 兜底：双方都未空手或都已空手，维持原双方各扣自己手牌value的逻辑

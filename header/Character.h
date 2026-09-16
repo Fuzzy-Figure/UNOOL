@@ -68,7 +68,7 @@ public:
 #pragma endregion
 
 #pragma region 技能管理
-	std::list<std::unique_ptr<ASkillInstantBase>>&   getInstantSkills()   { return instantSkills; }
+	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
 	bool hasSkill(const std::string& skillName) const;
 	opt_ref<Skill> findSkill(const std::string& skillName);
@@ -84,7 +84,7 @@ public:
 	std::size_t getHp() const;
 	std::size_t getMaxHp() const;
 	void setHp(std::size_t newHp);
-	void damage(std::size_t damage);
+	std::size_t damage(std::size_t damage);
 	void recover(std::size_t num);
 	bool isDead() const;
 #pragma endregion

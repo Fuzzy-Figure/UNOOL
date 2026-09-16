@@ -68,7 +68,7 @@ public:
 	Character::Level characterLevel() const { return character->getLevel(); }
 	std::size_t getHp() const { return character->getHp(); }
 	std::size_t getMaxHp() const { return character->getMaxHp(); }
-	void damage(std::size_t damage, opt_ref<Player> source);
+	std::size_t damage(std::size_t damage, opt_ref<Player> source);
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	void resetSkills() { character->resetSkills(); }
