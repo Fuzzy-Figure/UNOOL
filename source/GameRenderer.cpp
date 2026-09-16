@@ -129,9 +129,9 @@ void GameRenderer::renderPlayers() {
 
 		const bool isLocalPlayer = playerState.id == localPlayerId;
 		//手牌信息
-		std::wstring cardsInfoText = std::to_wstring(playerState.hand.count()) + L"张牌";
+		std::wstring cardsInfoText = L"手牌数：" + std::to_wstring(playerState.hand.count());
 		if (isLocalPlayer) {
-			cardsInfoText += L"，总价值" + std::to_wstring(playerState.hand.value());
+			cardsInfoText += L"；总价值：" + std::to_wstring(playerState.hand.value());
 		}
 		sf::Vector2f cardsInfoPos;
 		if (playerState.id == 0) {
