@@ -1340,7 +1340,7 @@ public:
 		"引力_清除目标",
 		"每轮开始时，清除所有角色的“引力_目标”。",
 		unlimited, true,
-		TriggerPlayer::self,
+		TriggerPlayer::anybody,
 		TriggerTime::round_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;

@@ -2575,7 +2575,11 @@ bool 引力_清除目标::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 	//清除所有玩家身上的引力_目标
 	for (auto& p : game.getPlayers()) {
-		p.get().removeSkill("引力_目标");
+		Player& player = p.get();
+		if (player.findSkill("引力_目标").has_value()) {
+			player.removeSkill("引力_目标");
+			game.markCharInfoDirty(player.getId());
+		}
 	}
 	game.broadcastState();
 	return true;
