@@ -434,3 +434,70 @@ void 手枪::reset() {
 	ASkill::reset();
 }
 
+
+// ==================== 技能：芜湖 ====================
+bool 芜湖::content(GameLogic& game, Player& carrier) {
+	//先选颜色
+	std::size_t colorChoice = carrier.ask(L"【芜湖】声明颜色", { L"红", L"黄", L"绿", L"蓝", L"黑" }, true);
+	Card::Color targetColor;
+	std::vector<Card::Name> nameOpts;
+	if (colorChoice <= 4) {
+		//基础四色
+		switch (colorChoice) {
+			case 1: targetColor = Card::Color::red;    break;
+			case 2: targetColor = Card::Color::yellow; break;
+			case 3: targetColor = Card::Color::green;  break;
+			case 4: targetColor = Card::Color::blue;   break;
+		}
+		nameOpts = {
+			Card::Name::number_0, Card::Name::number_1, Card::Name::number_2,
+			Card::Name::number_3, Card::Name::number_4, Card::Name::number_5,
+			Card::Name::number_6, Card::Name::number_7, Card::Name::number_8,
+			Card::Name::number_9, Card::Name::action_skip, Card::Name::action_draw2,
+			Card::Name::action_rev
+		};
+	}
+	else {
+		//黑色（万能牌）
+		targetColor = Card::Color::black;
+		nameOpts = { Card::Name::wild_pal, Card::Name::wild_draw4 };
+	}
+
+	//选牌名
+	std::vector<std::wstring> nameStrs;
+	for (auto n : nameOpts) nameStrs.push_back(Card::to_wstring(n));
+	std::size_t nameChoice = carrier.ask(L"【芜湖】声明牌名", nameStrs, true);
+	Card::Name targetName = nameOpts[nameChoice - 1];
+
+	std::cout << "<技能> " << carrier.characterName() << "发动芜湖，声明"
+		<< Card::to_string(targetColor) << Card::to_string(targetName) << std::endl;
+
+	//从牌堆底向牌堆顶检索，找最后一张匹配的
+	Pile& pile = game.getPile();
+	std::optional<std::size_t> matchIdx;
+	for (std::size_t i = 0; i < pile.count(); ++i) {
+		const Card& c = pile[i];
+		if (c.getColor() == targetColor && c.getName() == targetName) {
+			matchIdx = i;  //记录最后一个匹配的索引
+		}
+	}
+
+	if (matchIdx.has_value()) {
+		//有匹配：获得一张，消耗次数
+		auto card = pile.takeCardByIndex(matchIdx.value());
+		Card* cardPtr = card.get();
+		carrier.gainCard(std::move(card));
+		std::cout << "<技能> " << carrier.characterName() << "从牌堆获得"
+			<< cardPtr->toString() << std::endl;
+		game.broadcastState();
+		return true;
+	}
+	else {
+		//无匹配：视为未发动（return false 不消耗次数），可弃一张
+		carrier.chooseToDiscard(L"牌堆无此牌，弃置一张牌", 1, false);
+		std::cout << "<技能> " << carrier.characterName() << "声明牌堆无此牌，芜湖视为未发动" << std::endl;
+		game.broadcastState();
+		return false;
+	}
+}
+

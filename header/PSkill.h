@@ -1199,21 +1199,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-//芜湖：限定技，出牌阶段，声明颜色+牌名组合，从牌堆获得一张匹配牌
-class 芜湖 : public PSkillImpl<芜湖> {
-public:
-	芜湖() : PSkillImpl<芜湖>(
-		"芜湖",
-		"限定技，出牌阶段，你可以声明一个牌名和颜色的组合（万能牌为黑色），\n"
-		"若牌堆中已无此牌名和颜色组合的牌，此技能视为未发动过且你可弃置一张牌；\n"
-		"若有，你获得一张。",
-		1, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_use1_begin
-	) {}
-	bool content(Trigger& trigger) override;
-};
-
 
 //九一：任意角色打出9/1后，可弃一张9/1
 class 九一 : public PSkillImpl<九一> {
