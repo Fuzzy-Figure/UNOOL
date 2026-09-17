@@ -2504,3 +2504,79 @@ bool 弹暴::content(Trigger& trigger) {
 
 	return true;
 }
+
+
+// ==================== 技能：星轨 ====================
+bool 星轨::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//三次判定
+	Card& c1 = carrier.judge();
+	Card& c2 = carrier.judge();
+	Card& c3 = carrier.judge();
+
+	//类型：0=数字，1=功能，2=万能
+	auto getType = [](const Card& c) -> int {
+		if (c.isWild()) return 2;
+		if (c.isAction()) return 1;
+		return 0;
+	};
+
+	const int t1 = getType(c1);
+	if (getType(c2) == t1 && getType(c3) == t1) {
+		//类型全相同，引力可用次数+1
+		auto sp = carrier.findSkill("引力");
+		if (sp.has_value()) {
+			auto& gravity = sp.value().get();
+			gravity.setLimit(gravity.getLimit().value_or(0) + 1);
+			std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
+		}
+	}
+	else {
+		std::cout << "<技能> " << carrier.characterName() << "星轨判定类型不同" << std::endl;
+	}
+
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：引力_目标（引力重定向拦截器） ====================
+bool 引力_目标::filter(const Trigger& trigger) const {
+	return trigger.getCard().isNumber();
+}
+
+bool 引力_目标::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//从弃牌堆移出这张牌（最新进入的在 front，index=0）
+	auto cardPtr = game.getDiscardPile().takeCardByIndex(0);
+	carrier.gainCard(std::move(cardPtr));
+
+	std::cout << "<技能> 引力将一张数字牌重定向给"
+		<< carrier.characterName() << "获得" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：引力_清除目标 ====================
+bool 引力_清除目标::filter(const Trigger& trigger) const {
+	//检查是否有玩家身上存在引力_目标
+	for (auto& p : trigger.getGame().getPlayers()) {
+		if (p.get().findSkill("引力_目标").has_value()) return true;
+	}
+	return false;
+}
+
+bool 引力_清除目标::content(Trigger& trigger) {
+	GameLogic& game = trigger.getGame();
+	//清除所有玩家身上的引力_目标
+	for (auto& p : game.getPlayers()) {
+		p.get().removeSkill("引力_目标");
+	}
+	game.broadcastState();
+	return true;
+}

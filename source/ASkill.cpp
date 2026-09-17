@@ -501,3 +501,33 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	}
 }
 
+
+// ==================== 技能：引力 ====================
+bool 引力::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer(
+		L"【引力】选择一名角色，本轮数字牌进入弃牌堆后该角色获得之", false);
+	if (!targetOpt.has_value()) return false;  //取消，不消耗次数
+
+	Player& tgt = targetOpt->get();
+	//若目标已有引力_目标则不重复添加
+	if (!tgt.findSkill("引力_目标").has_value()) {
+		tgt.addSkill(引力_目标::make());
+	}
+	target = tgt;
+	game.markCharInfoDirty(tgt.getId());
+
+	std::cout << "<技能> " << carrier.characterName() << "发动引力，本轮数字牌进弃牌堆后"
+		<< tgt.characterName() << "获得之" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+void 引力::reset() {
+	//本轮结束：从目标身上移除引力_目标
+	if (target.has_value()) {
+		target.value().get().removeSkill("引力_目标");
+		target = std::nullopt;
+	}
+	ASkill::reset();
+}
+

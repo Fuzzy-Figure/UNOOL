@@ -237,3 +237,18 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//引力：每局限0次，出牌阶段选一名角色，本轮数字牌进入弃牌堆后该角色获得之
+class 引力 : public ASkillInstant<引力> {
+private:
+	opt_ref<Player> target = std::nullopt;
+public:
+	引力() : ASkillInstant<引力>(
+		"引力",
+		"每局限0次，出牌阶段，你可以选择一名角色，本轮数字牌进入弃牌堆后，该角色获得之。",
+		0, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+

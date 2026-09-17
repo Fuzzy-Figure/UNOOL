@@ -75,7 +75,7 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 
 	//牌恢复效果并置入弃牌堆
 	card->recoverEffect();
-	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::use);
+	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::use, *this);
 
 	//更新客户端显示
 	game.broadcastState();
@@ -100,7 +100,7 @@ Card& Player::discardByIndex(const std::size_t cardIndex) {
 	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	ref<Card> cardRef = *card;
-	game.putCardToDiscardPile(std::move(card), Card::DiscardReason::discard);
+	game.putCardToDiscardPile(std::move(card), Card::DiscardReason::discard, *this);
 	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
 	return cardRef;
 }
@@ -669,7 +669,7 @@ Card& Player::judge() {
 	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this);
 	auto card = game.getPile().takeCardByIndex(0);
 	std::cout << "判定结果：" << *card << std::endl;
-	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::judge);
+	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::judge, *this);
 	game.launchPSkills(PSkill::TriggerTime::judge_end, *this, cardRef);
 	game.broadcastState();
 	return cardRef;

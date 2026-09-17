@@ -1306,3 +1306,43 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//星轨：回合开始时，三次判定类型全相同则引力+1
+class 星轨 : public PSkillImpl<星轨> {
+public:
+	星轨() : PSkillImpl<星轨>(
+		"星轨",
+		"回合开始时，你可以进行三次判定，若类型均相同，【引力】可用次数+1。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(Trigger& trigger) override;
+};
+
+//引力_目标：引力重定向拦截器，数字牌进弃牌堆后给自身获得
+class 引力_目标 : public PSkillImpl<引力_目标> {
+public:
+	引力_目标() : PSkillImpl<引力_目标>(
+		"引力_目标", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::card_discard_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//引力_清除目标：轮开始时清除所有玩家身上的引力_目标
+class 引力_清除目标 : public PSkillImpl<引力_清除目标> {
+public:
+	引力_清除目标() : PSkillImpl<引力_清除目标>(
+		"引力_清除目标",
+		"每轮开始时，清除所有角色的“引力_目标”。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::round_begin
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

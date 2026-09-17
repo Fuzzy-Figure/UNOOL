@@ -84,7 +84,9 @@ public:
 		recast_begin, recast_end,
 		ban_begin, ban_end,
 		judge_begin, judge_end,
-		decree_begin, decree_end
+		decree_begin, decree_end,
+		card_discard_begin, card_discard_end,
+		round_begin, round_end
 	};
 	struct Trigger {
 	private:

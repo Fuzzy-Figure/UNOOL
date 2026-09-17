@@ -187,7 +187,7 @@ void GameLogic::initPlayers() {
 	selectCharacter(secondSeatId, state);
 
 	charInfoDirty = { true, true };
-	resetRound();
+	resetGame();
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
@@ -264,10 +264,14 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	//拼点决定座次
 	determineSeatOrder();
 
-	resetRound();
+	resetGame();
 }
 
 bool GameLogic::runTurn() {
+	// 一号位回合开始前触发轮开始
+	if (getCurrentPlayerId() == getFirstPlayerId()) {
+		launchPSkills(PSkill::TriggerTime::round_begin, *players[currentPlayerIndex]);
+	}
 	std::cout << "玩家" << getCurrentPlayerId() << "的回合" << std::endl;
 	bool gameEnded = currentPlayerTurn();
 
@@ -409,12 +413,14 @@ void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 
 
 //返回置入弃牌堆的牌的引用
-Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason) {
+Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player) {
 	card->setDiscardReason(reason);
 	std::cout << "[" << *card << "](" << unool::string::to_utf8(Card::to_wstring(reason))
 		<< ") 进入了弃牌堆" << std::endl;
 	discardPile->push_front(std::move(card));
-	return discardPile->front();
+	Card& cardRef = discardPile->front();
+	launchPSkills(PSkill::TriggerTime::card_discard_end, player, cardRef);
+	return cardRef;
 }
 
 std::optional<Card> GameLogic::lastCard() const {
@@ -454,7 +460,7 @@ void GameLogic::checkRoundEnd() {
 	}
 }
 
-void GameLogic::resetRound() {
+void GameLogic::resetGame() {
 	++matchCount;
 	// 重置牌堆
 	pile = Pile::standard();

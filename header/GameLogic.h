@@ -46,6 +46,7 @@ private:
 #pragma endregion
 
 public:
+	std::size_t getFirstPlayerId() const { return getSeatPlayerId(0); }
 #pragma region 构造与析构
 	GameLogic(ServerNetwork& _network);
 	~GameLogic();
@@ -122,13 +123,13 @@ public:
 #pragma endregion
 
 #pragma region 弃牌堆管理
-	Card& putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason);
+	Card& putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player);
 	std::optional<Card> lastCard() const;
 #pragma endregion
 
 #pragma region 轮次与游戏状态
 	void checkRoundEnd();
-	void resetRound();
+	void resetGame();
 	bool isGameOver() const;
 	std::optional<std::size_t> getWinnerId() const;
 #pragma endregion

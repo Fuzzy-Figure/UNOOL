@@ -67,7 +67,7 @@ static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 			break;
 		}
 		// 开始新一局
-		gameLogic.resetRound();
+		gameLogic.resetGame();
 	}
 }
 
