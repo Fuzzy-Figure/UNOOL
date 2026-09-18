@@ -706,12 +706,17 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 	}
 
 	//发起者选一张数字牌
+	ServerNetwork& network = game.getNetwork();
+	network.sendPlayerChoice(id, L"【拼点】选择一张手牌", {}, forced);
 	auto myIdx = chooseCard(&Card::isNumber, forced);
+	network.sendPlayerChoice(id, L"", {}, false);
 	if (!myIdx.has_value()) return std::nullopt;  //发起者取消
 	Card& myCard = getHand().getCardByIndex(myIdx.value());
 
 	//目标选一张数字牌（强制）
+	network.sendPlayerChoice(target.getId(), L"【拼点】选择一张手牌", {}, true);
 	auto tgtIdx = target.chooseCard(&Card::isNumber, true);
+	network.sendPlayerChoice(target.getId(), L"", {}, false);
 	//目标有数字牌且forced=true，必有返回
 	Card& tgtCard = target.getHand().getCardByIndex(tgtIdx.value());
 
