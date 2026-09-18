@@ -237,7 +237,6 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-//引力：每局限0次，出牌阶段选一名角色，本轮数字牌进入弃牌堆后该角色获得之
 class 引力 : public ASkillInstant<引力> {
 private:
 	opt_ref<Player> target = std::nullopt;
@@ -250,5 +249,41 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
 	void reset() override;
+};
+
+// ==================== 切斯特衍生技 ====================
+//硬糖：将功能牌当作同色【封禁】打出
+class 硬糖 : public ASkillTransform<硬糖> {
+public:
+	硬糖() : ASkillTransform<硬糖>(
+		"硬糖", "你可将功能牌当做同色【封禁】打出。",
+		unlimited, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool canSelect(const Card& c) const override;
+	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
+	std::wstring getPrompt() const override;
+};
+
+//甘草：每回合限一次，观看一名角色所有非数字牌，可弃置其中一张
+class 甘草 : public ASkillInstant<甘草> {
+public:
+	甘草() : ASkillInstant<甘草>(
+		"甘草", "每回合限一次，出牌阶段，你可以观看一名角色所有非数字牌，并可弃置其中一张。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//跳糖：每回合限一次，与一名角色拼点，胜者获得一张切斯特指定颜色的【+2】
+class 跳糖 : public ASkillInstant<跳糖> {
+public:
+	跳糖() : ASkillInstant<跳糖>(
+		"跳糖", "每回合限一次，出牌阶段，你可以与一名角色拼点，胜者获得一张你指定颜色的【+2】。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
 };
 

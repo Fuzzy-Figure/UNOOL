@@ -2,7 +2,9 @@
 #include "../header/ASkill.h"
 #include "../header/GameLogic.h"
 #include <algorithm>
+#include <numeric>
 #include <optional>
+#include <random>
 
 // ==================== 技能：粪怒 ====================
 bool 粪怒::filter(const Trigger& trigger) const {
@@ -2582,5 +2584,84 @@ bool 引力_清除目标::content(Trigger& trigger) {
 		}
 	}
 	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 切斯特衍生技 ====================
+//铃铛
+bool 铃铛::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	GameLogic& game = trigger.getGame();
+
+	//X = (count-1) % 3 + 1，count是launch自增后的值（第一次=1）
+	std::size_t X = (getCount() - 1) % 3 + 1;
+	std::size_t hc = carrier.handCount();
+	if (hc == 0) X = 0;
+	else if (hc < X) X = hc;
+
+	//随机重铸X张手牌（弃+摸等量）
+	if (X > 0) {
+		std::vector<std::size_t> indices(hc);
+		std::iota(indices.begin(), indices.end(), std::size_t{ 0 });
+		std::mt19937 g(std::random_device{}());
+		std::ranges::shuffle(indices, g);
+		//从大到小排序前X个，从后往前弃避免索引变化
+		std::partial_sort(indices.begin(), indices.begin() + X, indices.end(), std::greater{});
+		for (std::size_t i = 0; i < X; ++i) {
+			carrier.discardByIndex(indices[i]);
+		}
+		carrier.draw(X, Player::DrawReason::skill);
+		std::cout << "<技能> " << carrier.characterName() << "铃铛重铸" << X << "张手牌" << std::endl;
+	}
+
+	//失去其他技能（5个衍生技）
+	const std::array<const char*, 5> derivedNames = { "爆糖","硬糖","甘草","跳糖","薄荷" };
+	for (auto name : derivedNames) {
+		if (carrier.findSkill(name).has_value()) {
+			carrier.removeSkill(name);
+			game.markCharInfoDirty(carrier.getId());
+		}
+	}
+
+	//随机获得一个衍生技
+	std::size_t r = unool::random::randomInt(0, 4);
+	switch (r) {
+		case 0: carrier.addSkill(爆糖::make()); break;
+		case 1: carrier.addSkill(硬糖::make()); break;
+		case 2: carrier.addSkill(甘草::make()); break;
+		case 3: carrier.addSkill(跳糖::make()); break;
+		case 4: carrier.addSkill(薄荷::make()); break;
+	}
+	game.markCharInfoDirty(carrier.getId());
+	game.broadcastState();
+	return true;
+}
+
+//爆糖
+bool 爆糖::filter(const Trigger& trigger) const {
+	const Card& c = trigger.getCard();
+	//有目标的牌：封禁/+2/+4
+	return c.is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4);
+}
+bool 爆糖::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	Player& target = carrier.next();
+	//5%最大体力伤害，向上取整
+	std::size_t damage = (carrier.getMaxHp() * 5 + 99) / 100;  //向上取整
+	target.damage(damage, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "爆糖对"
+		<< target.characterName() << "造成" << damage << "点伤害" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}
+
+//薄荷
+bool 薄荷::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	std::size_t heal = unool::random::randomInt(1, 3);
+	carrier.recover(heal);
+	std::cout << "<技能> " << carrier.characterName() << "薄荷回复" << heal << "点体力" << std::endl;
+	trigger.getGame().broadcastState();
 	return true;
 }

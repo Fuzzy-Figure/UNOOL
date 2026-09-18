@@ -523,11 +523,94 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 }
 
 void 引力::reset() {
-	//本轮结束：从目标身上移除引力_目标
+	//本局结束：从目标身上移除引力_目标
 	if (target.has_value()) {
 		target.value().get().removeSkill("引力_目标");
 		target = std::nullopt;
 	}
 	ASkill::reset();
+}
+
+
+// ==================== 切斯特衍生技 ====================
+//硬糖
+bool 硬糖::canSelect(const Card& c) const {
+	return c.isAction();
+}
+bool 硬糖::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const {
+	if (cards.empty()) return false;
+	Card& c = cards.front().get();
+	c.set(c.getColor(), Card::Name::action_skip);
+	return true;
+}
+std::wstring 硬糖::getPrompt() const {
+	return L"将一张功能牌当作同色【封禁】打出";
+}
+
+//甘草
+bool 甘草::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer(L"【甘草】选择一名角色", false);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	//收集非数字牌的索引和描述
+	std::vector<std::size_t> indices;
+	std::vector<std::wstring> options;
+	std::size_t i = 0;
+	for (auto it = target.getHand().begin(); it != target.getHand().end(); ++it, ++i) {
+		const Card& c = **it;
+		if (!c.isNumber()) {
+			indices.push_back(i);
+			options.push_back(c.toWString());
+		}
+	}
+	if (options.empty()) {
+		carrier.hint(L"该角色没有非数字牌");
+		return true;
+	}
+	auto choice = carrier.ask(L"【甘草】弃置一张非数字牌？", options, false);
+	if (choice == 0) return true;  //不弃置
+	target.discardByIndex(indices[choice - 1]);
+	game.markCharInfoDirty(target.getId());
+	game.broadcastState();
+	return true;
+}
+
+//跳糖
+bool 跳糖::content(GameLogic& game, Player& carrier) {
+	//切斯特指定颜色
+	auto colorOpt = carrier.chooseCardColor(L"【跳糖】指定【+2】的颜色", false);
+	if (!colorOpt) return false;
+
+	//选一名其他角色拼点
+	auto targetOpt = carrier.chooseOtherPlayer(L"【跳糖】选择拼点目标", true);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	auto result = carrier.comparePoint(target, true);
+	if (!result) return false;
+
+	std::cout << "<技能> " << carrier.characterName() << "与" << target.characterName() << "拼点" << std::endl;
+
+	//胜者获得切斯特指定颜色的+2
+	auto giveDraw2 = [&](Player& p) {
+		auto card = Card::make(colorOpt.value(), Card::Name::action_draw2);
+		std::cout << "<技能> " << p.characterName() << "拼点获胜，获得"
+			<< card->toString() << std::endl;
+		p.gainCard(std::move(card));
+	};
+
+	if (*result == Player::CompareResult::win) {
+		giveDraw2(carrier);
+	}
+	else if (*result == Player::CompareResult::lose) {
+		giveDraw2(target);
+	}
+	//平局无胜者，都不获得
+
+	game.markCharInfoDirty(carrier.getId());
+	game.markCharInfoDirty(target.getId());
+	game.broadcastState();
+	return true;
 }
 

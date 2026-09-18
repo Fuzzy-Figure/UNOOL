@@ -1346,3 +1346,44 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+// ==================== 切斯特衍生技 ====================
+//铃铛：锁定技，回合开始时随机重铸1/2/3张手牌，失去其他技能并随机获得一个衍生技
+class 铃铛 : public PSkillImpl<铃铛> {
+public:
+	铃铛() : PSkillImpl<铃铛>(
+		"铃铛",
+		"锁定技，回合开始时，你随机重铸1/2/3张手牌，然后你失去其他技能，并随机获得一个衍生技。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(Trigger& trigger) override;
+};
+
+//爆糖：锁定技，打出有目标的牌后，对目标造成5%最大体力伤害（向上取整）
+class 爆糖 : public PSkillImpl<爆糖> {
+public:
+	爆糖() : PSkillImpl<爆糖>(
+		"爆糖",
+		"★锁定技，当你打出有目标的牌后，对目标造成5%最大体力点伤害（向上取整）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//薄荷：锁定技，回合结束时，随机回复1~3体力
+class 薄荷 : public PSkillImpl<薄荷> {
+public:
+	薄荷() : PSkillImpl<薄荷>(
+		"薄荷",
+		"★锁定技，回合结束时，随机回复1~3体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(Trigger& trigger) override;
+};
