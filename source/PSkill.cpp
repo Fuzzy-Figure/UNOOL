@@ -629,6 +629,10 @@ bool 森罗::content(Trigger& trigger) {
 }
 
 
+bool 大脚::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handInclude(&Card::isWild);
+}
+
 //================大脚=====================
 bool 大脚::content(Trigger& trigger) {
 	trigger.getCarrier().chooseToDiscard(L"弃置一张万能牌", 1, true, &Card::isWild);

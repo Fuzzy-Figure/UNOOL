@@ -82,7 +82,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 // ==================== 构造 / 工厂 ====================
 Character::Character(const std::string& _name,
 					 const std::string& _skin)
-	:names{_name}, skins{_skin} {}
+	:names{ _name }, skins{ _skin } {}
 
 std::unique_ptr<Character> Character::make(const std::string& name, const std::string& skin) {
 	auto it = infos.find(name);
@@ -126,7 +126,7 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 
 	//依次加入两角色全部技能（工厂克隆，天然含子技能）
 	auto addAllFrom = [&newChara](const Info& info) {
-		for (const auto& f : info.pSkills)        newChara->addSkill(f());
+		for (const auto& f : info.pSkills) newChara->addSkill(f());
 		for (const auto& f : info.instantSkills) newChara->addSkill(f());
 		for (const auto& f : info.transformSkills) newChara->addSkill(f());
 	};
@@ -138,8 +138,8 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 	const std::size_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
 	const std::size_t hp2 = info2.hp;
 	const std::size_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
-	newChara->hp = hp1 + hp2;
-	newChara->maxHp = maxHp1 + maxHp2;
+	newChara->hp = unool::math::ceil(static_cast<double>(hp1 + hp2) / 200.0) * 100;
+	newChara->maxHp = unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 200.0) * 100;
 	return newChara;
 }
 
@@ -147,7 +147,7 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 // ==================== 基本信息 ====================
 std::string Character::getName() const {
 	if (names.size() == 1) return names[0];
-	return names[0] + "+" + names[1];
+	return names[0] + "&" + names[1];
 }
 std::wstring Character::getNameW() const {
 	return unool::string::to_utf16(getName());

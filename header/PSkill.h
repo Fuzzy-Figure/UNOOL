@@ -405,6 +405,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
+	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
 
