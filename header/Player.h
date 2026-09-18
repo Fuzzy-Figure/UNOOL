@@ -126,7 +126,10 @@ public:
 	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 
 	Card& useCardByIndex(const std::size_t cardIndex);
-	Card& discardByIndex(const std::size_t cardIndex, Card::DiscardReason reason = Card::DiscardReason::discard);
+	//把指定索引的手牌放进弃牌堆（触发lose_card事件），reason标识进弃牌堆的原因
+	Card& putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason);
+	//弃置指定索引的手牌（reason固定为discard）
+	Card& discardByIndex(const std::size_t cardIndex);
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
@@ -148,11 +151,17 @@ public:
 #pragma endregion
 
 #pragma region 交互
+	//选num张符合条件的牌放进弃牌堆，reason标识原因
+	std::vector<ref<Card>> chooseCardsToDiscardPile(const std::wstring& title,
+													std::size_t num, const bool forced,
+													const std::function<bool(const Card&)>& condition
+													= unool::alwaysTrue,
+													Card::DiscardReason reason = Card::DiscardReason::discard);
+	//弃置num张符合条件的牌（reason固定为discard）
 	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
-										   std::size_t num, const bool forced,
-										   const std::function<bool(const Card&)>& condition
-										   = unool::alwaysTrue,
-										   Card::DiscardReason reason = Card::DiscardReason::discard);
+										  std::size_t num, const bool forced,
+										  const std::function<bool(const Card&)>& condition
+										  = unool::alwaysTrue);
 	struct RecastResult {
 		std::vector<ref<Card>> discarded;
 		std::vector<ref<Card>> drawn;

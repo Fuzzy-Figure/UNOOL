@@ -96,13 +96,17 @@ void Player::gainCard(std::unique_ptr<Card> card) {
 	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, gainedCards, std::nullopt, one);
 }
 
-Card& Player::discardByIndex(const std::size_t cardIndex, Card::DiscardReason reason) {
+Card& Player::putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason) {
 	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	ref<Card> cardRef = *card;
 	game.putCardToDiscardPile(std::move(card), reason, *this);
 	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
 	return cardRef;
+}
+
+Card& Player::discardByIndex(const std::size_t cardIndex) {
+	return putCardToDiscardPileByIndex(cardIndex, Card::DiscardReason::discard);
 }
 
 std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
@@ -368,10 +372,10 @@ opt_ref<Card> Player::chooseToUse(ASkill::TriggerTime phase) {
 	}
 }
 
-std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
-											   std::size_t num, const bool forced,
-											   const std::function<bool(const Card&)>& condition,
-											   Card::DiscardReason reason) {
+std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::wstring& title,
+														std::size_t num, const bool forced,
+														const std::function<bool(const Card&)>& condition,
+														Card::DiscardReason reason) {
 	std::vector<ref<Card>> discardedCards;
 	if (const std::size_t _handCount = handCount(); num > _handCount)
 		num = _handCount;
@@ -391,7 +395,7 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 			return discardedCards;
 		}
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
-		discardByIndex(index.value(), reason);
+		putCardToDiscardPileByIndex(index.value(), reason);
 		discardedCount++;
 		std::wcout << L"玩家" << id << Card::to_wstring(reason) << L"了一张牌（"
 			<< discardedCount << L"/" << num << L"）" << std::endl;
@@ -401,11 +405,17 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 	return discardedCards;
 }
 
+std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
+											   std::size_t num, const bool forced,
+											   const std::function<bool(const Card&)>& condition) {
+	return chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::discard);
+}
+
 Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
 	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
-	std::vector discarded = chooseToDiscard(title, num, forced, condition, Card::DiscardReason::recast);
+	std::vector discarded = chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::recast);
 	std::vector drawn = draw(discarded.size());
 	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
 	return RecastResult{ std::move(discarded), std::move(drawn) };
@@ -416,7 +426,7 @@ void Player::decree(const std::wstring& title,
 					const std::function<bool(const Card&)>& condition) {
 	game.launchPSkills(PSkill::TriggerTime::decree_begin, *this);
 	draw(num);
-	chooseToDiscard(title, num, forced, condition, Card::DiscardReason::decree);
+	chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::decree);
 	game.launchPSkills(PSkill::TriggerTime::decree_end, *this);
 }
 
