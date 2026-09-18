@@ -32,6 +32,8 @@ public:
 		none,   //没进入弃牌堆（手中/牌堆/通用场景默认值）
 		use,    //打出
 		discard,//弃置
+		recast, //重铸
+		decree, //决议
 		judge   //判定
 	};
 	using ColorName = std::pair<Color, Name>;

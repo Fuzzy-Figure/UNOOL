@@ -2609,7 +2609,7 @@ bool 铃铛::content(Trigger& trigger) {
 		//从大到小排序前X个，从后往前弃避免索引变化
 		std::partial_sort(indices.begin(), indices.begin() + X, indices.end(), std::greater{});
 		for (std::size_t i = 0; i < X; ++i) {
-			carrier.discardByIndex(indices[i]);
+			carrier.discardByIndex(indices[i], Card::DiscardReason::recast);
 		}
 		carrier.draw(X, Player::DrawReason::skill);
 		std::cout << "<技能> " << carrier.characterName() << "铃铛重铸" << X << "张手牌" << std::endl;

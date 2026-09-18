@@ -96,11 +96,11 @@ void Player::gainCard(std::unique_ptr<Card> card) {
 	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, gainedCards, std::nullopt, one);
 }
 
-Card& Player::discardByIndex(const std::size_t cardIndex) {
+Card& Player::discardByIndex(const std::size_t cardIndex, Card::DiscardReason reason) {
 	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	ref<Card> cardRef = *card;
-	game.putCardToDiscardPile(std::move(card), Card::DiscardReason::discard, *this);
+	game.putCardToDiscardPile(std::move(card), reason, *this);
 	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
 	return cardRef;
 }
@@ -370,13 +370,14 @@ opt_ref<Card> Player::chooseToUse(ASkill::TriggerTime phase) {
 
 std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 											   std::size_t num, const bool forced,
-											   const std::function<bool(const Card&)>& condition) {
+											   const std::function<bool(const Card&)>& condition,
+											   Card::DiscardReason reason) {
 	std::vector<ref<Card>> discardedCards;
 	if (const std::size_t _handCount = handCount(); num > _handCount)
 		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
-	std::cout << "玩家" << id << "请选择弃置" << num << "张牌" << std::endl;
+	std::wcout << L"玩家" << id << L"请选择" << Card::to_wstring(reason) << num << L"张牌" << std::endl;
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
@@ -386,13 +387,14 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 		auto index = chooseCard(condition, forced);
 		if (!index.has_value()) {
 			network.sendPlayerChoice(id, L"", {}, false);
-			std::cout << "玩家" << id << "取消了弃牌" << std::endl;
+			std::wcout << L"玩家" << id << L"取消了" << Card::to_wstring(reason) << std::endl;
 			return discardedCards;
 		}
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
-		discardByIndex(index.value());
+		discardByIndex(index.value(), reason);
 		discardedCount++;
-		std::cout << "玩家" << id << "弃置了一张牌（" << discardedCount << "/" << num << "）" << std::endl;
+		std::wcout << L"玩家" << id << Card::to_wstring(reason) << L"了一张牌（"
+			<< discardedCount << L"/" << num << L"）" << std::endl;
 		game.broadcastState();
 	}
 	network.sendPlayerChoice(id, L"", {}, false);
@@ -403,7 +405,7 @@ Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
 	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
-	std::vector discarded = chooseToDiscard(title, num, forced, condition);
+	std::vector discarded = chooseToDiscard(title, num, forced, condition, Card::DiscardReason::recast);
 	std::vector drawn = draw(discarded.size());
 	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
 	return RecastResult{ std::move(discarded), std::move(drawn) };
@@ -414,7 +416,7 @@ void Player::decree(const std::wstring& title,
 					const std::function<bool(const Card&)>& condition) {
 	game.launchPSkills(PSkill::TriggerTime::decree_begin, *this);
 	draw(num);
-	chooseToDiscard(title, num, forced, condition);
+	chooseToDiscard(title, num, forced, condition, Card::DiscardReason::decree);
 	game.launchPSkills(PSkill::TriggerTime::decree_end, *this);
 }
 

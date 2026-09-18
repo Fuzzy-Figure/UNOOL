@@ -1366,7 +1366,7 @@ class 爆糖 : public PSkillImpl<爆糖> {
 public:
 	爆糖() : PSkillImpl<爆糖>(
 		"爆糖",
-		"★锁定技，当你打出有目标的牌后，对目标造成5%最大体力点伤害（向上取整）。",
+		"锁定技，当你打出有目标的牌后，对目标造成5%最大体力点伤害（向上取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -1380,7 +1380,7 @@ class 薄荷 : public PSkillImpl<薄荷> {
 public:
 	薄荷() : PSkillImpl<薄荷>(
 		"薄荷",
-		"★锁定技，回合结束时，随机回复1~3体力。",
+		"锁定技，回合结束时，随机回复1~3体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end

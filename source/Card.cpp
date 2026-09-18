@@ -374,6 +374,8 @@ std::wstring Card::to_wstring(const DiscardReason reason) {
 	switch (reason) {
 	case DiscardReason::use:     return L"打出";
 	case DiscardReason::discard: return L"弃置";
+	case DiscardReason::recast:  return L"重铸";
+	case DiscardReason::decree:  return L"决议";
 	case DiscardReason::judge:   return L"判定";
 	case DiscardReason::none:
 	default:                     return L"";
