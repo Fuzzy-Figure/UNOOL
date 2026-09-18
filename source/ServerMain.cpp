@@ -9,10 +9,9 @@
 // 根据 server_config.json 初始化角色（指定或随机）
 static void initCharacters(GameLogic& gameLogic) {
 	if (unool::getServerConfig().contains("characters")) {
-		const auto& chars = unool::getServerConfig()["characters"];
-		if (chars.size() != 2)
-			throw std::invalid_argument("指定角色时，角色数量必须为2");
-		gameLogic.initPlayers({ chars[0], chars[1] });
+		auto chars = unool::getServerConfig()["characters"].get<std::vector<std::string>>();
+		//角色数量由 GameLogic::initPlayers(vector) 按 mode 校验
+		gameLogic.initPlayers(chars);
 	}
 	else {
 		gameLogic.initPlayers();
@@ -30,8 +29,9 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 		std::size_t lId = 1 - wId;
 
 		auto& players = gameLogic.getPlayers();
-		Character::Level wLv = players[wId].get().characterLevel();
-		Character::Level lLv = players[lId].get().characterLevel();
+		//胜者按最高等级，败者按最低等级
+		Character::Level wLv = players[wId].get().getMaxLevel();
+		Character::Level lLv = players[lId].get().getMinLevel();
 		const auto& slots = serverNetwork.getClientSlots();
 		UserDB::instance().addMatchResult(
 			slots[wId].username, slots[lId].username, wLv, lLv,

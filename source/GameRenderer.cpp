@@ -92,20 +92,27 @@ void GameRenderer::display() {
 
 void GameRenderer::renderPlayers() {
 	for (const auto& playerState : currentState.players) {
-		//角色
+		//角色图横向并排原尺寸渲染（组合角色多张）
 		sf::Vector2f charPos = { 0,0 };
 		if (playerState.id == 0) charPos = { 0,0 };
 		else if (playerState.id == 1) charPos = { 0,config.windowSize.y - config.characterSize.y };
-		displayImage(Character::getImagePath(playerState.characterName, playerState.skin), charPos, config.characterSize);
+		const std::size_t imgCount = playerState.characterNames.size();
+		for (std::size_t i = 0; i < imgCount; ++i) {
+			sf::Vector2f imgPos = { charPos.x + i * config.characterSize.x, charPos.y };
+			displayImage(
+				Character::getImagePath(playerState.characterNames[i], playerState.skins[i]),
+				imgPos, config.characterSize);
+		}
+		const float charTotalWidth = static_cast<float>(imgCount) * config.characterSize.x;
 
-		//标记（覆盖在角色图右上角，等比缩放至角色图面积的1/12）
+		//标记（覆盖在最后一张角色图右上角，等比缩放至角色图面积的1/12）
 		if (playerState.marks.contains("幽灵")) {
 			const std::string markPath = "images/marks/幽灵.jpg";
 			sf::Vector2u texSize = imageMgr.getTextureSize(markPath);
 			float targetArea = config.characterSize.x * config.characterSize.y / 12.0f;
 			float scale = std::sqrt(targetArea / (static_cast<float>(texSize.x) * texSize.y));
 			sf::Vector2f markSize = { texSize.x * scale, texSize.y * scale };
-			sf::Vector2f markPos = { charPos.x + config.characterSize.x - markSize.x, charPos.y };
+			sf::Vector2f markPos = { charPos.x + charTotalWidth - markSize.x, charPos.y };
 			displayImage(markPath, markPos, markSize);
 		}
 
@@ -142,11 +149,11 @@ void GameRenderer::renderPlayers() {
 		}
 		displayText(cardsInfoText, cardsInfoPos);
 
-		//手牌
+		//手牌起始位置：组合角色按图片总宽，单角色按单图宽
 		const sf::Vector2f& handDisplayPos =
 			playerState.id == 0 ?
-			sf::Vector2f{ config.characterSize.x, 0 } :
-			sf::Vector2f{ config.characterSize.x, config.windowSize.y - config.characterSize.y };
+			sf::Vector2f{ charTotalWidth, 0 } :
+			sf::Vector2f{ charTotalWidth, config.windowSize.y - config.characterSize.y };
 
 		const bool canSelect = isLocalPlayer && canSelectLocal();
 
@@ -411,7 +418,9 @@ void GameRenderer::handleMouseClick(const sf::Vector2f& mousePos) {
 		else if (playerState.id == 1) charPos = { 0, config.windowSize.y - config.characterSize.y };
 		else continue;
 
-		sf::FloatRect charBounds(charPos, config.characterSize);
+		//组合角色多张图横向并排，点击区域覆盖全部
+		const float charTotalWidth = static_cast<float>(playerState.characterNames.size()) * config.characterSize.x;
+		sf::FloatRect charBounds(charPos, { charTotalWidth, config.characterSize.y });
 		if (charBounds.contains(mousePos)) {
 			//再次点击同一角色则关闭
 			if (infoBoxPlayerId.has_value() && infoBoxPlayerId.value() == playerState.id) {

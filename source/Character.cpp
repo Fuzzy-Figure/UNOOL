@@ -82,7 +82,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 // ==================== 构造 / 工厂 ====================
 Character::Character(const std::string& _name,
 					 const std::string& _skin)
-	:name(_name), skin(_skin) {}
+	:names{_name}, skins{_skin} {}
 
 std::unique_ptr<Character> Character::make(const std::string& name, const std::string& skin) {
 	auto it = infos.find(name);
@@ -110,17 +110,74 @@ std::unique_ptr<Character> Character::make(const std::string& name, const std::s
 	return newChara;
 }
 
+std::unique_ptr<Character> Character::makeCombined(const std::string& name1, const std::string& skin1,
+												   const std::string& name2, const std::string& skin2) {
+	auto it1 = infos.find(name1);
+	auto it2 = infos.find(name2);
+	if (it1 == infos.end()) throw std::invalid_argument("角色 <" + name1 + "> 未在 Character::infos 中定义");
+	if (it2 == infos.end()) throw std::invalid_argument("角色 <" + name2 + "> 未在 Character::infos 中定义");
+	const Info& info1 = it1->second;
+	const Info& info2 = it2->second;
+
+	//组合名 = name1+name2；直接构造带 names={name1,name2} 的对象
+	auto newChara = std::make_unique<Character>(name1, skin1);
+	newChara->names.push_back(name2);
+	newChara->skins.push_back(skin2);
+
+	//依次加入两角色全部技能（工厂克隆，天然含子技能）
+	auto addAllFrom = [&newChara](const Info& info) {
+		for (const auto& f : info.pSkills)        newChara->addSkill(f());
+		for (const auto& f : info.instantSkills) newChara->addSkill(f());
+		for (const auto& f : info.transformSkills) newChara->addSkill(f());
+	};
+	addAllFrom(info1);
+	addAllFrom(info2);
+
+	//体力叠加
+	const std::size_t hp1 = info1.hp;
+	const std::size_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
+	const std::size_t hp2 = info2.hp;
+	const std::size_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
+	newChara->hp = hp1 + hp2;
+	newChara->maxHp = maxHp1 + maxHp2;
+	return newChara;
+}
+
 
 // ==================== 基本信息 ====================
 std::string Character::getName() const {
-	return name;
+	if (names.size() == 1) return names[0];
+	return names[0] + "+" + names[1];
 }
 std::wstring Character::getNameW() const {
-	return unool::string::to_utf16(name);
+	return unool::string::to_utf16(getName());
 }
 Character::Level Character::getLevel() const {
-	if (auto it = infos.find(name); it != infos.end()) return it->second.level;
+	//组合角色调用属编程错误，应由调用方改用 getMaxLevel/getMinLevel
+	if (isCombined()) throw std::logic_error("组合角色不支持 getLevel，请用 getMaxLevel/getMinLevel");
+	if (auto it = infos.find(names[0]); it != infos.end()) return it->second.level;
 	else throw std::invalid_argument("此角色未定义等级");
+}
+std::vector<Character::Level> Character::getLevels() const {
+	std::vector<Level> result;
+	result.reserve(names.size());
+	for (const auto& n : names) {
+		if (auto it = infos.find(n); it != infos.end()) result.push_back(it->second.level);
+		else throw std::invalid_argument("角色 <" + n + "> 未在 Character::infos 中定义");
+	}
+	return result;
+}
+Character::Level Character::getMaxLevel() const {
+	auto levels = getLevels();
+	return *std::ranges::max_element(levels, [](Level a, Level b) {
+		return static_cast<int>(a) < static_cast<int>(b);
+	});
+}
+Character::Level Character::getMinLevel() const {
+	auto levels = getLevels();
+	return *std::ranges::min_element(levels, [](Level a, Level b) {
+		return static_cast<int>(a) < static_cast<int>(b);
+	});
 }
 std::string Character::skillsName() const {
 	std::string result;
@@ -149,13 +206,23 @@ std::string Character::getSkillsText() const {
 	return result;
 }
 std::string Character::getImagePath() const {
-	return getImagePath(name, skin);
+	//单角色返回唯一图路径；组合角色调用属编程错误，请用 getImagePaths
+	if (isCombined()) throw std::logic_error("组合角色不支持 getImagePath，请用 getImagePaths");
+	return getImagePath(names[0], skins[0]);
+}
+std::vector<std::string> Character::getImagePaths() const {
+	std::vector<std::string> result;
+	result.reserve(names.size());
+	for (std::size_t i = 0; i < names.size(); ++i) {
+		result.push_back(getImagePath(names[i], skins[i]));
+	}
+	return result;
 }
 bool Character::operator<(const Character& other) const {
-	return name < other.name;
+	return getName() < other.getName();
 }
 bool Character::operator==(const Character& other) const {
-	return name == other.name;
+	return getName() == other.getName();
 }
 
 

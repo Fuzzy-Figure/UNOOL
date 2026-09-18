@@ -142,6 +142,20 @@ void GameLogic::initPlayers() {
 	std::size_t firstSeatId = getSeatPlayerId(0);
 	std::size_t secondSeatId = getSeatPlayerId(1);
 
+	//读取模式：normal（默认）/ double
+	const std::string mode = unool::getServerConfig().value("mode", "normal");
+	if (mode == "double") {
+		initPlayersDouble(firstSeatId, secondSeatId);
+	}
+	else {
+		initPlayersNormal(firstSeatId, secondSeatId);
+	}
+
+	charInfoDirty = { true, true };
+	resetGame();
+}
+
+void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//选候选角色
 	const std::size_t candidateCount = unool::getServerConfig()["candidateCount"];
 	SelectionState state;
@@ -185,9 +199,21 @@ void GameLogic::initPlayers() {
 	//选角环节：一号位先选，然后二号位选
 	selectCharacter(firstSeatId, state);
 	selectCharacter(secondSeatId, state);
+}
 
-	charInfoDirty = { true, true };
-	resetGame();
+void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
+	//双将模式：无ban，抽 doubleCandidateCount*2 个候选平分各 doubleCandidateCount 个
+	const std::size_t doubleCandidateCount = unool::getServerConfig().value("doubleCandidateCount", 5);
+	auto allChars = Character::randomChooseCharacters(doubleCandidateCount * 2);
+
+	std::vector<Character::Entry> cands1(
+		allChars.begin(), allChars.begin() + doubleCandidateCount);
+	std::vector<Character::Entry> cands2(
+		allChars.begin() + doubleCandidateCount, allChars.end());
+
+	//按座次每家连续选完2个再下一家
+	selectCharacterDouble(firstSeatId, cands1);
+	selectCharacterDouble(secondSeatId, cands2);
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
@@ -226,7 +252,7 @@ std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_
 	return std::nullopt;
 }
 
-void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
+std::pair<std::string, std::string> GameLogic::chooseSkin(Player& player, const std::string& charName) {
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
 	if (skins.size() > 1) {
@@ -235,7 +261,12 @@ void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
 		std::size_t skinChoice = player.ask(L"选择皮肤：", skinOpts, true);
 		skin = skins[skinChoice - 1];
 	}
-	player.setCharacter(Character::make(charName, skin));
+	return { charName, skin };
+}
+
+void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
+	auto [name, skin] = chooseSkin(player, charName);
+	player.setCharacter(Character::make(name, skin));
 }
 
 void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
@@ -252,13 +283,48 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	markCharInfoDirty(playerId);
 	broadcastState();
 }
+
+void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands) {
+	//第一轮：5选1
+	std::vector<std::wstring> opts1;
+	for (const auto& e : cands) opts1.push_back(formatCharacterLabelW(e));
+	std::size_t choice1 = players[playerId]->ask(L"选择你的第1个角色（5选1）：", opts1, true);
+	auto [name1, skin1] = chooseSkin(*players[playerId], cands[choice1 - 1].first);
+	//移除已选
+	cands.erase(cands.begin() + (choice1 - 1));
+
+	//第二轮：4选1
+	std::vector<std::wstring> opts2;
+	for (const auto& e : cands) opts2.push_back(formatCharacterLabelW(e));
+	std::size_t choice2 = players[playerId]->ask(L"选择你的第2个角色（4选1）：", opts2, true);
+	auto [name2, skin2] = chooseSkin(*players[playerId], cands[choice2 - 1].first);
+
+	//组合
+	players[playerId]->setCharacter(Character::makeCombined(name1, skin1, name2, skin2));
+	markCharInfoDirty(playerId);
+	broadcastState();
+}
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
-	if (chars.size() != 2) throw std::invalid_argument("指定角色时，角色数量必须为2");
-
-	for (std::size_t i = 0; i < 2; ++i) {
-		auto p = std::make_unique<Player>(i, *this, Character::make(chars[i]));
-		players.push_back(std::move(p));
+	const std::string mode = unool::getServerConfig().value("mode", "normal");
+	if (mode == "double") {
+		//双将模式：4 个角色，前 2 个给玩家1，后 2 个给玩家2，各自 makeCombined
+		if (chars.size() != 4)
+			throw std::invalid_argument("双将模式指定角色时，角色数量必须为4");
+		for (std::size_t i = 0; i < 2; ++i) {
+			auto p = std::make_unique<Player>(i, *this,
+				Character::makeCombined(chars[i * 2], "默认", chars[i * 2 + 1], "默认"));
+			players.push_back(std::move(p));
+		}
+	}
+	else {
+		//normal 模式：2 个角色，每家 1 个
+		if (chars.size() != 2)
+			throw std::invalid_argument("指定角色时，角色数量必须为2");
+		for (std::size_t i = 0; i < 2; ++i) {
+			auto p = std::make_unique<Player>(i, *this, Character::make(chars[i]));
+			players.push_back(std::move(p));
+		}
 	}
 
 	//拼点决定座次
@@ -307,8 +373,8 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 	state.players.resize(players.size());
 	for (const auto& [i, pl] : players | std::views::enumerate) {
 		state.players[i].id = pl->getId();
-		state.players[i].characterName = pl->characterName();
-		state.players[i].skin = pl->skin();
+		state.players[i].characterNames = pl->getNames();
+		state.players[i].skins = pl->getSkins();
 		state.players[i].hp = pl->getHp();
 		state.players[i].maxHp = pl->getMaxHp();
 		state.players[i].marks = pl->getMarks();
@@ -354,8 +420,17 @@ void GameLogic::flushCharInfo() {
 		if (i < 2 && charInfoDirty[i]) {
 			CharInfo info;
 			info.playerIndex = i;
+			//组合角色显示"name1+name2(L1+L2)"，单角色保持"name(L)"
+			std::string levelPart;
+			if (players[i]->isCombined()) {
+				auto levels = players[i]->getLevels();
+				levelPart = Character::to_string(levels[0]) + "+" + Character::to_string(levels[1]);
+			}
+			else {
+				levelPart = Character::to_string(players[i]->characterLevel());
+			}
 			info.fullText = players[i]->characterName() + "（"
-				+ Character::to_string(players[i]->characterLevel()) + "）\n"
+				+ levelPart + "）\n"
 				+ "技能：\n"
 				+ players[i]->getSkillsText();
 			network.sendCharInfo(info);
@@ -472,8 +547,10 @@ void GameLogic::resetGame() {
 		player->printHand();
 		// 重置手牌
 		player->clearHand();
-		// 初始手牌
-		player->draw(unool::getServerConfig()["initHandCount"]);
+		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
+		const std::string mode = unool::getServerConfig().value("mode", "normal");
+		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "initHandCount";
+		player->draw(unool::getServerConfig()[handKey]);
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁

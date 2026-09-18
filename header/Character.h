@@ -24,8 +24,8 @@ public:
 #pragma endregion
 
 private:
-	std::string name;
-	std::string skin;
+	std::vector<std::string> names;
+	std::vector<std::string> skins;
 	std::list<std::unique_ptr<PSkill>> pSkills;
 	std::list<std::unique_ptr<ASkillInstantBase>> instantSkills;
 	std::list<std::unique_ptr<ASkillTransformBase>> transformSkills;
@@ -44,16 +44,28 @@ public:
 	Character(Character&&) = default;
 	Character& operator=(Character&&) = default;
 	static std::unique_ptr<Character> make(const std::string& name, const std::string& skin = "默认");
+	//组合两个角色为一个新角色：name=name1+name2，sources={name1,name2}，技能合集，体力叠加
+	static std::unique_ptr<Character> makeCombined(const std::string& name1, const std::string& skin1,
+												   const std::string& name2, const std::string& skin2);
 #pragma endregion
 
 #pragma region 基本信息
 	std::string getName() const;
 	std::wstring getNameW() const;
-	const std::string& getSkin() const { return skin; }
+	const std::vector<std::string>& getNames() const { return names; }
+	const std::vector<std::string>& getSkins() const { return skins; }
+	//是否为组合角色（双将模式）
+	bool isCombined() const { return names.size() == 2; }
 	Level getLevel() const;
+	//组合角色返回两角色等级，单角色返回单元素
+	std::vector<Level> getLevels() const;
+	Level getMaxLevel() const;
+	Level getMinLevel() const;
 	std::string skillsName() const;
 	std::string getSkillsText() const;
 	std::string getImagePath() const;
+	//组合角色返回多张图路径，单角色返回单元素
+	std::vector<std::string> getImagePaths() const;
 	bool operator<(const Character& other) const;
 	bool operator==(const Character& other) const;
 #pragma endregion

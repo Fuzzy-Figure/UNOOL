@@ -62,10 +62,16 @@ public:
 #pragma region 角色属性 - 委托到 Character
 	std::string characterName() const { return character->getName(); }
 	std::wstring characterNameW() const { return character->getNameW(); }
-	std::string skin() const { return character->getSkin(); }
+	const std::vector<std::string>& getNames() const { return character->getNames(); }
+	const std::vector<std::string>& getSkins() const { return character->getSkins(); }
+	bool isCombined() const { return character->isCombined(); }
 	std::string skillsName() const { return character->skillsName(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	Character::Level characterLevel() const { return character->getLevel(); }
+	std::vector<Character::Level> getLevels() const { return character->getLevels(); }
+	Character::Level getMaxLevel() const { return character->getMaxLevel(); }
+	Character::Level getMinLevel() const { return character->getMinLevel(); }
+	std::vector<std::string> getImagePaths() const { return character->getImagePaths(); }
 	std::size_t getHp() const { return character->getHp(); }
 	std::size_t getMaxHp() const { return character->getMaxHp(); }
 	std::size_t damage(std::size_t damage, opt_ref<Player> source);

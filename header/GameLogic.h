@@ -39,10 +39,19 @@ private:
 	};
 
 	static std::wstring formatCharacterLabelW(const Character::Entry& entry);
+	//选皮肤，返回 {角色名, 皮肤名}，不改 player 状态
+	static std::pair<std::string, std::string> chooseSkin(Player& player, const std::string& charName);
+	//选皮肤并直接 setCharacter 单角色
 	static void chooseSkinAndSet(Player& player, const std::string& charName);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
 	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
+	//双将模式选将：5选1再4选1，两轮 chooseSkin 后 makeCombined，期间每选完即 markCharInfoDirty+broadcast
+	void selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands);
+	//normal 模式：ban + selectCharacter
+	void initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId);
+	//double 模式：无ban，按座次每家5选2，makeCombined
+	void initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId);
 #pragma endregion
 
 public:

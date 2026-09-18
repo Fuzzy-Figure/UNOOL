@@ -7,16 +7,16 @@
 struct PlayerState {
 	std::size_t id = -1;
 	Hand hand;
-	std::string characterName;
-	std::string skin;
+	std::vector<std::string> characterNames;
+	std::vector<std::string> skins;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
 	std::unordered_set<std::string> marks;
 
 	PlayerState() = default;
 	PlayerState(const PlayerState& other)
-		: id(other.id), characterName(other.characterName), skin(other.skin),
-		  marks(other.marks) {
+		: id(other.id), characterNames(other.characterNames), skins(other.skins),
+		  hp(other.hp), maxHp(other.maxHp), marks(other.marks) {
 		for (std::size_t i = 0; i < other.hand.count(); ++i) {
 			hand.push_back(Card::make(other.hand[i]));
 		}

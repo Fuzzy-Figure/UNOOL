@@ -3,8 +3,8 @@
 PlayerState& PlayerState::operator=(const PlayerState& other) {
 	if (this != &other) {
 		id = other.id;
-		characterName = other.characterName;
-		skin = other.skin;
+		characterNames = other.characterNames;
+		skins = other.skins;
 		hp = other.hp;
 		maxHp = other.maxHp;
 		marks = other.marks;
@@ -14,8 +14,20 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 }
 
 sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
-	packet >> state.id >> state.hand >> state.characterName >> state.skin
-		>> state.hp >> state.maxHp;
+	packet >> state.id >> state.hp >> state.maxHp;
+	//角色名数组：先读 size 再逐个 string
+	std::size_t nameCount;
+	packet >> nameCount;
+	state.characterNames.resize(nameCount);
+	for (std::size_t i = 0; i < nameCount; ++i) packet >> state.characterNames[i];
+	//皮肤数组
+	std::size_t skinCount;
+	packet >> skinCount;
+	state.skins.resize(skinCount);
+	for (std::size_t i = 0; i < skinCount; ++i) packet >> state.skins[i];
+	//手牌
+	packet >> state.hand;
+	//标记
 	std::size_t markCount;
 	packet >> markCount;
 	state.marks.clear();
@@ -28,12 +40,18 @@ sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
 }
 
 sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
-	packet << state.id << state.hand << state.characterName << state.skin
-		<< state.hp << state.maxHp;
+	packet << state.id << state.hp << state.maxHp;
+	//角色名数组：先写 size 再逐个 string
+	packet << state.characterNames.size();
+	for (const std::string& n : state.characterNames) packet << n;
+	//皮肤数组
+	packet << state.skins.size();
+	for (const std::string& s : state.skins) packet << s;
+	//手牌
+	packet << state.hand;
+	//标记
 	packet << state.marks.size();
-	for (const std::string& m : state.marks) {
-		packet << m;
-	}
+	for (const std::string& m : state.marks) packet << m;
 	return packet;
 }
 
