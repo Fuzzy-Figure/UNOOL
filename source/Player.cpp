@@ -297,12 +297,12 @@ void Player::collectAvailableSkills(ASkill::TriggerTime phase,
 									std::vector<ref<ASkillTransformBase>>& transformRefs) {
 	if (phase == ASkill::TriggerTime::never) return;
 	std::function<void(Skill&)> collectFromSkill = [&](Skill& s) {
-		if (s.is(Skill::Type::ASkillInstant)) {
+		if (s.is(Skill::Type::instant)) {
 			ASkillInstantBase& as = s.toASkillInstant();
 			if (as.canTriggerAt(phase) && as.canUse())
 				instantRefs.emplace_back(as);
 		}
-		else if (s.is(Skill::Type::ASkillTransform)) {
+		else if (s.is(Skill::Type::transform)) {
 			ASkillTransformBase& at = s.toASkillTransform();
 			if (at.canTriggerAt(phase) && at.canUse())
 				transformRefs.emplace_back(at);

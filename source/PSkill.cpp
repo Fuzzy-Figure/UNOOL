@@ -2012,9 +2012,12 @@ void 连营::reset() {
 }
 
 std::set<Card::Type>& 困界::getTriggered(Player& carrier) const {
-	std::optional skillOpt = carrier.findSkill("连营");
-	if (!skillOpt.has_value()) throw std::runtime_error("没有找到\"连营\"技能");
-	return skillOpt.value().get().to<连营>().triggered;
+	if (!triggeredCache.has_value()) {
+		std::optional skillOpt = carrier.findSkill("连营");
+		if (!skillOpt.has_value()) throw std::runtime_error("没有找到\"连营\"技能");
+		triggeredCache = skillOpt.value().get().to<连营>().triggered;
+	}
+	return triggeredCache.value().get();
 }
 bool 困界::filter(const Trigger& trigger) const {
 	return getTriggered(trigger.getCarrier()).size() >= 3;
@@ -2058,8 +2061,6 @@ bool 困界::content(Trigger& trigger) {
 	recastAll(carrier, typeB);
 
 	std::cout << "<技能> " << carrier.characterName() << "发动困界" << std::endl;
-	// 重置连营：清空已触发类别，使一技能可再次为所有类别触发
-	getTriggered(trigger.getCarrier()).clear();
 	game.broadcastState();
 	return true;
 }

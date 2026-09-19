@@ -194,7 +194,7 @@ std::string Character::skillsName() const {
 std::string Character::getSkillsText() const {
 	std::string result;
 	std::function<void(const Skill&)> appendText = [&](const Skill& s) {
-		const bool isPassive = s.is(Skill::Type::PSkill);
+		const bool isPassive = s.is(Skill::Type::passive);
 		result += "【" + s.getName() + "】（" + (isPassive ? "被动技能" : "主动技能") + "）\n" + s.getInfo() + "\n";
 		for (const auto& sub : s.subSkills) appendText(*sub);
 	};
@@ -356,7 +356,7 @@ void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 	//先收集要发动的技能指针，避免content中修改pSkills导致迭代器失效
 	std::vector<PSkill*> toLaunch;
 	std::function<void(const Skill&)> collectPSkills = [&](const Skill& s) {
-		if (s.is(Skill::Type::PSkill)) {
+		if (s.is(Skill::Type::passive)) {
 			PSkill& ps = const_cast<Skill&>(s).toPSkill();
 			if (ps.matchTrigger(currentTriggerTime, trigger))
 				toLaunch.push_back(&ps);

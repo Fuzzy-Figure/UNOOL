@@ -1075,6 +1075,7 @@ public:
 };
 
 class 困界 : public PSkillImpl<困界> {
+	mutable opt_ref<std::set<Card::Type>> triggeredCache;  //缓存连营的triggered引用，避免重复查找
 	std::set<Card::Type>& getTriggered(Player& carrier) const;
 public:
 	困界() : PSkillImpl<困界>(

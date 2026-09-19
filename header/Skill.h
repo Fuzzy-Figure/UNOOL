@@ -38,7 +38,7 @@ public:
 	limit_t getLimit() const { return limit; }
 	void setLimit(const limit_t& v) { limit = v; }
 
-	enum class Type { PSkill, ASkillInstant, ASkillTransform };
+	enum class Type { passive, instant, transform };
 
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
@@ -174,7 +174,7 @@ public:
 	void reset() override;
 	void setForced(const bool newForced);
 
-	Type getType() const override { return Type::PSkill; }
+	Type getType() const override { return Type::passive; }
 
 private:
 	TriggerPlayer triggerPlayer;
@@ -233,7 +233,7 @@ class ASkillInstantBase : public ASkill {
 public:
 	//执行发动；成功返回 true（基类内部负责 canUse 检查与 count 累加）
 	virtual bool tryActivate(GameLogic& game, Player& player) = 0;
-	Type getType() const override { return Type::ASkillInstant; }
+	Type getType() const override { return Type::instant; }
 protected:
 	using ASkill::ASkill;
 };
@@ -251,7 +251,7 @@ public:
 	virtual void addition(GameLogic& game, Player& carrier) const {}
 	//激活时右侧显示的提示文字
 	virtual std::wstring getPrompt() const = 0;
-	Type getType() const override { return Type::ASkillTransform; }
+	Type getType() const override { return Type::transform; }
 protected:
 	using ASkill::ASkill;
 };

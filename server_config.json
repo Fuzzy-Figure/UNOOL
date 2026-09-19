@@ -1,9 +1,9 @@
 {
   "banCount": 2,
-  "characters": [ "棍母", "屎軖", "科斯莫", "斯大林" ],
+  "characters": [ "新陆逊", "白板" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "mode": "double",
+  "mode": "normal",
   "shielded": {
     "characters": [],
     "groups": []
