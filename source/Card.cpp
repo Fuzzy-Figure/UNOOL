@@ -170,25 +170,25 @@ Card::Name Card::getName() const {
 Card::Type Card::getType() const {
 	switch (name) {
 		//数字
-	case Name::number_0:
-	case Name::number_1:
-	case Name::number_2:
-	case Name::number_3:
-	case Name::number_4:
-	case Name::number_5:
-	case Name::number_6:
-	case Name::number_7:
-	case Name::number_8:
-	case Name::number_9: return Type::number;
-		//功能
-	case Name::action_skip:
-	case Name::action_draw2:
-	case Name::action_rev: return Type::action;
-		//万能
-	case Name::wild_pal:
-	case Name::wild_draw4: return Type::wild;
-		//其他
-	default: return Type::unknown;
+		case Name::number_0:
+		case Name::number_1:
+		case Name::number_2:
+		case Name::number_3:
+		case Name::number_4:
+		case Name::number_5:
+		case Name::number_6:
+		case Name::number_7:
+		case Name::number_8:
+		case Name::number_9: return Type::number;
+			//功能
+		case Name::action_skip:
+		case Name::action_draw2:
+		case Name::action_rev: return Type::action;
+			//万能
+		case Name::wild_pal:
+		case Name::wild_draw4: return Type::wild;
+			//其他
+		default: return Type::unknown;
 	}
 }
 Card::ColorName Card::getColorName() const {
@@ -217,25 +217,25 @@ bool Card::isNotWild() const {
 int Card::value() const {
 	switch (name) {
 		//数字
-	case Name::number_0: return 0;
-	case Name::number_1: return 1;
-	case Name::number_2: return 2;
-	case Name::number_3: return 3;
-	case Name::number_4: return 4;
-	case Name::number_5: return 5;
-	case Name::number_6: return 6;
-	case Name::number_7: return 7;
-	case Name::number_8: return 8;
-	case Name::number_9: return 9;
-		//功能
-	case Name::action_skip:
-	case Name::action_draw2:
-	case Name::action_rev: return 20;
-		//万能
-	case Name::wild_pal:
-	case Name::wild_draw4: return 50;
-		//其他
-	default: throw std::invalid_argument("无法计算背面/未知牌的价值");
+		case Name::number_0: return 0;
+		case Name::number_1: return 1;
+		case Name::number_2: return 2;
+		case Name::number_3: return 3;
+		case Name::number_4: return 4;
+		case Name::number_5: return 5;
+		case Name::number_6: return 6;
+		case Name::number_7: return 7;
+		case Name::number_8: return 8;
+		case Name::number_9: return 9;
+			//功能
+		case Name::action_skip:
+		case Name::action_draw2:
+		case Name::action_rev: return 20;
+			//万能
+		case Name::wild_pal:
+		case Name::wild_draw4: return 50;
+			//其他
+		default: throw std::invalid_argument("无法计算背面/未知牌的价值");
 	}
 }
 std::string Card::toString() const {
@@ -275,11 +275,11 @@ void Card::set(const ColorName& cn) {
 void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 	if (isEffective()) {
 		switch (getName()) {
-		case Name::action_skip:   Effect::ban(*this, source, target); break;
-		case Name::action_rev:   Effect::rev(*this, game); break;
-		case Name::action_draw2: Effect::draw2(*this, source, target); break;
-		case Name::wild_pal:     Effect::pal(*this, game, source); break;
-		case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
+			case Name::action_skip:   Effect::ban(*this, source, target); break;
+			case Name::action_rev:   Effect::rev(*this, game); break;
+			case Name::action_draw2: Effect::draw2(*this, source, target); break;
+			case Name::wild_pal:     Effect::pal(*this, game, source); break;
+			case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
 		}
 	}
 }
@@ -287,98 +287,98 @@ void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 // 静态转换方法
 std::string Card::to_string(const Color& color) {
 	switch (color) {
-	case Color::blue:   return "蓝";
-	case Color::green:  return "绿";
-	case Color::red:    return "红";
-	case Color::yellow: return "黄";
-	case Color::black:  return "黑";
-	case Color::no:     return "无";
-	default:            return "";
+		case Color::blue:   return "蓝";
+		case Color::green:  return "绿";
+		case Color::red:    return "红";
+		case Color::yellow: return "黄";
+		case Color::black:  return "黑";
+		case Color::no:     return "无";
+		default:            return "";
 	}
 }
 std::wstring Card::to_wstring(const Color& color) {
 	switch (color) {
-	case Color::blue:   return L"蓝";
-	case Color::green:  return L"绿";
-	case Color::red:    return L"红";
-	case Color::yellow: return L"黄";
-	case Color::black:  return L"黑";
-	case Color::no:     return L"无";
-	default:            return L"";
+		case Color::blue:   return L"蓝";
+		case Color::green:  return L"绿";
+		case Color::red:    return L"红";
+		case Color::yellow: return L"黄";
+		case Color::black:  return L"黑";
+		case Color::no:     return L"无";
+		default:            return L"";
 	}
 }
 std::string Card::to_string(const Name& name) {
 	switch (name) {
 		// 数字牌
-	case Name::number_0: return "0";
-	case Name::number_1: return "1";
-	case Name::number_2: return "2";
-	case Name::number_3: return "3";
-	case Name::number_4: return "4";
-	case Name::number_5: return "5";
-	case Name::number_6: return "6";
-	case Name::number_7: return "7";
-	case Name::number_8: return "8";
-	case Name::number_9: return "9";
-		// 功能牌
-	case Name::action_skip:   return "封禁";
-	case Name::action_rev:   return "反转";
-	case Name::action_draw2: return "+2";
-		//万能牌
-	case Name::wild_pal:     return "变色";
-	case Name::wild_draw4:   return "+4";
-		//其他
-	case Name::back:         return "背面";
-	case Name::no:           return "无";
-	default:                 return "未知";
+		case Name::number_0: return "0";
+		case Name::number_1: return "1";
+		case Name::number_2: return "2";
+		case Name::number_3: return "3";
+		case Name::number_4: return "4";
+		case Name::number_5: return "5";
+		case Name::number_6: return "6";
+		case Name::number_7: return "7";
+		case Name::number_8: return "8";
+		case Name::number_9: return "9";
+			// 功能牌
+		case Name::action_skip:   return "封禁";
+		case Name::action_rev:   return "反转";
+		case Name::action_draw2: return "+2";
+			//万能牌
+		case Name::wild_pal:     return "变色";
+		case Name::wild_draw4:   return "+4";
+			//其他
+		case Name::back:         return "背面";
+		case Name::no:           return "无";
+		default:                 return "未知";
 	}
 }
 std::wstring Card::to_wstring(const Name& name) {
 	switch (name) {
 		// 数字牌
-	case Name::number_0: return L"0";
-	case Name::number_1: return L"1";
-	case Name::number_2: return L"2";
-	case Name::number_3: return L"3";
-	case Name::number_4: return L"4";
-	case Name::number_5: return L"5";
-	case Name::number_6: return L"6";
-	case Name::number_7: return L"7";
-	case Name::number_8: return L"8";
-	case Name::number_9: return L"9";
-		// 功能牌
-	case Name::action_skip:   return L"封禁";
-	case Name::action_rev:   return L"反转";
-	case Name::action_draw2: return L"+2";
-		//万能牌
-	case Name::wild_pal:     return L"变色";
-	case Name::wild_draw4:   return L"+4";
-		//其他
-	case Name::back:         return L"背面";
-	case Name::no:           return L"无";
-	default:                 return L"未知";
+		case Name::number_0: return L"0";
+		case Name::number_1: return L"1";
+		case Name::number_2: return L"2";
+		case Name::number_3: return L"3";
+		case Name::number_4: return L"4";
+		case Name::number_5: return L"5";
+		case Name::number_6: return L"6";
+		case Name::number_7: return L"7";
+		case Name::number_8: return L"8";
+		case Name::number_9: return L"9";
+			// 功能牌
+		case Name::action_skip:   return L"封禁";
+		case Name::action_rev:   return L"反转";
+		case Name::action_draw2: return L"+2";
+			//万能牌
+		case Name::wild_pal:     return L"变色";
+		case Name::wild_draw4:   return L"+4";
+			//其他
+		case Name::back:         return L"背面";
+		case Name::no:           return L"无";
+		default:                 return L"未知";
 	}
 }
 
 std::wstring Card::to_wstring(const Type& type) {
 	switch (type) {
-	case Type::number:  return L"数字牌";
-	case Type::action:  return L"功能牌";
-	case Type::wild:    return L"万能牌";
-	case Type::unknown:
-	default:            return L"未知类型";
+		case Type::number:  return L"数字牌";
+		case Type::action:  return L"功能牌";
+		case Type::wild:    return L"万能牌";
+		case Type::unknown:
+		default:            return L"未知类型";
 	}
 }
 
 std::wstring Card::to_wstring(const DiscardReason reason) {
 	switch (reason) {
-	case DiscardReason::use:     return L"打出";
-	case DiscardReason::discard: return L"弃置";
-	case DiscardReason::recast:  return L"重铸";
-	case DiscardReason::decree:  return L"决议";
-	case DiscardReason::judge:   return L"判定";
-	case DiscardReason::none:
-	default:                     return L"";
+		case DiscardReason::use:     return L"打出";
+		case DiscardReason::discard: return L"弃置";
+		case DiscardReason::recast:  return L"重铸";
+		case DiscardReason::decree:  return L"决议";
+		case DiscardReason::judge:   return L"判定";
+		case DiscardReason::none:
+		default:                     return L"";
 	}
 }
 

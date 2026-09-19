@@ -1325,7 +1325,7 @@ public:
 class 引力_目标 : public PassiveSkillImpl<引力_目标> {
 public:
 	引力_目标() : PassiveSkillImpl<引力_目标>(
-		"引力_目标", 
+		"引力_目标",
 		"数字牌进入弃牌堆后，你获得之。",
 		unlimited, true,
 		TriggerPlayer::anybody,

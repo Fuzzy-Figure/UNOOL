@@ -352,7 +352,7 @@ opt_ref<Skill> Character::findSkill(const std::string& skillName) {
 	return std::nullopt;
 }
 void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-							  PassiveSkill::Trigger& trigger) const {
+									PassiveSkill::Trigger& trigger) const {
 	//先收集要发动的技能指针，避免content中修改pSkills导致迭代器失效
 	std::vector<PassiveSkill*> toLaunch;
 	for (const auto& pSkill : pSkills) {
