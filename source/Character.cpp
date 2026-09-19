@@ -94,7 +94,7 @@ std::unique_ptr<Character> Character::make(const std::string& name, const std::s
 
 	auto newChara = std::make_unique<Character>(name, skin);
 	//被动技能
-	for (const auto& factory : info.passiveSkills) {
+	for (const auto& factory : info.pSkills) {
 		newChara->addSkill(factory());
 	}
 	//即时型主动技
@@ -127,7 +127,7 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 
 	//依次加入两角色全部技能（工厂克隆，天然含子技能）
 	auto addAllSkillsFrom = [&newChara](const Info& info) {
-		for (const auto& f : info.passiveSkills) newChara->addSkill(f());
+		for (const auto& f : info.pSkills) newChara->addSkill(f());
 		for (const auto& f : info.instantSkills) newChara->addSkill(f());
 		for (const auto& f : info.transformSkills) newChara->addSkill(f());
 	};
@@ -182,25 +182,28 @@ Character::Level Character::getMinLevel() const {
 }
 std::string Character::skillsName() const {
 	std::string result;
-	std::function<void(const Skill&)> appendNames = [&](const Skill& s) {
-		result += s.getName() + ", ";
-		for (const auto& sub : s.subSkills) appendNames(*sub);
-	};
-	for (const auto& ps : passiveSkills) appendNames(*ps);
-	for (const auto& is : instantSkills) appendNames(*is);
-	for (const auto& ts : transformSkills) appendNames(*ts);
+	for (const auto& ps : pSkills) {
+		result += ps->getName() + ", ";
+	}
+	for (const auto& as : instantSkills) {
+		result += as->getName() + ", ";
+	}
+	for (const auto& as : transformSkills) {
+		result += as->getName() + ", ";
+	}
 	return result;
 }
 std::string Character::getSkillsText() const {
 	std::string result;
-	std::function<void(const Skill&)> appendText = [&](const Skill& s) {
-		const bool isPassive = s.is(Skill::Type::passive);
-		result += "【" + s.getName() + "】（" + (isPassive ? "被动技能" : "主动技能") + "）\n" + s.getInfo() + "\n";
-		for (const auto& sub : s.subSkills) appendText(*sub);
-	};
-	for (const auto& ps : passiveSkills) appendText(*ps);
-	for (const auto& is : instantSkills) appendText(*is);
-	for (const auto& ts : transformSkills) appendText(*ts);
+	for (const auto& ps : pSkills) {
+		result += "【" + ps->getName() + "】（被动技能）\n" + ps->getInfo() + "\n";
+	}
+	for (const auto& as : instantSkills) {
+		result += "【" + as->getName() + "】（主动技能）\n" + as->getInfo() + "\n";
+	}
+	for (const auto& as : transformSkills) {
+		result += "【" + as->getName() + "】（主动技能）\n" + as->getInfo() + "\n";
+	}
 	return result;
 }
 std::string Character::getImagePath() const {
@@ -325,85 +328,69 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 
 // ==================== 技能管理 ====================
 bool Character::hasSkill(const std::string& skillName) const {
-	std::function<bool(const Skill&)> containsName = [&](const Skill& s) -> bool {
-		if (s.getName() == skillName) return true;
-		for (const auto& sub : s.subSkills) {
-			if (containsName(*sub)) return true;
-		}
-		return false;
-	};
-	for (const auto& skill : passiveSkills) if (containsName(*skill)) return true;
-	for (const auto& skill : instantSkills) if (containsName(*skill)) return true;
-	for (const auto& skill : transformSkills) if (containsName(*skill)) return true;
+	for (const auto& skill : pSkills) {
+		if (skill->getName() == skillName) return true;
+	}
+	for (const auto& skill : instantSkills) {
+		if (skill->getName() == skillName) return true;
+	}
+	for (const auto& skill : transformSkills) {
+		if (skill->getName() == skillName) return true;
+	}
 	return false;
 }
 opt_ref<Skill> Character::findSkill(const std::string& skillName) {
-	std::function<opt_ref<Skill>(Skill&)> findIn = [&](Skill& s) -> opt_ref<Skill> {
-		if (s.getName() == skillName) return s;
-		for (auto& sub : s.subSkills) {
-			auto r = findIn(*sub);
-			if (r.has_value()) return r;
-		}
-		return std::nullopt;
-	};
-	for (auto& skill : passiveSkills) { auto r = findIn(*skill); if (r) return r; }
-	for (auto& skill : instantSkills) { auto r = findIn(*skill); if (r) return r; }
-	for (auto& skill : transformSkills) { auto r = findIn(*skill); if (r) return r; }
+	for (auto& skill : pSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
+	for (const auto& skill : instantSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
+	for (const auto& skill : transformSkills) {
+		if (skill->getName() == skillName) return *skill;
+	}
 	return std::nullopt;
 }
-void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-							  PassiveSkill::Trigger& trigger) const {
-	//先收集要发动的技能指针，避免content中修改passiveSkills导致迭代器失效
-	std::vector<PassiveSkill*> toLaunch;
-	std::function<void(const Skill&)> collectPassiveSkills = [&](const Skill& s) {
-		if (s.is(Skill::Type::passive)) {
-			PassiveSkill& ps = const_cast<Skill&>(s).toPassiveSkill();
-			if (ps.matchTrigger(currentTriggerTime, trigger))
-				toLaunch.push_back(&ps);
+void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+							  PSkill::Trigger& trigger) const {
+	//先收集要发动的技能指针，避免content中修改pSkills导致迭代器失效
+	std::vector<PSkill*> toLaunch;
+	for (const auto& pSkill : pSkills) {
+		if (pSkill->matchTrigger(currentTriggerTime, trigger))
+			toLaunch.push_back(pSkill.get());
+		for (const auto& sub : pSkill->subSkills) {
+			if (sub->matchTrigger(currentTriggerTime, trigger))
+				toLaunch.push_back(sub.get());
 		}
-		for (const auto& sub : s.subSkills) collectPassiveSkills(*sub);
-	};
-	for (const auto& ps : passiveSkills) collectPassiveSkills(*ps);
-	for (const auto& is : instantSkills) collectPassiveSkills(*is);
-	for (const auto& ts : transformSkills) collectPassiveSkills(*ts);
+	}
 	//遍历指针列表发动；即使某个技能在content中销毁自身，也不影响后续技能
-	for (PassiveSkill* skill : toLaunch) {
+	for (PSkill* skill : toLaunch) {
 		skill->launch(trigger);
 	}
 }
-void Character::addSkill(std::unique_ptr<InstantSkill> skill) {
+void Character::addSkill(std::unique_ptr<ASkillInstantBase> skill) {
 	instantSkills.push_back(std::move(skill));
 }
-void Character::addSkill(std::unique_ptr<TransformSkill> skill) {
+void Character::addSkill(std::unique_ptr<ASkillTransformBase> skill) {
 	transformSkills.push_back(std::move(skill));
 }
-void Character::addSkill(std::unique_ptr<PassiveSkill> pSkill) {
-	passiveSkills.push_back(std::move(pSkill));
+void Character::addSkill(std::unique_ptr<PSkill> pSkill) {
+	pSkills.push_back(std::move(pSkill));
 }
 void Character::removeSkill(const std::string& name) {
-	std::erase_if(passiveSkills, [&name](const std::unique_ptr<PassiveSkill>& ps) {
+	std::erase_if(pSkills, [&name](const std::unique_ptr<PSkill>& ps) {
 		return ps->getName() == name;
 	});
-	std::erase_if(instantSkills, [&name](const std::unique_ptr<InstantSkill>& s) {
+	std::erase_if(instantSkills, [&name](const std::unique_ptr<ASkillInstantBase>& s) {
 		return s->getName() == name;
 	});
-	std::erase_if(transformSkills, [&name](const std::unique_ptr<TransformSkill>& s) {
+	std::erase_if(transformSkills, [&name](const std::unique_ptr<ASkillTransformBase>& s) {
 		return s->getName() == name;
 	});
-	//递归移除子技能中同名者
-	std::function<void(Skill&)> removeFromSub = [&](Skill& s) {
-		std::erase_if(s.subSkills, [&name](const std::unique_ptr<Skill>& sub) {
-			return sub->getName() == name;
-		});
-		for (auto& sub : s.subSkills) removeFromSub(*sub);
-	};
-	for (auto& ps : passiveSkills) removeFromSub(*ps);
-	for (auto& is : instantSkills) removeFromSub(*is);
-	for (auto& ts : transformSkills) removeFromSub(*ts);
 }
 void Character::resetSkills() {
-	for (auto& ps : passiveSkills) {
-		ps->reset();
+	for (auto& pSkill : pSkills) {
+		pSkill->reset();
 	}
 	for (auto& s : instantSkills) {
 		s->reset();

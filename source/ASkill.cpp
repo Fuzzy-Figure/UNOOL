@@ -378,7 +378,7 @@ bool 挥金::content(GameLogic& game, Player& carrier) {
 
 void 挥金::reset() {
 	usedTypes.clear();
-	ActiveSkill::reset();
+	ASkill::reset();
 }
 
 
@@ -431,7 +431,7 @@ bool 手枪::content(GameLogic& game, Player& carrier) {
 
 void 手枪::reset() {
 	damageValue = 1;
-	ActiveSkill::reset();
+	ASkill::reset();
 }
 
 
@@ -528,7 +528,7 @@ void 引力::reset() {
 		target.value().get().removeSkill("引力_目标");
 		target = std::nullopt;
 	}
-	ActiveSkill::reset();
+	ASkill::reset();
 }
 
 

@@ -115,12 +115,12 @@ public:
 #pragma endregion
 
 #pragma region 技能系统
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
+	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 					   opt_ref<Player> player,
 					   Card& card,
 					   opt_ref<Player> source = std::nullopt,
 					   opt_ref<std::size_t> number = std::nullopt);
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime,
+	void launchPSkills(const PSkill::TriggerTime& triggerTime,
 					   opt_ref<Player> player = std::nullopt,
 					   std::optional<std::vector<ref<Card>>> cards = std::nullopt,
 					   opt_ref<Player> source = std::nullopt,

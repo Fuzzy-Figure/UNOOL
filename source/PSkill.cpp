@@ -718,7 +718,7 @@ bool 举报::content(Trigger& trigger) {
 	return true;
 }
 void 举报::reset() {
-	PassiveSkill::reset();
+	PSkill::reset();
 	setForced(false);
 }
 
@@ -1608,7 +1608,7 @@ bool 犬子::content(Trigger& trigger) {
 	return true;
 }
 void 犬子::reset() {
-	PassiveSkill::reset();
+	PSkill::reset();
 	playCount = 0;
 }
 
@@ -1647,7 +1647,7 @@ bool 黑洞::content(Trigger& trigger) {
 	return true;
 }
 void 黑洞::reset() {
-	PassiveSkill::reset();
+	PSkill::reset();
 	record.clear();
 }
 
@@ -1964,7 +1964,7 @@ bool 治病::content(Trigger& trigger) {
 }
 
 void 治病::reset() {
-	PassiveSkill::reset();
+	PSkill::reset();
 	playedNames.clear();
 	options = { 1, 2, 3 };
 }
@@ -1976,10 +1976,10 @@ bool 连营::filter(const Trigger& trigger) const {
 	if (trigger.getCarrier().getId() != trigger.getPlayer().getId()) return false;
 	const Card& c = trigger.getCard();
 	Card::Type type = c.getType();
-	if (triggered.count(type)) return false;  //该类别已触发过
+	if (triggered->count(type)) return false;  //该类别已触发过
 	//失去后手牌中该类别牌数为0（最后一张）
 	return !trigger.getCarrier().handInclude(
-		[type](const Card& hc) { return hc.is(type); });
+		[type](const Card& hc) { return hc.getType() == type; });
 }
 
 bool 连营::content(Trigger& trigger) {
@@ -1995,11 +1995,11 @@ bool 连营::content(Trigger& trigger) {
 
 	//从游戏外获得该类别一张牌
 	Card::ColorName cn = Card::randomCard([lostType](const Card& c) {
-		return c.is(lostType);
+		return c.getType() == lostType;
 	});
 	carrier.gainCard(Card::make(cn));
 
-	triggered.insert(lostType);
+	triggered->insert(lostType);
 	std::cout << "<技能> " << carrier.characterName() << "发动连营，弃置一张牌并获得一张"
 		<< (lostType == Card::Type::wild ? "万能" : lostType == Card::Type::action ? "功能" : "数字") << "牌" << std::endl;
 	trigger.getGame().broadcastState();
@@ -2007,23 +2007,16 @@ bool 连营::content(Trigger& trigger) {
 }
 
 void 连营::reset() {
-	PassiveSkill::reset();
-	triggered.clear();
+	PSkill::reset();
+	triggered->clear();
+	for (auto& sub : subSkills) sub->reset();
 }
 
-std::set<Card::Type>& 困界::getTriggered(Player& carrier) const {
-	if (!triggeredCache.has_value()) {
-		std::optional skillOpt = carrier.findSkill("连营");
-		if (!skillOpt.has_value()) throw std::runtime_error("没有找到\"连营\"技能");
-		triggeredCache = skillOpt.value().get().to<连营>().triggered;
-	}
-	return triggeredCache.value().get();
-}
-bool 困界::filter(const Trigger& trigger) const {
-	return getTriggered(trigger.getCarrier()).size() >= 3;
+bool 困界_子::filter(const Trigger& trigger) const {
+	return triggered && triggered->size() >= 3;
 }
 
-bool 困界::content(Trigger& trigger) {
+bool 困界_子::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 
@@ -2032,11 +2025,19 @@ bool 困界::content(Trigger& trigger) {
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	//重铸某类别所有牌的局部函数（每张单独走 recastByIndex，保证 reason 与触发时机正确）
-	auto recastAll = [](Player& p, Card::Type type_) {
+	//重铸某类别所有牌的局部函数
+	auto recastAll = [&game](Player& p, Card::Type type_) {
+		auto cond = [type_](const Card& c) { return c.getType() == type_; };
+		std::size_t cnt = 0;
+		for (std::size_t i = 0; i < p.handCount(); ++i)
+			if (cond(p.getCardByIndex(i))) ++cnt;
+		if (cnt == 0) return;
+		game.launchPSkills(PSkill::TriggerTime::recast_begin, p);
 		for (std::size_t i = p.handCount(); i-- > 0; ) {
-			if (p.getCardByIndex(i).is(type_)) p.recastByIndex(i);
+			if (cond(p.getCardByIndex(i))) p.discardByIndex(i);
 		}
+		p.draw(cnt, Player::DrawReason::skill);
+		game.launchPSkills(PSkill::TriggerTime::recast_end, p);
 	};
 
 	//2. 选目标重铸的类别
@@ -2061,6 +2062,8 @@ bool 困界::content(Trigger& trigger) {
 	recastAll(carrier, typeB);
 
 	std::cout << "<技能> " << carrier.characterName() << "发动困界" << std::endl;
+	// 重置连营：清空已触发类别，使一技能可再次为所有类别触发
+	triggered->clear();
 	game.broadcastState();
 	return true;
 }
@@ -2146,7 +2149,7 @@ bool 灵爆::content(Trigger& trigger) {
 }
 
 void 灵爆::reset() {
-	PassiveSkill::reset();
+	PSkill::reset();
 	*playCount = 0;
 }
 
@@ -2193,7 +2196,7 @@ bool 加速::content(Trigger& trigger) {
 
 void 加速::reset() {
 	setLimit(0);
-	PassiveSkill::reset();
+	PSkill::reset();
 }
 
 
@@ -2298,7 +2301,7 @@ bool 白虎::content(Trigger& trigger) {
 
 void 白虎::reset() {
 	triggeredPlayers.clear();
-	PassiveSkill::reset();
+	PSkill::reset();
 }
 
 
@@ -2341,7 +2344,7 @@ bool 易主::content(Trigger& trigger) {
 
 void 易主::reset() {
 	phaseCount = 0;
-	PassiveSkill::reset();
+	PSkill::reset();
 }
 
 
@@ -2470,7 +2473,7 @@ bool 弹暴::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 
-	//弃置一张万能牌；取消则返还可用次数（PassiveSkill::launch 会回退 count）
+	//弃置一张万能牌；取消则返还可用次数（PSkill::launch 会回退 count）
 	auto discarded = carrier.chooseToDiscard(L"【弹暴】弃置一张万能牌", 1, false, &Card::isWild);
 	if (discarded.empty()) return false;
 

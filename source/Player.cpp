@@ -7,16 +7,16 @@ std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
 	if (source.has_value()) {
 		damageValue *= source.value().get().getDamageMultiplier();
 	}
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damageValue);
+	game.launchPSkills(PSkill::TriggerTime::damage_begin, *this, std::nullopt, source, damageValue);
 	const std::size_t actualDamageValue = character->damage(damageValue);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_end, *this, std::nullopt, source, damageValue);
+	game.launchPSkills(PSkill::TriggerTime::damage_end, *this, std::nullopt, source, damageValue);
 	return actualDamageValue;
 }
 
 void Player::recover(std::size_t num) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recover_begin, *this, std::nullopt, std::nullopt, num);
+	game.launchPSkills(PSkill::TriggerTime::recover_begin, *this, std::nullopt, std::nullopt, num);
 	character->recover(num);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recover_end, *this, std::nullopt, std::nullopt, num);
+	game.launchPSkills(PSkill::TriggerTime::recover_end, *this, std::nullopt, std::nullopt, num);
 }
 
 
@@ -25,7 +25,7 @@ void Player::recover(std::size_t num) {
 std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position) {
 	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌（"
 		<< (position == DrawPosition::top ? "顶" : "底") << "）" << std::endl;
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
+	game.launchPSkills(PSkill::TriggerTime::draw_begin, *this, std::nullopt, std::nullopt, number);
 	if (hasSkill("巨富") && reason == DrawReason::phase_draw) number += 1;
 
 	std::vector<ref<Card>> drawnCards;
@@ -45,8 +45,8 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 
 	if (reason == DrawReason::phase_draw) handSelectLast();
 
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::gain_card_end, *this, drawnCards, std::nullopt, number);
+	game.launchPSkills(PSkill::TriggerTime::draw_end, *this, drawnCards, std::nullopt, number);
+	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, drawnCards, std::nullopt, number);
 	return drawnCards;
 }
 
@@ -62,8 +62,8 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	hasUsed = true;
 	std::cout << "玩家" << id << "打出了：" << card->toString() << std::endl;
 
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::use_card_begin, *this, *card);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::card_target_begin, next(), *card, *this);
+	game.launchPSkills(PSkill::TriggerTime::use_card_begin, *this, *card);
+	game.launchPSkills(PSkill::TriggerTime::card_target_begin, next(), *card, *this);
 
 	//发动卡牌效果
 	card->applyEffect(game, *this, next());
@@ -81,27 +81,27 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	game.broadcastState();
 
 	//技能
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::use_card_end, *this, cardRef, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::use_card_end, *this, cardRef, std::nullopt);
 
 	return cardRef;
 }
 
 void Player::gainCard(std::unique_ptr<Card> card) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::gain_card_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::gain_card_begin, *this);
 	hand->push_back(std::move(card));
 	std::vector<ref<Card>> gainedCards;
 	gainedCards.emplace_back(hand->back());
 	static std::size_t one = 1;
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::gain_card_end, *this, gainedCards, std::nullopt, one);
+	game.launchPSkills(PSkill::TriggerTime::gain_card_end, *this, gainedCards, std::nullopt, one);
 }
 
 Card& Player::putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::lose_card_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::lose_card_begin, *this);
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	ref<Card> cardRef = *card;
 	game.putCardToDiscardPile(std::move(card), reason, *this);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
+	game.launchPSkills(PSkill::TriggerTime::lose_card_end, *this, cardRef, std::nullopt);
 	return cardRef;
 }
 
@@ -109,10 +109,10 @@ Card& Player::discardByIndex(const std::size_t cardIndex) {
 	return putCardToDiscardPileByIndex(cardIndex, Card::DiscardReason::discard);
 }
 Card& Player::recastByIndex(const std::size_t cardIndex) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
 	Card& card = putCardToDiscardPileByIndex(cardIndex, Card::DiscardReason::recast);
 	draw(1);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_end, *this);
+	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
 	return card;
 }
 
@@ -136,14 +136,14 @@ bool Player::canUse(const Card& card) {
 
 // === 技能 / 状态 ===
 
-void Player::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger) {
-	character->launchPassiveSkills(currentTriggerTime, trigger);
+void Player::launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) {
+	character->launchPSkills(currentTriggerTime, trigger);
 }
 
 void Player::ban(Player& source, Card& card) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::ban_begin, *this, card, source);
+	game.launchPSkills(PSkill::TriggerTime::ban_begin, *this, card, source);
 	banned = true;
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::ban_end, *this, card, source);
+	game.launchPSkills(PSkill::TriggerTime::ban_end, *this, card, source);
 }
 
 
@@ -153,34 +153,34 @@ void Player::phaseBegin() {
 	//重置所有主动技的阶段内使用次数（每回合开始）
 	for (auto& s : getInstantSkills()) s->resetPhaseCount();
 	for (auto& s : getTransformSkills()) s->resetPhaseCount();
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::phase_begin, *this);
 }
 
 //返回是否出牌
 bool Player::phaseUse1() {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_use1_begin, *this);
-	auto card = chooseToUse(ActiveSkill::TriggerTime::phase_use1);
+	game.launchPSkills(PSkill::TriggerTime::phase_use1_begin, *this);
+	auto card = chooseToUse(ASkill::TriggerTime::phase_use1);
 	if (card.has_value())
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_use1_end, *this, card.value().get());
+		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this, card.value().get());
 	else
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_use1_end, *this);
+		game.launchPSkills(PSkill::TriggerTime::phase_use1_end, *this);
 	return card.has_value();
 }
 
 void Player::phaseDraw() {
 	std::size_t drawCount = 1;
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_draw_begin, *this, std::nullopt, std::nullopt, drawCount);
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_begin, *this, std::nullopt, std::nullopt, drawCount);
 	std::vector<ref<Card>> drawnCards = draw(drawCount, DrawReason::phase_draw);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_draw_end, *this, drawnCards);
+	game.launchPSkills(PSkill::TriggerTime::phase_draw_end, *this, drawnCards);
 }
 
 void Player::phaseUse2() {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_use2_begin, *this);
-	chooseToUse(ActiveSkill::TriggerTime::phase_use2);
+	game.launchPSkills(PSkill::TriggerTime::phase_use2_begin, *this);
+	chooseToUse(ASkill::TriggerTime::phase_use2);
 }
 
 void Player::phaseEnd() {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_end, *this);
+	game.launchPSkills(PSkill::TriggerTime::phase_end, *this);
 }
 
 bool Player::turn() {
@@ -243,13 +243,13 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 // === 交互 ===
 
 std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> condition,
-											  bool forced, ActiveSkill::TriggerTime phase) {
+											  bool forced, ASkill::TriggerTime phase) {
 	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
-	TransformSkill* activeMode = nullptr;  //当前激活的转换型主动技
+	ASkillTransformBase* activeMode = nullptr;  //当前激活的转换型主动技
 
-	std::vector<ref<InstantSkill>>   instantRefs;
-	std::vector<ref<TransformSkill>> transformRefs;
+	std::vector<ref<ASkillInstantBase>>   instantRefs;
+	std::vector<ref<ASkillTransformBase>> transformRefs;
 	collectAvailableSkills(phase, instantRefs, transformRefs);
 
 	while (true) {
@@ -268,7 +268,7 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 		hand->setSelectedIndex(clientInput.selectedIndex);  //统一同步选中索引
 
 		//数字1-9：即时技发动 / 转换技切换（仅出牌阶段）
-		if (phase != ActiveSkill::TriggerTime::never
+		if (phase != ASkill::TriggerTime::never
 			&& handleDigitKey(input, instantRefs, transformRefs, activeMode))
 			continue;
 
@@ -292,32 +292,22 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 	}
 }
 
-void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
-									std::vector<ref<InstantSkill>>& instantRefs,
-									std::vector<ref<TransformSkill>>& transformRefs) {
-	if (phase == ActiveSkill::TriggerTime::never) return;
-	std::function<void(Skill&)> collectFromSkill = [&](Skill& s) {
-		if (s.is(Skill::Type::instant)) {
-			InstantSkill& is = s.toInstantSkill();
-			if (is.canTriggerAt(phase) && is.canUse())
-				instantRefs.emplace_back(is);
-		}
-		else if (s.is(Skill::Type::transform)) {
-			TransformSkill& at = s.toTransformSkill();
-			if (at.canTriggerAt(phase) && at.canUse())
-				transformRefs.emplace_back(at);
-		}
-		for (auto& sub : s.subSkills) collectFromSkill(*sub);
-	};
-	for (auto& s : getInstantSkills()) collectFromSkill(*s);
-	for (auto& s : getTransformSkills()) collectFromSkill(*s);
-	for (auto& s : getPassiveSkills()) collectFromSkill(*s);
+void Player::collectAvailableSkills(ASkill::TriggerTime phase,
+									std::vector<ref<ASkillInstantBase>>& instantRefs,
+									std::vector<ref<ASkillTransformBase>>& transformRefs) {
+	if (phase == ASkill::TriggerTime::never) return;
+	for (auto& s : getInstantSkills()) {
+		if (s->canTriggerAt(phase) && s->canUse()) instantRefs.emplace_back(*s);
+	}
+	for (auto& s : getTransformSkills()) {
+		if (s->canTriggerAt(phase) && s->canUse()) transformRefs.emplace_back(*s);
+	}
 }
 
 bool Player::handleDigitKey(sf::Keyboard::Scancode input,
-							const std::vector<ref<InstantSkill>>& instantRefs,
-							const std::vector<ref<TransformSkill>>& transformRefs,
-							TransformSkill*& activeMode) {
+							const std::vector<ref<ASkillInstantBase>>& instantRefs,
+							const std::vector<ref<ASkillTransformBase>>& transformRefs,
+							ASkillTransformBase*& activeMode) {
 	auto digit = digitFromScancode(input);
 	if (!digit.has_value() || digit.value() == 0) return false;
 
@@ -325,7 +315,7 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	std::size_t idx = digit.value() - 1;  //0-based
 	//前 instantRefs.size() 个键：触发即时技
 	if (idx < instantRefs.size()) {
-		InstantSkill& skill = instantRefs[idx].get();
+		ASkillInstantBase& skill = instantRefs[idx].get();
 		const std::size_t confirm = ask(
 			L"是否发动【" + skill.getNameW() + L"】？",
 			{ L"是", L"否" }, false);
@@ -338,7 +328,7 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	//后续键：切换转换技激活态
 	else if (idx - instantRefs.size() < transformRefs.size()) {
 		std::size_t tIdx = idx - instantRefs.size();
-		TransformSkill& skill = transformRefs[tIdx].get();
+		ASkillTransformBase& skill = transformRefs[tIdx].get();
 		if (activeMode == &skill) {
 			activeMode = nullptr;
 			network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);
@@ -352,7 +342,7 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 }
 
 std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const Card&)>& condition,
-												 TransformSkill* activeMode) {
+												 ASkillTransformBase* activeMode) {
 	if (handEmpty()) return std::nullopt;
 	ServerNetwork& network = game.getNetwork();
 
@@ -395,7 +385,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 	return std::nullopt;
 }
 
-opt_ref<Card> Player::chooseToUse(ActiveSkill::TriggerTime phase) {
+opt_ref<Card> Player::chooseToUse(ASkill::TriggerTime phase) {
 	auto index = chooseCard([this](const Card& c) { return canUse(c); }, false, phase);
 	if (index.has_value()) {
 		return useCardByIndex(index.value());
@@ -449,20 +439,20 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
 	std::vector discarded = chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::recast);
 	std::vector drawn = draw(discarded.size());
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_end, *this);
+	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
 	return RecastResult{ std::move(discarded), std::move(drawn) };
 }
 
 void Player::decree(const std::wstring& title,
 					const std::size_t num, const bool forced,
 					const std::function<bool(const Card&)>& condition) {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::decree_begin, *this);
 	draw(num);
 	chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::decree);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_end, *this);
+	game.launchPSkills(PSkill::TriggerTime::decree_end, *this);
 }
 
 void Player::inherit(std::unique_ptr<Card>& card) {
@@ -713,11 +703,11 @@ void Player::hint(const std::wstring& message) {
 }
 
 Card& Player::judge() {
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::judge_begin, *this);
+	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this);
 	auto card = game.getPile().take_front(game.getDiscardPile());
 	std::cout << "判定结果：" << *card << std::endl;
 	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::judge, *this);
-	game.launchPassiveSkills(PassiveSkill::TriggerTime::judge_end, *this, cardRef);
+	game.launchPSkills(PSkill::TriggerTime::judge_end, *this, cardRef);
 	game.broadcastState();
 	return cardRef;
 }
