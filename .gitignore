@@ -362,7 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# 忽略卡牌、角色、标记图片
-cards/
-characters/
-marks/
+# 忽略图片
+images/
