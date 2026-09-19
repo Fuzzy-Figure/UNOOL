@@ -113,13 +113,7 @@ public:
 #pragma region 标记
 	bool hasMark(const std::string& m) const { return marks.contains(m); }
 	void addMark(const std::string& m, std::size_t count = 1) { marks[m] += count; }
-	void removeMark(const std::string& m, std::size_t count = 1) {
-		auto it = marks.find(m);
-		if (it != marks.end()) {
-			if (it->second > count) it->second -= count;
-			else marks.erase(it);
-		}
-	}
+	void removeMark(const std::string& m, std::size_t count = 1);
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return marks; }
 	void clearMark(const std::string& m) { marks.erase(m); }
 	void clearAllMarks() { marks.clear(); }

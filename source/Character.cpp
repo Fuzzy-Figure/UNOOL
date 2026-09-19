@@ -428,3 +428,11 @@ void Character::recover(std::size_t num) {
 bool Character::isDead() const {
 	return hp == 0;
 }
+
+void Character::removeMark(const std::string& m, std::size_t count) {
+	auto it = marks.find(m);
+	if (it != marks.end()) {
+		if (it->second > count) it->second -= count;
+		else marks.erase(it);
+	}
+}
