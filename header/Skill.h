@@ -15,9 +15,9 @@
 
 class Player;
 class GameLogic;
-class PSkill;
-class ASkillInstantBase;
-class ASkillTransformBase;
+class PassiveSkill;
+class InstantSkill;
+class TransformSkill;
 
 class Skill {
 protected:
@@ -45,15 +45,15 @@ public:
 	virtual void reset();
 	void resetCount() { count = 0; }
 
-	//阶段次数重置（ASkill 重写，默认仅递归子技能）
+	//阶段次数重置（ActiveSkill 重写，默认仅递归子技能）
 	virtual void resetPhaseCount();
 
 	//技能类型：调用前用 getType 判断，再调用对应的 to*() 转换
 	virtual Type getType() const = 0;
 	bool is(const Type t) const;
-	PSkill& toPSkill();
-	ASkillInstantBase& toASkillInstant();
-	ASkillTransformBase& toASkillTransform();
+	PassiveSkill& toPassiveSkill();
+	InstantSkill& toInstantSkill();
+	TransformSkill& toTransformSkill();
 	template<class SpecificSkill>
 	SpecificSkill& to() {
 		return static_cast<SpecificSkill&>(*this);
@@ -63,7 +63,7 @@ public:
 	std::vector<std::unique_ptr<Skill>> subSkills;
 };
 
-class PSkill : public Skill {
+class PassiveSkill : public Skill {
 public:
 	enum class TriggerPlayer {
 		nobody, self, others, anybody
@@ -147,13 +147,13 @@ public:
 
 		void setCount(const std::size_t _count) { count = _count; }
 	};
-	using Factory = std::function<std::unique_ptr<PSkill>()>;
+	using Factory = std::function<std::unique_ptr<PassiveSkill>()>;
 
 	virtual bool filter(const Trigger& trigger) const { return true; }
 	virtual bool content(Trigger& trigger) = 0;
 
 	//无子技能
-	PSkill(const std::string& name, const std::string& description,
+	PassiveSkill(const std::string& name, const std::string& description,
 		   const limit_t& limit, bool forced,
 		   const TriggerPlayer& triggerPlayer,
 		   const TriggerTime& triggerTime);
@@ -161,12 +161,12 @@ public:
 	//有子技能（子技能可为任意 Skill 派生类型）
 	template<typename... SubSkills>
 		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
-	PSkill(const std::string& _name, const std::string& _description,
+	PassiveSkill(const std::string& _name, const std::string& _description,
 		   const limit_t& _limit, bool _forced,
 		   const TriggerPlayer& _triggerPlayer,
 		   const TriggerTime& _triggerTime,
 		   SubSkills&&... _subSkills)
-		: PSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
+		: PassiveSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
 	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
@@ -182,7 +182,7 @@ private:
 	bool forced = false;
 };
 
-class ASkill : public Skill {
+class ActiveSkill : public Skill {
 public:
 	//主动技发动时机
 	enum class TriggerTime {
@@ -192,15 +192,15 @@ public:
 		phase_use,   //出牌阶段（1和2均可）
 	};
 
-	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+	ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
 		   const limit_t& _phaseLimit, TriggerTime _triggerTime);
 
 	//有子技能（子技能可为任意 Skill 派生类型）
 	template<typename... SubSkills>
 		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
-	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+	ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
 		   const limit_t& _phaseLimit, TriggerTime _triggerTime, SubSkills&&... _subSkills)
-		: ASkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
+		: ActiveSkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
 
@@ -228,18 +228,29 @@ protected:
 	std::size_t phaseCount = 0;
 };
 
-//即时型主动技抽象接口：按数字键直接发动
-class ASkillInstantBase : public ASkill {
+//即时型主动技：按数字键直接发动（tryActivate 流程在此）
+class InstantSkill : public ActiveSkill {
 public:
-	//执行发动；成功返回 true（基类内部负责 canUse 检查与 count 累加）
-	virtual bool tryActivate(GameLogic& game, Player& player) = 0;
+	//执行发动；成功返回 true（内部负责 canUse 检查与 count 累加）
+	bool tryActivate(GameLogic& game, Player& player) {
+		if (!canUse()) return false;
+		if (!filter(game, player)) return false;
+		if (!content(game, player)) return false;
+		++count;
+		++phaseCount;
+		return true;
+	}
 	Type getType() const override { return Type::instant; }
 protected:
-	using ASkill::ASkill;
+	using ActiveSkill::ActiveSkill;
+	//发动条件检查，默认永真；派生类可重写做前置状态判断
+	virtual bool filter(const GameLogic& game, const Player& carrier) const { return true; }
+	//具体技能效果，派生类实现
+	virtual bool content(GameLogic& game, Player& carrier) = 0;
 };
 
-//转换型主动技抽象接口：按数字键切换激活态，激活后影响选牌/出牌
-class ASkillTransformBase : public ASkill {
+//转换型主动技：按数字键切换激活态，激活后影响选牌/出牌
+class TransformSkill : public ActiveSkill {
 public:
 	//转化所需的牌数（默认1）
 	virtual std::size_t getCardCount() const { return 1; }
@@ -253,52 +264,38 @@ public:
 	virtual std::wstring getPrompt() const = 0;
 	Type getType() const override { return Type::transform; }
 protected:
-	using ASkill::ASkill;
+	using ActiveSkill::ActiveSkill;
 };
 
 // CRTP 基类
-template<class Derived> class PSkillImpl : public PSkill {
+template<class Derived> class PassiveSkillImpl : public PassiveSkill {
 public:
-	static std::unique_ptr<PSkill> make();
+	static std::unique_ptr<PassiveSkill> make();
 protected:
-	using PSkill::PSkill;
+	using PassiveSkill::PassiveSkill;
 };
-template<class Derived> std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
+template<class Derived> std::unique_ptr<PassiveSkill> PassiveSkillImpl<Derived>::make() {
 	return std::make_unique<Derived>();
 }
 
-//即时型 CRTP 层：提供 make() 并实现 tryActivate 模板
+//即时型 CRTP 层：只提供 make()
 template<class Derived>
-class ASkillInstant : public ASkillInstantBase {
+class InstantSkillImpl : public InstantSkill {
 public:
-	static std::unique_ptr<ASkillInstantBase> make() {
-		return std::make_unique<Derived>();
-	}
-	bool tryActivate(GameLogic& game, Player& player) final {
-		if (!canUse()) return false;
-		if (!filter(game, player)) return false;
-		if (!content(game, player)) return false;
-		++count;
-		++phaseCount;
-		return true;
-	}
-protected:
-	using ASkillInstantBase::ASkillInstantBase;
-	//发动条件检查，默认永真；派生类可重写做前置状态判断
-	virtual bool filter(const GameLogic& game, const Player& carrier) const { return true; }
-	//具体技能效果，派生类实现
-	virtual bool content(GameLogic& game, Player& carrier) = 0;
-};
-
-//转换型 CRTP 层：提供 make()
-template<class Derived>
-class ASkillTransform : public ASkillTransformBase {
-public:
-	static std::unique_ptr<ASkillTransformBase> make() {
+	static std::unique_ptr<InstantSkill> make() {
 		return std::make_unique<Derived>();
 	}
 protected:
-	using ASkillTransformBase::ASkillTransformBase;
+	using InstantSkill::InstantSkill;
 };
 
-
+//转换型 CRTP 层：只提供 make()
+template<class Derived>
+class TransformSkillImpl : public TransformSkill {
+public:
+	static std::unique_ptr<TransformSkill> make() {
+		return std::make_unique<Derived>();
+	}
+protected:
+	using TransformSkill::TransformSkill;
+};

@@ -33,25 +33,25 @@ private:
 
 	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
 	sf::Keyboard::Scancode getInput() const { return currentInput; }
-	opt_ref<Card> chooseToUse(ASkill::TriggerTime phase = ASkill::TriggerTime::never);
+	opt_ref<Card> chooseToUse(ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
 	//收集当前阶段可发动的即时技与转换技
-	void collectAvailableSkills(ASkill::TriggerTime phase,
-								std::vector<ref<ASkillInstantBase>>& instantRefs,
-								std::vector<ref<ASkillTransformBase>>& transformRefs);
+	void collectAvailableSkills(ActiveSkill::TriggerTime phase,
+								std::vector<ref<InstantSkill>>& instantRefs,
+								std::vector<ref<TransformSkill>>& transformRefs);
 	//处理数字键1-9：即时技发动 / 转换技切换；返回true表示已处理（continue）
 	bool handleDigitKey(sf::Keyboard::Scancode input,
-						const std::vector<ref<ASkillInstantBase>>& instantRefs,
-						const std::vector<ref<ASkillTransformBase>>& transformRefs,
-						ASkillTransformBase*& activeMode);
+						const std::vector<ref<InstantSkill>>& instantRefs,
+						const std::vector<ref<TransformSkill>>& transformRefs,
+						TransformSkill*& activeMode);
 	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
 	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
-		ASkillTransformBase* activeMode);
+		TransformSkill* activeMode);
 	//数字键扫描码转 0-9，非数字键返回 nullopt
 	static std::optional<std::size_t> digitFromScancode(sf::Keyboard::Scancode input);
 
 public:
 	std::optional<std::size_t> chooseCard(std::function<bool(const Card&)> condition,
-										  bool forced, ASkill::TriggerTime phase = ASkill::TriggerTime::never);
+										  bool forced, ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
 #pragma region 玩家属性
 	Player(const std::size_t _id, GameLogic& _game, std::unique_ptr<Character> _character)
 		:id(_id), game(_game), character(std::move(_character)) {}
@@ -90,9 +90,9 @@ public:
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
 	void clearMark(const std::string& m) { character->clearMark(m); }
 	void clearAllMarks() { character->clearAllMarks(); }
-	void addSkill(std::unique_ptr<ASkillInstantBase>   skill) { character->addSkill(std::move(skill)); }
-	void addSkill(std::unique_ptr<ASkillTransformBase> skill) { character->addSkill(std::move(skill)); }
-	void addSkill(std::unique_ptr<PSkill>              pSkill) { character->addSkill(std::move(pSkill)); }
+	void addSkill(std::unique_ptr<InstantSkill>   skill) { character->addSkill(std::move(skill)); }
+	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); }
+	void addSkill(std::unique_ptr<PassiveSkill>              pSkill) { character->addSkill(std::move(pSkill)); }
 	void removeSkill(const std::string& name) { character->removeSkill(name); }
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }
 #pragma endregion
@@ -109,9 +109,9 @@ public:
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
 	bool hasSkill(const std::string& name) const { return character->hasSkill(name); }
 	opt_ref<Skill> findSkill(const std::string& name) { return character->findSkill(name); }
-	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return character->getInstantSkills(); }
-	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
-	std::list<std::unique_ptr<PSkill>>& getPSkills() { return character->getPSkills(); }
+	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return character->getInstantSkills(); }
+	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return character->getTransformSkills(); }
+	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return character->getPassiveSkills(); }
 #pragma endregion
 
 #pragma region 手牌操作 - 委托到 Hand
@@ -147,7 +147,7 @@ public:
 #pragma endregion
 
 #pragma region 技能 / 状态
-	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger);
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger);
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }

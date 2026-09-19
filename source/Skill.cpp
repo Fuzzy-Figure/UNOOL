@@ -13,14 +13,14 @@ void Skill::reset() {
 	count = 0;
 	for (auto& sub : subSkills) sub->reset();
 }
-PSkill& Skill::toPSkill() {
-	return static_cast<PSkill&>(*this);
+PassiveSkill& Skill::toPassiveSkill() {
+	return static_cast<PassiveSkill&>(*this);
 }
-ASkillInstantBase& Skill::toASkillInstant() {
-	return static_cast<ASkillInstantBase&>(*this);
+InstantSkill& Skill::toInstantSkill() {
+	return static_cast<InstantSkill&>(*this);
 }
-ASkillTransformBase& Skill::toASkillTransform() {
-	return static_cast<ASkillTransformBase&>(*this);
+TransformSkill& Skill::toTransformSkill() {
+	return static_cast<TransformSkill&>(*this);
 }
 
 
@@ -41,7 +41,7 @@ bool Skill::is(const Type t) const {
 
 
 //无子技能
-PSkill::PSkill(const std::string& name, const std::string& description,
+PassiveSkill::PassiveSkill(const std::string& name, const std::string& description,
 			   const limit_t& limit, bool forced,
 			   const TriggerPlayer& triggerPlayer,
 			   const TriggerTime& triggerTime)
@@ -50,7 +50,7 @@ PSkill::PSkill(const std::string& name, const std::string& description,
 	triggerPlayer(triggerPlayer),
 	triggerTime(triggerTime) {}
 
-bool PSkill::matchTrigger(const TriggerTime& currentTriggerTime,
+bool PassiveSkill::matchTrigger(const TriggerTime& currentTriggerTime,
 						  const Trigger& trigger) const {
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
@@ -61,7 +61,7 @@ bool PSkill::matchTrigger(const TriggerTime& currentTriggerTime,
 		);
 }
 
-void PSkill::launch(Trigger& trigger) {
+void PassiveSkill::launch(Trigger& trigger) {
 	//不满足条件，或达到次数限制：不发动
 	if ((limit != unlimited && count >= limit) || !filter(trigger)) return;
 	//如果不是锁定技，询问玩家是否发动
@@ -84,17 +84,17 @@ void PSkill::launch(Trigger& trigger) {
 	std::cout << "<技能> " << trigger.getCarrier().characterName() << "发动了" << name << "！" << std::endl;
 }
 
-void PSkill::reset() {
+void PassiveSkill::reset() {
 	Skill::reset();
 }
 
-void PSkill::setForced(const bool newForced) {
+void PassiveSkill::setForced(const bool newForced) {
 	forced = newForced;
 }
 
 
 
-PSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
+PassiveSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
 						 opt_ref<Player> _player,
 						 std::optional<std::vector<ref<Card>>> _cards,
 						 opt_ref<Player> _source,
@@ -106,7 +106,7 @@ PSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
 // **********************
 //         主动技
 // **********************
-ASkill::ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+ActiveSkill::ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
 			   const limit_t& _phaseLimit, TriggerTime _triggerTime)
 	:Skill(_name, _info, _limit), triggerTime(_triggerTime), phaseLimit(_phaseLimit) {}
 

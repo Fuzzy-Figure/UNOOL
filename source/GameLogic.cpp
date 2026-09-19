@@ -321,7 +321,7 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 bool GameLogic::runTurn() {
 	// 一号位回合开始前触发轮开始
 	if (getCurrentPlayerId() == getFirstPlayerId()) {
-		launchPSkills(PSkill::TriggerTime::round_begin, *players[currentPlayerIndex]);
+		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, *players[currentPlayerIndex]);
 	}
 	std::cout << "玩家" << getCurrentPlayerId() << "的回合" << std::endl;
 	bool gameEnded = currentPlayerTurn();
@@ -453,21 +453,21 @@ void GameLogic::reverse() {
 	else direction = Direction::increase;
 }
 
-void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
 							  opt_ref<Player> player,
 							  Card& card,
 							  opt_ref<Player> source,
 							  opt_ref<std::size_t> number) {
-	launchPSkills(currentTriggerTime, player, std::vector<ref<Card>>{card}, source, number);
+	launchPassiveSkills(currentTriggerTime, player, std::vector<ref<Card>>{card}, source, number);
 }
-void GameLogic::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
+void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
 							  opt_ref<Player> player,
 							  std::optional<std::vector<ref<Card>>> cards,
 							  opt_ref<Player> source,
 							  opt_ref<std::size_t> number) {
 	for (auto& carrier : players) {
-		PSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
-		carrier->launchPSkills(currentTriggerTime, trigger);
+		PassiveSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
+		carrier->launchPassiveSkills(currentTriggerTime, trigger);
 	}
 }
 
@@ -479,7 +479,7 @@ Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardR
 		<< ") 进入了弃牌堆" << std::endl;
 	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
-	launchPSkills(PSkill::TriggerTime::card_discard_end, player, cardRef);
+	launchPassiveSkills(PassiveSkill::TriggerTime::card_discard_end, player, cardRef);
 	return cardRef;
 }
 
@@ -559,7 +559,7 @@ void GameLogic::resetGame() {
 	// 重置方向
 	direction = Direction::increase;
 	broadcastState();
-	launchPSkills(PSkill::TriggerTime::game_begin);
+	launchPassiveSkills(PassiveSkill::TriggerTime::game_begin);
 	std::cout << "[Server] 新一局开始！玩家" << currentPlayerIndex << "先手" << std::endl;
 }
 
