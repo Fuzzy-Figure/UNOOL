@@ -231,6 +231,7 @@ protected:
 //即时型主动技：按数字键直接发动（tryActivate 流程在此）
 class InstantSkill : public ActiveSkill {
 public:
+	using Factory = std::function<std::unique_ptr<InstantSkill>()>;
 	//执行发动；成功返回 true（内部负责 canUse 检查与 count 累加）
 	bool tryActivate(GameLogic& game, Player& player) {
 		if (!canUse()) return false;
@@ -252,6 +253,8 @@ protected:
 //转换型主动技：按数字键切换激活态，激活后影响选牌/出牌
 class TransformSkill : public ActiveSkill {
 public:
+	using Factory = std::function<std::unique_ptr<TransformSkill>()>;
+
 	//转化所需的牌数（默认1）
 	virtual std::size_t getCardCount() const { return 1; }
 	//某张牌能否被选入此次转化

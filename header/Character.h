@@ -15,8 +15,8 @@ public:
 		std::string group;
 		Level level;
 		std::vector<PassiveSkill::Factory> passiveSkills;
-		std::vector<std::function<std::unique_ptr<InstantSkill>()>> instantSkills;
-		std::vector<std::function<std::unique_ptr<TransformSkill>()>> transformSkills;
+		std::vector<InstantSkill::Factory> instantSkills;
+		std::vector<TransformSkill::Factory> transformSkills;
 		std::size_t hp;
 		std::size_t maxHp = 0;
 	};
@@ -26,7 +26,7 @@ public:
 private:
 	std::vector<std::string> names;
 	std::vector<std::string> skins;
-	std::list<std::unique_ptr<PassiveSkill>> PassiveSkills;
+	std::list<std::unique_ptr<PassiveSkill>> passiveSkills;
 	std::list<std::unique_ptr<InstantSkill>> instantSkills;
 	std::list<std::unique_ptr<TransformSkill>> transformSkills;
 	std::size_t hp = 0;
@@ -82,7 +82,7 @@ public:
 #pragma region 技能管理
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
-	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return PassiveSkills; }
+	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return passiveSkills; }
 	bool hasSkill(const std::string& skillName) const;
 	opt_ref<Skill> findSkill(const std::string& skillName);
 	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger) const;

@@ -298,9 +298,9 @@ void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 	if (phase == ActiveSkill::TriggerTime::never) return;
 	std::function<void(Skill&)> collectFromSkill = [&](Skill& s) {
 		if (s.is(Skill::Type::instant)) {
-			InstantSkill& as = s.toInstantSkill();
-			if (as.canTriggerAt(phase) && as.canUse())
-				instantRefs.emplace_back(as);
+			InstantSkill& is = s.toInstantSkill();
+			if (is.canTriggerAt(phase) && is.canUse())
+				instantRefs.emplace_back(is);
 		}
 		else if (s.is(Skill::Type::transform)) {
 			TransformSkill& at = s.toTransformSkill();
