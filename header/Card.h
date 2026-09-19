@@ -94,6 +94,11 @@ public:
 		bool is(const Names... names) const {
 		return ((name == names) || ...);
 	}
+	template<typename... Types> requires (std::same_as<Types, Type> && ...)
+		bool is(const Types... types) const {
+		const Type type = getType();
+		return ((type == types) || ...);
+	}
 
 	bool isNumber() const;
 	bool isNotNumber() const;

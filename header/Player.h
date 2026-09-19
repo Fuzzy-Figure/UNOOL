@@ -111,6 +111,7 @@ public:
 	opt_ref<Skill> findSkill(const std::string& name) { return character->findSkill(name); }
 	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return character->getTransformSkills(); }
+	std::list<std::unique_ptr<PSkill>>& getPSkills() { return character->getPSkills(); }
 #pragma endregion
 
 #pragma region 手牌操作 - 委托到 Hand

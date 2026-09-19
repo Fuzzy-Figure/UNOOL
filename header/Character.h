@@ -82,6 +82,7 @@ public:
 #pragma region 技能管理
 	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
+	std::list<std::unique_ptr<PSkill>>& getPSkills() { return pSkills; }
 	bool hasSkill(const std::string& skillName) const;
 	opt_ref<Skill> findSkill(const std::string& skillName);
 	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) const;

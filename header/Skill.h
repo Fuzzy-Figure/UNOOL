@@ -15,6 +15,9 @@
 
 class Player;
 class GameLogic;
+class PSkill;
+class ASkillInstantBase;
+class ASkillTransformBase;
 
 class Skill {
 protected:
@@ -35,10 +38,29 @@ public:
 	limit_t getLimit() const { return limit; }
 	void setLimit(const limit_t& v) { limit = v; }
 
+	enum class Type { PSkill, ASkillInstant, ASkillTransform };
+
 	Skill(const std::string& _name, const std::string& _info, const limit_t& _limit);
 	virtual ~Skill() = default;
 	virtual void reset();
 	void resetCount() { count = 0; }
+
+	//阶段次数重置（ASkill 重写，默认仅递归子技能）
+	virtual void resetPhaseCount();
+
+	//技能类型：调用前用 getType 判断，再调用对应的 to*() 转换
+	virtual Type getType() const = 0;
+	bool is(const Type t) const;
+	PSkill& toPSkill();
+	ASkillInstantBase& toASkillInstant();
+	ASkillTransformBase& toASkillTransform();
+	template<class SpecificSkill>
+	SpecificSkill& to() {
+		return static_cast<SpecificSkill&>(*this);
+	}
+
+	//子技能：任意类型的技能均可拥有任意类型的子技能
+	std::vector<std::unique_ptr<Skill>> subSkills;
 };
 
 class PSkill : public Skill {
@@ -136,9 +158,9 @@ public:
 		   const TriggerPlayer& triggerPlayer,
 		   const TriggerTime& triggerTime);
 
-	//有子技能
+	//有子技能（子技能可为任意 Skill 派生类型）
 	template<typename... SubSkills>
-		requires (std::same_as<std::decay_t<SubSkills>, std::unique_ptr<PSkill>> && ...)
+		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
 	PSkill(const std::string& _name, const std::string& _description,
 		   const limit_t& _limit, bool _forced,
 		   const TriggerPlayer& _triggerPlayer,
@@ -152,7 +174,8 @@ public:
 	void reset() override;
 	void setForced(const bool newForced);
 
-	std::vector<std::unique_ptr<PSkill>> subSkills;
+	Type getType() const override { return Type::PSkill; }
+
 private:
 	TriggerPlayer triggerPlayer;
 	TriggerTime triggerTime;
@@ -172,6 +195,15 @@ public:
 	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
 		   const limit_t& _phaseLimit, TriggerTime _triggerTime);
 
+	//有子技能（子技能可为任意 Skill 派生类型）
+	template<typename... SubSkills>
+		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
+	ASkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
+		   const limit_t& _phaseLimit, TriggerTime _triggerTime, SubSkills&&... _subSkills)
+		: ASkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
+		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
+	}
+
 	//是否还能发动（局次数+阶段次数双重检查）
 	bool canUse() const {
 		if (limit.has_value() && count >= limit.value()) return false;
@@ -184,8 +216,11 @@ public:
 		if (triggerTime == TriggerTime::phase_use) return currentPhase == TriggerTime::phase_use1 || currentPhase == TriggerTime::phase_use2;
 		return triggerTime == currentPhase;
 	}
-	//重置阶段内使用次数（每回合开始时调用）
-	void resetPhaseCount() { phaseCount = 0; }
+	//重置阶段内使用次数（每回合开始时调用），并递归子技能
+	void resetPhaseCount() override {
+		phaseCount = 0;
+		Skill::resetPhaseCount();
+	}
 private:
 	TriggerTime triggerTime;
 protected:
@@ -198,6 +233,7 @@ class ASkillInstantBase : public ASkill {
 public:
 	//执行发动；成功返回 true（基类内部负责 canUse 检查与 count 累加）
 	virtual bool tryActivate(GameLogic& game, Player& player) = 0;
+	Type getType() const override { return Type::ASkillInstant; }
 protected:
 	using ASkill::ASkill;
 };
@@ -215,6 +251,7 @@ public:
 	virtual void addition(GameLogic& game, Player& carrier) const {}
 	//激活时右侧显示的提示文字
 	virtual std::wstring getPrompt() const = 0;
+	Type getType() const override { return Type::ASkillTransform; }
 protected:
 	using ASkill::ASkill;
 };
@@ -234,8 +271,8 @@ template<class Derived> std::unique_ptr<PSkill> PSkillImpl<Derived>::make() {
 template<class Derived>
 class ASkillInstant : public ASkillInstantBase {
 public:
-	static std::unique_ptr<ASkillInstantBase> make() { 
-		return std::make_unique<Derived>(); 
+	static std::unique_ptr<ASkillInstantBase> make() {
+		return std::make_unique<Derived>();
 	}
 	bool tryActivate(GameLogic& game, Player& player) final {
 		if (!canUse()) return false;
@@ -257,11 +294,13 @@ protected:
 template<class Derived>
 class ASkillTransform : public ASkillTransformBase {
 public:
-	static std::unique_ptr<ASkillTransformBase> make() { 
+	static std::unique_ptr<ASkillTransformBase> make() {
 		return std::make_unique<Derived>();
 	}
 protected:
 	using ASkillTransformBase::ASkillTransformBase;
 };
 
+// ==================== Skill 类型转换方法定义（需在所有子类定义之后） ====================
+//调用前须用 getType() 判断类型，否则行为未定义
 

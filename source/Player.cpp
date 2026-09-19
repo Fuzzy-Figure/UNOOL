@@ -296,12 +296,22 @@ void Player::collectAvailableSkills(ASkill::TriggerTime phase,
 									std::vector<ref<ASkillInstantBase>>& instantRefs,
 									std::vector<ref<ASkillTransformBase>>& transformRefs) {
 	if (phase == ASkill::TriggerTime::never) return;
-	for (auto& s : getInstantSkills()) {
-		if (s->canTriggerAt(phase) && s->canUse()) instantRefs.emplace_back(*s);
-	}
-	for (auto& s : getTransformSkills()) {
-		if (s->canTriggerAt(phase) && s->canUse()) transformRefs.emplace_back(*s);
-	}
+	std::function<void(Skill&)> collectFromSkill = [&](Skill& s) {
+		if (s.is(Skill::Type::ASkillInstant)) {
+			ASkillInstantBase& as = s.toASkillInstant();
+			if (as.canTriggerAt(phase) && as.canUse())
+				instantRefs.emplace_back(as);
+		}
+		else if (s.is(Skill::Type::ASkillTransform)) {
+			ASkillTransformBase& at = s.toASkillTransform();
+			if (at.canTriggerAt(phase) && at.canUse())
+				transformRefs.emplace_back(at);
+		}
+		for (auto& sub : s.subSkills) collectFromSkill(*sub);
+	};
+	for (auto& s : getInstantSkills()) collectFromSkill(*s);
+	for (auto& s : getTransformSkills()) collectFromSkill(*s);
+	for (auto& s : getPSkills()) collectFromSkill(*s);
 }
 
 bool Player::handleDigitKey(sf::Keyboard::Scancode input,

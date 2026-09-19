@@ -11,6 +11,25 @@ Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& 
 
 void Skill::reset() {
 	count = 0;
+	for (auto& sub : subSkills) sub->reset();
+}
+PSkill& Skill::toPSkill() {
+	return static_cast<PSkill&>(*this);
+}
+ASkillInstantBase& Skill::toASkillInstant() {
+	return static_cast<ASkillInstantBase&>(*this);
+}
+ASkillTransformBase& Skill::toASkillTransform() {
+	return static_cast<ASkillTransformBase&>(*this);
+}
+
+
+void Skill::resetPhaseCount() {
+	for (auto& sub : subSkills) sub->resetPhaseCount();
+}
+
+bool Skill::is(const Type t) const {
+	return getType() == t;
 }
 
 

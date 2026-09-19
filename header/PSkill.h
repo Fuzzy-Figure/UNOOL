@@ -1057,57 +1057,35 @@ public:
 	void reset() override;
 };
 
-
-//困界_子：连营的隐藏子技能，承载困界实际效果（空描述，不在技能列表显示）
-class 困界_子 : public PSkillImpl<困界_子> {
-private:
-	std::shared_ptr<std::set<Card::Type>> triggered;
-public:
-	困界_子(std::shared_ptr<std::set<Card::Type>> _triggered)
-		: PSkillImpl<困界_子>(
-			"困界", "",
-			1, false,
-			TriggerPlayer::self,
-			TriggerTime::phase_end
-		), triggered(std::move(_triggered)) {}
-	static std::unique_ptr<PSkill> makeWith(std::shared_ptr<std::set<Card::Type>> t) {
-		return std::make_unique<困界_子>(std::move(t));
-	}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
-};
-
 class 连营 : public PSkillImpl<连营> {
+	friend class 困界;
 private:
-	std::shared_ptr<std::set<Card::Type>> triggered = std::make_shared<std::set<Card::Type>>();
+	std::set<Card::Type> triggered;
 public:
-	连营() : 连营(std::make_shared<std::set<Card::Type>>()) {}
-	连营(std::shared_ptr<std::set<Card::Type>> _triggered)
-		: PSkillImpl<连营>(
-			"连营",
-			"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再随机获得一张此类别的牌。",
-			unlimited, false,
-			TriggerPlayer::self,
-			TriggerTime::lose_card_end,
-			困界_子::makeWith(_triggered)
-		), triggered(_triggered) {}
+	连营() : PSkillImpl<连营>(
+		"连营",
+		"每局游戏每种类别限一次，你失去手中一种类别的最后一张牌后，你可弃置另一种类别的一张牌并从游戏外再随机获得一张此类别的牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::lose_card_end
+	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 	void reset() override;
 };
 
-
-//困界：显示壳，仅展示描述，永不触发（TriggerTime::never）
 class 困界 : public PSkillImpl<困界> {
+	std::set<Card::Type>& getTriggered(Player& carrier) const;
 public:
 	困界() : PSkillImpl<困界>(
 		"困界",
 		"觉醒技，回合结束时，若你【连营】中所有类别均已触发过，你可令一名角色重铸手中一种类别的所有牌，然后你重铸另一种类别的所有牌。",
-		unlimited, false,
-		TriggerPlayer::nobody,
-		TriggerTime::never
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
 	) {}
-	bool content(Trigger& trigger) override { return true; }
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
 };
 
 //四麻：锁定技，回合结束时，将手牌调整至四张
@@ -1325,7 +1303,7 @@ public:
 class 引力_目标 : public PSkillImpl<引力_目标> {
 public:
 	引力_目标() : PSkillImpl<引力_目标>(
-		"引力_目标", 
+		"引力_目标",
 		"数字牌进入弃牌堆后，你获得之。",
 		unlimited, true,
 		TriggerPlayer::anybody,
