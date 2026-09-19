@@ -157,7 +157,7 @@ void GameLogic::initPlayers() {
 
 void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//选候选角色
-	const std::size_t candidateCount = unool::getServerConfig()["candidateCount"];
+	const std::size_t candidateCount = unool::getServerConfig()["singleCandidateCount"];
 	SelectionState state;
 	auto allChars = Character::randomChooseCharacters(candidateCount * 2);
 	for (std::size_t i = 0; i < 2; ++i) {
@@ -252,23 +252,6 @@ std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_
 	return std::nullopt;
 }
 
-std::pair<std::string, std::string> GameLogic::chooseSkin(Player& player, const std::string& charName) {
-	auto skins = Character::getSkins(charName);
-	std::string skin = "默认";
-	if (skins.size() > 1) {
-		std::vector<std::wstring> skinOpts;
-		for (const auto& s : skins) skinOpts.push_back(unool::string::to_utf16(s));
-		std::size_t skinChoice = player.ask(L"选择皮肤：", skinOpts, true);
-		skin = skins[skinChoice - 1];
-	}
-	return { charName, skin };
-}
-
-void GameLogic::chooseSkinAndSet(Player& player, const std::string& charName) {
-	auto [name, skin] = chooseSkin(player, charName);
-	player.setCharacter(Character::make(name, skin));
-}
-
 void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
 	std::vector<std::wstring> opts;
 	std::vector<std::size_t> validIndices;
@@ -279,7 +262,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	}
 	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
-	chooseSkinAndSet(*players[playerId], charName);
+	players[playerId]->chooseSkinAndSet(charName);
 	markCharInfoDirty(playerId);
 	broadcastState();
 }
@@ -288,19 +271,21 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 	//第一轮：5选1
 	std::vector<std::wstring> opts1;
 	for (const auto& e : cands) opts1.push_back(formatCharacterLabelW(e));
-	std::size_t choice1 = players[playerId]->ask(L"选择你的第1个角色（5选1）：", opts1, true);
-	auto [name1, skin1] = chooseSkin(*players[playerId], cands[choice1 - 1].first);
+	const std::size_t choice1 = players[playerId]->ask(L"选择你的第1个角色（5选1）：", opts1, true);
+	const std::string char1 = cands[choice1 - 1].first;
+	const std::string skin1 = players[playerId]->chooseSkin(char1);
 	//移除已选
 	cands.erase(cands.begin() + (choice1 - 1));
 
 	//第二轮：4选1
 	std::vector<std::wstring> opts2;
 	for (const auto& e : cands) opts2.push_back(formatCharacterLabelW(e));
-	std::size_t choice2 = players[playerId]->ask(L"选择你的第2个角色（4选1）：", opts2, true);
-	auto [name2, skin2] = chooseSkin(*players[playerId], cands[choice2 - 1].first);
+	const std::size_t choice2 = players[playerId]->ask(L"选择你的第2个角色（4选1）：", opts2, true);
+	const std::string char2 = cands[choice2 - 1].first;
+	const std::string skin2 = players[playerId]->chooseSkin(char2);
 
 	//组合
-	players[playerId]->setCharacter(Character::makeCombined(name1, skin1, name2, skin2));
+	players[playerId]->setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
 	markCharInfoDirty(playerId);
 	broadcastState();
 }
@@ -313,7 +298,7 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 			throw std::invalid_argument("双将模式指定角色时，角色数量必须为4");
 		for (std::size_t i = 0; i < 2; ++i) {
 			auto p = std::make_unique<Player>(i, *this,
-				Character::makeCombined(chars[i * 2], "默认", chars[i * 2 + 1], "默认"));
+											  Character::makeCombined(chars[i * 2], "默认", chars[i * 2 + 1], "默认"));
 			players.push_back(std::move(p));
 		}
 	}
@@ -549,7 +534,7 @@ void GameLogic::resetGame() {
 		player->clearHand();
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
 		const std::string mode = unool::getServerConfig().value("mode", "normal");
-		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "initHandCount";
+		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "singleInitHandCount";
 		player->draw(unool::getServerConfig()[handKey]);
 		// 重置技能使用次数
 		player->resetSkills();

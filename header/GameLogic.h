@@ -39,10 +39,6 @@ private:
 	};
 
 	static std::wstring formatCharacterLabelW(const Character::Entry& entry);
-	//选皮肤，返回 {角色名, 皮肤名}，不改 player 状态
-	static std::pair<std::string, std::string> chooseSkin(Player& player, const std::string& charName);
-	//选皮肤并直接 setCharacter 单角色
-	static void chooseSkinAndSet(Player& player, const std::string& charName);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
 	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);

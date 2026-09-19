@@ -1,13 +1,13 @@
 {
   "banCount": 2,
-  "candidateCount": 10,
-  //"characters": [ "切斯特", "特朗普", "棍母", "夏搏" ],
+  "characters": [ "屎軖", "屎軖", "棍母", "夏搏" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "initHandCount": 8,
   "mode": "double",
   "shielded": {
     "characters": [],
     "groups": []
-  }
+  },
+  "singleCandidateCount": 10,
+  "singleInitHandCount": 8
 }

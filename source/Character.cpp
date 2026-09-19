@@ -125,15 +125,15 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 	newChara->skins.push_back(skin2);
 
 	//依次加入两角色全部技能（工厂克隆，天然含子技能）
-	auto addAllFrom = [&newChara](const Info& info) {
+	auto addAllSkillsFrom = [&newChara](const Info& info) {
 		for (const auto& f : info.pSkills) newChara->addSkill(f());
 		for (const auto& f : info.instantSkills) newChara->addSkill(f());
 		for (const auto& f : info.transformSkills) newChara->addSkill(f());
 	};
-	addAllFrom(info1);
-	addAllFrom(info2);
+	addAllSkillsFrom(info1);
+	addAllSkillsFrom(info2);
 
-	//体力叠加
+	//组合角色体力：平均向上取百
 	const std::size_t hp1 = info1.hp;
 	const std::size_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
 	const std::size_t hp2 = info2.hp;
@@ -300,11 +300,11 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 
 	//构造可用角色
 	auto filteredChars = Character::infos | std::views::filter(
-		[&shieldedCharacters, &shieldedGroups](const std::pair<std::string, Character::Info>& info) {
+		[&shieldedCharacters, &shieldedGroups](const Character::Entry& entry) {
 		//过滤掉白板和被屏蔽的角色
-		return info.first != "白板"
-			&& !shieldedCharacters.contains(info.first)
-			&& !shieldedGroups.contains(info.second.group);
+		return entry.first != "白板"
+			&& !shieldedCharacters.contains(entry.first)
+			&& !shieldedGroups.contains(entry.second.group);
 	});
 	const std::size_t filteredCharsSize = std::ranges::distance(filteredChars);
 

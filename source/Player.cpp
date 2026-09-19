@@ -215,6 +215,24 @@ PhaseEnd:
 Player& Player::next() const { return game.getPlayerById(game.nextPlayerIndex(id)); }
 Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id)); }
 
+// === 初始化 ===
+std::string Player::chooseSkin(const std::string& charName) {
+	auto skins = Character::getSkins(charName);
+	std::string skin = "默认";
+	if (skins.size() > 1) {
+		std::vector<std::wstring> skinOpts;
+		for (const auto& s : skins) skinOpts.push_back(unool::string::to_utf16(s));
+		std::size_t skinChoice = ask(L"选择皮肤：", skinOpts, true);
+		skin = skins[skinChoice - 1];
+	}
+	return skin;
+}
+
+void Player::chooseSkinAndSet(const std::string& charName) {
+	const std::string skin = chooseSkin(charName);
+	setCharacter(Character::make(charName, skin));
+}
+
 // === 交互 ===
 
 std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> condition,

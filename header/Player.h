@@ -147,13 +147,15 @@ public:
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }
-
 #pragma endregion
 
 #pragma region 导航
 	Player& next() const;
 	Player& prev() const;
-
+#pragma endregion
+#pragma region 初始化
+	std::string chooseSkin(const std::string& charName); 
+	void chooseSkinAndSet(const std::string& charName);
 #pragma endregion
 
 #pragma region 交互
