@@ -1388,3 +1388,17 @@ public:
 	) {}
 	bool content(Trigger& trigger) override;
 };
+
+//健体：锁定技，打出手中非唯一牌名的牌后，回复1点体力
+class 健体 : public PSkillImpl<健体> {
+public:
+	健体() : PSkillImpl<健体>(
+		"健体",
+		"锁定技，打出手中非唯一牌名的牌后，回复1点体力。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};

@@ -614,3 +614,14 @@ bool 跳糖::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：肘击 ====================
+bool 肘击::content(GameLogic& game, Player& carrier) {
+	carrier.draw(2, Player::DrawReason::skill);
+	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+	std::cout << "<技能> " << carrier.characterName() << "发动肘击，摸2张牌并获得2张变色" << std::endl;
+	game.broadcastState();
+	return true;
+}
+

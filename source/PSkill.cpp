@@ -2669,3 +2669,19 @@ bool 薄荷::content(Trigger& trigger) {
 	trigger.getGame().broadcastState();
 	return true;
 }
+
+
+// ==================== 技能：健体 ====================
+bool 健体::filter(const Trigger& trigger) const {
+	const Card& played = trigger.getCard();
+	const Player& carrier = trigger.getCarrier();
+	//打出前手中此牌名≥2张，等价于打出后手中仍有同名牌
+	return carrier.handInclude([&](const Card& c) { return c.is(played.getName()); });
+}
+bool 健体::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	carrier.recover(1);
+	std::cout << "<技能> " << carrier.characterName() << "健体回复1点体力" << std::endl;
+	trigger.getGame().broadcastState();
+	return true;
+}

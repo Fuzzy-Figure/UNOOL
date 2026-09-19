@@ -77,6 +77,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"柯尔特",   {"荒野乱斗", Level::F, {弹暴::make}, {手枪::make}, {}, 150}},
 	{"科斯莫",   {"荒野乱斗", Level::S, {星轨::make, 引力_清除目标::make}, {引力::make}, {}, 100}},
 	{"切斯特",   {"荒野乱斗", Level::A, {铃铛::make}, {}, {}, 140}},
+	{"艾尔·普里莫", {"荒野乱斗", Level::D, {健体::make}, {肘击::make}, {}, 315}},
 };
 
 // ==================== 构造 / 工厂 ====================

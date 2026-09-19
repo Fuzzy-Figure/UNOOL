@@ -287,3 +287,15 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//肘击：限定技，出牌阶段，摸两张牌并获得两张【变色】
+class 肘击 : public ASkillInstant<肘击> {
+public:
+	肘击() : ASkillInstant<肘击>(
+		"肘击",
+		"限定技，出牌阶段，你可以摸两张牌并获得两张【变色】。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
