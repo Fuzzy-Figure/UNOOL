@@ -301,6 +301,4 @@ protected:
 	using ASkillTransformBase::ASkillTransformBase;
 };
 
-// ==================== Skill 类型转换方法定义（需在所有子类定义之后） ====================
-//调用前须用 getType() 判断类型，否则行为未定义
 
