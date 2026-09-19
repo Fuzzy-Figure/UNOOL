@@ -108,6 +108,13 @@ Card& Player::putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::Dis
 Card& Player::discardByIndex(const std::size_t cardIndex) {
 	return putCardToDiscardPileByIndex(cardIndex, Card::DiscardReason::discard);
 }
+Card& Player::recastByIndex(const std::size_t cardIndex) {
+	game.launchPSkills(PSkill::TriggerTime::recast_begin, *this);
+	Card& card = putCardToDiscardPileByIndex(cardIndex, Card::DiscardReason::recast);
+	draw(1);
+	game.launchPSkills(PSkill::TriggerTime::recast_end, *this);
+	return card;
+}
 
 std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 	return hand->takeCardByIndex(cardIndex);
@@ -697,7 +704,7 @@ void Player::hint(const std::wstring& message) {
 
 Card& Player::judge() {
 	game.launchPSkills(PSkill::TriggerTime::judge_begin, *this);
-	auto card = game.getPile().takeCardByIndex(0);
+	auto card = game.getPile().take_front(game.getDiscardPile());
 	std::cout << "判定结果：" << *card << std::endl;
 	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::judge, *this);
 	game.launchPSkills(PSkill::TriggerTime::judge_end, *this, cardRef);

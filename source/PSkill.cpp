@@ -2422,14 +2422,11 @@ bool 返现::content(Trigger& trigger) {
 	}
 	if (nonYellowIndices.empty()) return false;
 
-	//从后往前弃置（避免索引偏移）
+	//从后往前重铸（避免索引偏移）
 	std::ranges::sort(nonYellowIndices, std::greater{});
 	for (std::size_t idx : nonYellowIndices) {
-		carrier.discardByIndex(idx);
+		carrier.recastByIndex(idx);
 	}
-
-	//摸等量牌（重铸）
-	carrier.draw(nonYellowIndices.size(), Player::DrawReason::skill);
 
 	//回复等量体力
 	carrier.recover(nonYellowIndices.size());
@@ -2558,7 +2555,11 @@ bool 引力_目标::content(Trigger& trigger) {
 	GameLogic& game = trigger.getGame();
 
 	//从弃牌堆移出这张牌（最新进入的在 front，index=0）
-	auto cardPtr = game.getDiscardPile().takeCardByIndex(0);
+	//若弃牌堆已空或堆顶不是触发本次事件的牌（已被其他引力_目标取走），则跳过
+	Pile& discardPile = game.getDiscardPile();
+	if (discardPile.empty()) return false;
+	if (&discardPile.front() != &trigger.getCard()) return false;
+	auto cardPtr = discardPile.takeCardByIndex(0);
 	carrier.gainCard(std::move(cardPtr));
 
 	std::cout << "<技能> 引力将一张数字牌重定向给"
@@ -2604,18 +2605,16 @@ bool 铃铛::content(Trigger& trigger) {
 	if (hc == 0) X = 0;
 	else if (hc < X) X = hc;
 
-	//随机重铸X张手牌（弃+摸等量）
+	//随机重铸X张手牌
 	if (X > 0) {
 		std::vector<std::size_t> indices(hc);
 		std::iota(indices.begin(), indices.end(), std::size_t{ 0 });
-		std::mt19937 g(std::random_device{}());
-		std::ranges::shuffle(indices, g);
-		//从大到小排序前X个，从后往前弃避免索引变化
+		std::ranges::shuffle(indices, unool::random::rng);
+		//从大到小排序前X个，从后往前重铸避免索引变化
 		std::partial_sort(indices.begin(), indices.begin() + X, indices.end(), std::greater{});
 		for (std::size_t i = 0; i < X; ++i) {
-			carrier.putCardToDiscardPileByIndex(indices[i], Card::DiscardReason::recast);
+			carrier.recastByIndex(indices[i]);
 		}
-		carrier.draw(X, Player::DrawReason::skill);
 		std::cout << "<技能> " << carrier.characterName() << "铃铛重铸" << X << "张手牌" << std::endl;
 	}
 

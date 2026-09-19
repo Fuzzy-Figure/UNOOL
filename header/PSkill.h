@@ -990,10 +990,10 @@ class 没座 : public PSkillImpl<没座> {
 public:
 	没座() : PSkillImpl<没座>(
 		"没座",
-		"回合结束时，若你手中没有红色牌，你随机获得一张红色牌（手牌数为1时不触发）；"
+		"回合开始时，若你手中没有红色牌，你随机获得一张红色牌（手牌数为1时不触发）；"
 		"若你手中有红色牌，你可以弃置一张其他颜色的牌。",
 		unlimited, true,
-		TriggerPlayer::self, TriggerTime::phase_end
+		TriggerPlayer::self, TriggerTime::phase_begin
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -1313,10 +1313,10 @@ class 星轨 : public PSkillImpl<星轨> {
 public:
 	星轨() : PSkillImpl<星轨>(
 		"星轨",
-		"回合开始时，你可以进行三次判定，若类型均相同，【引力】可用次数+1。",
+		"回合结束时，你可以进行三次判定，若类型均相同，【引力】可用次数+1。",
 		unlimited, false,
 		TriggerPlayer::self,
-		TriggerTime::phase_begin
+		TriggerTime::phase_end
 	) {}
 	bool content(Trigger& trigger) override;
 };
@@ -1325,7 +1325,8 @@ public:
 class 引力_目标 : public PSkillImpl<引力_目标> {
 public:
 	引力_目标() : PSkillImpl<引力_目标>(
-		"引力_目标", "",
+		"引力_目标", 
+		"数字牌进入弃牌堆后，你获得之。",
 		unlimited, true,
 		TriggerPlayer::anybody,
 		TriggerTime::card_discard_end
@@ -1348,13 +1349,12 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-// ==================== 切斯特衍生技 ====================
-//铃铛：锁定技，回合开始时随机重铸1/2/3张手牌，失去其他技能并随机获得一个衍生技
 class 铃铛 : public PSkillImpl<铃铛> {
 public:
 	铃铛() : PSkillImpl<铃铛>(
 		"铃铛",
-		"锁定技，回合开始时，你随机重铸1/2/3张手牌，然后你失去其他技能，并随机获得一个衍生技。",
+		"锁定技，回合开始时，若你手牌数不为1，随机重铸X张手牌（X为此技能发动次数，若为3则重置为1），\n"
+		"若因此重铸了三张手牌，你失去其他技能，并随机获得一个衍生技。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin

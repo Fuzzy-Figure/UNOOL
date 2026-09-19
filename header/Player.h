@@ -137,6 +137,8 @@ public:
 	Card& putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason);
 	//弃置指定索引的手牌（reason固定为discard）
 	Card& discardByIndex(const std::size_t cardIndex);
+	//重铸一张：以 recast 原因放入弃牌堆并摸1张，触发 recast_begin/end
+	Card& recastByIndex(const std::size_t cardIndex);
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }

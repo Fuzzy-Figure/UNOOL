@@ -1,6 +1,6 @@
 {
   "banCount": 2,
-  //"characters": [ "屎軖", "屎軖", "棍母", "夏搏" ],
+  "characters": [ "棍母", "屎軖", "科斯莫", "斯大林" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
   "mode": "double",
