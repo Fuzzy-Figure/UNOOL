@@ -351,10 +351,10 @@ opt_ref<Skill> Character::findSkill(const std::string& skillName) {
 	}
 	return std::nullopt;
 }
-void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
-							  PSkill::Trigger& trigger) const {
+void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
+							  PassiveSkill::Trigger& trigger) const {
 	//先收集要发动的技能指针，避免content中修改pSkills导致迭代器失效
-	std::vector<PSkill*> toLaunch;
+	std::vector<PassiveSkill*> toLaunch;
 	for (const auto& pSkill : pSkills) {
 		if (pSkill->matchTrigger(currentTriggerTime, trigger))
 			toLaunch.push_back(pSkill.get());
@@ -364,27 +364,27 @@ void Character::launchPSkills(const PSkill::TriggerTime& currentTriggerTime,
 		}
 	}
 	//遍历指针列表发动；即使某个技能在content中销毁自身，也不影响后续技能
-	for (PSkill* skill : toLaunch) {
+	for (PassiveSkill* skill : toLaunch) {
 		skill->launch(trigger);
 	}
 }
-void Character::addSkill(std::unique_ptr<ASkillInstantBase> skill) {
+void Character::addSkill(std::unique_ptr<InstantSkill> skill) {
 	instantSkills.push_back(std::move(skill));
 }
-void Character::addSkill(std::unique_ptr<ASkillTransformBase> skill) {
+void Character::addSkill(std::unique_ptr<TransformSkill> skill) {
 	transformSkills.push_back(std::move(skill));
 }
-void Character::addSkill(std::unique_ptr<PSkill> pSkill) {
+void Character::addSkill(std::unique_ptr<PassiveSkill> pSkill) {
 	pSkills.push_back(std::move(pSkill));
 }
 void Character::removeSkill(const std::string& name) {
-	std::erase_if(pSkills, [&name](const std::unique_ptr<PSkill>& ps) {
+	std::erase_if(pSkills, [&name](const std::unique_ptr<PassiveSkill>& ps) {
 		return ps->getName() == name;
 	});
-	std::erase_if(instantSkills, [&name](const std::unique_ptr<ASkillInstantBase>& s) {
+	std::erase_if(instantSkills, [&name](const std::unique_ptr<InstantSkill>& s) {
 		return s->getName() == name;
 	});
-	std::erase_if(transformSkills, [&name](const std::unique_ptr<ASkillTransformBase>& s) {
+	std::erase_if(transformSkills, [&name](const std::unique_ptr<TransformSkill>& s) {
 		return s->getName() == name;
 	});
 }

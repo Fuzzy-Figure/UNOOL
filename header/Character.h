@@ -14,9 +14,9 @@ public:
 	struct Info {
 		std::string group;
 		Level level;
-		std::vector<PSkill::Factory> pSkills;
-		std::vector<std::function<std::unique_ptr<ASkillInstantBase>()>> instantSkills;
-		std::vector<std::function<std::unique_ptr<ASkillTransformBase>()>> transformSkills;
+		std::vector<PassiveSkill::Factory> pSkills;
+		std::vector<InstantSkill::Factory> instantSkills;
+		std::vector<TransformSkill::Factory> transformSkills;
 		std::size_t hp;
 		std::size_t maxHp = 0;
 	};
@@ -26,9 +26,9 @@ public:
 private:
 	std::vector<std::string> names;
 	std::vector<std::string> skins;
-	std::list<std::unique_ptr<PSkill>> pSkills;
-	std::list<std::unique_ptr<ASkillInstantBase>> instantSkills;
-	std::list<std::unique_ptr<ASkillTransformBase>> transformSkills;
+	std::list<std::unique_ptr<PassiveSkill>> pSkills;
+	std::list<std::unique_ptr<InstantSkill>> instantSkills;
+	std::list<std::unique_ptr<TransformSkill>> transformSkills;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
 	std::size_t damageMultiplier = 1;
@@ -80,14 +80,14 @@ public:
 #pragma endregion
 
 #pragma region 技能管理
-	std::list<std::unique_ptr<ASkillInstantBase>>& getInstantSkills() { return instantSkills; }
-	std::list<std::unique_ptr<ASkillTransformBase>>& getTransformSkills() { return transformSkills; }
+	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
+	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
 	bool hasSkill(const std::string& skillName) const;
 	opt_ref<Skill> findSkill(const std::string& skillName);
-	void launchPSkills(const PSkill::TriggerTime& currentTriggerTime, PSkill::Trigger& trigger) const;
-	void addSkill(std::unique_ptr<ASkillInstantBase>   skill);
-	void addSkill(std::unique_ptr<ASkillTransformBase> skill);
-	void addSkill(std::unique_ptr<PSkill> pSkill);
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger) const;
+	void addSkill(std::unique_ptr<InstantSkill>   skill);
+	void addSkill(std::unique_ptr<TransformSkill> skill);
+	void addSkill(std::unique_ptr<PassiveSkill> pSkill);
 	void removeSkill(const std::string& name);
 	void resetSkills();
 #pragma endregion

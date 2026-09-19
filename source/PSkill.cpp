@@ -718,7 +718,7 @@ bool 举报::content(Trigger& trigger) {
 	return true;
 }
 void 举报::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	setForced(false);
 }
 
@@ -1608,7 +1608,7 @@ bool 犬子::content(Trigger& trigger) {
 	return true;
 }
 void 犬子::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	playCount = 0;
 }
 
@@ -1647,7 +1647,7 @@ bool 黑洞::content(Trigger& trigger) {
 	return true;
 }
 void 黑洞::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	record.clear();
 }
 
@@ -1964,7 +1964,7 @@ bool 治病::content(Trigger& trigger) {
 }
 
 void 治病::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	playedNames.clear();
 	options = { 1, 2, 3 };
 }
@@ -2007,7 +2007,7 @@ bool 连营::content(Trigger& trigger) {
 }
 
 void 连营::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	triggered->clear();
 	for (auto& sub : subSkills) sub->reset();
 }
@@ -2032,12 +2032,12 @@ bool 困界_子::content(Trigger& trigger) {
 		for (std::size_t i = 0; i < p.handCount(); ++i)
 			if (cond(p.getCardByIndex(i))) ++cnt;
 		if (cnt == 0) return;
-		game.launchPSkills(PSkill::TriggerTime::recast_begin, p);
+		game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_begin, p);
 		for (std::size_t i = p.handCount(); i-- > 0; ) {
 			if (cond(p.getCardByIndex(i))) p.discardByIndex(i);
 		}
 		p.draw(cnt, Player::DrawReason::skill);
-		game.launchPSkills(PSkill::TriggerTime::recast_end, p);
+		game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_end, p);
 	};
 
 	//2. 选目标重铸的类别
@@ -2149,7 +2149,7 @@ bool 灵爆::content(Trigger& trigger) {
 }
 
 void 灵爆::reset() {
-	PSkill::reset();
+	PassiveSkill::reset();
 	*playCount = 0;
 }
 
@@ -2196,7 +2196,7 @@ bool 加速::content(Trigger& trigger) {
 
 void 加速::reset() {
 	setLimit(0);
-	PSkill::reset();
+	PassiveSkill::reset();
 }
 
 
@@ -2301,7 +2301,7 @@ bool 白虎::content(Trigger& trigger) {
 
 void 白虎::reset() {
 	triggeredPlayers.clear();
-	PSkill::reset();
+	PassiveSkill::reset();
 }
 
 
@@ -2344,7 +2344,7 @@ bool 易主::content(Trigger& trigger) {
 
 void 易主::reset() {
 	phaseCount = 0;
-	PSkill::reset();
+	PassiveSkill::reset();
 }
 
 
@@ -2473,7 +2473,7 @@ bool 弹暴::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 
-	//弃置一张万能牌；取消则返还可用次数（PSkill::launch 会回退 count）
+	//弃置一张万能牌；取消则返还可用次数（PassiveSkill::launch 会回退 count）
 	auto discarded = carrier.chooseToDiscard(L"【弹暴】弃置一张万能牌", 1, false, &Card::isWild);
 	if (discarded.empty()) return false;
 
