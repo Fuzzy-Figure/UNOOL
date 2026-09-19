@@ -85,10 +85,11 @@ public:
 	void incrementWins() { character->incrementWins(); }
 	void incrementLosses() { character->incrementLosses(); }
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
-	void addMark(const std::string& m) { character->addMark(m); }
-	void removeMark(const std::string& m) { character->removeMark(m); }
-	const std::unordered_set<std::string>& getMarks() const { return character->getMarks(); }
-	void clearMarks() { character->clearMarks(); }
+	void addMark(const std::string& m, std::size_t count = 1) { character->addMark(m, count); }
+	void removeMark(const std::string& m, std::size_t count = 1) { character->removeMark(m, count); }
+	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
+	void clearMark(const std::string& m) { character->clearMark(m); }
+	void clearAllMarks() { character->clearAllMarks(); }
 	void addSkill(std::unique_ptr<ASkillInstantBase>   skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<ASkillTransformBase> skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<PSkill>              pSkill) { character->addSkill(std::move(pSkill)); }

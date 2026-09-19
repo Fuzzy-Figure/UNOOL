@@ -543,7 +543,7 @@ void GameLogic::resetGame() {
 		// 重置伤害倍率
 		player->setDamageMultiplier(1);
 		// 清空标记
-		player->clearMarks();
+		player->clearAllMarks();
 	}
 	// 重置当前颜色
 	currentColor = Card::Color::no;

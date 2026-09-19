@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include "Card.h"
 
@@ -11,7 +11,7 @@ struct PlayerState {
 	std::vector<std::string> skins;
 	std::size_t hp = 0;
 	std::size_t maxHp = 0;
-	std::unordered_set<std::string> marks;
+	std::unordered_map<std::string, std::size_t> marks;
 
 	PlayerState() = default;
 	PlayerState(const PlayerState& other)

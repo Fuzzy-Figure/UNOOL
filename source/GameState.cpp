@@ -33,8 +33,9 @@ sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
 	state.marks.clear();
 	for (std::size_t i = 0; i < markCount; ++i) {
 		std::string m;
-		packet >> m;
-		state.marks.insert(m);
+		std::size_t c;
+		packet >> m >> c;
+		state.marks[m] = c;
 	}
 	return packet;
 }
@@ -51,7 +52,7 @@ sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
 	packet << state.hand;
 	//标记
 	packet << state.marks.size();
-	for (const std::string& m : state.marks) packet << m;
+	for (const auto& [m, c] : state.marks) packet << m << c;
 	return packet;
 }
 
