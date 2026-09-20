@@ -110,7 +110,7 @@ public:
 	bool isNotAction() const;
 	bool isWild() const;
 	bool isNotWild() const;
-	int value() const;
+	std::size_t value() const;
 	std::string toString() const;
 	std::wstring toWString() const;
 	std::string getImagePath() const;

@@ -168,28 +168,10 @@ Card::Name Card::getName() const {
 	return name;
 }
 Card::Type Card::getType() const {
-	switch (name) {
-		//数字
-		case Name::number_0:
-		case Name::number_1:
-		case Name::number_2:
-		case Name::number_3:
-		case Name::number_4:
-		case Name::number_5:
-		case Name::number_6:
-		case Name::number_7:
-		case Name::number_8:
-		case Name::number_9: return Type::number;
-			//功能
-		case Name::action_skip:
-		case Name::action_draw2:
-		case Name::action_rev: return Type::action;
-			//万能
-		case Name::wild_pal:
-		case Name::wild_draw4: return Type::wild;
-			//其他
-		default: return Type::unknown;
-	}
+	if (is_number(name)) return Type::number;
+	if (is_action(name)) return Type::action;
+	if (is_wild(name)) return Type::wild;
+	return Type::unknown;
 }
 Card::ColorName Card::getColorName() const {
 	return std::make_pair(color, name);
@@ -223,7 +205,7 @@ bool Card::isNotWild() const {
 }
 
 
-int Card::value() const {
+std::size_t Card::value() const {
 	switch (name) {
 		//数字
 		case Name::number_0: return 0;
