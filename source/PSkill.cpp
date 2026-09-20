@@ -2590,8 +2590,9 @@ bool 引力_清除目标::content(Trigger& trigger) {
 }
 
 
-// ==================== 切斯特衍生技 ====================
-//铃铛
+bool 铃铛::filter(const Trigger& trigger) const {
+	return trigger.getCarrier().handCount() != 1;
+}
 bool 铃铛::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
@@ -2616,24 +2617,25 @@ bool 铃铛::content(Trigger& trigger) {
 	}
 
 	//失去其他技能（5个衍生技）
-	const std::array<const char*, 5> derivedNames = { "爆糖","硬糖","甘草","跳糖","薄荷" };
-	for (auto name : derivedNames) {
-		if (carrier.findSkill(name).has_value()) {
-			carrier.removeSkill(name);
-			game.markCharInfoDirty(carrier.getId());
+	if (X == 3) {
+		static const std::vector<std::string> derivedNames = { "爆糖", "硬糖", "甘草", "跳糖", "薄荷" };
+		for (const std::string& name : derivedNames) {
+			if (carrier.findSkill(name).has_value()) {
+				carrier.removeSkill(name);
+				game.markCharInfoDirty(carrier.getId());
+			}
 		}
-	}
 
-	//随机获得一个衍生技
-	std::size_t r = unool::random::randomInt(0, 4);
-	switch (r) {
-		case 0: carrier.addSkill(爆糖::make()); break;
-		case 1: carrier.addSkill(硬糖::make()); break;
-		case 2: carrier.addSkill(甘草::make()); break;
-		case 3: carrier.addSkill(跳糖::make()); break;
-		case 4: carrier.addSkill(薄荷::make()); break;
+		//随机获得一个衍生技
+		switch (const std::size_t r = unool::random::randomInt(0, 4); r) {
+			case 0: carrier.addSkill(爆糖::make()); break;
+			case 1: carrier.addSkill(硬糖::make()); break;
+			case 2: carrier.addSkill(甘草::make()); break;
+			case 3: carrier.addSkill(跳糖::make()); break;
+			case 4: carrier.addSkill(薄荷::make()); break;
+		}
+		game.markCharInfoDirty(carrier.getId());
 	}
-	game.markCharInfoDirty(carrier.getId());
 	game.broadcastState();
 	return true;
 }
