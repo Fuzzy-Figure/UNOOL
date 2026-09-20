@@ -169,9 +169,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\AccountProtocol.cpp" />
+    <ClCompile Include="..\source\Character.cpp" />
     <ClCompile Include="..\source\InstantSkill.cpp" />
     <ClCompile Include="..\source\Card.cpp" />
-    <ClCompile Include="..\source\Character.cpp" />
     <ClCompile Include="..\source\Effect.cpp" />
     <ClCompile Include="..\source\GameLogic.cpp" />
     <ClCompile Include="..\source\GameState.cpp" />
