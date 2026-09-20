@@ -485,10 +485,10 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	if (matchIdx.has_value()) {
 		//有匹配：获得一张，消耗次数
 		auto card = pile.takeCardByIndex(matchIdx.value());
-		Card* cardPtr = card.get();
+		const Card& cardRef = *card;  //move 前绑定引用，move 后仍可访问
 		carrier.gainCard(std::move(card));
 		std::cout << "<技能> " << carrier.characterName() << "从牌堆获得"
-			<< cardPtr->toString() << std::endl;
+			<< cardRef.toString() << std::endl;
 		game.broadcastState();
 		return true;
 	}

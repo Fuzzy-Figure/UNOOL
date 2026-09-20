@@ -490,25 +490,27 @@ std::optional<Card> GameLogic::lastCard() const {
 
 void GameLogic::checkRoundEnd() {
 	// 查找胜者（手牌为空）与败者
-	Player* winner = nullptr;
-	Player* loser = nullptr;
+	opt_ref<Player> winner;
+	opt_ref<Player> loser;
 	for (auto& player : players) {
 		if (player->handEmpty()) {
-			winner = player.get();
+			winner = *player;
 		}
 		else {
-			loser = player.get();
+			loser = *player;
 		}
 	}
 	// 正常情况：一胜一败
-	if (winner && loser) {
-		winner->incrementWins();
-		loser->incrementLosses();
-		const std::size_t actualDamageValue = loser->damage(loser->handValue(), *winner);
-		std::cout << winner->characterName() << "对" << loser->characterName()
-			<< "造成" << actualDamageValue << "点伤害（败者手牌价值 " << loser->handValue()
-			<< " * 倍率 " << winner->getDamageMultiplier() << "），"
-			<< loser->characterName() << "剩余" << loser->getHp() << "/" << loser->getMaxHp() << std::endl;
+	if (winner.has_value() && loser.has_value()) {
+		Player& w = winner.value();
+		Player& l = loser.value();
+		w.incrementWins();
+		l.incrementLosses();
+		const std::size_t actualDamageValue = l.damage(l.handValue(), w);
+		std::cout << w.characterName() << "对" << l.characterName()
+			<< "造成" << actualDamageValue << "点伤害（败者手牌价值 " << l.handValue()
+			<< " * 倍率 " << w.getDamageMultiplier() << "），"
+			<< l.characterName() << "剩余" << l.getHp() << "/" << l.getMaxHp() << std::endl;
 	}
 	else {
 		// 兜底：双方都未空手或都已空手，维持原双方各扣自己手牌value的逻辑

@@ -246,7 +246,7 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 											  bool forced, ActiveSkill::TriggerTime phase) {
 	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
-	TransformSkill* activeMode = nullptr;  //当前激活的转换型主动技
+	opt_ref<TransformSkill> activeMode;  //当前激活的转换型主动技
 
 	std::vector<ref<InstantSkill>>   instantRefs;
 	std::vector<ref<TransformSkill>> transformRefs;
@@ -307,7 +307,7 @@ void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 							const std::vector<ref<InstantSkill>>& instantRefs,
 							const std::vector<ref<TransformSkill>>& transformRefs,
-							TransformSkill*& activeMode) {
+							opt_ref<TransformSkill>& activeMode) {
 	auto digit = digitFromScancode(input);
 	if (!digit.has_value() || digit.value() == 0) return false;
 
@@ -329,12 +329,12 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	else if (idx - instantRefs.size() < transformRefs.size()) {
 		std::size_t tIdx = idx - instantRefs.size();
 		TransformSkill& skill = transformRefs[tIdx].get();
-		if (activeMode == &skill) {
-			activeMode = nullptr;
+		if (activeMode.has_value() && &activeMode.value().get() == &skill) {
+			activeMode.reset();
 			network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);
 		}
 		else {
-			activeMode = &skill;
+			activeMode = skill;
 			network.sendPlayerChoice(id, skill.getPrompt(), std::vector<std::wstring>(), false);
 		}
 	}
@@ -342,39 +342,40 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 }
 
 std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const Card&)>& condition,
-												 TransformSkill* activeMode) {
+												 const opt_ref<TransformSkill>& activeMode) {
 	if (handEmpty()) return std::nullopt;
 	ServerNetwork& network = game.getNetwork();
 
-	if (activeMode != nullptr) {
+	if (activeMode.has_value()) {
 		//转换技：尝试转化选中的牌并打出（暂仅支持单牌转换）
+		TransformSkill& mode = activeMode.value();
 		Card& selected = (*hand)[hand->getSelectedIndex()];
-		if (activeMode->canSelect(selected) && activeMode->getCardCount() == 1) {
+		if (mode.canSelect(selected) && mode.getCardCount() == 1) {
 			Card original = selected;  //备份原牌
 			std::vector<ref<Card>> cards;
 			cards.emplace_back(selected);
-			if (activeMode->transform(game, *this, std::move(cards))) {
+			if (mode.transform(game, *this, std::move(cards))) {
 				if (canUse(selected)) {
 					//转化成功打出：执行附加效果，累加使用次数
-					activeMode->addition(game, *this);
-					activeMode->incrementCount();
+					mode.addition(game, *this);
+					mode.incrementCount();
 					network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);  //清提示
 					game.clearOperatingPlayer();
 					return hand->getSelectedIndex();
 				}
 				else {
 					selected = original;  //还原
-					std::cout << "<" << activeMode->getName() << "> 转化后的牌不符合出牌规则" << std::endl;
+					std::cout << "<" << mode.getName() << "> 转化后的牌不符合出牌规则" << std::endl;
 				}
 			}
 			else {
 				//玩家在transform交互中取消
 				selected = original;
-				std::cout << "<" << activeMode->getName() << "> 玩家取消转化" << std::endl;
+				std::cout << "<" << mode.getName() << "> 玩家取消转化" << std::endl;
 			}
 		}
 		else {
-			std::cout << "<" << activeMode->getName() << "> 选中的牌不能转化" << std::endl;
+			std::cout << "<" << mode.getName() << "> 选中的牌不能转化" << std::endl;
 		}
 	}
 	else if (condition(hand->getSelectedCard())) {
