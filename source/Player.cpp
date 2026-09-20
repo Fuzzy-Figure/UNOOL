@@ -749,8 +749,8 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 	showCard(myCard);
 	target.showCard(tgtCard);
 
-	int myVal = myCard.value();
-	int tgtVal = tgtCard.value();
+	const std::size_t myVal = myCard.value();
+	const std::size_t tgtVal = tgtCard.value();
 	std::cout << "<拼点> " << characterName() << "(" << myVal << ") vs "
 		<< target.characterName() << "(" << tgtVal << ")，";
 

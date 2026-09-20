@@ -156,18 +156,18 @@ public:
 
 	//无子技能
 	PassiveSkill(const std::string& name, const std::string& description,
-		   const limit_t& limit, bool forced,
-		   const TriggerPlayer& triggerPlayer,
-		   const TriggerTime& triggerTime);
+				 const limit_t& limit, bool forced,
+				 const TriggerPlayer& triggerPlayer,
+				 const TriggerTime& triggerTime);
 
 	//有子技能（子技能可为任意 Skill 派生类型）
 	template<typename... SubSkills>
 		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
 	PassiveSkill(const std::string& _name, const std::string& _description,
-		   const limit_t& _limit, bool _forced,
-		   const TriggerPlayer& _triggerPlayer,
-		   const TriggerTime& _triggerTime,
-		   SubSkills&&... _subSkills)
+				 const limit_t& _limit, bool _forced,
+				 const TriggerPlayer& _triggerPlayer,
+				 const TriggerTime& _triggerTime,
+				 SubSkills&&... _subSkills)
 		: PassiveSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
@@ -195,13 +195,13 @@ public:
 	};
 
 	ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
-		   const limit_t& _phaseLimit, TriggerTime _triggerTime);
+				const limit_t& _phaseLimit, TriggerTime _triggerTime);
 
 	//有子技能（子技能可为任意 Skill 派生类型）
 	template<typename... SubSkills>
 		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
 	ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
-		   const limit_t& _phaseLimit, TriggerTime _triggerTime, SubSkills&&... _subSkills)
+				const limit_t& _phaseLimit, TriggerTime _triggerTime, SubSkills&&... _subSkills)
 		: ActiveSkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
@@ -273,15 +273,16 @@ protected:
 };
 
 // CRTP 基类
-template<class Derived> class PassiveSkillImpl : public PassiveSkill {
+template<class Derived>
+class PassiveSkillImpl : public PassiveSkill {
 public:
-	static std::unique_ptr<PassiveSkill> make();
+	static std::unique_ptr<PassiveSkill> make(){
+	return std::make_unique<Derived>();
+}
 protected:
 	using PassiveSkill::PassiveSkill;
 };
-template<class Derived> std::unique_ptr<PassiveSkill> PassiveSkillImpl<Derived>::make() {
-	return std::make_unique<Derived>();
-}
+//template<class Derived> std::unique_ptr<PassiveSkill> PassiveSkillImpl<Derived>::make() 
 
 //即时型 CRTP 层：只提供 make()
 template<class Derived>

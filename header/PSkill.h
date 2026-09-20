@@ -674,9 +674,9 @@ public:
 
 class 互质 : public PassiveSkillImpl<互质> {
 	// 判断两个整数是否互质
-	static bool areCoprime(const int a, const int b);
+	static bool areCoprime(const std::size_t a, const std::size_t b);
 	// 判断 vector 中的所有整数是否两两互质
-	static bool isPairwiseCoprime(const std::vector<int>& nums);
+	static bool isPairwiseCoprime(const std::vector<std::size_t>& nums);
 public:
 	互质() : PassiveSkillImpl<互质>(
 		"互质",
