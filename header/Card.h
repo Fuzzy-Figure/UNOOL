@@ -86,6 +86,10 @@ public:
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
 
+	bool sameColorAs(const Card& other) const;
+	bool sameNameAs(const Card& other) const;
+	bool sameTypeAs(const Card& other) const;
+
 	template<typename... Colors> requires (std::same_as<Colors, Color> && ...)
 		bool is(const Colors... colors) const {
 		return ((color == colors) || ...);

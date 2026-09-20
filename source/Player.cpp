@@ -123,10 +123,9 @@ std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 
 bool Player::canUse(const Card& card) {
 	if (game.getCurrentColor() == Card::Color::no) return true;
-	if (card.getColor() == game.getCurrentColor()
-		|| card.getName() == game.getCurrentName()
-		|| card.getName() == Card::Name::wild_pal
-		|| card.getName() == Card::Name::wild_draw4) {
+	if (card.is(game.getCurrentColor())
+		|| card.is(game.getCurrentName())
+		|| card.isWild()) {
 		return true;
 	}
 	return false;

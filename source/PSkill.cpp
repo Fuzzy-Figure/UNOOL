@@ -765,7 +765,7 @@ bool 淘汰::filter(const Trigger& trigger) const {
 	if (card.isNumber()) {
 		int half = static_cast<int>(unool::math::floor(card.value() / 2.0));
 		return trigger.getCarrier().handInclude([&card, &half](const Card& c) {
-			return c.value() <= half && c.getColor() == card.getColor() && c.isNumber();
+			return c.value() <= half && c.sameColorAs(card) && c.isNumber();
 		});
 	}
 	else return card.isAction();
@@ -778,7 +778,7 @@ bool 淘汰::content(Trigger& trigger) {
 		carrier.chooseToDiscard(
 			L"弃置一张点数 <= " + std::to_wstring(half) + L"的" +
 			Card::to_wstring(card.getColor()) + L"色数字牌", 1, true, [&card, &half](const Card& c) {
-			return c.value() <= half && c.getColor() == card.getColor() && c.isNumber();
+			return c.value() <= half && c.sameColorAs(card) && c.isNumber();
 		});
 	}
 	else if (card.isAction()) {
@@ -1224,7 +1224,7 @@ bool 迷烟::content(Trigger& trigger) {
 	std::vector discard = target.chooseToDiscard(
 		L"[迷烟]\n弃置一张" + colorStr + L"色手牌或万能牌，\n或取消并摸一张牌", 1, false,
 		[&card](const Card& c) {
-		return c.getColor() == card.getColor() || c.isWild();
+		return c.sameColorAs(card) || c.isWild();
 	});
 	if (discard.size() == 0) { //没弃牌，摸一张
 		target.draw(1, Player::DrawReason::skill);
@@ -1500,7 +1500,7 @@ bool 清洗::content(Trigger& trigger) {
 	//收集该颜色牌的下标
 	std::vector<std::size_t> indices;
 	for (std::size_t i = 0; i < hand.count(); ++i) {
-		if (hand[i].getColor() == target) indices.push_back(i);
+		if (hand[i].is(target)) indices.push_back(i);
 	}
 	std::ranges::sort(indices, std::greater{});
 	for (std::size_t idx : indices) {
@@ -1544,7 +1544,7 @@ bool 落水::content(Trigger& trigger) {
 		//在牌堆中搜索此颜色的牌
 		std::vector<std::size_t> indices;
 		for (std::size_t i = 0; i < pile.count(); ++i) {
-			if (pile[i].getColor() == targetColor) indices.push_back(i);
+			if (pile[i].is(targetColor)) indices.push_back(i);
 		}
 		if (indices.empty()) continue;
 		std::size_t pick = unool::random::randomSize_t(0, indices.size() - 1);

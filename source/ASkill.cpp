@@ -477,7 +477,7 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	std::optional<std::size_t> matchIdx;
 	for (std::size_t i = 0; i < pile.count(); ++i) {
 		const Card& c = pile[i];
-		if (c.getColor() == targetColor && c.getName() == targetName) {
+		if (c.is(targetColor) && c.getName() == targetName) {
 			matchIdx = i;  //记录最后一个匹配的索引
 		}
 	}

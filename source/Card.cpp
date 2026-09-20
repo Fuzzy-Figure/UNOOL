@@ -194,6 +194,15 @@ Card::Type Card::getType() const {
 Card::ColorName Card::getColorName() const {
 	return std::make_pair(color, name);
 }
+bool Card::sameColorAs(const Card& other) const {
+	return getColor() == other.getColor();
+}
+bool Card::sameNameAs(const Card& other) const {
+	return getName() == other.getName();
+}
+bool Card::sameTypeAs(const Card& other) const {
+	return getType() == other.getType();
+}
 bool Card::isNumber() const {
 	return is_number(name);
 }
