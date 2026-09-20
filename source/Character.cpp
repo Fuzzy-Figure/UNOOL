@@ -354,12 +354,12 @@ opt_ref<Skill> Character::findSkill(const std::string& skillName) {
 }
 void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
 									PassiveSkill::Trigger& trigger) const {
-	//先收集要发动的技能引用，避免content中修改pSkills导致迭代器失效
+	//先收集要发动的技能引用，避免content中修改passiveSkills导致迭代器失效
 	std::vector<ref<PassiveSkill>> toLaunch;
-	for (const auto& pSkill : passiveSkills) {
-		if (pSkill->matchTrigger(currentTriggerTime, trigger))
-			toLaunch.push_back(*pSkill);
-		for (auto& sub : pSkill->subSkills | std::views::filter([](const std::unique_ptr<Skill>& sub) {
+	for (const auto& ps : passiveSkills) {
+		if (ps->matchTrigger(currentTriggerTime, trigger))
+			toLaunch.push_back(*ps);
+		for (auto& sub : ps->subSkills | std::views::filter([](const std::unique_ptr<Skill>& sub) {
 			return sub->isPassive();
 		}) | std::views::transform([](const std::unique_ptr<Skill>& sub) -> PassiveSkill& {
 			return sub->toPassive();
