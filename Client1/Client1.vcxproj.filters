@@ -60,10 +60,13 @@
     <ClCompile Include="..\source\AccountProtocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\PSkill.cpp">
+    <ClCompile Include="..\source\TransformSkill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\ASkill.cpp">
+    <ClCompile Include="..\source\PassiveSkill.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\InstantSkill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -102,6 +105,21 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\header\AccountProtocol.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\GameLogic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\InstantSkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\PassiveSkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Skill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\TransformSkill.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

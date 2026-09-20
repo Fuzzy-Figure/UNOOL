@@ -1,6 +1,7 @@
 #include "../header/Character.h"
-#include "../header/PSkill.h"
-#include "../header/ASkill.h"
+#include "../header/PassiveSkill.h"
+#include "../header/InstantSkill.h"
+#include "../header/TransformSkill.h"
 #include <filesystem>
 #include <algorithm>
 #include <stdexcept>

@@ -1,10 +1,10 @@
-#include "../header/PSkill.h"
-#include "../header/ASkill.h"
+#include "../header/PassiveSkill.h"
+#include "../header/InstantSkill.h"
+#include "../header/TransformSkill.h"
 #include "../header/GameLogic.h"
 #include <algorithm>
 #include <numeric>
 #include <optional>
-#include <random>
 
 // ==================== 技能：粪怒 ====================
 bool 粪怒::filter(const Trigger& trigger) const {
@@ -2481,7 +2481,7 @@ bool 弹暴::content(Trigger& trigger) {
 	auto sp = carrier.findSkill("手枪");
 	if (!sp.has_value()) return false;
 	手枪& handgun = static_cast<手枪&>(sp.value().get());
-
+	
 	//循环 X 次：选角色 -> 造成伤害（取消则继续循环）
 	for (std::size_t i = 0; i < X; ++i) {
 		auto targetOpt = carrier.chooseOtherPlayer(
