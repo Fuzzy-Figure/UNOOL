@@ -12,7 +12,7 @@ bool 粪怒::filter(const Trigger& trigger) const {
 }
 bool 粪怒::content(Trigger& trigger) {
 	trigger.getPlayer().draw(
-		std::min(trigger.getCarrier().handCount(), 5ull),
+		std::min(trigger.getCarrier().handCount(), 5uz),
 		Player::DrawReason::skill
 	);
 	return true;
