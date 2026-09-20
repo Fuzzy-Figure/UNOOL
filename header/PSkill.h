@@ -1097,7 +1097,6 @@ public:
 };
 
 
-//困界：显示壳，仅展示描述，永不触发（TriggerTime::never）
 class 困界 : public PassiveSkillImpl<困界> {
 public:
 	困界() : PassiveSkillImpl<困界>(

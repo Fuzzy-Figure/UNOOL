@@ -13,13 +13,25 @@ void Skill::reset() {
 	count = 0;
 	for (auto& sub : subSkills) sub->reset();
 }
-PassiveSkill& Skill::toPassiveSkill() {
+bool Skill::isPassive() const {
+	return getType() == Type::passive;
+}
+bool Skill::isInstant() const {
+	return getType() == Type::instant;
+}
+bool Skill::isTransform() const {
+	return getType() == Type::transform;
+}
+PassiveSkill& Skill::toPassive() {
+	if (!isPassive()) throw std::runtime_error("不能将非Passive技能转化为PassiveSkill");
 	return static_cast<PassiveSkill&>(*this);
 }
-InstantSkill& Skill::toInstantSkill() {
+InstantSkill& Skill::toInstant() {
+	if (!isInstant()) throw std::runtime_error("不能将非Instant技能转化为InstantSkill");
 	return static_cast<InstantSkill&>(*this);
 }
-TransformSkill& Skill::toTransformSkill() {
+TransformSkill& Skill::toTransform() {
+	if (!isTransform()) throw std::runtime_error("不能将非Transform技能转化为TransformSkill");
 	return static_cast<TransformSkill&>(*this);
 }
 
@@ -28,9 +40,6 @@ void Skill::resetPhaseCount() {
 	for (auto& sub : subSkills) sub->resetPhaseCount();
 }
 
-bool Skill::is(const Type t) const {
-	return getType() == t;
-}
 
 
 

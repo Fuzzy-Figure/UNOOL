@@ -50,10 +50,12 @@ public:
 
 	//技能类型：调用前用 getType 判断，再调用对应的 to*() 转换
 	virtual Type getType() const = 0;
-	bool is(const Type t) const;
-	PassiveSkill& toPassiveSkill();
-	InstantSkill& toInstantSkill();
-	TransformSkill& toTransformSkill();
+	bool isPassive() const;
+	bool isInstant() const;
+	bool isTransform() const;
+	PassiveSkill& toPassive();
+	InstantSkill& toInstant();
+	TransformSkill& toTransform();
 	template<class SpecificSkill>
 	SpecificSkill& to() {
 		return static_cast<SpecificSkill&>(*this);
