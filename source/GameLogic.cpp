@@ -262,7 +262,6 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	players[playerId]->chooseSkinAndSet(charName);
-	players[playerId]->markCharInfoDirty();
 	broadcastState();
 }
 
@@ -285,7 +284,6 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 
 	//组合
 	players[playerId]->setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
-	players[playerId]->markCharInfoDirty();
 	broadcastState();
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {

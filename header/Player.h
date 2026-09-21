@@ -93,11 +93,11 @@ public:
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
 	void clearMark(const std::string& m) { character->clearMark(m); }
 	void clearAllMarks() { character->clearAllMarks(); }
-	void addSkill(std::unique_ptr<InstantSkill>   skill) { character->addSkill(std::move(skill)); }
-	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); }
-	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); }
-	std::size_t removeSkill(const std::string& name) { return character->removeSkill(name); }
-	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }
+	void addSkill(std::unique_ptr<InstantSkill>   skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	std::size_t removeSkill(const std::string& name) { const auto n = character->removeSkill(name); if (n) markCharInfoDirty(); return n; }
+	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); markCharInfoDirty(); }
 #pragma endregion
 
 #pragma region 手牌查询 - 委托到 Hand
