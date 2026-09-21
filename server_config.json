@@ -1,6 +1,6 @@
 {
   "banCount": 2,
-  //"characters": [ "新陆逊", "白板" ],
+  "characters": [ "科斯莫", "白板" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
   "mode": "normal",

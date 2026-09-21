@@ -45,7 +45,7 @@ private:
 						opt_ref<TransformSkill>& activeMode);
 	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
 	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
-		const opt_ref<TransformSkill>& activeMode);
+											 const opt_ref<TransformSkill>& activeMode);
 	//数字键扫描码转 0-9，非数字键返回 nullopt
 	static std::optional<std::size_t> digitFromScancode(sf::Keyboard::Scancode input);
 
@@ -66,6 +66,8 @@ public:
 	const std::vector<std::string>& getSkins() const { return character->getSkins(); }
 	bool isCombined() const { return character->isCombined(); }
 	std::string skillsName() const { return character->skillsName(); }
+	template<class SpetificSkill>
+	SpetificSkill& getSkill(const std::string& skillName) { return character->getSkill<SpetificSkill>(skillName); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	Character::Level characterLevel() const { return character->getLevel(); }
 	std::vector<Character::Level> getLevels() const { return character->getLevels(); }
@@ -157,7 +159,7 @@ public:
 	Player& prev() const;
 #pragma endregion
 #pragma region 初始化
-	std::string chooseSkin(const std::string& charName); 
+	std::string chooseSkin(const std::string& charName);
 	void chooseSkinAndSet(const std::string& charName);
 #pragma endregion
 
@@ -170,9 +172,9 @@ public:
 													Card::DiscardReason reason = Card::DiscardReason::discard);
 	//弃置num张符合条件的牌（reason固定为discard）
 	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
-										  std::size_t num, const bool forced,
-										  const std::function<bool(const Card&)>& condition
-										  = unool::alwaysTrue);
+										   std::size_t num, const bool forced,
+										   const std::function<bool(const Card&)>& condition
+										   = unool::alwaysTrue);
 	struct RecastResult {
 		std::vector<ref<Card>> discarded;
 		std::vector<ref<Card>> drawn;

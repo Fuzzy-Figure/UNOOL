@@ -2329,7 +2329,7 @@ bool 易主::content(Trigger& trigger) {
 	//渡荆可发动次数+1
 	if (auto sp = carrier.findSkill("渡荆"); sp.has_value()) {
 		auto& dj = sp.value().get();
-		dj.setLimit(dj.getLimit().value() + 1);
+		dj.increaseLimit(1);
 		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="
 			<< dj.getLimit().value() << std::endl;
 	}
@@ -2481,7 +2481,7 @@ bool 弹暴::content(Trigger& trigger) {
 	auto sp = carrier.findSkill("手枪");
 	if (!sp.has_value()) return false;
 	手枪& handgun = static_cast<手枪&>(sp.value().get());
-	
+
 	//循环 X 次：选角色 -> 造成伤害（取消则继续循环）
 	for (std::size_t i = 0; i < X; ++i) {
 		auto targetOpt = carrier.chooseOtherPlayer(
@@ -2515,25 +2515,17 @@ bool 星轨::content(Trigger& trigger) {
 	Card& c1 = carrier.judge();
 	Card& c2 = carrier.judge();
 	Card& c3 = carrier.judge();
+	const std::wstring judgeResultStr = c1.toWString() + L"，" + c2.toWString() + L"，" + c3.toWString();
 
-	//类型：0=数字，1=功能，2=万能
-	auto getType = [](const Card& c) -> int {
-		if (c.isWild()) return 2;
-		if (c.isAction()) return 1;
-		return 0;
-	};
-
-	const int t1 = getType(c1);
-	if (getType(c2) == t1 && getType(c3) == t1) {
+	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
-		auto sp = carrier.findSkill("引力");
-		if (sp.has_value()) {
-			auto& gravity = sp.value().get();
-			gravity.setLimit(gravity.getLimit().value_or(0) + 1);
-			std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
-		}
+		carrier.getSkill<引力>("引力").increaseLimit(1);
+		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n获得一次【引力】使用次数！");
+		std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
+
 	}
 	else {
+		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n很遗憾，未获得【引力】使用次数");
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定类型不同" << std::endl;
 	}
 

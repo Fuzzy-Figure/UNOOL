@@ -201,9 +201,10 @@ private:
 public:
 	引力() : InstantSkillImpl<引力>(
 		"引力",
-		"每局限0次，出牌阶段，你可以选择一名角色，本轮数字牌进入弃牌堆后，该角色获得之。",
-		0, unlimited,
-		TriggerTime::phase_use
+		"每局限{limit}次（剩余{remaining}次），每回合限1次，出牌阶段，你可以选择一名角色，本轮数字牌进入弃牌堆后，该角色获得之。",
+		0, 1,
+		TriggerTime::phase_use,
+		引力_清除目标::make()
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;
 	void reset() override;

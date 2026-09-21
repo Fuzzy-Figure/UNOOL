@@ -31,12 +31,13 @@ public:
 
 	std::string getName() const { return name; }
 	std::wstring getNameW() const { return unool::string::to_utf16(name); }
-	std::string getInfo() const { return info; }
-	std::wstring getInfoW() const { return unool::string::to_utf16(info); }
+	std::string getInfo() const { return formatInfo(); }
+	std::wstring getInfoW() const { return unool::string::to_utf16(formatInfo()); }
 	std::size_t getCount() const { return count; }
 	void incrementCount() { ++count; }
 	limit_t getLimit() const { return limit; }
 	void setLimit(const limit_t& v) { limit = v; }
+	void increaseLimit(const std::size_t num) { if (limit != unlimited) limit.value() += num; }
 
 	enum class Type { passive, instant, transform };
 
@@ -63,6 +64,10 @@ public:
 
 	//子技能：任意类型的技能均可拥有任意类型的子技能
 	std::vector<std::unique_ptr<Skill>> subSkills;
+
+private:
+	//解析 info 中的占位符（{limit}/{remaining}/{count}，{{ 转义为 {）
+	std::string formatInfo() const;
 };
 
 class PassiveSkill : public Skill {
@@ -276,9 +281,9 @@ protected:
 template<class Derived>
 class PassiveSkillImpl : public PassiveSkill {
 public:
-	static std::unique_ptr<PassiveSkill> make(){
-	return std::make_unique<Derived>();
-}
+	static std::unique_ptr<PassiveSkill> make() {
+		return std::make_unique<Derived>();
+	}
 protected:
 	using PassiveSkill::PassiveSkill;
 };

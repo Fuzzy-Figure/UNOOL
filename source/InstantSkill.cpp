@@ -231,7 +231,7 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 			carrier.chooseToDiscard(L"【炫技】弃置两张牌", 2, true);
 			if (auto sp = carrier.findSkill("加速"); sp.has_value()) {
 				auto& acc = sp.value().get();
-				acc.setLimit(acc.getLimit().value() + 1);
+				acc.increaseLimit(1);
 				std::cout << "<技能> " << carrier.characterName() << "的【加速】可发动次数+1，当前="
 					<< acc.getLimit().value() << std::endl;
 			}
@@ -293,7 +293,7 @@ bool 挥金::content(GameLogic& game, Player& carrier) {
 
 	//选黄色牌（类型未用过）
 	auto cardOpt = carrier.chooseToGive(L"【挥金】交一张黄色牌", target, false,
-		[this](const Card& c) { return c.is(Card::Color::yellow) && !usedTypes.contains(c.getType()); });
+										[this](const Card& c) { return c.is(Card::Color::yellow) && !usedTypes.contains(c.getType()); });
 	if (!cardOpt) return false;
 
 	//记录已用类型

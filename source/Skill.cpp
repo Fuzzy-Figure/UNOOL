@@ -9,6 +9,51 @@
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)
 	:name(_name), info(_info), limit(_limit) {}
 
+std::string Skill::formatInfo() const {
+	std::string result;
+	result.reserve(info.size());
+	for (std::size_t i = 0; i < info.size(); ) {
+		const char ch = info[i];
+		if (ch == '{') {
+			//转义：{{ → {
+			if (i + 1 < info.size() && info[i + 1] == '{') {
+				result += '{';
+				i += 2;
+				continue;
+			}
+			//占位符：找到对应的 }
+			const std::size_t end = info.find('}', i + 1);
+			if (end == std::string::npos) {
+				//没有闭合，原样输出剩余
+				result += info.substr(i);
+				break;
+			}
+			const std::string key = info.substr(i + 1, end - i - 1);
+			if (key == "limit") {
+				result += limit.has_value() ? std::to_string(limit.value()) : "无限";
+			}
+			else if (key == "remaining") {
+				result += limit.has_value()
+					? std::to_string(limit.value() - std::min(count, limit.value()))
+					: "无限";
+			}
+			else if (key == "count") {
+				result += std::to_string(count);
+			}
+			else {
+				//未知占位符，原样输出
+				result += info.substr(i, end - i + 1);
+			}
+			i = end + 1;
+		}
+		else {
+			result += ch;
+			++i;
+		}
+	}
+	return result;
+}
+
 void Skill::reset() {
 	count = 0;
 	for (auto& sub : subSkills) sub->reset();

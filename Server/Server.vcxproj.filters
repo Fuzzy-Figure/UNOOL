@@ -18,9 +18,6 @@
     <ClInclude Include="..\header\Card.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\Character.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\Effect.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -55,6 +52,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\header\TransformSkill.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Character.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

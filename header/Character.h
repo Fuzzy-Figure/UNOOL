@@ -62,6 +62,13 @@ public:
 	Level getMaxLevel() const;
 	Level getMinLevel() const;
 	std::string skillsName() const;
+	template<class SpetificSkill>
+	SpetificSkill& getSkill(const std::string& skillName) {
+		if (opt_ref<Skill> skill = findSkill(skillName); skill.has_value()) {
+			return skill.value().get().to<SpetificSkill>();
+		}
+		else throw std::runtime_error("没有找到技能：" + skillName);
+	}
 	std::string getSkillsText() const;
 	std::string getImagePath() const;
 	//组合角色返回多张图路径，单角色返回单元素

@@ -153,9 +153,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\header\AccountProtocol.h" />
+    <ClInclude Include="..\header\Character.h" />
     <ClInclude Include="..\header\InstantSkill.h" />
     <ClInclude Include="..\header\Card.h" />
-    <ClInclude Include="..\header\Character.h" />
     <ClInclude Include="..\header\Effect.h" />
     <ClInclude Include="..\header\GameLogic.h" />
     <ClInclude Include="..\header\GameState.h" />
