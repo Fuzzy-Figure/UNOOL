@@ -151,7 +151,6 @@ void GameLogic::initPlayers() {
 		initPlayersNormal(firstSeatId, secondSeatId);
 	}
 
-	charInfoDirty = { true, true };
 	resetGame();
 }
 
@@ -263,7 +262,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	players[playerId]->chooseSkinAndSet(charName);
-	markCharInfoDirty(*players[playerId]);
+	players[playerId]->markCharInfoDirty();
 	broadcastState();
 }
 
@@ -286,7 +285,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 
 	//组合
 	players[playerId]->setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
-	markCharInfoDirty(*players[playerId]);
+	players[playerId]->markCharInfoDirty();
 	broadcastState();
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
@@ -402,7 +401,7 @@ void GameLogic::clearOperatingPlayer() {
 
 void GameLogic::flushCharInfo() {
 	for (std::size_t i = 0; i < players.size(); ++i) {
-		if (i < 2 && charInfoDirty[i]) {
+		if (i < 2 && players[i]->isCharInfoDirty()) {
 			CharInfo info;
 			info.playerIndex = i;
 			//组合角色显示"name1+name2(L1+L2)"，单角色保持"name(L)"
@@ -419,13 +418,9 @@ void GameLogic::flushCharInfo() {
 				+ "技能：\n"
 				+ players[i]->getSkillsText();
 			network.sendCharInfo(info);
-			charInfoDirty[i] = false;
+			players[i]->clearCharInfoDirty();
 		}
 	}
-}
-
-void GameLogic::markCharInfoDirty(const Player& player) {
-	if (const std::size_t playerId = player.getId(); playerId < 2) charInfoDirty[playerId] = true;
 }
 
 Player& GameLogic::getPlayerById(const std::size_t id) {

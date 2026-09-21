@@ -24,7 +24,6 @@ private:
 	Card::Name currentName = Card::Name::no;
 	Direction direction = Direction::increase;
 	ServerNetwork& network;
-	std::array<bool, 2> charInfoDirty{ true, true };
 	std::size_t matchCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 #pragma endregion
@@ -67,7 +66,6 @@ public:
 	bool runTurn();
 	void broadcastState();
 	void flushCharInfo();
-	void markCharInfoDirty(const Player& player);
 	std::size_t getMatchCount() const { return matchCount; }
 	void clearMatchCount() { matchCount = 0; }
 	//设置/清除当前正在操作的玩家，并广播状态

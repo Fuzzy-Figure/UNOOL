@@ -443,7 +443,7 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 		tgt.addSkill(引力_目标::make());
 	}
 	target = tgt;
-	game.markCharInfoDirty(tgt);
+	tgt.markCharInfoDirty();
 
 	std::cout << "<技能> " << carrier.characterName() << "发动引力，本轮数字牌进弃牌堆后"
 		<< tgt.characterName() << "获得之" << std::endl;
@@ -487,7 +487,7 @@ bool 甘草::content(GameLogic& game, Player& carrier) {
 	auto choice = carrier.ask(L"【甘草】弃置一张非数字牌？", options, false);
 	if (choice == 0) return true;  //不弃置
 	target.discardByIndex(indices[choice - 1]);
-	game.markCharInfoDirty(target);
+	target.markCharInfoDirty();
 	game.broadcastState();
 	return true;
 }
@@ -524,8 +524,8 @@ bool 跳糖::content(GameLogic& game, Player& carrier) {
 	}
 	//平局无胜者，都不获得
 
-	game.markCharInfoDirty(carrier);
-	game.markCharInfoDirty(target);
+	carrier.markCharInfoDirty();
+	target.markCharInfoDirty();
 	game.broadcastState();
 	return true;
 }
