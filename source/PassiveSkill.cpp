@@ -2524,7 +2524,7 @@ bool 星轨::content(Trigger& trigger) {
 
 	}
 	else {
-		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n很遗憾，未获得【引力】使用次数");
+		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n残念だ，未获得【引力】使用次数");
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定类型不同" << std::endl;
 	}
 
