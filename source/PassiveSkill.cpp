@@ -2515,7 +2515,7 @@ bool 星轨::content(Trigger& trigger) {
 	Card& c3 = carrier.judge();
 	const std::wstring judgeResultStr = c1.toWString() + L"，" + c2.toWString() + L"，" + c3.toWString();
 
-	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
+	if (true) { // c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
 		carrier.getSkill<引力>("引力").increaseLimit(1);
 		carrier.markCharInfoDirty();

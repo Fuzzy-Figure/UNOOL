@@ -242,9 +242,13 @@ public:
 	bool tryActivate(GameLogic& game, Player& player) {
 		if (!canUse()) return false;
 		if (!filter(game, player)) return false;
-		if (!content(game, player)) return false;
 		++count;
 		++phaseCount;
+		if (!content(game, player)) {
+			--count;
+			--phaseCount;
+			return false;
+		}
 		return true;
 	}
 	Type getType() const override { return Type::instant; }

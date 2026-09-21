@@ -58,6 +58,7 @@ void Skill::reset() {
 	count = 0;
 	for (auto& sub : subSkills) sub->reset();
 }
+
 bool Skill::isPassive() const {
 	return getType() == Type::passive;
 }
