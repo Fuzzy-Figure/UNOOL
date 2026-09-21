@@ -129,7 +129,6 @@ void PassiveSkill::launch(Trigger& trigger) {
 	}
 	//发动技能
 	count += 1;
-	trigger.setCount(count);
 
 	if (!content(trigger)) {
 		count -= 1;

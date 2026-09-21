@@ -433,6 +433,9 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：引力 ====================
 bool 引力::content(GameLogic& game, Player& carrier) {
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+
 	auto targetOpt = carrier.chooseOtherPlayer(
 		L"【引力】选择一名角色，本轮数字牌进入弃牌堆后该角色获得之", false);
 	if (!targetOpt.has_value()) return false;  //取消，不消耗次数

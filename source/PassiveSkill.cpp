@@ -206,7 +206,7 @@ bool 棍击::content(Trigger& trigger) {
 	if (!targetOpt.has_value()) return false;
 
 	Player& target = targetOpt.value();
-	std::size_t damage = unool::math::pow(2, trigger.getCount());
+	std::size_t damage = unool::math::pow(2, getCount());
 	target.damage(damage, trigger.getCarrier());
 	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName()
 		<< "发动棍击，造成" << damage << "点伤害！" << std::endl;
@@ -252,7 +252,7 @@ bool 雷剑::content(Trigger& trigger) {
 // ==================== 技能：买棋 ====================
 bool 买棋::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
-	carrier.damage(10 * (trigger.getCount() - 1), trigger.getCarrier());
+	carrier.damage(10 * (getCount() - 1), trigger.getCarrier());
 	if (unool::random::probability(0.5)) { //万能
 		carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 	}
@@ -466,7 +466,7 @@ bool 生存::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	GameLogic& game = trigger.getGame();
 
-	std::size_t x = trigger.getCount();
+	std::size_t x = getCount();
 	if (x > 9) x = 9;
 	Card::Name targetName = static_cast<Card::Name>(static_cast<int>(Card::Name::number_0) + x);
 

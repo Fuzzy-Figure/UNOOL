@@ -128,7 +128,6 @@ public:
 		std::optional<std::vector<ref<Card>>> cards = std::nullopt;
 		opt_ref<Player> source = std::nullopt;
 		opt_ref<std::size_t> number = std::nullopt;
-		std::size_t count = 0;
 
 	public:
 		Trigger(GameLogic& _game, Player& _carrier,
@@ -153,9 +152,6 @@ public:
 		std::vector<ref<Card>> getCards() const { return cards.value(); }
 		Player& getSource() const { return source.value().get(); }
 		std::size_t& getNumber() const { return number.value().get(); }
-		std::size_t getCount() const { return count; }
-
-		void setCount(const std::size_t _count) { count = _count; }
 	};
 	using Factory = std::function<std::unique_ptr<PassiveSkill>()>;
 
