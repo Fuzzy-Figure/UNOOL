@@ -67,7 +67,7 @@ public:
 	bool runTurn();
 	void broadcastState();
 	void flushCharInfo();
-	void markCharInfoDirty(std::size_t playerId);
+	void markCharInfoDirty(const Player& player);
 	std::size_t getMatchCount() const { return matchCount; }
 	void clearMatchCount() { matchCount = 0; }
 	//设置/清除当前正在操作的玩家，并广播状态

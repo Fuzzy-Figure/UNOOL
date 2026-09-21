@@ -263,7 +263,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	players[playerId]->chooseSkinAndSet(charName);
-	markCharInfoDirty(playerId);
+	markCharInfoDirty(*players[playerId]);
 	broadcastState();
 }
 
@@ -286,7 +286,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 
 	//组合
 	players[playerId]->setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
-	markCharInfoDirty(playerId);
+	markCharInfoDirty(*players[playerId]);
 	broadcastState();
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
@@ -424,8 +424,8 @@ void GameLogic::flushCharInfo() {
 	}
 }
 
-void GameLogic::markCharInfoDirty(std::size_t playerId) {
-	if (playerId < 2) charInfoDirty[playerId] = true;
+void GameLogic::markCharInfoDirty(const Player& player) {
+	if (const std::size_t playerId = player.getId(); playerId < 2) charInfoDirty[playerId] = true;
 }
 
 Player& GameLogic::getPlayerById(const std::size_t id) {
@@ -454,17 +454,17 @@ void GameLogic::reverse() {
 }
 
 void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-							  opt_ref<Player> player,
-							  Card& card,
-							  opt_ref<Player> source,
-							  opt_ref<std::size_t> number) {
+									opt_ref<Player> player,
+									Card& card,
+									opt_ref<Player> source,
+									opt_ref<std::size_t> number) {
 	launchPassiveSkills(currentTriggerTime, player, std::vector<ref<Card>>{card}, source, number);
 }
 void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-							  opt_ref<Player> player,
-							  std::optional<std::vector<ref<Card>>> cards,
-							  opt_ref<Player> source,
-							  opt_ref<std::size_t> number) {
+									opt_ref<Player> player,
+									std::optional<std::vector<ref<Card>>> cards,
+									opt_ref<Player> source,
+									opt_ref<std::size_t> number) {
 	for (auto& carrier : players) {
 		PassiveSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
 		carrier->launchPassiveSkills(currentTriggerTime, trigger);

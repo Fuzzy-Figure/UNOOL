@@ -384,14 +384,14 @@ void Character::addSkill(std::unique_ptr<TransformSkill> skill) {
 	transformSkills.push_back(std::move(skill));
 }
 
-void Character::removeSkill(const std::string& name) {
-	std::erase_if(passiveSkills, [&name](const std::unique_ptr<PassiveSkill>& ps) {
+std::size_t Character::removeSkill(const std::string& name) {
+	return std::erase_if(passiveSkills, [&name](const std::unique_ptr<PassiveSkill>& ps) {
 		return ps->getName() == name;
-	});
-	std::erase_if(instantSkills, [&name](const std::unique_ptr<InstantSkill>& s) {
+	}) +
+		std::erase_if(instantSkills, [&name](const std::unique_ptr<InstantSkill>& s) {
 		return s->getName() == name;
-	});
-	std::erase_if(transformSkills, [&name](const std::unique_ptr<TransformSkill>& s) {
+	}) +
+		std::erase_if(transformSkills, [&name](const std::unique_ptr<TransformSkill>& s) {
 		return s->getName() == name;
 	});
 }

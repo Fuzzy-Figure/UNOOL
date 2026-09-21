@@ -95,7 +95,7 @@ public:
 	void addSkill(std::unique_ptr<PassiveSkill> skill);
 	void addSkill(std::unique_ptr<InstantSkill> skill);
 	void addSkill(std::unique_ptr<TransformSkill> skill);
-	void removeSkill(const std::string& name);
+	std::size_t removeSkill(const std::string& name);
 	void resetSkills();
 #pragma endregion
 

@@ -95,7 +95,7 @@ public:
 	void addSkill(std::unique_ptr<InstantSkill>   skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); }
 	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); }
-	void removeSkill(const std::string& name) { character->removeSkill(name); }
+	std::size_t removeSkill(const std::string& name) { return character->removeSkill(name); }
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); }
 #pragma endregion
 

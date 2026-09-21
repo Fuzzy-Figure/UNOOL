@@ -2209,7 +2209,7 @@ bool 走位::content(Trigger& trigger) {
 	if (X == 0) {
 		carrier.removeSkill("走位");
 		carrier.addSkill(芜湖::make());
-		game.markCharInfoDirty(carrier.getId());
+		game.markCharInfoDirty(carrier);
 		std::cout << "<技能> " << carrier.characterName() << "未输过局，失去【走位】并获得【芜湖】" << std::endl;
 		game.broadcastState();
 		return true;
@@ -2227,7 +2227,7 @@ bool 走位::content(Trigger& trigger) {
 	if (choice == 0 || choice == 1) {
 		carrier.removeSkill("走位");
 		carrier.addSkill(芜湖::make());
-		game.markCharInfoDirty(carrier.getId());
+		game.markCharInfoDirty(carrier);
 		std::cout << "<技能> " << carrier.characterName() << "未决议牌，失去【走位】并获得【芜湖】" << std::endl;
 		game.broadcastState();
 		return true;
@@ -2520,6 +2520,7 @@ bool 星轨::content(Trigger& trigger) {
 	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
 		carrier.getSkill<引力>("引力").increaseLimit(1);
+		game.markCharInfoDirty(carrier);
 		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n获得一次【引力】使用次数！");
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
 
@@ -2572,9 +2573,8 @@ bool 引力_清除目标::content(Trigger& trigger) {
 	//清除所有玩家身上的引力_目标
 	for (auto& p : game.getPlayers()) {
 		Player& player = p.get();
-		if (player.findSkill("引力_目标").has_value()) {
-			player.removeSkill("引力_目标");
-			game.markCharInfoDirty(player.getId());
+		if (player.removeSkill("引力_目标")) {
+			game.markCharInfoDirty(player);
 		}
 	}
 	game.broadcastState();
@@ -2614,7 +2614,7 @@ bool 铃铛::content(Trigger& trigger) {
 		for (const std::string& name : derivedNames) {
 			if (carrier.findSkill(name).has_value()) {
 				carrier.removeSkill(name);
-				game.markCharInfoDirty(carrier.getId());
+				game.markCharInfoDirty(carrier);
 			}
 		}
 
@@ -2626,7 +2626,7 @@ bool 铃铛::content(Trigger& trigger) {
 			case 3: carrier.addSkill(跳糖::make()); break;
 			case 4: carrier.addSkill(薄荷::make()); break;
 		}
-		game.markCharInfoDirty(carrier.getId());
+		game.markCharInfoDirty(carrier);
 	}
 	game.broadcastState();
 	return true;

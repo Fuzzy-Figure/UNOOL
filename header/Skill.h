@@ -22,13 +22,16 @@ class TransformSkill;
 class Skill {
 protected:
 	using limit_t = std::optional<std::size_t>;
+	inline static const limit_t unlimited = std::nullopt;
+
 	std::string name = "未知技能";
 	std::string info = "无";
 	limit_t limit; //每局使用限制次数，std::nullopt代表无次数限制
 	std::size_t count = 0; //使用次数
-public:
-	inline static const auto unlimited = std::nullopt;
 
+
+public:
+	
 	std::string getName() const { return name; }
 	std::wstring getNameW() const { return unool::string::to_utf16(name); }
 	std::string getInfo() const { return formatInfo(); }
