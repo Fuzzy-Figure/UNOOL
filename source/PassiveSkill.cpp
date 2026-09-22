@@ -2515,7 +2515,7 @@ bool 星轨::content(Trigger& trigger) {
 	Card& c3 = carrier.judge();
 	const std::wstring judgeResultStr = c1.toWString() + L"，" + c2.toWString() + L"，" + c3.toWString();
 
-	if (true) { // c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
+	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
 		carrier.getSkill<引力>("引力").increaseLimit(1);
 		carrier.markCharInfoDirty();
@@ -2667,5 +2667,32 @@ bool 健体::content(Trigger& trigger) {
 	carrier.recover(1);
 	std::cout << "<技能> " << carrier.characterName() << "健体回复1点体力" << std::endl;
 	trigger.getGame().broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：飞刃 ====================
+bool 飞刃::filter(const Trigger& trigger) const {
+	return trigger.getCard().isWild();
+}
+bool 飞刃::content(Trigger& trigger) {
+	Player& carrier = trigger.getCarrier();
+	auto targetOpt = carrier.chooseOtherPlayer(L"【飞刃】令一名其他角色获得一个\"毒\"标记", false);
+	if (!targetOpt.has_value()) return false;
+	targetOpt.value().get().addMark("毒");
+	std::cout << "<技能> " << carrier.characterName() << "飞刃令" << targetOpt.value().get().characterName() << "获得一个毒标记" << std::endl;
+	return true;
+}
+
+// ==================== 技能：淬毒 ====================
+bool 淬毒::filter(const Trigger& trigger) const {
+	return trigger.getPlayer().hasMark("毒");
+}
+bool 淬毒::content(Trigger& trigger) {
+	Player& player = trigger.getPlayer();
+	Player& carrier = trigger.getCarrier();
+	std::size_t dmg = player.getMarkCount("毒");
+	player.damage(dmg, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "淬毒令" << player.characterName() << "受到" << dmg << "点伤害" << std::endl;
 	return true;
 }

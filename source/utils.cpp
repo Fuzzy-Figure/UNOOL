@@ -6,7 +6,7 @@
 
 namespace unool {
 	json& getServerConfig() {
-		static json config = []() {
+		static json config = [] {
 			std::ifstream configFile("../server_config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 server_config.json");
@@ -25,7 +25,7 @@ namespace unool {
 	}
 
 	json& getClientConfig() {
-		static json config = []() {
+		static json config = [] {
 			std::ifstream configFile("../client_config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 client_config.json");

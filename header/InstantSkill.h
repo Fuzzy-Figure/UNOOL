@@ -246,3 +246,15 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//突袭：限定技，出牌阶段，你可令一名其他角色的"毒"标记数量翻倍
+class 突袭 : public InstantSkillImpl<突袭> {
+public:
+	突袭() : InstantSkillImpl<突袭>(
+		"突袭",
+		"限定技，出牌阶段，你可以令一名其他角色的\"毒\"标记数量翻倍。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

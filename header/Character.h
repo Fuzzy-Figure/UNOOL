@@ -119,6 +119,7 @@ public:
 
 #pragma region 标记
 	bool hasMark(const std::string& m) const { return marks.contains(m); }
+	std::size_t getMarkCount(const std::string& m) const { auto it = marks.find(m); return it != marks.end() ? it->second : 0; }
 	void addMark(const std::string& m, std::size_t count = 1) { marks[m] += count; }
 	void removeMark(const std::string& m, std::size_t count = 1);
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return marks; }
@@ -130,3 +131,5 @@ public:
 	static const std::unordered_map<std::string, Info> infos;
 #pragma endregion
 };
+
+constexpr auto operator<=>(const Character::Level a, const Character::Level b);

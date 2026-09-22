@@ -88,6 +88,7 @@ public:
 	void incrementWins() { character->incrementWins(); }
 	void incrementLosses() { character->incrementLosses(); }
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
+	std::size_t getMarkCount(const std::string& m) const { return character->getMarkCount(m); }
 	void addMark(const std::string& m, std::size_t count = 1) { character->addMark(m, count); }
 	void removeMark(const std::string& m, std::size_t count = 1) { character->removeMark(m, count); }
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }

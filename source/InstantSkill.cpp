@@ -540,3 +540,19 @@ bool 肘击::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+// ==================== 技能：突袭 ====================
+bool 突袭::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer(L"【突袭】令一名其他角色的\"毒\"标记数量翻倍", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+	if (!target.hasMark("毒")) {
+		carrier.hint(L"该角色没有\"毒\"标记");
+		return false;
+	}
+	std::size_t cnt = target.getMarkCount("毒");
+	target.addMark("毒", cnt);
+	std::cout << "<技能> " << carrier.characterName() << "突袭令" << target.characterName() << "的毒标记从" << cnt << "翻倍至" << cnt * 2 << std::endl;
+	game.broadcastState();
+	return true;
+}
+

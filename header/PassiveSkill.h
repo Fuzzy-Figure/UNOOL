@@ -1385,3 +1385,31 @@ public:
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
 };
+
+//飞刃：当你打出万能牌后，你可令一名其他角色获得一个"毒"标记
+class 飞刃 : public PassiveSkillImpl<飞刃> {
+public:
+	飞刃() : PassiveSkillImpl<飞刃>(
+		"飞刃",
+		"当你打出万能牌后，你可令一名其他角色获得一个\"毒\"标记。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
+
+//淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害
+class 淬毒 : public PassiveSkillImpl<淬毒> {
+public:
+	淬毒() : PassiveSkillImpl<淬毒>(
+		"淬毒",
+		"锁定技，有\"毒\"标记角色的回合结束时，其受到标记数量点伤害。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const Trigger& trigger) const override;
+	bool content(Trigger& trigger) override;
+};
