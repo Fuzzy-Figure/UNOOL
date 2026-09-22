@@ -399,24 +399,33 @@ void GameLogic::clearOperatingPlayer() {
 
 void GameLogic::flushCharInfo() {
 	for (std::size_t i = 0; i < players.size(); ++i) {
-		if (i < 2 && players[i]->isCharInfoDirty()) {
+		Player& player = *players[i];
+		if (i < 2 && player.isCharInfoDirty()) {
 			CharInfo info;
 			info.playerIndex = i;
-			//组合角色显示"name1+name2(L1+L2)"，单角色保持"name(L)"
+
+			//levelPart
 			std::string levelPart;
-			if (players[i]->isCombined()) {
-				auto levels = players[i]->getLevels();
+			if (player.isCombined()) {
+				auto levels = player.getLevels();
 				levelPart = Character::to_string(levels[0]) + "+" + Character::to_string(levels[1]);
 			}
 			else {
-				levelPart = Character::to_string(players[i]->characterLevel());
+				levelPart = Character::to_string(player.characterLevel());
 			}
-			info.fullText = players[i]->characterName() + "（"
-				+ levelPart + "）\n"
-				+ "技能：\n"
-				+ players[i]->getSkillsText();
+
+			//marksPart
+			std::string marksPart;
+			for (const auto& [name, count] : player.getMarks()) {
+				marksPart += name + "（"+std::to_string(count) + "个），";
+			}
+			//合并
+			info.fullText =
+				player.characterName() + "（" + levelPart + "）\n"
+				+ "标记：" + marksPart + "\n"
+				+ "技能：\n" + player.getSkillsText();
 			network.sendCharInfo(info);
-			players[i]->clearCharInfoDirty();
+			player.clearCharInfoDirty();
 		}
 	}
 }
