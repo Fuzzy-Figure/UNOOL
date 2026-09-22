@@ -183,13 +183,13 @@ bool 做题::content(Trigger& trigger) {
 	if (card.isNumber()) {
 		return carrier.chooseToDiscard(
 			L"弃置一张非数字牌", 1,
-			false, [](const Card& c)->bool { return !c.isNumber(); }
+			false, &Card::isNotNumber
 		).size() == 1;
 	}
 	else {
 		return carrier.chooseToDiscard(
 			L"弃置一张数字牌", 1,
-			false, [](const Card& c)->bool { return c.isNumber(); }
+			false, &Card::isNumber
 		).size() == 1;
 	}
 }
@@ -481,7 +481,7 @@ bool 生存::content(Trigger& trigger) {
 	});
 	if (opt.has_value()) {
 		std::cout << "<技能> " << carrier.characterName() << "发动生存，将一张手牌改为【"
-			<< target->toString() << "】" << std::endl;
+			<< *target << "】" << std::endl;
 	}
 	game.broadcastState();
 	return true;
@@ -517,7 +517,7 @@ bool 创造::content(Trigger& trigger) {
 
 	std::unique_ptr<Card> newCard = Card::make(targetColor, name);
 	std::cout << "<技能> " << carrier.characterName() << "发动创造，" <<
-		"获得一张【" << newCard->toString() << "】" << std::endl;
+		"获得一张【" << *newCard << "】" << std::endl;
 	carrier.gainCard(std::move(newCard));
 	usedColors.insert(targetColor);
 	trigger.getGame().broadcastState();
@@ -612,7 +612,7 @@ bool 好火::content(Trigger& trigger) {
 
 	usedPlayerIds.insert(target.getId());
 	std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
-		<< target.characterName() << "一张" << result.value().get().toString() << std::endl;
+		<< target.characterName() << "一张" << result.value().get() << std::endl;
 	return true;
 }
 
@@ -840,25 +840,29 @@ bool 追番::filter(const Trigger& trigger) const {
 	});
 }
 bool 追番::content(Trigger& trigger) {
+	GameLogic& game = trigger.getGame();
 	Player& carrier = trigger.getCarrier();
-	//选择一张点数≤5的数字牌
-	auto cardRef = carrier.chooseToOperate(
-		L"选择一张点数≤5的数字牌", false,
-		[](const Card& c) {
+
+	static auto lessEqual5Number = [](const Card& c) {
 		return c.isNumber() && c.value() <= 5;
-	},
-		[](Card&) {});
-	if (!cardRef.has_value()) return false; //取消发动
-	//自选+1/+2/+3
-	const std::size_t addChoice = carrier.ask(L"选择增加的点数：",
-											  { L"+1", L"+2", L"+3" }, false);
-	const int add = static_cast<int>(addChoice);
-	Card& card = cardRef->get();
-	card.setName(Card::numberCardsFrom0[card.value() + add]);
-	std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
-		<< card.toString() << "的点数+" << add << std::endl;
-	trigger.getGame().broadcastState();
-	return true;
+	};
+
+	//选择一张点数≤5的数字牌
+	return carrier.chooseToOperate(
+		L"选择一张点数≤5的数字牌", false, lessEqual5Number,
+		[&carrier, &game](Card& card) {
+		//自选+1/+2/+3
+		const std::size_t addChoice = carrier.ask(
+			L"选择增加的点数：",
+			{ L"+1", L"+2", L"+3" },
+			false
+		);
+		card.setName(Card::numberCardsFrom0[card.value() + addChoice]);
+		std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
+			<< card << "的点数+" << add << std::endl;
+		game.broadcastState();
+	}
+	).has_value();
 }
 
 // ==================== 技能：崩三 ====================
@@ -895,7 +899,7 @@ bool 望日::content(Trigger& trigger) {
 	Card& card = cardRef->get();
 	card.setName(Card::numberCardsFrom0[card.value() + 1]);
 	std::cout << "<技能> " << carrier.characterName() << "发动望日，将一张"
-		<< card.toString() << "的点数+1" << std::endl;
+		<< card << "的点数+1" << std::endl;
 	trigger.getGame().broadcastState();
 	return true;
 }
@@ -976,7 +980,7 @@ bool 朔日::content(Trigger& trigger) {
 			}
 		}
 		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
-			<< card.toString() << std::endl;
+			<< card << std::endl;
 	}
 	else {
 		//选择一张功能牌
@@ -991,7 +995,7 @@ bool 朔日::content(Trigger& trigger) {
 		card.setName(randomName);
 		card.setColor(Card::Color::yellow);
 		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
-			<< card.toString() << std::endl;
+			<< card << std::endl;
 	}
 
 	trigger.getGame().broadcastState();
@@ -1180,7 +1184,7 @@ bool 难题_变牌::content(Trigger& trigger) {
 	);
 	if (!cardRef.has_value()) return false;
 	std::cout << "<技能> " << carrier.characterName() << "发动难题，将一张牌变为"
-		<< cardRef->get().toString() << std::endl;
+		<< cardRef.value().get() << std::endl;
 	trigger.getGame().broadcastState();
 	return true;
 }
@@ -1941,7 +1945,7 @@ bool 治病::content(Trigger& trigger) {
 		case 1: //此牌无效
 			card.cancelEffect();
 			std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-				<< player.characterName() << "打出的" << card.toString() << "无效" << std::endl;
+				<< player.characterName() << "打出的" << card << "无效" << std::endl;
 			break;
 		case 2: //你弃置一张牌
 			carrier.chooseToDiscard(L"【治病】弃置一张牌", 1, true);
@@ -2286,7 +2290,7 @@ bool 白虎::content(Trigger& trigger) {
 	//新建一张牌给目标
 	auto card = Card::make(color, name);
 	std::cout << "<技能> " << caster.characterName() << "发动白虎，令" << target.characterName()
-		<< "获得" << card->toString() << std::endl;
+		<< "获得" << *card << std::endl;
 	target.gainCard(std::move(card));
 
 	triggeredPlayers.insert(target.getId());
@@ -2374,7 +2378,7 @@ bool 渡荆::content(Trigger& trigger) {
 	auto giveRandomDraw2 = [&game](Player& p) {
 		Card::Color color = unool::random::randomGet(Card::fourColors);
 		auto card = Card::make(color, Card::Name::action_draw2);
-		std::cout << "<技能> " << p.characterName() << "拼点未赢，从游戏外获得" << card->toString() << std::endl;
+		std::cout << "<技能> " << p.characterName() << "拼点未赢，从游戏外获得" << *card << std::endl;
 		p.gainCard(std::move(card));
 	};
 
@@ -2524,7 +2528,7 @@ bool 星轨::content(Trigger& trigger) {
 
 	}
 	else {
-		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n残念だ，未获得【引力】使用次数");
+		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n残念だ、未获得【引力】使用次数");
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定类型不同" << std::endl;
 	}
 

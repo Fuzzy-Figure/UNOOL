@@ -257,7 +257,7 @@ bool 调羹::content(GameLogic& game, Player& carrier) {
 
 	auto card = carrier.takeCardByIndex(*idxOpt);
 	carrier.showCard(*card);
-	std::cout << "<技能> " << carrier.characterName() << "展示" << card->toString() << std::endl;
+	std::cout << "<技能> " << carrier.characterName() << "展示" << *card << std::endl;
 
 	auto targetOpt = carrier.chooseOtherPlayer(L"【调羹】令一名角色获得此牌", true);
 	if (!targetOpt) return false;
@@ -299,7 +299,7 @@ bool 挥金::content(GameLogic& game, Player& carrier) {
 	//记录已用类型
 	usedTypes.insert(cardOpt->get().getType());
 	std::cout << "<技能> " << carrier.characterName() << "发动挥金，交出"
-		<< cardOpt->get().toString() << std::endl;
+		<< cardOpt.value().get() << std::endl;
 
 	game.broadcastState();
 	return true;
@@ -417,7 +417,7 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 		const Card& cardRef = *card;  //move 前绑定引用，move 后仍可访问
 		carrier.gainCard(std::move(card));
 		std::cout << "<技能> " << carrier.characterName() << "从牌堆获得"
-			<< cardRef.toString() << std::endl;
+			<< cardRef << std::endl;
 		game.broadcastState();
 		return true;
 	}
@@ -513,7 +513,7 @@ bool 跳糖::content(GameLogic& game, Player& carrier) {
 	auto giveDraw2 = [&](Player& p) {
 		auto card = Card::make(colorOpt.value(), Card::Name::action_draw2);
 		std::cout << "<技能> " << p.characterName() << "拼点获胜，获得"
-			<< card->toString() << std::endl;
+			<< *card << std::endl;
 		p.gainCard(std::move(card));
 	};
 

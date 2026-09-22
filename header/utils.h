@@ -5,6 +5,7 @@
 #include <random>
 #include <json.hpp>
 #include <chrono>
+#include <functional>
 
 using nlohmann::json;
 using namespace std::chrono_literals;
@@ -14,7 +15,6 @@ using ref = std::reference_wrapper<T>;
 
 template<typename T>
 using opt_ref = std::optional<ref<T>>;
-
 
 namespace unool {
 	//服务器专用配置：读取 server_config.json 并缓存；reload 可强制重读

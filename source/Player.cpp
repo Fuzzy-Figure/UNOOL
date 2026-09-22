@@ -60,7 +60,7 @@ std::vector<ref<Card>> Player::drawTo(const std::size_t num, const DrawReason re
 Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	hasUsed = true;
-	std::cout << "玩家" << id << "打出了：" << card->toString() << std::endl;
+	std::cout << "玩家" << id << "打出了：" << *card << std::endl;
 
 	game.launchPassiveSkills(PassiveSkill::TriggerTime::use_card_begin, *this, *card);
 	game.launchPassiveSkills(PassiveSkill::TriggerTime::card_target_begin, next(), *card, *this);
@@ -472,6 +472,19 @@ opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 	operation(getHand().getCardByIndex(index.value()));
 	return cardRef;
 }
+opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
+									  const std::function<bool(const Card&)>& condition,
+									  const std::function<void(Card&)>& operation) {
+	ServerNetwork& network = game.getNetwork();
+	if (forced) network.sendPlayerChoice(id, title + L"\n（↑确认，不可取消）", {}, true);
+	else network.sendPlayerChoice(id, title + L"\n（↑确认，↓取消）", {}, false);
+	std::optional<std::size_t> index = chooseCard(condition, forced);
+	network.sendPlayerChoice(id, L"", {}, false);
+	if (!index.has_value()) return std::nullopt;
+	ref<Card> cardRef = getHand().getCardByIndex(index.value());
+	operation(getHand().getCardByIndex(index.value()));
+	return cardRef;
+}
 
 opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 								   bool forced, const std::function<bool(const Card&)>& condition) {
@@ -491,7 +504,7 @@ opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 	ref<Card> card = hand->getCardByIndex(index.value());
 
 	give(target, takeCardByIndex(index.value()));
-	std::cout << characterName() << "给了" << target.characterName() << "一张" << card.get().toString() << std::endl;
+	std::cout << characterName() << "给了" << target.characterName() << "一张" << card.get() << std::endl;
 	game.broadcastState();
 
 	return card;
