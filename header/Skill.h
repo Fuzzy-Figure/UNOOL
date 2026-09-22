@@ -29,9 +29,7 @@ protected:
 	limit_t limit; //每局使用限制次数，std::nullopt代表无次数限制
 	std::size_t count = 0; //使用次数
 
-
 public:
-	
 	std::string getName() const { return name; }
 	std::wstring getNameW() const { return unool::string::to_utf16(name); }
 	std::string getInfo() const { return formatInfo(); }

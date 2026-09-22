@@ -163,6 +163,7 @@ public:
 	Player& next() const;
 	Player& prev() const;
 #pragma endregion
+
 #pragma region 初始化
 	std::string chooseSkin(const std::string& charName);
 	void chooseSkinAndSet(const std::string& charName);
