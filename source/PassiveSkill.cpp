@@ -859,7 +859,7 @@ bool 追番::content(Trigger& trigger) {
 		);
 		card.setName(Card::numberCardsFrom0[card.value() + addChoice]);
 		std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
-			<< card << "的点数+" << add << std::endl;
+			<< card << "的点数+" << addChoice << std::endl;
 		game.broadcastState();
 	}
 	).has_value();

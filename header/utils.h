@@ -4,8 +4,6 @@
 #include <string>
 #include <random>
 #include <json.hpp>
-#include <chrono>
-#include <functional>
 
 using nlohmann::json;
 using namespace std::chrono_literals;

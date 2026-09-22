@@ -472,19 +472,6 @@ opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 	operation(getHand().getCardByIndex(index.value()));
 	return cardRef;
 }
-opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
-									  const std::function<bool(const Card&)>& condition,
-									  const std::function<void(Card&)>& operation) {
-	ServerNetwork& network = game.getNetwork();
-	if (forced) network.sendPlayerChoice(id, title + L"\n（↑确认，不可取消）", {}, true);
-	else network.sendPlayerChoice(id, title + L"\n（↑确认，↓取消）", {}, false);
-	std::optional<std::size_t> index = chooseCard(condition, forced);
-	network.sendPlayerChoice(id, L"", {}, false);
-	if (!index.has_value()) return std::nullopt;
-	ref<Card> cardRef = getHand().getCardByIndex(index.value());
-	operation(getHand().getCardByIndex(index.value()));
-	return cardRef;
-}
 
 opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 								   bool forced, const std::function<bool(const Card&)>& condition) {
