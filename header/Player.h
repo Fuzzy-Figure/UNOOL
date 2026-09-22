@@ -60,16 +60,16 @@ public:
 	bool operator==(const Player& other) const { return id == other.id; }
 #pragma endregion
 
-#pragma region 角色属性 - 委托到 Character
+#pragma region 角色属性 - 角色 - 委托到 Character
+	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); markCharInfoDirty(); }
 	std::string characterName() const { return character->getName(); }
 	std::wstring characterNameW() const { return character->getNameW(); }
 	const std::vector<std::string>& getNames() const { return character->getNames(); }
 	const std::vector<std::string>& getSkins() const { return character->getSkins(); }
 	bool isCombined() const { return character->isCombined(); }
-	std::string skillsName() const { return character->skillsName(); }
-	template<class SpetificSkill>
-	SpetificSkill& getSkill(const std::string& skillName) { return character->getSkill<SpetificSkill>(skillName); }
-	std::string getSkillsText() const { return character->getSkillsText(); }
+#pragma endregion
+
+#pragma region 角色属性 - 角色 - 委托到 Character
 	Character::Level characterLevel() const { return character->getLevel(); }
 	std::vector<Character::Level> getLevels() const { return character->getLevels(); }
 	Character::Level getMaxLevel() const { return character->getMaxLevel(); }
@@ -80,25 +80,37 @@ public:
 	std::size_t damage(std::size_t damage, opt_ref<Player> source);
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
-	void resetSkills() { character->resetSkills(); }
 	std::size_t getDamageMultiplier() const { return character->getDamageMultiplier(); }
 	void setDamageMultiplier(std::size_t m) { character->setDamageMultiplier(m); }
+#pragma endregion
+
+#pragma region 角色属性 - 胜负 - 委托到 Character
 	std::size_t getWins() const { return character->getWins(); }
 	std::size_t getLosses() const { return character->getLosses(); }
 	void incrementWins() { character->incrementWins(); }
 	void incrementLosses() { character->incrementLosses(); }
+#pragma endregion
+
+#pragma region 角色属性 - 标记 - 委托到 Character
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
 	std::size_t getMarkCount(const std::string& m) const { return character->getMarkCount(m); }
-	void addMark(const std::string& m, std::size_t count = 1) { character->addMark(m, count); }
-	void removeMark(const std::string& m, std::size_t count = 1) { character->removeMark(m, count); }
+	void addMark(const std::string& m, std::size_t count = 1) { character->addMark(m, count); markCharInfoDirty(); }
+	void removeMark(const std::string& m, std::size_t count = 1) { character->removeMark(m, count); markCharInfoDirty(); }
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
-	void clearMark(const std::string& m) { character->clearMark(m); }
-	void clearAllMarks() { character->clearAllMarks(); }
+	void clearMark(const std::string& m) { character->clearMark(m); markCharInfoDirty(); }
+	void clearAllMarks() { character->clearAllMarks(); markCharInfoDirty(); }
+#pragma endregion
+
+#pragma region 角色属性 - 技能 - 委托到 Character
+	std::string skillsName() const { return character->skillsName(); }
+	template<class SpetificSkill>
+	SpetificSkill& getSkill(const std::string& skillName) { return character->getSkill<SpetificSkill>(skillName); }
+	std::string getSkillsText() const { return character->getSkillsText(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	std::size_t removeSkill(const std::string& name) { const auto n = character->removeSkill(name); if (n) markCharInfoDirty(); return n; }
-	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); markCharInfoDirty(); }
+	void resetSkills() { character->resetSkills(); }
 #pragma endregion
 
 #pragma region 手牌查询 - 委托到 Hand
