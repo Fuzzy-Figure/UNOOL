@@ -417,12 +417,12 @@ void GameLogic::flushCharInfo() {
 			//marksPart
 			std::string marksPart;
 			for (const auto& [name, count] : player.getMarks()) {
-				marksPart += name + "（"+std::to_string(count) + "个），";
+				marksPart += name + "*" + std::to_string(count) + "，";
 			}
 			//合并
 			info.fullText =
 				player.characterName() + "（" + levelPart + "）\n"
-				+ "标记：" + marksPart + "\n"
+				+ "标记：" + (marksPart == "" ? "无" : marksPart) + "\n"
 				+ "技能：\n" + player.getSkillsText();
 			network.sendCharInfo(info);
 			player.clearCharInfoDirty();
