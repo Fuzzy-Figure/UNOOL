@@ -198,6 +198,7 @@ public:
 
 #pragma region 元素访问
 	Card& getCardByIndex(const std::size_t index) { return *cards[index]; }
+	const Card& getCardByIndex(const std::size_t index) const { return *cards[index]; }
 	Card& operator[](const std::size_t pos) { return *cards[pos]; }
 	const Card& operator[](const std::size_t pos) const { return *cards[pos]; }
 	Card& front() { return *cards.front(); }

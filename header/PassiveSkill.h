@@ -11,8 +11,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::lose_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 隐身 : public PassiveSkillImpl<隐身> {
@@ -24,8 +24,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 顶置 : public PassiveSkillImpl<顶置> {
@@ -37,7 +37,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 带派 : public PassiveSkillImpl<带派> {
@@ -49,7 +49,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 寒魄 : public PassiveSkillImpl<寒魄> {
@@ -61,8 +61,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 割腕 : public PassiveSkillImpl<割腕> {
@@ -74,8 +74,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 丑皇 : public PassiveSkillImpl<丑皇> {
 public:
@@ -86,8 +86,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 军国 : public PassiveSkillImpl<军国> {
@@ -99,7 +99,7 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::ban_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 家暴 : public PassiveSkillImpl<家暴> {
 public:
@@ -110,8 +110,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 健身 : public PassiveSkillImpl<健身> {
@@ -123,7 +123,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_end
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 做题 : public PassiveSkillImpl<做题> {
 public:
@@ -134,8 +134,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 棍击 : public PassiveSkillImpl<棍击> {
@@ -147,8 +147,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 神木 : public PassiveSkillImpl<神木> {
 public:
@@ -159,7 +159,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 雷剑 : public PassiveSkillImpl<雷剑> {
@@ -171,8 +171,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 买棋 : public PassiveSkillImpl<买棋> {
@@ -184,7 +184,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 卖棋 : public PassiveSkillImpl<卖棋> {
 public:
@@ -195,8 +195,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 耐克 : public PassiveSkillImpl<耐克> {
@@ -208,8 +208,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 轰炸 : public PassiveSkillImpl<轰炸> {
@@ -221,8 +221,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 爆破 : public PassiveSkillImpl<爆破> {
@@ -234,8 +234,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::ban_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 电音 : public PassiveSkillImpl<电音> {
@@ -247,7 +247,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 蒙面 : public PassiveSkillImpl<蒙面> {
 public:
@@ -258,7 +258,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::damage_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 锐刻 : public PassiveSkillImpl<锐刻> {
@@ -271,8 +271,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); disabled = false; }
 };
 
@@ -283,9 +283,9 @@ public:
 		"锁定技，游戏开始时，你的初始手牌改为十二张；你执行摸牌阶段额外摸一张牌。",
 		1, true,
 		TriggerPlayer::self,
-		TriggerTime::game_begin
+		TriggerTime::draw_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 破产 : public PassiveSkillImpl<破产> {
 public:
@@ -296,8 +296,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 假酒 : public PassiveSkillImpl<假酒> {
@@ -311,8 +311,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -325,8 +325,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::draw_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 生存 : public PassiveSkillImpl<生存> {
@@ -338,8 +338,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 创造 : public PassiveSkillImpl<创造> {
 	std::unordered_set<Card::Color> usedColors;
@@ -351,14 +351,14 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); usedColors.clear(); }
 };
 
 class 炼兵 : public PassiveSkillImpl<炼兵> {
 	std::unordered_set<Card::Name> usedNames;
-	std::map<Card::Name, std::size_t> buildPairs(Player& carrier) const;
+	std::map<Card::Name, std::size_t> buildPairs(const Player& carrier) const;
 public:
 	炼兵() : PassiveSkillImpl<炼兵>(
 		"炼兵",
@@ -367,8 +367,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
 };
 class 好火 : public PassiveSkillImpl<好火> {
@@ -381,8 +381,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); usedPlayerIds.clear(); }
 };
 
@@ -395,7 +395,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 大脚 : public PassiveSkillImpl<大脚> {
 public:
@@ -406,8 +406,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 过江 : public PassiveSkillImpl<过江> {
@@ -419,8 +419,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 大盏 : public PassiveSkillImpl<大盏> {
 	static void randomEnlarge(Card& c);
@@ -433,8 +433,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 举报 : public PassiveSkillImpl<举报> {
@@ -446,8 +446,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 class 猥琐 : public PassiveSkillImpl<猥琐> {
@@ -459,8 +459,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 棋王 : public PassiveSkillImpl<棋王> {
@@ -472,8 +472,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 金铲 : public PassiveSkillImpl<金铲> {
 public:
@@ -484,8 +484,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::recover_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 淘汰 : public PassiveSkillImpl<淘汰> {
@@ -499,8 +499,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 光合 : public PassiveSkillImpl<光合> {
@@ -514,8 +514,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 射门 : public PassiveSkillImpl<射门> {
@@ -528,8 +528,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 追番 : public PassiveSkillImpl<追番> {
@@ -541,8 +541,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 崩三 : public PassiveSkillImpl<崩三> {
 	mutable std::size_t count3 = 0; //累计打出的【3】次数
@@ -554,8 +554,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); count3 = 0; }
 };
 
@@ -568,8 +568,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 望日 : public PassiveSkillImpl<望日> {
@@ -583,8 +583,8 @@ public:
 		TriggerTime::phase_begin,
 		望日_子::make()
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 朔日 : public PassiveSkillImpl<朔日> {
@@ -598,8 +598,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 健忘 : public PassiveSkillImpl<健忘> {
@@ -611,7 +611,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 豪赌 : public PassiveSkillImpl<豪赌> {
@@ -627,7 +627,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -640,7 +640,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -653,7 +653,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -666,8 +666,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -685,8 +685,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -706,8 +706,8 @@ public:
 	static std::unique_ptr<PassiveSkill> makeWith(std::shared_ptr<std::vector<Card::Name>> r) {
 		return std::make_unique<难题_变牌>(std::move(r));
 	}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //难题主技能：摸牌时记录数字
@@ -726,8 +726,8 @@ public:
 			TriggerTime::phase_draw_end,
 			难题_变牌::makeWith(_record)
 		), record(_record) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 迷烟 : public PassiveSkillImpl<迷烟> {
@@ -740,7 +740,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 创世 : public PassiveSkillImpl<创世> {
@@ -752,7 +752,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 补天 : public PassiveSkillImpl<补天> {
 	std::vector<Card::Name> record;
@@ -764,8 +764,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 水鬼 : public PassiveSkillImpl<水鬼> {
@@ -777,8 +777,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::gain_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 爆缸 : public PassiveSkillImpl<爆缸> {
@@ -790,8 +790,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -804,8 +804,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::game_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 清洗 : public PassiveSkillImpl<清洗> {
 public:
@@ -817,8 +817,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 落水 : public PassiveSkillImpl<落水> {
@@ -830,8 +830,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::lose_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); setForced(false); }
 };
 
@@ -846,8 +846,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); disabled = false; }
 };
 
@@ -861,8 +861,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -877,8 +877,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -892,8 +892,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_draw_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 压抑 : public PassiveSkillImpl<压抑> {
 public:
@@ -905,8 +905,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 捉奸_弃牌 : public PassiveSkillImpl<捉奸_弃牌> {
@@ -918,8 +918,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 class 捉奸 : public PassiveSkillImpl<捉奸> {
 public:
@@ -932,7 +932,7 @@ public:
 		TriggerTime::phase_end,
 		捉奸_弃牌::make()
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -951,8 +951,8 @@ public:
 	static std::unique_ptr<PassiveSkill> makeWith(std::shared_ptr<std::size_t> t) {
 		return std::make_unique<爬竿_伤害>(std::move(t));
 	}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //爬竿（主技能）：每局开始选目标，与子技能共享 targetId
@@ -968,7 +968,7 @@ public:
 			TriggerPlayer::self, TriggerTime::game_begin,
 			爬竿_伤害::makeWith(t)
 		), targetId(t) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //渊涡：你每个未出过牌的回合结束时，回复1点体力
@@ -980,8 +980,8 @@ public:
 		unlimited, true,
 		TriggerPlayer::self, TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //没座：回合开始时，没红牌则摸一张（手牌为1时不触发），有红牌则可弃一张非红色牌
@@ -994,8 +994,8 @@ public:
 		unlimited, true,
 		TriggerPlayer::self, TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //空空：每局限两次，回合结束时，可将一张功能牌变为红色的【封禁】
@@ -1007,8 +1007,8 @@ public:
 		2, false,
 		TriggerPlayer::self, TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 暗忍 : public PassiveSkillImpl<暗忍> {
@@ -1020,8 +1020,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //暗忍_改：移除失体力效果后由【舞爪】替换【暗忍】所得，仅将随机一张手牌变为【封禁】
@@ -1034,7 +1034,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //治病：其他角色首次打出某种牌名的非数字牌时，大中医三选一（无效/弃牌/摸牌），剩余多选项则移除本次所选
@@ -1051,8 +1051,8 @@ public:
 		TriggerPlayer::others,
 		TriggerTime::use_card_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -1068,14 +1068,14 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::lose_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
 class 困界 : public PassiveSkillImpl<困界> {
 	mutable opt_ref<std::set<Card::Type>> triggeredCache;  //缓存连营的triggered引用，避免重复查找
-	std::set<Card::Type>& getTriggered(Player& carrier) const;
+	std::set<Card::Type>& getTriggered(const Player& carrier) const;
 public:
 	困界() : PassiveSkillImpl<困界>(
 		"困界",
@@ -1084,8 +1084,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -1100,8 +1100,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //爆射：锁定技，打出牌后，若手牌数恰为某其他角色两倍，弃置至多两张牌并对一名其他角色造成6点伤害
@@ -1114,8 +1114,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //灵爆_子：打出有目标的牌时，若有幽灵标记则移去并对目标造成10点伤害
@@ -1127,8 +1127,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //灵爆：累计打出三张牌后获得"幽灵"标记（限一个）；拥有标记期间不计数，标记移去后重新累计
@@ -1147,8 +1147,8 @@ public:
 			TriggerTime::use_card_end,
 			灵爆_子::make()
 		), playCount(std::move(_playCount)) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -1162,7 +1162,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -1177,7 +1177,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 
@@ -1191,8 +1191,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //白虎：每局每名角色限一次，回合开始时若其仅剩一张牌，令其获得一张指定颜色牌名的9/1
@@ -1207,8 +1207,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
 
@@ -1223,8 +1223,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::gain_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 private:
 	std::size_t phaseCount = 0;
@@ -1241,8 +1241,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //返现：限定技，结束阶段，重铸所有非黄色手牌并回复等量体力
@@ -1255,8 +1255,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //尖刺：锁定技，受到伤害后，对一名其他角色造成等量伤害并回复1点体力
@@ -1269,8 +1269,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::damage_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //弹暴：回合结束时，可弃一张万能牌发动X次手枪（X为本局发动次数），然后手枪伤害+1
@@ -1284,8 +1284,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //星轨：回合开始时，三次判定类型全相同则引力+1
@@ -1298,7 +1298,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //引力_目标：引力重定向拦截器，数字牌进弃牌堆后给自身获得
@@ -1311,8 +1311,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::card_discard_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //引力_清除目标：轮开始时清除所有玩家身上的引力_目标
@@ -1325,8 +1325,8 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::round_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 class 铃铛 : public PassiveSkillImpl<铃铛> {
@@ -1339,8 +1339,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //爆糖：锁定技，打出有目标的牌后，对目标造成5%最大体力伤害（向上取整）
@@ -1353,8 +1353,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //薄荷：锁定技，回合结束时，随机回复1~3体力
@@ -1367,7 +1367,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
-	bool content(Trigger& trigger) override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //健体：锁定技，打出手中非唯一牌名的牌后，回复1点体力
@@ -1380,8 +1380,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //飞刃：当你打出万能牌后，你可令一名其他角色获得一个"毒"标记
@@ -1394,8 +1394,8 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
 //淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害
@@ -1408,6 +1408,6 @@ public:
 		TriggerPlayer::anybody,
 		TriggerTime::phase_end
 	) {}
-	bool filter(const Trigger& trigger) const override;
-	bool content(Trigger& trigger) override;
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };

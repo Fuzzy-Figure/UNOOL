@@ -1,7 +1,8 @@
-#include "../header/GameLogic.h"
+﻿#include "../header/GameLogic.h"
 #include "../header/Player.h"
 #include "../header/Character.h"
 #include "../header/Card.h"
+#include "../header/PassiveSkill.h"
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <ranges>
@@ -51,7 +52,7 @@ bool GameLogic::playersSatisfy(const std::function<bool(std::vector<std::unique_
 	return condition(players);
 }
 
-bool GameLogic::playersInclude(const std::function<bool(const Player&)>& condition) {
+bool GameLogic::playersInclude(const std::function<bool(const Player&)>& condition) const {
 	for (const auto& p : players) {
 		if (condition(*p)) return true;
 	}
@@ -86,6 +87,12 @@ void GameLogic::forEachPlayer(const std::function<void(Player&)>& operation) {
 	}
 }
 
+void GameLogic::forEachPlayer(const std::function<void(const Player&)>& operation) const {
+	for (const auto& p : players) {
+		operation(*p);
+	}
+}
+
 void GameLogic::forEachOtherPlayer(const Player& self,
 								   const std::function<void(Player&)>& operation) {
 	for (auto& p : players) {
@@ -110,6 +117,7 @@ void GameLogic::forEachOtherPlayerIf(const Player& self,
 Pile& GameLogic::getPile() { return *pile; }
 
 Pile& GameLogic::getDiscardPile() { return *discardPile; }
+const Pile& GameLogic::getDiscardPile() const { return *discardPile; }
 
 GameLogic::GameLogic(ServerNetwork& _network)
 	:network(_network) {
@@ -318,7 +326,9 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 bool GameLogic::runTurn() {
 	// 一号位回合开始前触发轮开始
 	if (getCurrentPlayerId() == getFirstPlayerId()) {
-		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, *players[currentPlayerIndex]);
+		PassiveSkill::Trigger trigger;
+		trigger.player = *players[currentPlayerIndex];
+		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, trigger);
 	}
 	std::cout << "玩家" << getCurrentPlayerId() << "的回合" << std::endl;
 	bool gameEnded = currentPlayerTurn();
@@ -455,21 +465,10 @@ void GameLogic::reverse() {
 	else direction = Direction::increase;
 }
 
-void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-									opt_ref<Player> player,
-									Card& card,
-									opt_ref<Player> source,
-									opt_ref<std::size_t> number) {
-	launchPassiveSkills(currentTriggerTime, player, std::vector<ref<Card>>{card}, source, number);
-}
-void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-									opt_ref<Player> player,
-									std::optional<std::vector<ref<Card>>> cards,
-									opt_ref<Player> source,
-									opt_ref<std::size_t> number) {
+void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime, const PassiveSkill::Trigger& trigger) {
 	for (auto& carrier : players) {
-		PassiveSkill::Trigger trigger = { *this, *carrier, player, cards, source, number };
-		carrier->launchPassiveSkills(currentTriggerTime, trigger);
+		PassiveSkill::Trigger t = trigger;
+		carrier->launchPassiveSkills(triggerTime, *this, *carrier, t);
 	}
 }
 
@@ -481,7 +480,12 @@ Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardR
 		<< ") 进入了弃牌堆" << std::endl;
 	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
-	launchPassiveSkills(PassiveSkill::TriggerTime::card_discard_end, player, cardRef);
+	{
+		PassiveSkill::Trigger trigger;
+		trigger.player = player;
+		trigger.cards = {cardRef};
+		launchPassiveSkills(PassiveSkill::TriggerTime::card_discard_end, trigger);
+	}
 	return cardRef;
 }
 
@@ -540,6 +544,10 @@ void GameLogic::resetGame() {
 		const std::string mode = unool::getServerConfig().value("mode", "normal");
 		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "singleInitHandCount";
 		player->draw(unool::getServerConfig()[handKey]);
+		// 巨富：初始手牌改为十二张（在初始手牌基础上额外摸四张）
+		if (player->hasSkill<巨富>()) {
+			player->draw(4, DrawReason::skill);
+		}
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁
@@ -563,7 +571,7 @@ void GameLogic::resetGame() {
 	// 重置方向
 	direction = Direction::increase;
 	broadcastState();
-	launchPassiveSkills(PassiveSkill::TriggerTime::game_begin);
+	launchPassiveSkills(PassiveSkill::TriggerTime::game_begin, PassiveSkill::Trigger{});
 	std::cout << "[Server] 新一局开始！玩家" << currentPlayerIndex << "先手" << std::endl;
 }
 

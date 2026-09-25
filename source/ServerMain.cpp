@@ -58,7 +58,7 @@ static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 		if (!roundEnded) continue;
 
 		// 一局结束，处理体力扣除
-		gameLogic.launchPassiveSkills(PassiveSkill::TriggerTime::game_end);
+		gameLogic.launchPassiveSkills(PassiveSkill::TriggerTime::game_end, PassiveSkill::Trigger{});
 		gameLogic.checkRoundEnd();
 		gameLogic.broadcastState();
 

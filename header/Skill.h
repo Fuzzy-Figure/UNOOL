@@ -19,6 +19,16 @@ class PassiveSkill;
 class InstantSkill;
 class TransformSkill;
 
+enum class DrawReason {
+	unknown,
+	phase_draw,
+	skill
+};
+enum class DrawPosition {
+	top,
+	bottom
+};
+
 class Skill {
 protected:
 	using limit_t = std::optional<std::size_t>;
@@ -119,28 +129,18 @@ public:
 		round_begin, round_end
 	};
 	struct Trigger {
-	private:
-		ref<GameLogic> game;
-		ref<Player> carrier;
 		opt_ref<Player> player = std::nullopt;
 		std::optional<std::vector<ref<Card>>> cards = std::nullopt;
 		opt_ref<Player> source = std::nullopt;
 		opt_ref<std::size_t> number = std::nullopt;
-
-	public:
-		Trigger(GameLogic& _game, Player& _carrier,
-				opt_ref<Player> _player,
-				std::optional<std::vector<ref<Card>>> _cards,
-				opt_ref<Player> _source,
-				opt_ref<std::size_t> _number);
+		std::optional<DrawReason> drawReason = std::nullopt;
 
 		bool hasPlayer() const { return player.has_value(); }
 		bool hasCards() const { return cards.has_value(); }
 		bool hasSource() const { return source.has_value(); }
 		bool hasNumber() const { return number.has_value(); }
+		bool hasDrawReason() const { return drawReason.has_value(); }
 
-		GameLogic& getGame() const { return game.get(); }
-		Player& getCarrier() const { return carrier.get(); }
 		Player& getPlayer() const { return player.value().get(); }
 		Card& getCard() const {
 			if (cards.value().size() > 1)
@@ -150,11 +150,12 @@ public:
 		std::vector<ref<Card>> getCards() const { return cards.value(); }
 		Player& getSource() const { return source.value().get(); }
 		std::size_t& getNumber() const { return number.value().get(); }
+		DrawReason getDrawReason() const { return drawReason.value(); }
 	};
 	using Factory = std::function<std::unique_ptr<PassiveSkill>()>;
 
-	virtual bool filter(const Trigger& trigger) const { return true; }
-	virtual bool content(Trigger& trigger) = 0;
+	virtual bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const { return true; }
+	virtual bool content(GameLogic& game, Player& carrier, Trigger& trigger) = 0;
 
 	//无子技能
 	PassiveSkill(const std::string& name, const std::string& description,
@@ -173,8 +174,8 @@ public:
 		: PassiveSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
-	bool matchTrigger(const TriggerTime& currentTriggerTime, const Trigger& trigger) const;
-	void launch(Trigger& trigger);
+	bool matchTrigger(const TriggerTime& currentTriggerTime, const Player& carrier, const Trigger& trigger) const;
+	void launch(GameLogic& game, Player& carrier, Trigger& trigger);
 	void reset() override;
 	void setForced(const bool newForced);
 

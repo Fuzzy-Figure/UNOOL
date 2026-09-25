@@ -12,16 +12,6 @@ class GameLogic;
 class GameRenderer;
 
 class Player {
-public:
-	enum class DrawReason {
-		unknown,
-		phase_draw,
-		skill
-	};
-	enum class DrawPosition {
-		top,
-		bottom
-	};
 private:
 	std::size_t id = 0;
 	std::unique_ptr<Hand> hand = std::make_unique<Hand>();
@@ -103,8 +93,8 @@ public:
 
 #pragma region 角色属性 - 技能 - 委托到 Character
 	std::string skillsName() const { return character->skillsName(); }
-	template<class T> bool hasSkill() { return character->hasSkill<T>(); }
-	template<class T> opt_ref<T> findSkill() { return character->findSkill<T>(); }
+	template<class T> bool hasSkill() const { return character->hasSkill<T>(); }
+	template<class T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
 	template<class T> T& getSkill() { return character->getSkill<T>(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
@@ -161,7 +151,9 @@ public:
 #pragma endregion
 
 #pragma region 技能 / 状态
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger);
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, GameLogic& game, Player& carrier, PassiveSkill::Trigger& trigger) {
+		character->launchPassiveSkills(currentTriggerTime, game, carrier, trigger);
+	}
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }

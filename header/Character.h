@@ -83,9 +83,9 @@ public:
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
 	template<class T>
-	bool hasSkill() { return findSkill<T>().has_value(); }
+	bool hasSkill() const { return findSkill<T>().has_value(); }
 	template<class T>
-	opt_ref<T> findSkill() {
+	opt_ref<T> findSkill() const {
 		for (auto& s : passiveSkills)
 			if (typeid(*s) == typeid(T)) return s->to<T>();
 		for (auto& s : instantSkills)
@@ -99,7 +99,7 @@ public:
 		if (auto s = findSkill<T>(); s.has_value()) return s.value();
 		else throw std::runtime_error("没有找到技能");
 	}
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger) const;
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, GameLogic& game, Player& carrier, PassiveSkill::Trigger& trigger);
 	void addSkill(std::unique_ptr<PassiveSkill> skill);
 	void addSkill(std::unique_ptr<InstantSkill> skill);
 	void addSkill(std::unique_ptr<TransformSkill> skill);

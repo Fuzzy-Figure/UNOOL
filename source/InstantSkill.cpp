@@ -1,4 +1,4 @@
-#include "../header/PassiveSkill.h"
+﻿#include "../header/PassiveSkill.h"
 #include "../header/InstantSkill.h"
 #include "../header/TransformSkill.h"
 #include "../header/GameLogic.h"
@@ -144,7 +144,7 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：舞爪 ====================
 bool 舞爪::content(GameLogic& game, Player& carrier) {
-	auto drawn = carrier.drawTo(10, Player::DrawReason::skill);
+	auto drawn = carrier.drawTo(10, DrawReason::skill);
 	carrier.recover(2 * drawn.size());
 	carrier.removeSkill("暗忍");
 	carrier.addSkill(暗忍_改::make());
@@ -176,7 +176,7 @@ bool 四霸::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：装币 ====================
 bool 装币::content(GameLogic& game, Player& carrier) {
-	auto drawn = carrier.drawTo(18, Player::DrawReason::skill);
+	auto drawn = carrier.drawTo(18, DrawReason::skill);
 	carrier.setDamageMultiplier(carrier.getDamageMultiplier() + 1);
 	std::cout << "<技能> " << carrier.characterName() << "发动装币，摸"
 		<< drawn.size() << "张，伤害倍率提升至" << carrier.getDamageMultiplier() << std::endl;
@@ -205,10 +205,10 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	//选牌堆顶或底
 	std::size_t pos = carrier.ask(L"【炫技】从牌堆顶或牌堆底摸两张", { L"牌堆顶", L"牌堆底" }, false);
 	if (pos == 0) return false;  //玩家取消
-	Player::DrawPosition dp = (pos == 1) ? Player::DrawPosition::top : Player::DrawPosition::bottom;
+	DrawPosition dp = (pos == 1) ? DrawPosition::top : DrawPosition::bottom;
 
 	//摸两张（触发draw_begin/end）
-	carrier.draw(2, Player::DrawReason::skill, dp);
+	carrier.draw(2, DrawReason::skill, dp);
 
 	//两张在hand末尾，记录颜色
 	std::size_t idx1 = carrier.getHand().count() - 2;
@@ -249,7 +249,7 @@ bool 调羹::filter(const GameLogic& game, const Player& carrier) const {
 }
 
 bool 调羹::content(GameLogic& game, Player& carrier) {
-	carrier.draw(1, Player::DrawReason::skill);
+	carrier.draw(1, DrawReason::skill);
 	game.broadcastState();
 
 	auto idxOpt = carrier.chooseCard(&Card::isNumber, false);
@@ -531,7 +531,7 @@ bool 跳糖::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：肘击 ====================
 bool 肘击::content(GameLogic& game, Player& carrier) {
-	carrier.draw(2, Player::DrawReason::skill);
+	carrier.draw(2, DrawReason::skill);
 	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
 	std::cout << "<技能> " << carrier.characterName() << "发动肘击，摸2张牌并获得2张变色" << std::endl;

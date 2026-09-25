@@ -106,22 +106,23 @@ PassiveSkill::PassiveSkill(const std::string& name, const std::string& descripti
 	triggerTime(triggerTime) {}
 
 bool PassiveSkill::matchTrigger(const TriggerTime& currentTriggerTime,
+						  const Player& carrier,
 						  const Trigger& trigger) const {
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
 		triggerTime == TriggerTime::game_end ||
 		triggerPlayer == TriggerPlayer::anybody ||
-		(triggerPlayer == TriggerPlayer::self && trigger.getCarrier() == trigger.getPlayer()) ||
-		(triggerPlayer == TriggerPlayer::others && trigger.getCarrier() != trigger.getPlayer())
+		(triggerPlayer == TriggerPlayer::self && carrier.getId() == trigger.getPlayer().getId()) ||
+		(triggerPlayer == TriggerPlayer::others && carrier.getId() != trigger.getPlayer().getId())
 		);
 }
 
-void PassiveSkill::launch(Trigger& trigger) {
+void PassiveSkill::launch(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//不满足条件，或达到次数限制：不发动
-	if ((limit != unlimited && count >= limit) || !filter(trigger)) return;
+	if ((limit != unlimited && count >= limit) || !filter(game, carrier, trigger)) return;
 	//如果不是锁定技，询问玩家是否发动
 	if (!forced) {
-		const std::size_t choice = trigger.getCarrier().ask(
+		const std::size_t choice = carrier.ask(
 			L"是否发动 [" + getNameW() + L"]？",
 			{ L"发动", L"不发动" },
 			true
@@ -131,11 +132,11 @@ void PassiveSkill::launch(Trigger& trigger) {
 	//发动技能
 	count += 1;
 
-	if (!content(trigger)) {
+	if (!content(game, carrier, trigger)) {
 		count -= 1;
 		return;
 	}
-	std::cout << "<技能> " << trigger.getCarrier().characterName() << "发动了" << name << "！" << std::endl;
+	std::cout << "<技能> " << carrier.characterName() << "发动了" << name << "！" << std::endl;
 }
 
 void PassiveSkill::reset() {
@@ -145,16 +146,6 @@ void PassiveSkill::reset() {
 void PassiveSkill::setForced(const bool newForced) {
 	forced = newForced;
 }
-
-
-
-PassiveSkill::Trigger::Trigger(GameLogic& _game, Player& _carrier,
-						 opt_ref<Player> _player,
-						 std::optional<std::vector<ref<Card>>> _cards,
-						 opt_ref<Player> _source,
-						 opt_ref<std::size_t> _number)
-	:game(_game), carrier(_carrier), player(_player),
-	cards(_cards), source(_source), number(_number) {}
 
 
 // **********************

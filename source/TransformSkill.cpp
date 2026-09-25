@@ -1,4 +1,4 @@
-#include "../header/PassiveSkill.h"
+﻿#include "../header/PassiveSkill.h"
 #include "../header/InstantSkill.h"
 #include "../header/TransformSkill.h"
 #include "../header/GameLogic.h"
@@ -38,7 +38,7 @@ bool 我妈::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 }
 
 void 我妈::addition(GameLogic& game, Player& carrier) const {
-	carrier.draw(1, Player::DrawReason::skill);
+	carrier.draw(1, DrawReason::skill);
 	game.broadcastState();
 }
 

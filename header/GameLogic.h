@@ -79,7 +79,7 @@ public:
 
 #pragma region 基于谓词的查询
 	bool playersSatisfy(const std::function<bool(std::vector<std::unique_ptr<Player>>&)>& condition);
-	bool playersInclude(const std::function<bool(const Player&)>& condition);
+	bool playersInclude(const std::function<bool(const Player&)>& condition) const;
 	const std::vector<ref<Player>> getPlayers() const;
 	const std::vector<ref<Player>> getPlayersIf(const std::function<bool(const Player&)>& condition) const;
 	const std::vector<ref<Player>> getPlayersExcludeId(const std::size_t id) const;
@@ -87,6 +87,7 @@ public:
 
 #pragma region 遍历迭代
 	void forEachPlayer(const std::function<void(Player&)>& operation);
+	void forEachPlayer(const std::function<void(const Player&)>& operation) const;
 	void forEachOtherPlayer(const Player& self,
 							const std::function<void(Player&)>& operation);
 	void forEachPlayerIf(const std::function<bool(const Player&)>& condition,
@@ -99,6 +100,7 @@ public:
 #pragma region 成员查询与修改
 	Pile& getPile();
 	Pile& getDiscardPile();
+	const Pile& getDiscardPile() const;
 	Player& getPlayerById(const std::size_t id);
 	Card::Color getCurrentColor() const;
 	void setCurrentColor(const Card::Color newColor);
@@ -113,16 +115,7 @@ public:
 #pragma endregion
 
 #pragma region 技能系统
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
-					   opt_ref<Player> player,
-					   Card& card,
-					   opt_ref<Player> source = std::nullopt,
-					   opt_ref<std::size_t> number = std::nullopt);
-	void launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime,
-					   opt_ref<Player> player = std::nullopt,
-					   std::optional<std::vector<ref<Card>>> cards = std::nullopt,
-					   opt_ref<Player> source = std::nullopt,
-					   opt_ref<std::size_t> number = std::nullopt);
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime, const PassiveSkill::Trigger& trigger);
 #pragma endregion
 
 #pragma region 弃牌堆管理
