@@ -208,13 +208,13 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	DrawPosition dp = (pos == 1) ? DrawPosition::top : DrawPosition::bottom;
 
 	//摸两张（触发draw_begin/end）
-	carrier.draw(2, DrawReason::skill, dp);
+	std::vector drawn = carrier.draw(2, DrawReason::skill, dp);
 
 	//两张在hand末尾，记录颜色
 	std::size_t idx1 = carrier.getHand().count() - 2;
 	std::size_t idx2 = carrier.getHand().count() - 1;
-	Card::Color c1 = carrier.getHand()[idx1].getColor();
-	Card::Color c2 = carrier.getHand()[idx2].getColor();
+	Card::Color c1 = drawn[0].get().getColor();
+	Card::Color c2 = drawn[1].get().getColor();
 
 	//选一张置于牌堆底
 	std::size_t put = carrier.ask(L"【炫技】将一张牌置于牌堆底",

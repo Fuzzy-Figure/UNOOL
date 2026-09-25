@@ -2092,12 +2092,7 @@ bool 加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (choice == 2) return false;
 
 	//发动一次炫技
-	for (auto& s : carrier.getInstantSkills()) {
-		if (s->getName() == "炫技") {
-			s->tryActivate(game, carrier);
-			break;
-		}
-	}
+	carrier.getSkill<炫技>().tryActivate(game, carrier);
 
 	//令此牌无效
 	card.cancelEffect();

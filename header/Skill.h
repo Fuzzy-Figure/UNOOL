@@ -233,12 +233,12 @@ class InstantSkill : public ActiveSkill {
 public:
 	using Factory = std::function<std::unique_ptr<InstantSkill>()>;
 	//执行发动；成功返回 true（内部负责 canUse 检查与 count 累加）
-	bool tryActivate(GameLogic& game, Player& player) {
+	bool tryActivate(GameLogic& game, Player& carrier) {
 		if (!canUse()) return false;
-		if (!filter(game, player)) return false;
+		if (!filter(game, carrier)) return false;
 		++count;
 		++phaseCount;
-		if (!content(game, player)) {
+		if (!content(game, carrier)) {
 			--count;
 			--phaseCount;
 			return false;
