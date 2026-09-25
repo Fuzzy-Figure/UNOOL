@@ -204,6 +204,14 @@ bool Card::isNotWild() const {
 	return !is_wild(name);
 }
 
+bool Card::isTargeted() const {
+	return is(Name::action_skip, Name::action_draw2, Name::wild_draw4);
+}
+
+bool Card::isNotTargeted() const {
+	return !isTargeted();
+}
+
 
 std::size_t Card::value() const {
 	switch (name) {

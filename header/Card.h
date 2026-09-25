@@ -10,8 +10,8 @@ class GameLogic;
 
 
 class Card {
-#pragma region 类型定义
 public:
+#pragma region 类型定义
 	enum class Color {
 		no, blue, green, red, yellow, black
 	};
@@ -39,10 +39,6 @@ public:
 			return std::hash<int>{}(static_cast<int>(std::get<0>(t)) * 100 + static_cast<int>(std::get<1>(t)));
 		}
 	};
-#pragma endregion
-
-#pragma region 静态数据
-
 #pragma endregion
 
 private:
@@ -107,6 +103,8 @@ public:
 	bool isNotAction() const;
 	bool isWild() const;
 	bool isNotWild() const;
+	bool isTargeted() const;
+	bool isNotTargeted() const;
 	std::size_t value() const;
 	std::string toString() const;
 	std::wstring toWString() const;

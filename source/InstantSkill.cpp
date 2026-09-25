@@ -1,4 +1,4 @@
-﻿#include "../header/PassiveSkill.h"
+#include "../header/PassiveSkill.h"
 #include "../header/InstantSkill.h"
 #include "../header/TransformSkill.h"
 #include "../header/GameLogic.h"
@@ -232,6 +232,7 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 			if (auto sp = carrier.findSkill<加速>(); sp.has_value()) {
 				auto& acc = sp.value().get();
 				acc.increaseLimit(1);
+				carrier.markCharInfoDirty();
 				std::cout << "<技能> " << carrier.characterName() << "的【加速】可发动次数+1，当前="
 					<< acc.getLimit().value() << std::endl;
 			}

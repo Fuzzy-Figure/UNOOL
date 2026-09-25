@@ -1562,9 +1562,8 @@ bool 黑洞::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::vector<std::wstring> options;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; const auto& card : discardPile | std::views::take(4)) {
-		if (const Card::Name name = card->getName();
-			!record.contains(name)) {
-			options.push_back(Card::to_wstring(name));
+		if (!record.contains(card->getName())) {
+			options.push_back(card->toWString());
 			validIndices.push_back(i);
 		}
 		++i;
@@ -2078,8 +2077,20 @@ bool 灵爆_子::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 }
 
 
+bool 加速::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return trigger.getCard().isTargeted();
+}
+
 // ==================== 技能：加速 ====================
 bool 加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Card& card = trigger.getCard();
+	const std::size_t choice = carrier.ask(
+		L"你成为了" + card.toWString() + L"的目标，是否发动加速？",
+		{ L"发动", L"不发动" },
+		true
+	);
+	if (choice == 2) return false;
+
 	//发动一次炫技
 	for (auto& s : carrier.getInstantSkills()) {
 		if (s->getName() == "炫技") {
@@ -2089,7 +2100,7 @@ bool 加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	}
 
 	//令此牌无效
-	trigger.getCard().cancelEffect();
+	card.cancelEffect();
 	std::cout << "<技能> " << carrier.characterName() << "发动加速，发动炫技并令此牌无效" << std::endl;
 	game.broadcastState();
 	return true;

@@ -1,6 +1,6 @@
 {
   "banCount": 2,
-  //"characters": [ "黑鸦", "格斯" ],
+  "characters": [ "斯图", "格斯" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
   "mode": "normal",

@@ -1177,6 +1177,7 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
 	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };

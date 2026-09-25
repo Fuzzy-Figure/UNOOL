@@ -140,4 +140,3 @@ public:
 #pragma endregion
 };
 
-constexpr auto operator<=>(const Character::Level a, const Character::Level b);
