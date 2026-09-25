@@ -67,7 +67,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"新陆逊",   {"新三国",   Level::B, {连营::make, 困界::make}, {}, {}, 150}},
 	{"电棍",     {"网络",     Level::F, {四麻::make}, {四霸::make}, {}, 44}},
 	{"8比特",    {"荒野乱斗", Level::S, {爆射::make}, {装币::make}, {}, 288}},
-	{"格斯",     {"荒野乱斗", Level::B, {灵爆::make}, {幽愈::make}, {}, 100}},
+	{"格斯",     {"荒野乱斗", Level::C, {灵爆::make}, {幽愈::make}, {}, 100}},
 	{"斯图",     {"荒野乱斗", Level::A, {加速::make}, {炫技::make}, {}, 120}},
 	//{"大司马",   {"网络",     Level::C, {走位::make}, {}, {}, 150}},
 	{"新静姝",   {"新三国",   Level::B, {}, {调羹::make}, {}, 166}},
