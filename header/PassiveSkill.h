@@ -563,7 +563,7 @@ public:
 class 望日_子 : public PassiveSkillImpl<望日_子> {
 public:
 	望日_子() : PassiveSkillImpl<望日_子>(
-		"望日_子", "",
+		"望日", "",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
