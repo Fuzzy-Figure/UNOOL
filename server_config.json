@@ -3,7 +3,7 @@
   //"characters": [ "黑鸦", "格斯" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "mode": "double",
+  "mode": "norqmal",
   "shielded": {
     "characters": [],
     "groups": []
