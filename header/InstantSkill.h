@@ -1,5 +1,6 @@
 #pragma once
 #include "Skill.h"
+#include <unordered_set>
 
 class 装弹 : public InstantSkillImpl<装弹> {
 public:

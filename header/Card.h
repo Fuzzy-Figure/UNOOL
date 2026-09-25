@@ -3,9 +3,6 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <deque>
-#include <algorithm>
-#include <random>
-#include <map>
 #include "Effect.h"
 #include "utils.h"
 
@@ -222,10 +219,7 @@ public:
 	Cards clone() const;
 #pragma endregion
 
-#pragma region 迭代器 / 算法
-	template<class _Pr>
-	auto find_if(_Pr pred) { return std::ranges::find_if(cards, pred); }
-
+#pragma region 迭代器
 	auto begin() { return cards.begin(); }
 	auto end() { return cards.end(); }
 	auto begin() const { return cards.begin(); }

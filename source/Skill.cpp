@@ -1,10 +1,7 @@
 #include "../header/Skill.h"
 #include "../header/Player.h"
 #include "../header/GameLogic.h"
-#include "../header/utils.h"
 #include <iostream>
-#include <cmath>
-#include <set>
 
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)
 	:name(_name), info(_info), limit(_limit) {}

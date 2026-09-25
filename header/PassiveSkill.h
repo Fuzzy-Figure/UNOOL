@@ -1,6 +1,7 @@
 #pragma once
 #include "Skill.h"
-
+#include <set>
+#include <unordered_set>
 
 class 粪怒 : public PassiveSkillImpl<粪怒> {
 public:

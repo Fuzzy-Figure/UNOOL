@@ -1,8 +1,6 @@
 #include "../header/Player.h"
 #include "../header/GameLogic.h"
-#include "../header/PassiveSkill.h"
 #include <thread>
-#include <iterator>
 
 std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
 	if (source.has_value()) {

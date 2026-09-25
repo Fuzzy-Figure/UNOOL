@@ -1,5 +1,4 @@
 #include "../header/Socket.h"
-#include "../header/utils.h"
 #include "../header/AccountProtocol.h"
 #include "../header/UserDB.h"
 #include <iostream>
