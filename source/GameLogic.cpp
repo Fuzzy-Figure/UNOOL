@@ -1,4 +1,4 @@
-﻿#include "../header/GameLogic.h"
+#include "../header/GameLogic.h"
 #include "../header/Player.h"
 #include "../header/Character.h"
 #include "../header/Card.h"

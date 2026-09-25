@@ -1,4 +1,4 @@
-﻿#include "../header/PassiveSkill.h"
+#include "../header/PassiveSkill.h"
 #include "../header/InstantSkill.h"
 #include "../header/TransformSkill.h"
 #include "../header/GameLogic.h"
