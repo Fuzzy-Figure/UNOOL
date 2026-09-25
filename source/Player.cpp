@@ -105,13 +105,13 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {*card};
+		trigger.cards = { *card };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::use_card_begin, trigger);
 	}
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = next();
-		trigger.cards = {*card};
+		trigger.cards = { *card };
 		trigger.source = *this;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::card_target_begin, trigger);
 	}
@@ -135,13 +135,13 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {cardRef};
+		trigger.cards = { cardRef };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::lose_card_end, trigger);
 	}
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {cardRef};
+		trigger.cards = { cardRef };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::use_card_end, trigger);
 	}
 
@@ -179,7 +179,7 @@ Card& Player::putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::Dis
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {cardRef};
+		trigger.cards = { cardRef };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::lose_card_end, trigger);
 	}
 	return cardRef;
@@ -227,7 +227,7 @@ void Player::ban(Player& source, Card& card) {
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {card};
+		trigger.cards = { card };
 		trigger.source = source;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::ban_begin, trigger);
 	}
@@ -235,7 +235,7 @@ void Player::ban(Player& source, Card& card) {
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {card};
+		trigger.cards = { card };
 		trigger.source = source;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::ban_end, trigger);
 	}
@@ -266,7 +266,7 @@ bool Player::phaseUse1() {
 	if (card.has_value()) {
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {card.value().get()};
+		trigger.cards = { card.value().get() };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_use1_end, trigger);
 	}
 	else {
@@ -568,36 +568,36 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
 Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
-	{
-		PassiveSkill::Trigger trigger;
-		trigger.player = *this;
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_begin, trigger);
-	}
-	std::vector discarded = chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::recast);
-	std::vector drawn = draw(discarded.size());
-	{
-		PassiveSkill::Trigger trigger;
-		trigger.player = *this;
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_end, trigger);
-	}
-	return RecastResult{ std::move(discarded), std::move(drawn) };
+												{
+													PassiveSkill::Trigger trigger;
+													trigger.player = *this;
+													game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_begin, trigger);
+												}
+												std::vector discarded = chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::recast);
+												std::vector drawn = draw(discarded.size());
+												{
+													PassiveSkill::Trigger trigger;
+													trigger.player = *this;
+													game.launchPassiveSkills(PassiveSkill::TriggerTime::recast_end, trigger);
+												}
+												return RecastResult{ std::move(discarded), std::move(drawn) };
 }
 
 void Player::decree(const std::wstring& title,
 					const std::size_t num, const bool forced,
 					const std::function<bool(const Card&)>& condition) {
-	{
-		PassiveSkill::Trigger trigger;
-		trigger.player = *this;
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_begin, trigger);
-	}
-	draw(num);
-	chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::decree);
-	{
-		PassiveSkill::Trigger trigger;
-		trigger.player = *this;
-		game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_end, trigger);
-	}
+						{
+							PassiveSkill::Trigger trigger;
+							trigger.player = *this;
+							game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_begin, trigger);
+						}
+						draw(num);
+						chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::decree);
+						{
+							PassiveSkill::Trigger trigger;
+							trigger.player = *this;
+							game.launchPassiveSkills(PassiveSkill::TriggerTime::decree_end, trigger);
+						}
 }
 
 void Player::inherit(std::unique_ptr<Card>& card) {
@@ -859,7 +859,7 @@ Card& Player::judge() {
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.cards = {cardRef};
+		trigger.cards = { cardRef };
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::judge_end, trigger);
 	}
 	game.broadcastState();

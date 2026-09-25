@@ -335,10 +335,12 @@ bool 锐刻::filter(const GameLogic& game, const Player& carrier, const Trigger&
 	return trigger.getCard().getName() == Card::Name::number_5;
 }
 bool 锐刻::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	std::size_t choice = carrier.ask(L"发动[锐刻]，选择一项：", {
+	std::size_t choice = carrier.ask(
+		L"发动[锐刻]，选择一项：", {
 		L"令一名角色摸1张牌",
 		L"令一名角色摸5张牌并失去此技能至本局结束"
-									 }, false);
+		}, false
+	);
 
 	if (choice == 0) return false;
 

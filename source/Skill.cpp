@@ -97,17 +97,17 @@ void Skill::resetPhaseCount() {
 
 //无子技能
 PassiveSkill::PassiveSkill(const std::string& name, const std::string& description,
-			   const limit_t& limit, bool forced,
-			   const TriggerPlayer& triggerPlayer,
-			   const TriggerTime& triggerTime)
+						   const limit_t& limit, bool forced,
+						   const TriggerPlayer& triggerPlayer,
+						   const TriggerTime& triggerTime)
 	: Skill(name, description, limit),
 	forced(forced),
 	triggerPlayer(triggerPlayer),
 	triggerTime(triggerTime) {}
 
 bool PassiveSkill::matchTrigger(const TriggerTime& currentTriggerTime,
-						  const Player& carrier,
-						  const Trigger& trigger) const {
+								const Player& carrier,
+								const Trigger& trigger) const {
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
 		triggerTime == TriggerTime::game_end ||
@@ -152,7 +152,7 @@ void PassiveSkill::setForced(const bool newForced) {
 //         主动技
 // **********************
 ActiveSkill::ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
-			   const limit_t& _phaseLimit, TriggerTime _triggerTime)
+						 const limit_t& _phaseLimit, TriggerTime _triggerTime)
 	:Skill(_name, _info, _limit), triggerTime(_triggerTime), phaseLimit(_phaseLimit) {}
 
 

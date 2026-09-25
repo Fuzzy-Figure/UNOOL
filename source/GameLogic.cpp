@@ -482,7 +482,7 @@ Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardR
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = player;
-		trigger.cards = {cardRef};
+		trigger.cards = { cardRef };
 		launchPassiveSkills(PassiveSkill::TriggerTime::card_discard_end, trigger);
 	}
 	return cardRef;
