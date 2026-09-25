@@ -62,13 +62,6 @@ public:
 	Level getMaxLevel() const;
 	Level getMinLevel() const;
 	std::string skillsName() const;
-	template<class SpetificSkill>
-	SpetificSkill& getSkill(const std::string& skillName) {
-		if (opt_ref<Skill> skill = findSkill(skillName); skill.has_value()) {
-			return skill.value().get().to<SpetificSkill>();
-		}
-		else throw std::runtime_error("没有找到技能：" + skillName);
-	}
 	std::string getSkillsText() const;
 	std::string getImagePath() const;
 	//组合角色返回多张图路径，单角色返回单元素
@@ -89,8 +82,23 @@ public:
 #pragma region 技能管理
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
-	bool hasSkill(const std::string& skillName) const;
-	opt_ref<Skill> findSkill(const std::string& skillName);
+	template<class T>
+	bool hasSkill() { return findSkill<T>().has_value(); }
+	template<class T>
+	opt_ref<T> findSkill() {
+		for (auto& s : passiveSkills)
+			if (typeid(*s) == typeid(T)) return s->to<T>();
+		for (auto& s : instantSkills)
+			if (typeid(*s) == typeid(T)) return s->to<T>();
+		for (auto& s : transformSkills)
+			if (typeid(*s) == typeid(T)) return s->to<T>();
+		return std::nullopt;
+	}
+	template<class T>
+	T& getSkill() {
+		if (auto s = findSkill<T>(); s.has_value()) return s.value();
+		else throw std::runtime_error("没有找到技能");
+	}
 	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, PassiveSkill::Trigger& trigger) const;
 	void addSkill(std::unique_ptr<PassiveSkill> skill);
 	void addSkill(std::unique_ptr<InstantSkill> skill);

@@ -1584,7 +1584,7 @@ bool 骚扰::content(Trigger& trigger) {
 	//判定非蓝色：回复1点体力
 	carrier.recover(1);
 	//重置【落水】使用次数（不改是否锁定）
-	if (auto opt = carrier.findSkill("落水")) {
+	if (auto opt = carrier.findSkill<落水>()) {
 		opt->get().resetCount();
 	}
 	std::cout << "<技能> " << carrier.characterName()
@@ -2018,9 +2018,9 @@ void 连营::reset() {
 
 std::set<Card::Type>& 困界::getTriggered(Player& carrier) const {
 	if (!triggeredCache.has_value()) {
-		std::optional skillOpt = carrier.findSkill("连营");
+		auto skillOpt = carrier.findSkill<连营>();
 		if (!skillOpt.has_value()) throw std::runtime_error("没有找到\"连营\"技能");
-		triggeredCache = skillOpt.value().get().to<连营>().triggered;
+		triggeredCache = skillOpt.value().get().triggered;
 	}
 	return triggeredCache.value().get();
 }
@@ -2329,7 +2329,7 @@ bool 易主::content(Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "发动易主，弃置获得的两张牌" << std::endl;
 
 	//渡荆可发动次数+1
-	if (auto sp = carrier.findSkill("渡荆"); sp.has_value()) {
+	if (auto sp = carrier.findSkill<渡荆>(); sp.has_value()) {
 		auto& dj = sp.value().get();
 		dj.increaseLimit(1);
 		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="
@@ -2480,9 +2480,9 @@ bool 弹暴::content(Trigger& trigger) {
 	const std::size_t X = getCount();
 
 	//找到【手枪】
-	auto sp = carrier.findSkill("手枪");
+	auto sp = carrier.findSkill<手枪>();
 	if (!sp.has_value()) return false;
-	手枪& handgun = static_cast<手枪&>(sp.value().get());
+	手枪& handgun = sp.value().get();
 
 	//循环 X 次：选角色 -> 造成伤害（取消则继续循环）
 	for (std::size_t i = 0; i < X; ++i) {
@@ -2521,7 +2521,7 @@ bool 星轨::content(Trigger& trigger) {
 
 	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
-		carrier.getSkill<引力>("引力").increaseLimit(1);
+		carrier.getSkill<引力>().increaseLimit(1);
 		carrier.markCharInfoDirty();
 		carrier.hint(L"判定结果是：" + judgeResultStr + L"\n获得一次【引力】使用次数！");
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
@@ -2565,7 +2565,7 @@ bool 引力_目标::content(Trigger& trigger) {
 bool 引力_清除目标::filter(const Trigger& trigger) const {
 	//检查是否有玩家身上存在引力_目标
 	for (auto& p : trigger.getGame().getPlayers()) {
-		if (p.get().findSkill("引力_目标").has_value()) return true;
+		if (p.get().findSkill<引力_目标>().has_value()) return true;
 	}
 	return false;
 }
@@ -2612,9 +2612,7 @@ bool 铃铛::content(Trigger& trigger) {
 	if (X == 3) {
 		static const std::vector<std::string> derivedNames = { "爆糖", "硬糖", "甘草", "跳糖", "薄荷" };
 		for (const std::string& name : derivedNames) {
-			if (carrier.findSkill(name).has_value()) {
-				carrier.removeSkill(name);
-			}
+			carrier.removeSkill(name);
 		}
 
 		//随机获得一个衍生技

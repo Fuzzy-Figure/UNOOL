@@ -329,30 +329,6 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 
 
 // ==================== 技能管理 ====================
-bool Character::hasSkill(const std::string& skillName) const {
-	for (const auto& skill : passiveSkills) {
-		if (skill->getName() == skillName) return true;
-	}
-	for (const auto& skill : instantSkills) {
-		if (skill->getName() == skillName) return true;
-	}
-	for (const auto& skill : transformSkills) {
-		if (skill->getName() == skillName) return true;
-	}
-	return false;
-}
-opt_ref<Skill> Character::findSkill(const std::string& skillName) {
-	for (auto& skill : passiveSkills) {
-		if (skill->getName() == skillName) return *skill;
-	}
-	for (const auto& skill : instantSkills) {
-		if (skill->getName() == skillName) return *skill;
-	}
-	for (const auto& skill : transformSkills) {
-		if (skill->getName() == skillName) return *skill;
-	}
-	return std::nullopt;
-}
 void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,
 									PassiveSkill::Trigger& trigger) const {
 	//先收集要发动的技能引用，避免content中修改passiveSkills导致迭代器失效

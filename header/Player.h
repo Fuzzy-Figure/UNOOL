@@ -103,8 +103,9 @@ public:
 
 #pragma region 角色属性 - 技能 - 委托到 Character
 	std::string skillsName() const { return character->skillsName(); }
-	template<class SpetificSkill>
-	SpetificSkill& getSkill(const std::string& skillName) { return character->getSkill<SpetificSkill>(skillName); }
+	template<class T> bool hasSkill() { return character->hasSkill<T>(); }
+	template<class T> opt_ref<T> findSkill() { return character->findSkill<T>(); }
+	template<class T> T& getSkill() { return character->getSkill<T>(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
@@ -123,8 +124,6 @@ public:
 	bool handSatisfy(const std::function<bool(const Cards&)>& condition) const { return hand->satisfy(condition); }
 	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
-	bool hasSkill(const std::string& name) const { return character->hasSkill(name); }
-	opt_ref<Skill> findSkill(const std::string& name) { return character->findSkill(name); }
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return character->getTransformSkills(); }
 #pragma endregion
