@@ -2,7 +2,6 @@
 #include "../header/Player.h"
 #include "../header/Character.h"
 #include "../header/Card.h"
-#include "../header/PassiveSkill.h"
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <ranges>
@@ -544,10 +543,6 @@ void GameLogic::resetGame() {
 		const std::string mode = unool::getServerConfig().value("mode", "normal");
 		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "singleInitHandCount";
 		player->draw(unool::getServerConfig()[handKey]);
-		// 巨富：初始手牌改为十二张（在初始手牌基础上额外摸四张）
-		if (player->hasSkill<巨富>()) {
-			player->draw(4, DrawReason::skill);
-		}
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁

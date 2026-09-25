@@ -276,6 +276,19 @@ public:
 	void reset() override { PassiveSkill::reset(); disabled = false; }
 };
 
+//巨富_摸牌：摸牌阶段额外摸一张牌
+class 巨富_摸牌 : public PassiveSkillImpl<巨富_摸牌> {
+public:
+	巨富_摸牌() : PassiveSkillImpl<巨富_摸牌>(
+		"巨富_摸牌", "",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//巨富：游戏开始时初始手牌改为十二张；摸牌阶段额外摸一张牌
 class 巨富 : public PassiveSkillImpl<巨富> {
 public:
 	巨富() : PassiveSkillImpl<巨富>(
@@ -283,7 +296,8 @@ public:
 		"锁定技，游戏开始时，你的初始手牌改为十二张；你执行摸牌阶段额外摸一张牌。",
 		1, true,
 		TriggerPlayer::self,
-		TriggerTime::draw_begin
+		TriggerTime::game_begin,
+		巨富_摸牌::make()
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };

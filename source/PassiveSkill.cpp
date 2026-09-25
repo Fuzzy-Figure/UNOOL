@@ -367,7 +367,14 @@ bool 锐刻::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：巨富 ====================
 bool 巨富::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	//摸牌阶段额外摸一张牌（初始手牌补足到十二张由 GameLogic::startGame 处理）
+	carrier.draw(4, DrawReason::skill);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 子技能：巨富_摸牌 ====================
+bool 巨富_摸牌::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//摸牌阶段额外摸一张牌
 	if (trigger.hasDrawReason() && trigger.getDrawReason() == DrawReason::phase_draw) {
 		trigger.getNumber() += 1;
 	}
