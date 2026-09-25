@@ -16,26 +16,6 @@ struct AccountSession {
 	int losses = 0;
 };
 
-struct WindowTitle {
-	std::string name;
-	std::string withBrackets;
-};
-
-static WindowTitle parseCommandLineArgs(int argc, char* argv[]) {
-	std::string windowTitle = "Client ?";
-	std::string windowTitleWithBrackets = "[Client ?]";
-	for (int i = 1; i < argc; ++i) {
-		std::string arg = argv[i];
-		if (arg == "--title" || arg == "-t") {
-			if (i + 1 < argc) {
-				windowTitle = argv[++i];
-				windowTitleWithBrackets = "[" + windowTitle + "]";
-			}
-		}
-	}
-	return { windowTitle, windowTitleWithBrackets };
-}
-
 // 等待一个账号响应包；超时返回 nullopt
 static std::optional<AccountProtocol::AccountResponse> waitForAccountResponse(
 	ClientNetwork& net, MessageType expectedResp, const std::string& titleBrackets) {
@@ -355,11 +335,12 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 	}
 }
 
-int main(int argc, char* argv[]) {
+int main() {
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 
-	auto [windowTitle, windowTitleWithBrackets] = parseCommandLineArgs(argc, argv);
+	const std::string windowTitle = "Client";
+	const std::string windowTitleWithBrackets = "[Client]";
 	std::cout << windowTitleWithBrackets << " 启动客户端..." << std::endl;
 
 	ClientNetwork clientNetwork;

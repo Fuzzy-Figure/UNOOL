@@ -905,11 +905,11 @@ bool 望日::content(Trigger& trigger) {
 }
 
 // ==================== 技能：慈父_子（望日子技能） ====================
-bool 慈父_子::filter(const Trigger& trigger) const {
+bool 望日_子::filter(const Trigger& trigger) const {
 	const Card& c = trigger.getCard();
 	return c.is(Card::Color::yellow) && c.is(Card::Name::number_9);
 }
-bool 慈父_子::content(Trigger& trigger) {
+bool 望日_子::content(Trigger& trigger) {
 	Player& carrier = trigger.getCarrier();
 	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
 	std::cout << "<技能> " << carrier.characterName() << "发动慈父，获得一张【+4】" << std::endl;

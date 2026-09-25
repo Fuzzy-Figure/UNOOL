@@ -430,7 +430,6 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	}
 }
 
-
 // ==================== 技能：引力 ====================
 bool 引力::content(GameLogic& game, Player& carrier) {
 	carrier.markCharInfoDirty();

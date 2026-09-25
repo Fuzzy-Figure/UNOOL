@@ -560,11 +560,10 @@ public:
 };
 
 
-//慈父_子：望日的隐藏子技能，承载慈父效果（打出黄色9后获得+4）
-class 慈父_子 : public PassiveSkillImpl<慈父_子> {
+class 望日_子 : public PassiveSkillImpl<望日_子> {
 public:
-	慈父_子() : PassiveSkillImpl<慈父_子>(
-		"慈父_子", "",
+	望日_子() : PassiveSkillImpl<望日_子>(
+		"望日_子", "",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -573,7 +572,6 @@ public:
 	bool content(Trigger& trigger) override;
 };
 
-//望日：锁定技，回合开始时令黄色牌点数+1；打出黄色9后可获+4（由慈父_子承载）
 class 望日 : public PassiveSkillImpl<望日> {
 public:
 	望日() : PassiveSkillImpl<望日>(
@@ -583,7 +581,7 @@ public:
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin,
-		慈父_子::make()
+		望日_子::make()
 	) {}
 	bool filter(const Trigger& trigger) const override;
 	bool content(Trigger& trigger) override;
@@ -1159,7 +1157,7 @@ class 加速 : public PassiveSkillImpl<加速> {
 public:
 	加速() : PassiveSkillImpl<加速>(
 		"加速",
-		"每局游戏限零次，你成为牌的目标时，可以发动一次【炫技】并令此牌无效。",
+		"每局游戏限{limit}次（剩余{remaining}次），你成为牌的目标时，可以发动一次【炫技】并令此牌无效。",
 		0, false,
 		TriggerPlayer::self,
 		TriggerTime::card_target_begin
