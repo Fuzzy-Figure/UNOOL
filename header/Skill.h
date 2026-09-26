@@ -71,6 +71,10 @@ public:
 	//子技能：任意类型的技能均可拥有任意类型的子技能
 	std::vector<std::unique_ptr<Skill>> subSkills;
 
+protected:
+	//子类可重写以支持特有占位符；返回 nullopt 表示不认识该 key（原样输出）
+	virtual std::optional<std::string> extraPlaceholder(const std::string& key) const { return std::nullopt; }
+
 private:
 	//解析 info 中的占位符（{limit}/{remaining}/{count}，{{ 转义为 {）
 	std::string formatInfo() const;

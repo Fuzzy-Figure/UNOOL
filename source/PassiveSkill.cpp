@@ -1533,6 +1533,7 @@ bool 骚扰::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 // ==================== 技能：犬子 ====================
 bool 犬子::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
 	++playCount;
+	carrier.markCharInfoDirty();
 	return playCount >= count + 1;
 }
 bool 犬子::content(GameLogic& game, Player& carrier, Trigger& trigger) {
@@ -1540,6 +1541,7 @@ bool 犬子::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (discarded.empty()) return false;
 
 	playCount = 0;
+	carrier.markCharInfoDirty();
 	std::cout << "<技能> " << carrier.characterName() << "发动犬子，弃置了一张牌" << std::endl;
 	game.broadcastState();
 	return true;
@@ -1547,6 +1549,10 @@ bool 犬子::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 void 犬子::reset() {
 	PassiveSkill::reset();
 	playCount = 0;
+}
+std::optional<std::string> 犬子::extraPlaceholder(const std::string& key) const {
+	if (key == "playCount") return std::to_string(playCount);
+	return std::nullopt;
 }
 
 bool 黑洞::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {

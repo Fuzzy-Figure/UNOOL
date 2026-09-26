@@ -19,7 +19,7 @@ private:
 	GameLogic& game;
 	bool banned = false;
 	bool hasUsed = false;
-	bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
+	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
 	sf::Keyboard::Scancode currentInput = sf::Keyboard::Scancode::Unknown;
 
 	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
@@ -157,7 +157,7 @@ public:
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }
-	void markCharInfoDirty() { charInfoDirty = true; }
+	void markCharInfoDirty() const { charInfoDirty = true; }
 	bool isCharInfoDirty() const { return charInfoDirty; }
 	void clearCharInfoDirty() { charInfoDirty = false; }
 #pragma endregion

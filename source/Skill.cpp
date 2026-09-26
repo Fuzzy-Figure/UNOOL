@@ -38,8 +38,15 @@ std::string Skill::formatInfo() const {
 				result += std::to_string(count);
 			}
 			else {
-				//未知占位符，原样输出
-				result += info.substr(i, end - i + 1);
+				//交给子类处理特有占位符
+				auto extra = extraPlaceholder(key);
+				if (extra.has_value()) {
+					result += extra.value();
+				}
+				else {
+					//未知占位符，原样输出
+					result += info.substr(i, end - i + 1);
+				}
 			}
 			i = end + 1;
 		}

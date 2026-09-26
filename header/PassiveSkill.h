@@ -282,7 +282,7 @@ class 巨富_摸牌 : public PassiveSkillImpl<巨富_摸牌> {
 public:
 	巨富_摸牌() : PassiveSkillImpl<巨富_摸牌>(
 		"巨富_摸牌", "",
-		1, true,
+		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::draw_begin
 	) {}
@@ -871,7 +871,8 @@ class 犬子 : public PassiveSkillImpl<犬子> {
 public:
 	犬子() : PassiveSkillImpl<犬子>(
 		"犬子",
-		"你每累计打出X张牌后（X为此技能发动次数，初始为1），可弃置一张牌。",
+		"你每累计打出{count}张牌后（X为此技能发动次数，初始为1），可弃置一张牌。\n"
+		"当前已打出{playCount}张牌",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -879,6 +880,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
+	std::optional<std::string> extraPlaceholder(const std::string& key) const override;
 };
 
 
