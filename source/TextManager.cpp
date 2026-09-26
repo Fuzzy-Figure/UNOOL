@@ -116,6 +116,15 @@ void TextManager::displayTextInCenter(const std::wstring& text,
 	displayText(text, pos, size, color);
 }
 
+void TextManager::displayTextInUp(const std::wstring& text,
+								   const sf::Vector2f& size,
+								   const sf::Color& color) {
+	const sf::Vector2f actualSize = measureText(text, static_cast<unsigned int>(size.y));
+	const sf::Vector2u windowSize = window.getSize();
+
+	displayText(text, { std::max(0.f, (windowSize.x - actualSize.x) / 2.f), 0.f }, size, color);
+}
+
 void TextManager::displayTextInRight(const std::wstring& text,
 									 const sf::Vector2f& size,
 									 const sf::Color& color) {

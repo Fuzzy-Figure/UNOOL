@@ -213,7 +213,7 @@ void LoginScene::pollAccountPackets() {
 				sendLoginRequest(); // 注册成功，自动登录
 			}
 			else {
-				message = L"注册失败: " + std::wstring(resp->msg.begin(), resp->msg.end());
+				message = L"注册失败: " + unool::string::to_utf16(resp->msg);
 				status = Status::Idle;
 			}
 			continue;
@@ -236,7 +236,7 @@ void LoginScene::pollAccountPackets() {
 					<< " 负=" << resp->losses << std::endl;
 			}
 			else {
-				message = L"登录失败: " + std::wstring(resp->msg.begin(), resp->msg.end());
+				message = L"登录失败: " + unool::string::to_utf16(resp->msg);
 				status = Status::Idle;
 			}
 			continue;
@@ -249,8 +249,8 @@ void LoginScene::render() {
 	auto& textMgr = renderer.getTextManager();
 	window.clear(sf::Color::White);
 
-	// 标题
-	textMgr.displayTextInCenter(L"UNOOL 账号系统", { 40, 80 }, sf::Color::Black);
+	// 标题（靠上居中，避免与输入框重叠）
+	textMgr.displayTextInUp(L"UNOOL 账号系统", { 40, 80 }, sf::Color::Black);
 
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
@@ -274,13 +274,13 @@ void LoginScene::render() {
 	// 用户名行
 	textMgr.displayText(L"用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 	drawBox(usernameBox, focus == Focus::Username);
-	textMgr.displayText(std::wstring(username.begin(), username.end()),
+	textMgr.displayText(unool::string::to_utf16(username),
 		{ usernameBox.position.x + 15.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 
 	// 密码行 (明文显示)
 	textMgr.displayText(L"密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 	drawBox(passwordBox, focus == Focus::Password);
-	textMgr.displayText(std::wstring(password.begin(), password.end()),
+	textMgr.displayText(unool::string::to_utf16(password),
 		{ passwordBox.position.x + 15.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 
 	// 按钮
