@@ -1,6 +1,6 @@
 {
   "banCount": 2,
-  "characters": [ "闫传学", "弗兰肯" ],
+  //"characters": [ "白板", "白板" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
   "mode": "normal",
