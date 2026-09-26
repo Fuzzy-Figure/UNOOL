@@ -138,10 +138,10 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 	addAllSkillsFrom(info2);
 
 	//组合角色体力：平均向上取百
-	const std::size_t hp1 = info1.hp;
-	const std::size_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
-	const std::size_t hp2 = info2.hp;
-	const std::size_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
+	const hp_t hp1 = info1.hp;
+	const hp_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
+	const hp_t hp2 = info2.hp;
+	const hp_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
 	newChara->hp = unool::math::ceil(static_cast<double>(hp1 + hp2) / 200.0) * 100;
 	newChara->maxHp = unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 200.0) * 100;
 	return newChara;
@@ -388,31 +388,24 @@ void Character::resetSkills() {
 
 
 // ==================== 体力管理 ====================
-std::size_t Character::getHp() const {
+Character::hp_t Character::getHp() const {
 	return hp;
 }
-std::size_t Character::getMaxHp() const {
+Character::hp_t Character::getMaxHp() const {
 	return maxHp;
 }
-void Character::setHp(std::size_t newHp) {
+void Character::setHp(hp_t newHp) {
 	hp = std::min(newHp, maxHp);
 }
-std::size_t Character::damage(std::size_t damage) {
-	std::size_t actualDamageValue = damage;
-	if (hp <= damage) {
-		actualDamageValue = hp;
-		hp = 0;
-	}
-	else {
-		hp -= damage;
-	}
-	return actualDamageValue;
+Character::hp_t Character::damage(hp_t damage) {
+	hp -= damage;
+	return damage;
 }
-void Character::recover(std::size_t num) {
+void Character::recover(hp_t num) {
 	hp = std::min(hp + num, maxHp);
 }
 bool Character::isDead() const {
-	return hp == 0;
+	return hp <= 0;
 }
 
 void Character::removeMark(const std::string& m, std::size_t count) {

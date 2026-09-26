@@ -2,40 +2,42 @@
 #include "../header/GameLogic.h"
 #include <thread>
 
-std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
+Character::hp_t Player::damage(Character::hp_t damageValue, opt_ref<Player> source) {
 	if (source.has_value()) {
-		damageValue *= source.value().get().getDamageMultiplier();
+		damageValue *= static_cast<Character::hp_t>(source.value().get().getDamageMultiplier());
 	}
+	std::size_t dmg = static_cast<std::size_t>(damageValue);
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
 		trigger.source = source;
-		trigger.number = damageValue;
+		trigger.number = dmg;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_begin, trigger);
 	}
-	const std::size_t actualDamageValue = character->damage(damageValue);
+	const Character::hp_t actualDamageValue = character->damage(damageValue);
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
 		trigger.source = source;
-		trigger.number = damageValue;
+		trigger.number = dmg;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_end, trigger);
 	}
 	return actualDamageValue;
 }
 
-void Player::recover(std::size_t num) {
+void Player::recover(Character::hp_t num) {
+	std::size_t amount = static_cast<std::size_t>(num);
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.number = num;
+		trigger.number = amount;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::recover_begin, trigger);
 	}
 	character->recover(num);
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
-		trigger.number = num;
+		trigger.number = amount;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::recover_end, trigger);
 	}
 }

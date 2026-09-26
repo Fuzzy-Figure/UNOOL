@@ -699,7 +699,7 @@ void 举报::reset() {
 //=============猥琐====================
 bool 猥琐::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
 	//找到最大体力
-	std::size_t maxHp = 0;
+	Character::hp_t maxHp = 0;
 	game.forEachPlayer([&maxHp](const Player& p) {
 		maxHp = std::max(maxHp, p.getHp());
 	});
@@ -2578,12 +2578,12 @@ bool 重锤::filter(const GameLogic& game, const Player& carrier, const Trigger&
 }
 bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//失去10%当前体力（向下取整）
-	std::size_t loss = unool::math::floor(carrier.getHp() * 0.1);
+	Character::hp_t loss = unool::math::floor(carrier.getHp() * 0.1);
 	carrier.damage(loss, carrier);
 
 	//造成5%已损体力点伤害（向上取整），已损体力在失去之后计算
-	std::size_t lostHp = carrier.getMaxHp() - carrier.getHp();
-	std::size_t dmg = unool::math::ceil(lostHp * 0.05);
+	Character::hp_t lostHp = carrier.getMaxHp() - carrier.getHp();
+	Character::hp_t dmg = unool::math::ceil(lostHp * 0.05);
 
 	auto targetOpt = carrier.chooseOtherPlayer(L"【重锤】选择一名其他角色造成" + std::to_wstring(dmg) + L"点伤害", true);
 	if (!targetOpt) return false;

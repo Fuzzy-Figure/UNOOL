@@ -508,7 +508,7 @@ void GameLogic::checkRoundEnd() {
 		Player& l = loser.value();
 		w.incrementWins();
 		l.incrementLosses();
-		const std::size_t actualDamageValue = l.damage(l.handValue(), w);
+		const Character::hp_t actualDamageValue = l.damage(l.handValue(), w);
 		std::cout << w.characterName() << "对" << l.characterName()
 			<< "造成" << actualDamageValue << "点伤害（败者手牌价值 " << l.handValue()
 			<< " * 倍率 " << w.getDamageMultiplier() << "），"

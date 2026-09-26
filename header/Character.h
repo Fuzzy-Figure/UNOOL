@@ -10,6 +10,7 @@
 class Character {
 #pragma region 类型定义
 public:
+	using hp_t = int;
 	enum class Level { S, A, B, C, D, F };
 	struct Info {
 		std::string group;
@@ -17,8 +18,8 @@ public:
 		std::vector<PassiveSkill::Factory> passiveSkills;
 		std::vector<InstantSkill::Factory> instantSkills;
 		std::vector<TransformSkill::Factory> transformSkills;
-		std::size_t hp;
-		std::size_t maxHp = 0;
+		hp_t hp;
+		hp_t maxHp = 0;
 	};
 	using Entry = std::pair<std::string, Info>;
 #pragma endregion
@@ -29,8 +30,8 @@ private:
 	std::list<std::unique_ptr<PassiveSkill>> passiveSkills;
 	std::list<std::unique_ptr<InstantSkill>> instantSkills;
 	std::list<std::unique_ptr<TransformSkill>> transformSkills;
-	std::size_t hp = 0;
-	std::size_t maxHp = 0;
+	hp_t hp = 0;
+	hp_t maxHp = 0;
 	std::size_t damageMultiplier = 1;
 	std::size_t wins = 0;
 	std::size_t losses = 0;
@@ -108,11 +109,11 @@ public:
 #pragma endregion
 
 #pragma region 体力管理
-	std::size_t getHp() const;
-	std::size_t getMaxHp() const;
-	void setHp(std::size_t newHp);
-	std::size_t damage(std::size_t damage);
-	void recover(std::size_t num);
+	hp_t getHp() const;
+	hp_t getMaxHp() const;
+	void setHp(hp_t newHp);
+	hp_t damage(hp_t damage);
+	void recover(hp_t num);
 	bool isDead() const;
 #pragma endregion
 

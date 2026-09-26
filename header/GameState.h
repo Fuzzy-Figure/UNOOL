@@ -3,14 +3,15 @@
 #include <unordered_map>
 #include <string>
 #include "Card.h"
+#include "Character.h"
 
 struct PlayerState {
 	std::size_t id = -1;
 	Hand hand;
 	std::vector<std::string> characterNames;
 	std::vector<std::string> skins;
-	std::size_t hp = 0;
-	std::size_t maxHp = 0;
+	Character::hp_t hp = 0;
+	Character::hp_t maxHp = 0;
 	std::unordered_map<std::string, std::size_t> marks;
 
 	PlayerState() = default;
