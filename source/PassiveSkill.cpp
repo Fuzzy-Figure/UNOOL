@@ -1550,8 +1550,9 @@ void 犬子::reset() {
 	PassiveSkill::reset();
 	playCount = 0;
 }
-std::optional<std::string> 犬子::extraPlaceholder(const std::string& key) const {
+std::optional<std::string> 犬子::extraPlaceholders(const std::string& key) const {
 	if (key == "playCount") return std::to_string(playCount);
+	if (key == "count+1") return std::to_string(count + 1);
 	return std::nullopt;
 }
 

@@ -871,7 +871,7 @@ class 犬子 : public PassiveSkillImpl<犬子> {
 public:
 	犬子() : PassiveSkillImpl<犬子>(
 		"犬子",
-		"你每累计打出{count}张牌后（X为此技能发动次数，初始为1），可弃置一张牌。\n"
+		"你每累计打出{count+1}张牌后（X为此技能发动次数，初始为1），可弃置一张牌。\n"
 		"当前已打出{playCount}张牌",
 		unlimited, false,
 		TriggerPlayer::self,
@@ -880,7 +880,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
-	std::optional<std::string> extraPlaceholder(const std::string& key) const override;
+	std::optional<std::string> extraPlaceholders(const std::string& key) const override;
 };
 
 

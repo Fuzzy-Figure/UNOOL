@@ -39,7 +39,7 @@ std::string Skill::formatInfo() const {
 			}
 			else {
 				//交给子类处理特有占位符
-				auto extra = extraPlaceholder(key);
+				auto extra = extraPlaceholders(key);
 				if (extra.has_value()) {
 					result += extra.value();
 				}
