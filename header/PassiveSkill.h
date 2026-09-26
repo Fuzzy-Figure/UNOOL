@@ -1254,7 +1254,7 @@ public:
 	渡荆() : PassiveSkillImpl<渡荆>(
 		"渡荆",
 		"每局游戏限一次，回合结束时，若你手牌数全场最多，\n"
-		"可与其他角色拼点：没赢的角色从游戏外获得一张随机颜色的【+2】。",
+		"可与其他角色拼点：赢的角色回复5体力，没赢的角色从游戏外获得一张随机颜色的【+2】。",
 		1, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_end
@@ -1430,13 +1430,13 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//重锤：锁定技，回合结束时，若体力值>100，失去10%当前体力（向下取整），对一名其他角色造成5%已损体力点伤害（向上取整）
+//重锤：锁定技，回合结束时，若体力值>100，失去10%当前体力（向下取整），对一名其他角色造成3%已损体力点伤害（向上取整）
 class 重锤 : public PassiveSkillImpl<重锤> {
 public:
 	重锤() : PassiveSkillImpl<重锤>(
 		"重锤",
 		"锁定技，回合结束时，若你体力值>100，你失去10%当前体力（向下取整），"
-		"对一名其他角色造成5%你已损体力点伤害（向上取整）。",
+		"对一名其他角色造成3%你已损体力点伤害（向上取整）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end

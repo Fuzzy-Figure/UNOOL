@@ -264,8 +264,8 @@ class 猛击 : public InstantSkillImpl<猛击> {
 public:
 	猛击() : InstantSkillImpl<猛击>(
 		"猛击",
-		"限定技，出牌阶段，你可以与一名其他角色各回复10%的已损体力（向下取整），"
-		"因此回复体力较少的角色被封印五个回合。",
+		"限定技，出牌阶段，你可以与一名其他角色各回复20%的已损体力（向下取整），"
+		"因此回复体力较少的角色被封印十个回合。",
 		1, unlimited,
 		TriggerTime::phase_use
 	) {}

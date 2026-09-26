@@ -2281,7 +2281,8 @@ bool 渡荆::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	};
 
 	if (*result == Player::CompareResult::lose) {
-		//carrier没赢
+		//carrier没赢，target赢
+		target.recover(5);
 		giveRandomDraw2(carrier);
 	}
 	else if (*result == Player::CompareResult::draw) {
@@ -2291,6 +2292,7 @@ bool 渡荆::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	}
 	else {
 		//carrier赢，target没赢
+		carrier.recover(5);
 		giveRandomDraw2(target);
 	}
 
@@ -2583,7 +2585,7 @@ bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//造成5%已损体力点伤害（向上取整），已损体力在失去之后计算
 	Character::hp_t lostHp = carrier.getMaxHp() - carrier.getHp();
-	std::size_t dmg = unool::math::ceil(lostHp * 0.05);
+	std::size_t dmg = unool::math::ceil(lostHp * 0.03);
 
 	auto targetOpt = carrier.chooseOtherPlayer(L"【重锤】选择一名其他角色造成" + std::to_wstring(dmg) + L"点伤害", true);
 	if (!targetOpt) return false;

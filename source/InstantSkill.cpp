@@ -563,18 +563,18 @@ bool 猛击::content(GameLogic& game, Player& carrier) {
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	//各回复10%已损体力（向下取整）
-	std::size_t cRec = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.1);
-	std::size_t tRec = unool::math::floor((target.getMaxHp() - target.getHp()) * 0.1);
+	//各回复20%已损体力（向下取整）
+	std::size_t cRec = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.2);
+	std::size_t tRec = unool::math::floor((target.getMaxHp() - target.getHp()) * 0.2);
 	carrier.recover(cRec);
 	target.recover(tRec);
 
-	//回复体力较少的角色被封印五个回合；相等则不封印
+	//回复体力较少的角色被封印10个回合；相等则不封印
 	if (cRec < tRec) {
-		carrier.seal(5);
+		carrier.seal(10);
 	}
 	else if (tRec < cRec) {
-		target.seal(5);
+		target.seal(10);
 	}
 
 	std::cout << "<技能> " << carrier.characterName() << "发动猛击，"
