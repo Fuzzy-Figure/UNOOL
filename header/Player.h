@@ -18,6 +18,7 @@ private:
 	std::unique_ptr<Character> character = nullptr;
 	GameLogic& game;
 	bool banned = false;
+	std::size_t sealed = 0;  //封印剩余回合数，0表示未封印
 	bool hasUsed = false;
 	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
 	sf::Keyboard::Scancode currentInput = sf::Keyboard::Scancode::Unknown;
@@ -157,6 +158,8 @@ public:
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }
+	void seal(std::size_t duration);
+	bool isSealed() const { return sealed > 0; }
 	void markCharInfoDirty() const { charInfoDirty = true; }
 	bool isCharInfoDirty() const { return charInfoDirty; }
 	void clearCharInfoDirty() { charInfoDirty = false; }

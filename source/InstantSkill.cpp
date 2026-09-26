@@ -556,3 +556,31 @@ bool 突袭::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+
+// ==================== 技能：猛击 ====================
+bool 猛击::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer(L"【猛击】选择一名其他角色", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	//各回复10%已损体力（向下取整）
+	std::size_t cRec = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.1);
+	std::size_t tRec = unool::math::floor((target.getMaxHp() - target.getHp()) * 0.1);
+	carrier.recover(cRec);
+	target.recover(tRec);
+
+	//回复体力较少的角色被封印五个回合；相等则不封印
+	if (cRec < tRec) {
+		carrier.seal(5);
+	}
+	else if (tRec < cRec) {
+		target.seal(5);
+	}
+
+	std::cout << "<技能> " << carrier.characterName() << "发动猛击，"
+		<< carrier.characterName() << "回复" << cRec << "点体力，"
+		<< target.characterName() << "回复" << tRec << "点体力" << std::endl;
+	game.broadcastState();
+	return true;
+}
+

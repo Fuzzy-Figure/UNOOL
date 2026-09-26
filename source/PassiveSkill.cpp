@@ -2570,3 +2570,28 @@ bool 淬毒::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::cout << "<技能> " << carrier.characterName() << "淬毒令" << player.characterName() << "受到" << dmg << "点伤害" << std::endl;
 	return true;
 }
+
+
+// ==================== 技能：重锤 ====================
+bool 重锤::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return carrier.getHp() > 100;
+}
+bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//失去10%当前体力（向下取整）
+	std::size_t loss = unool::math::floor(carrier.getHp() * 0.1);
+	carrier.damage(loss, carrier);
+
+	//造成5%已损体力点伤害（向上取整），已损体力在失去之后计算
+	std::size_t lostHp = carrier.getMaxHp() - carrier.getHp();
+	std::size_t dmg = unool::math::ceil(lostHp * 0.05);
+
+	auto targetOpt = carrier.chooseOtherPlayer(L"【重锤】选择一名其他角色造成" + std::to_wstring(dmg) + L"点伤害", true);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	target.damage(dmg, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "发动重锤，失去" << loss << "点体力，对"
+		<< target.characterName() << "造成" << dmg << "点伤害" << std::endl;
+	game.broadcastState();
+	return true;
+}

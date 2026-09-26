@@ -112,6 +112,8 @@ PassiveSkill::PassiveSkill(const std::string& name, const std::string& descripti
 bool PassiveSkill::matchTrigger(const TriggerTime& currentTriggerTime,
 								const Player& carrier,
 								const Trigger& trigger) const {
+	//封印状态下所有被动技能失效
+	if (carrier.isSealed()) return false;
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
 		triggerTime == TriggerTime::game_end ||

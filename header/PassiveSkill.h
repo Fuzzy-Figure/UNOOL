@@ -1429,3 +1429,18 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
+//重锤：锁定技，回合结束时，若体力值>100，失去10%当前体力（向下取整），对一名其他角色造成5%已损体力点伤害（向上取整）
+class 重锤 : public PassiveSkillImpl<重锤> {
+public:
+	重锤() : PassiveSkillImpl<重锤>(
+		"重锤",
+		"锁定技，回合结束时，若你体力值>100，你失去10%当前体力（向下取整），"
+		"对一名其他角色造成5%你已损体力点伤害（向上取整）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};

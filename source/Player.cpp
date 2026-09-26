@@ -239,6 +239,11 @@ void Player::ban(Player& source, Card& card) {
 	}
 }
 
+void Player::seal(std::size_t duration) {
+	sealed = duration;
+	std::cout << "玩家" << id << "(" << characterName() << ")被封印" << duration << "回合" << std::endl;
+}
+
 
 // === 回合流程 ===
 
@@ -307,6 +312,8 @@ void Player::phaseEnd() {
 		trigger.player = *this;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_end, trigger);
 	}
+	//回合结束，封印剩余回合数-1
+	if (sealed > 0) --sealed;
 }
 
 bool Player::turn() {
@@ -422,6 +429,8 @@ void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 									std::vector<ref<InstantSkill>>& instantRefs,
 									std::vector<ref<TransformSkill>>& transformRefs) {
 	if (phase == ActiveSkill::TriggerTime::never) return;
+	//封印状态下所有主动技能失效
+	if (isSealed()) return;
 	for (auto& s : getInstantSkills()) {
 		if (s->canTriggerAt(phase) && s->canUse()) instantRefs.emplace_back(*s);
 	}
