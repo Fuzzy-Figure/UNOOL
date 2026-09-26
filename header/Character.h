@@ -112,8 +112,8 @@ public:
 	hp_t getHp() const;
 	hp_t getMaxHp() const;
 	void setHp(hp_t newHp);
-	hp_t damage(hp_t damage);
-	void recover(hp_t num);
+	std::size_t damage(std::size_t damage);
+	void recover(std::size_t num);
 	bool isDead() const;
 #pragma endregion
 

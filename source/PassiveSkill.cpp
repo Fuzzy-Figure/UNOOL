@@ -2578,12 +2578,12 @@ bool 重锤::filter(const GameLogic& game, const Player& carrier, const Trigger&
 }
 bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//失去10%当前体力（向下取整）
-	Character::hp_t loss = unool::math::floor(carrier.getHp() * 0.1);
+	std::size_t loss = unool::math::floor(carrier.getHp() * 0.1);
 	carrier.damage(loss, carrier);
 
 	//造成5%已损体力点伤害（向上取整），已损体力在失去之后计算
 	Character::hp_t lostHp = carrier.getMaxHp() - carrier.getHp();
-	Character::hp_t dmg = unool::math::ceil(lostHp * 0.05);
+	std::size_t dmg = unool::math::ceil(lostHp * 0.05);
 
 	auto targetOpt = carrier.chooseOtherPlayer(L"【重锤】选择一名其他角色造成" + std::to_wstring(dmg) + L"点伤害", true);
 	if (!targetOpt) return false;

@@ -68,8 +68,8 @@ public:
 	std::vector<std::string> getImagePaths() const { return character->getImagePaths(); }
 	Character::hp_t getHp() const { return character->getHp(); }
 	Character::hp_t getMaxHp() const { return character->getMaxHp(); }
-	Character::hp_t damage(Character::hp_t damage, opt_ref<Player> source);
-	void recover(Character::hp_t num);
+	std::size_t damage(std::size_t damage, opt_ref<Player> source);
+	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
 	std::size_t getDamageMultiplier() const { return character->getDamageMultiplier(); }
 	void setDamageMultiplier(std::size_t m) { character->setDamageMultiplier(m); }

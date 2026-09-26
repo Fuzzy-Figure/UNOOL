@@ -192,7 +192,7 @@ bool 幽愈::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 幽愈::content(GameLogic& game, Player& carrier) {
 	carrier.removeMark("幽灵");
-	const Character::hp_t recoverValue = unool::math::floor(0.15 * (carrier.getMaxHp() - carrier.getHp()));
+	const std::size_t recoverValue = unool::math::floor(0.15 * (carrier.getMaxHp() - carrier.getHp()));
 	carrier.recover(recoverValue);
 	std::cout << "<技能> " << carrier.characterName() << "发动幽愈，移去\"幽灵\"标记并回复" << recoverValue << "体力" << std::endl;
 	game.broadcastState();
@@ -328,10 +328,10 @@ bool 再生::content(GameLogic& game, Player& carrier) {
 
 	//回复至50点
 	if (carrier.getHp() < 50) {
-		carrier.recover(50 - carrier.getHp());
+		carrier.recover(static_cast<std::size_t>(50 - carrier.getHp()));
 	}
 
-	Character::hp_t healed = carrier.getHp() - beforeHp;
+	std::size_t healed = static_cast<std::size_t>(carrier.getHp() - beforeHp);
 	std::cout << "<技能> " << carrier.characterName() << "发动再生，弃置"
 		<< greenIndices.size() << "张绿色牌，回复" << healed << "点体力（至50）" << std::endl;
 
@@ -564,8 +564,8 @@ bool 猛击::content(GameLogic& game, Player& carrier) {
 	Player& target = targetOpt.value().get();
 
 	//各回复10%已损体力（向下取整）
-	Character::hp_t cRec = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.1);
-	Character::hp_t tRec = unool::math::floor((target.getMaxHp() - target.getHp()) * 0.1);
+	std::size_t cRec = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.1);
+	std::size_t tRec = unool::math::floor((target.getMaxHp() - target.getHp()) * 0.1);
 	carrier.recover(cRec);
 	target.recover(tRec);
 

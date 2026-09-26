@@ -142,8 +142,8 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 	const hp_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
 	const hp_t hp2 = info2.hp;
 	const hp_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
-	newChara->hp = unool::math::ceil(static_cast<double>(hp1 + hp2) / 200.0) * 100;
-	newChara->maxHp = unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 200.0) * 100;
+	newChara->hp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(hp1 + hp2) / 200.0) * 100);
+	newChara->maxHp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 200.0) * 100);
 	return newChara;
 }
 
@@ -397,12 +397,12 @@ Character::hp_t Character::getMaxHp() const {
 void Character::setHp(hp_t newHp) {
 	hp = std::min(newHp, maxHp);
 }
-Character::hp_t Character::damage(hp_t damage) {
-	hp -= damage;
+std::size_t Character::damage(std::size_t damage) {
+	hp -= static_cast<hp_t>(damage);
 	return damage;
 }
-void Character::recover(hp_t num) {
-	hp = std::min(hp + num, maxHp);
+void Character::recover(std::size_t num) {
+	hp = std::min(hp + static_cast<hp_t>(num), maxHp);
 }
 bool Character::isDead() const {
 	return hp <= 0;
