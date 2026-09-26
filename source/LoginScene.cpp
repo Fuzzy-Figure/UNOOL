@@ -250,7 +250,7 @@ void LoginScene::render() {
 	window.clear(sf::Color::White);
 
 	// 标题（靠上居中，避免与输入框重叠）
-	textMgr.displayTextInUp(L"UNOOL 账号系统", { 40, 80 }, sf::Color::Black);
+	textMgr.displayTextInUp(L"UNOOL", { 40, 80 }, sf::Color::Black);
 
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
@@ -268,7 +268,12 @@ void LoginScene::render() {
 		shape.setOutlineThickness(3.f);
 		shape.setOutlineColor(sf::Color::Black);
 		window.draw(shape);
-		textMgr.displayText(label, { r.position.x + 40.f, r.position.y + 10.f }, { 30, 60 }, sf::Color::Black);
+		const sf::Vector2f labelSize = { 30, 60 };
+		const sf::Vector2f labelMeasured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
+		textMgr.displayText(label,
+			{ r.position.x + (r.size.x - labelMeasured.x) / 2.f,
+			  r.position.y + (r.size.y - labelMeasured.y) / 2.f },
+			labelSize, sf::Color::Black);
 	};
 
 	// 用户名行
@@ -287,14 +292,23 @@ void LoginScene::render() {
 	drawButton(loginBtn, L"登录");
 	drawButton(registerBtn, L"注册");
 
-	// 状态提示
+	// 状态提示（按钮下方居中，避免与输入框重叠）
+	const sf::Vector2u winSize = window.getSize();
 	if (!message.empty()) {
-		textMgr.displayTextInCenter(message, { 25, 50 }, sf::Color::Red);
+		const sf::Vector2f msgSize = { 25, 50 };
+		const sf::Vector2f msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
+		textMgr.displayText(message,
+			{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.78f },
+			msgSize, sf::Color::Red);
 	}
 
-	// 操作提示
-	textMgr.displayTextInCenter(L"Tab 切换输入框 | Enter 提交 | Esc 退出",
-		{ 18, 36 }, sf::Color(120, 120, 120));
+	// 操作提示（底部居中）
+	const std::wstring hint = L"Tab 切换输入框 | Enter 提交 | Esc 退出";
+	const sf::Vector2f hintSize = { 18, 36 };
+	const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+	textMgr.displayText(hint,
+		{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
+		hintSize, sf::Color(120, 120, 120));
 
 	window.display();
 }
