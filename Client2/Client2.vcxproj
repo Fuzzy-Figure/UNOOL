@@ -29,6 +29,7 @@
     <ClCompile Include="..\source\GameState.cpp" />
     <ClCompile Include="..\source\ImageManager.cpp" />
     <ClCompile Include="..\source\InstantSkill.cpp" />
+    <ClCompile Include="..\source\LoginScene.cpp" />
     <ClCompile Include="..\source\PassiveSkill.cpp" />
     <ClCompile Include="..\source\Player.cpp" />
     <ClCompile Include="..\source\Skill.cpp" />
@@ -48,6 +49,7 @@
     <ClInclude Include="..\header\GameState.h" />
     <ClInclude Include="..\header\ImageManager.h" />
     <ClInclude Include="..\header\InstantSkill.h" />
+    <ClInclude Include="..\header\LoginScene.h" />
     <ClInclude Include="..\header\PassiveSkill.h" />
     <ClInclude Include="..\header\Player.h" />
     <ClInclude Include="..\header\Skill.h" />

@@ -1,4 +1,5 @@
 #include "../header/GameRenderer.h"
+#include "../header/LoginScene.h"
 #include "../header/Socket.h"
 #include "../header/utils.h"
 #include "../header/AccountProtocol.h"
@@ -8,172 +9,6 @@
 #include <string>
 #include <iostream>
 
-
-struct AccountSession {
-	std::string username;
-	int points = 0;
-	int wins = 0;
-	int losses = 0;
-};
-
-// 等待一个账号响应包；超时返回 nullopt
-static std::optional<AccountProtocol::AccountResponse> waitForAccountResponse(
-	ClientNetwork& net, MessageType expectedResp, const std::string& titleBrackets) {
-	auto startTime = std::chrono::steady_clock::now();
-	while (true) {
-		if (std::chrono::steady_clock::now() - startTime > std::chrono::seconds(5)) {
-			std::cout << "响应超时，请重试" << std::endl;
-			return std::nullopt;
-		}
-
-		net.update();
-		auto packetOpt = net.receivePacket();
-		if (!packetOpt.has_value()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
-			continue;
-		}
-
-		sf::Packet packet = packetOpt.value();
-		int msgType;
-		if (!(packet >> msgType)) continue;
-
-		if (static_cast<MessageType>(msgType) == expectedResp) {
-			return AccountProtocol::parseAccountResponse(packet);
-		}
-		else if (static_cast<MessageType>(msgType) == MessageType::ConnectionInfo) {
-			std::size_t pid;
-			if (packet >> pid) {
-				net.setPlayerId(pid);
-				std::cout << titleBrackets << " 分配到玩家ID: " << pid << std::endl;
-			}
-		}
-	}
-}
-
-// 等待用户名预检响应；返回 exists 或 nullopt（超时）
-static std::optional<bool> waitForCheckUsernameResponse(ClientNetwork& net, const std::string& titleBrackets) {
-	auto startTime = std::chrono::steady_clock::now();
-	while (true) {
-		if (std::chrono::steady_clock::now() - startTime > std::chrono::seconds(5)) {
-			std::cout << "响应超时，请重试" << std::endl;
-			return std::nullopt;
-		}
-
-		net.update();
-		auto packetOpt = net.receivePacket();
-		if (!packetOpt.has_value()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
-			continue;
-		}
-
-		sf::Packet packet = packetOpt.value();
-		int msgType;
-		if (!(packet >> msgType)) continue;
-
-		if (static_cast<MessageType>(msgType) == MessageType::CheckUsernameResponse) {
-			return AccountProtocol::parseCheckUsernameResponse(packet);
-		}
-		else if (static_cast<MessageType>(msgType) == MessageType::ConnectionInfo) {
-			std::size_t pid;
-			if (packet >> pid) {
-				net.setPlayerId(pid);
-				std::cout << titleBrackets << " 分配到玩家ID: " << pid << std::endl;
-			}
-		}
-	}
-}
-
-// 账号阶段：注册/登录菜单循环，返回登录成功的账号信息
-static AccountSession accountPhase(ClientNetwork& net, const std::string& titleBrackets) {
-	while (true) {
-		// 处理已收到的非账号包（如 ConnectionInfo），避免菜单阻塞时丢包
-		net.update();
-		while (auto early = net.receivePacket()) {
-			int t;
-			if (!(*early >> t)) continue;
-			if (static_cast<MessageType>(t) == MessageType::ConnectionInfo) {
-				std::size_t pid;
-				if (*early >> pid) {
-					net.setPlayerId(pid);
-					std::cout << titleBrackets << " 分配到玩家ID: " << pid << std::endl;
-				}
-			}
-		}
-
-		std::cout << "\n========== UNOOL 账号系统 ==========\n"
-			<< "1. 注册\n"
-			<< "2. 登录\n"
-			<< "请选择: ";
-		std::optional<int> choice = unool::input::safeReadInt(1, 2);
-		if (!choice.has_value()) {
-			std::cout << "无效选项，请重新输入" << std::endl;
-			continue;
-		}
-
-		std::string username, password;
-		std::cout << "用户名: ";
-		username = unool::input::safeReadLine();
-		if (username.empty()) {
-			std::cout << "用户名不能为空，请重新输入" << std::endl;
-			continue;
-		}
-
-		// 注册：先预检用户名是否存在
-		if (choice == 1) {
-			sf::Packet checkReq = AccountProtocol::makeCheckUsernameRequest(username);
-			if (!net.send(checkReq)) { std::cout << "发送失败，请重试" << std::endl; continue; }
-			auto exists = waitForCheckUsernameResponse(net, titleBrackets);
-			if (!exists) continue;
-			if (*exists) {
-				std::cout << "该用户名已存在，请重新选择" << std::endl;
-				continue;
-			}
-			// 用户名可用，继续输入密码
-			std::cout << "密码: ";
-			password = unool::input::safeReadNoSpace();
-			if (password.empty()) {
-				std::cout << "密码不能为空或含有空格，请重新输入" << std::endl;
-				continue;
-			}
-
-			sf::Packet req = AccountProtocol::makeRegisterRequest(username, password);
-			if (!net.send(req)) { std::cout << "发送失败，请重试" << std::endl; continue; }
-			auto resp = waitForAccountResponse(net, MessageType::RegisterResponse, titleBrackets);
-			if (!resp) continue;
-			std::cout << (resp->ok ? "注册成功" : "注册失败") << ": " << resp->msg << std::endl;
-			if (!resp->ok) continue;
-			// 注册成功，自动登录
-			std::cout << "自动登录中..." << std::endl;
-		}
-		else {
-			// 登录：直接输入密码
-			std::cout << "密码: ";
-			password = unool::input::safeReadNoSpace();
-			if (password.empty()) {
-				std::cout << "密码不能为空或含有空格，请重新输入" << std::endl;
-				continue;
-			}
-		}
-
-		// 登录
-		sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
-		if (!net.send(req)) { std::cout << "发送失败，请重试" << std::endl; continue; }
-		auto resp = waitForAccountResponse(net, MessageType::LoginResponse, titleBrackets);
-		if (!resp) continue;
-		if (!resp->ok) { std::cout << "登录失败: " << resp->msg << std::endl; continue; }
-
-		AccountSession s;
-		s.username = username;
-		s.points = resp->points;
-		s.wins = resp->wins;
-		s.losses = resp->losses;
-		std::cout << "登录成功: " << resp->msg << std::endl;
-		std::cout << "当前积分: " << resp->points
-			<< "  胜场: " << resp->wins
-			<< "  负场: " << resp->losses << std::endl;
-		return s;
-	}
-}
 
 // 解析 Choice 包并更新渲染器
 static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
@@ -354,11 +189,18 @@ int main() {
 		return 1;
 	}
 
-	accountPhase(clientNetwork, windowTitleWithBrackets);
-	std::cout << windowTitleWithBrackets << " 已登录，等待对手登录并开始游戏..." << std::endl;
-
 	GameRenderer::Config rendererConfig("UNOOL - " + windowTitle);
 	GameRenderer renderer(rendererConfig);
+
+	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
+	auto session = login.run();
+	if (!session.ok) {
+		std::cerr << windowTitleWithBrackets << " 登录未完成，退出" << std::endl;
+		system("pause");
+		return 1;
+	}
+
+	std::cout << windowTitleWithBrackets << " 已登录，等待对手登录并开始游戏..." << std::endl;
 	gamePhase(clientNetwork, renderer, windowTitleWithBrackets);
 
 	std::this_thread::sleep_for(3s);

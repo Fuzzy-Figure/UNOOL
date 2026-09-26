@@ -117,6 +117,11 @@ public:
 	void closeWindow();
 	std::optional<sf::Event> pollEvent();
 
+	//供登录等前置场景访问渲染资源
+	sf::RenderWindow& getWindow() { return *window; }
+	TextManager& getTextManager() { return textMgr; }
+	const Config& getConfig() const { return config; }
+
 	//选项提示相关
 	void setChoicePrompt(const Choice& prompt);
 	void clearChoicePrompt();
