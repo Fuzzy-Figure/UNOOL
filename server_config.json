@@ -1,9 +1,9 @@
 {
   "banCount": 2,
-  //"characters": [ "8比特", "斯派克" ],
+  "characters": [ "8比特", "瑟奇" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "mode": "double",
+  "mode": "normal",
   "shielded": {
     "characters": [],
     "groups": []

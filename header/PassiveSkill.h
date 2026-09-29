@@ -1187,7 +1187,7 @@ class 渡荆 : public PassiveSkillImpl<渡荆> {
 public:
 	渡荆() : PassiveSkillImpl<渡荆>(
 		"渡荆",
-		"每局游戏限一次，回合结束时，若你手牌数全场最多，\n"
+		"每局游戏限{limit}次，回合结束时，若你手牌数全场最多，\n"
 		"可与其他角色拼点：赢的角色回复5体力，没赢的角色从游戏外获得一张随机颜色的【+2】。",
 		1, false,
 		TriggerPlayer::self,

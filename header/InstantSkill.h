@@ -277,7 +277,7 @@ class 绝技 : public InstantSkillImpl<绝技> {
 public:
 	绝技() : InstantSkillImpl<绝技>(
 		"绝技",
-		"出牌阶段发动（可用{remaining}次）：\n"
+		"每局限{limit}次（剩余{remaining}次），出牌阶段，\n"
 		"第1次：随机获得一张【封禁】；\n"
 		"第2次：随机获得一张【+2】，且以后你出【+2】时目标额外摸一张牌；\n"
 		"第3次：随机获得一张万能牌；\n"

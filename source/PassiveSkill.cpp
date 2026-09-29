@@ -2146,6 +2146,7 @@ bool 易主::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (auto sp = carrier.findSkill<渡荆>(); sp.has_value()) {
 		auto& dj = sp.value().get();
 		dj.increaseLimit(1);
+		carrier.markCharInfoDirty();
 		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="
 			<< dj.getLimit().value() << std::endl;
 	}
@@ -2527,6 +2528,7 @@ bool 劲凉::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		carrier.draw(1, DrawReason::skill);
 		if (auto skill = carrier.findSkill<绝技>(); skill.has_value()) {
 			skill->get().increaseLimit(1);
+			carrier.markCharInfoDirty();
 		}
 		std::cout << "<技能> " << carrier.characterName() << "发动劲凉，连续打出" << consecutive
 			<< "张同类型牌，摸一张牌且【绝技】可用次数+1" << std::endl;
