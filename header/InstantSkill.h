@@ -272,3 +272,19 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//绝技：出牌阶段，每局限0次（靠劲凉增加可用次数），根据发动次数有不同效果
+class 绝技 : public InstantSkillImpl<绝技> {
+public:
+	绝技() : InstantSkillImpl<绝技>(
+		"绝技",
+		"出牌阶段发动（可用{remaining}次）：\n"
+		"第1次：随机获得一张【封禁】；\n"
+		"第2次：随机获得一张【+2】，且以后你出【+2】时目标额外摸一张牌；\n"
+		"第3次：随机获得一张万能牌；\n"
+		"第4次及以上：将一张手牌变为指定颜色的随机非数字牌，并回复发动次数点体力。",
+		0, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

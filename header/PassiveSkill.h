@@ -1378,3 +1378,33 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
+//劲凉：锁定技，每连续打出3张同类型牌后，摸一张牌且【绝技】使用次数+1
+class 劲凉 : public PassiveSkillImpl<劲凉> {
+	mutable Card::Type lastType = Card::Type::unknown;
+	mutable std::size_t consecutive = 0;
+public:
+	劲凉() : PassiveSkillImpl<劲凉>(
+		"劲凉",
+		"锁定技，每连续打出3张同类型牌后，你摸一张牌且【绝技】使用次数+1。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override;
+};
+
+//绝技_额外摸牌：被动，瑟奇打出+2时目标额外摸一张牌（绝技第2次发动后获得）
+class 绝技_额外摸牌 : public PassiveSkillImpl<绝技_额外摸牌> {
+public:
+	绝技_额外摸牌() : PassiveSkillImpl<绝技_额外摸牌>(
+		"绝技_额外摸牌",
+		"锁定技，你打出【+2】时，目标额外摸一张牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};

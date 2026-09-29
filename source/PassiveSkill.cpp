@@ -2510,3 +2510,43 @@ bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+//================劲凉================
+bool 劲凉::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Card& card = trigger.getCard();
+	Card::Type type = card.getType();
+	if (type == lastType) {
+		++consecutive;
+	}
+	else {
+		lastType = type;
+		consecutive = 1;
+	}
+
+	if (consecutive % 3 == 0) {
+		carrier.draw(1, DrawReason::skill);
+		if (auto skill = carrier.findSkill<绝技>(); skill.has_value()) {
+			skill->get().increaseLimit(1);
+		}
+		std::cout << "<技能> " << carrier.characterName() << "发动劲凉，连续打出" << consecutive
+			<< "张同类型牌，摸一张牌且【绝技】可用次数+1" << std::endl;
+		game.broadcastState();
+	}
+	return true;
+}
+
+void 劲凉::reset() {
+	PassiveSkill::reset();
+	lastType = Card::Type::unknown;
+	consecutive = 0;
+}
+
+//================绝技_额外摸牌================
+bool 绝技_额外摸牌::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return trigger.getCard().is(Card::Name::action_draw2);
+}
+bool 绝技_额外摸牌::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.next().draw(1, DrawReason::skill);
+	game.broadcastState();
+	return true;
+}
