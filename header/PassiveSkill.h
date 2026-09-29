@@ -953,41 +953,34 @@ public:
 };
 
 
-//爬竿_伤害（子技能）：目标角色未出牌的回合结束时，失去1%最大体力
 class 爬竿_伤害 : public PassiveSkillImpl<爬竿_伤害> {
-	std::shared_ptr<std::size_t> targetId;
 public:
-	爬竿_伤害(std::shared_ptr<std::size_t> t)
-		: PassiveSkillImpl<爬竿_伤害>(
-			"爬竿_伤害",
-			"锁定技，目标角色本局每个未出过牌的回合结束时，失去1%最大体力（向下取整）。",
-			unlimited, true,
-			TriggerPlayer::anybody, TriggerTime::phase_end
-		), targetId(std::move(t)) {}
-
-	static std::unique_ptr<爬竿_伤害> makeWith(std::shared_ptr<std::size_t> t) {
-		return std::make_unique<爬竿_伤害>(std::move(t));
-	}
+	爬竿_伤害() : PassiveSkillImpl<爬竿_伤害>(
+		"爬竿_伤害",
+		"锁定技，目标角色本局每个未出过牌的回合结束时，失去1%最大体力（向下取整）。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::phase_end
+	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//爬竿（主技能）：每局开始选目标，与子技能共享 targetId
 class 爬竿 : public PassiveSkillImpl<爬竿> {
-	std::shared_ptr<std::size_t> targetId;
+	friend class 爬竿_伤害;
+	opt_ref<Player> targetOpt_;
 public:
-	爬竿() : 爬竿(std::make_shared<std::size_t>(static_cast<std::size_t>(-1))) {}
-	爬竿(std::shared_ptr<std::size_t> t)
-		: PassiveSkillImpl<爬竿>(
-			"爬竿",
-			"锁定技，每局游戏开始时，选择一名其他角色，该角色本局每个未出过牌的回合结束时，其失去1%最大体力（向下取整）。",
-			unlimited, true,
-			TriggerPlayer::self, 
-			TriggerTime::game_begin,
-			爬竿_伤害::makeWith(t)
-		), targetId(t) {}
+	爬竿() : PassiveSkillImpl<爬竿>(
+		"爬竿",
+		"锁定技，每局游戏开始时，选择一名其他角色，该角色本局每个未出过牌的回合结束时，其失去1%最大体力（向下取整）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin,
+		爬竿_伤害::make()
+	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
 
 //渊涡：你每个未出过牌的回合结束时，回复1点体力
 class 渊涡 : public PassiveSkillImpl<渊涡> {

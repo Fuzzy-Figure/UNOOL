@@ -97,6 +97,7 @@ public:
 	template<SpecificSkill T> bool hasSkill() const { return character->hasSkill<T>(); }
 	template<SpecificSkill T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
 	template<SpecificSkill T> T& getSkill() { return character->getSkill<T>(); }
+	template<SpecificSkill T> const T& getSkill() const { return character->getSkill<T>(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }

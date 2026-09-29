@@ -97,7 +97,12 @@ public:
 	}
 	template<SpecificSkill T>
 	T& getSkill() {
-		if (auto s = findSkill<T>(); s.has_value()) return s.value();
+		if (opt_ref<T> s = findSkill<T>(); s.has_value()) return s.value();
+		else throw std::runtime_error("没有找到技能");
+	}
+	template<SpecificSkill T>
+	T& getSkill() const {
+		if (const opt_ref<T> s = findSkill<T>(); s.has_value()) return s.value();
 		else throw std::runtime_error("没有找到技能");
 	}
 	template<SpecificSkill T>

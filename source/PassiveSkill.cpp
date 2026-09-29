@@ -1700,11 +1700,25 @@ bool 捉奸::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
+// ==================== 技能：爬竿（主技能） ====================
+bool 爬竿::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto targetOpt = carrier.chooseOtherPlayer(L"[爬竿] 选择一名其他角色", true);
+	if (!targetOpt.has_value()) return false;
+
+	targetOpt_ = targetOpt;
+	std::cout << "<技能> " << carrier.characterName() << "发动爬竿，选择了"
+		<< targetOpt_->get().characterName() << std::endl;
+	return true;
+}
 
 // ==================== 技能：爬竿_伤害（子技能） ====================
 bool 爬竿_伤害::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	return trigger.getPlayer().getId() == *targetId
-		&& !trigger.getPlayer().getHasUsed();
+	if (auto targetOpt = carrier.getSkill<爬竿>().targetOpt_; targetOpt.has_value()) {
+		Player& target = targetOpt.value();
+		return trigger.getPlayer() == target
+			&& !trigger.getPlayer().getHasUsed();
+	}
+	return false;
 }
 bool 爬竿_伤害::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = trigger.getPlayer();
@@ -1713,16 +1727,6 @@ bool 爬竿_伤害::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	std::cout << "<技能> " << carrier.characterName()
 		<< "发动爬竿，" << target.characterName() << "失去" << damage << "点体力" << std::endl;
 	game.broadcastState();
-	return true;
-}
-
-// ==================== 技能：爬竿（主技能） ====================
-bool 爬竿::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	auto targetOpt = carrier.chooseOtherPlayer(L"[爬竿] 选择一名其他角色", true);
-	if (!targetOpt.has_value()) return false;
-	*targetId = targetOpt->get().getId();
-	std::cout << "<技能> " << carrier.characterName() << "发动爬竿，选择了"
-		<< targetOpt->get().characterName() << std::endl;
 	return true;
 }
 
