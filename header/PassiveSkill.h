@@ -1350,18 +1350,23 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害
+//淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害；每过五回合，若标记未叠加则减少一个
 class 淬毒 : public PassiveSkillImpl<淬毒> {
+	mutable std::size_t tick = 0;
+	mutable std::unordered_map<std::size_t, std::size_t> lastCount;
+	mutable std::unordered_map<std::size_t, std::size_t> lastChangeTick;
 public:
 	淬毒() : PassiveSkillImpl<淬毒>(
 		"淬毒",
-		"锁定技，有\"毒\"标记角色的回合结束时，其受到标记数量点伤害。",
+		"锁定技，有\"毒\"标记角色的回合结束时，其受到标记数量点伤害；\n"
+		"每过五回合，若标记未叠加则减少一个。",
 		unlimited, true,
 		TriggerPlayer::anybody,
 		TriggerTime::phase_end
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override;
 };
 
 //重锤：锁定技，回合结束时，若体力值>100，失去10%当前体力（向下取整），对一名其他角色造成3%已损体力点伤害（向上取整）

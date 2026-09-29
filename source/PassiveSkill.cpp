@@ -2484,7 +2484,43 @@ bool 淬毒::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t dmg = player.getMarkCount("毒");
 	player.damage(dmg, carrier);
 	std::cout << "<技能> " << carrier.characterName() << "淬毒令" << player.characterName() << "受到" << dmg << "点伤害" << std::endl;
+
+	//每过五回合，若毒标记未叠加则每回合减少一个
+	++tick;
+	game.forEachPlayer([this](Player& p) {
+		if (!p.hasMark("毒")) return;
+		std::size_t id = p.getId();
+		std::size_t cnt = p.getMarkCount("毒");
+
+		auto it = lastCount.find(id);
+		if (it == lastCount.end()) {
+			//首次记录
+			lastCount[id] = cnt;
+			lastChangeTick[id] = tick;
+		}
+		else if (cnt > it->second) {
+			//被叠加了，重置计时
+			lastCount[id] = cnt;
+			lastChangeTick[id] = tick;
+		}
+		else if (tick - lastChangeTick[id] >= 5) {
+			//五回合未叠加，减1（不重置计时，后续每回合继续减）
+			p.removeMark("毒");
+			lastCount[id] = cnt - 1;
+			std::cout << "<淬毒> " << p.characterName() << "的毒标记五回合未叠加，减少一个（剩余" << (cnt - 1) << "）" << std::endl;
+		}
+		else {
+			lastCount[id] = cnt;
+		}
+	});
 	return true;
+}
+
+void 淬毒::reset() {
+	PassiveSkill::reset();
+	tick = 0;
+	lastCount.clear();
+	lastChangeTick.clear();
 }
 
 
