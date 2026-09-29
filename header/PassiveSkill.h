@@ -718,7 +718,7 @@ public:
 			TriggerTime::phase_begin
 		), record(std::move(_record)) {}
 
-	static std::unique_ptr<PassiveSkill> makeWith(std::shared_ptr<std::vector<Card::Name>> r) {
+	static std::unique_ptr<难题_变牌> makeWith(std::shared_ptr<std::vector<Card::Name>> r) {
 		return std::make_unique<难题_变牌>(std::move(r));
 	}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
@@ -965,7 +965,7 @@ public:
 			TriggerPlayer::anybody, TriggerTime::phase_end
 		), targetId(std::move(t)) {}
 
-	static std::unique_ptr<PassiveSkill> makeWith(std::shared_ptr<std::size_t> t) {
+	static std::unique_ptr<爬竿_伤害> makeWith(std::shared_ptr<std::size_t> t) {
 		return std::make_unique<爬竿_伤害>(std::move(t));
 	}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
@@ -982,7 +982,8 @@ public:
 			"爬竿",
 			"锁定技，每局游戏开始时，选择一名其他角色，该角色本局每个未出过牌的回合结束时，其失去1%最大体力（向下取整）。",
 			unlimited, true,
-			TriggerPlayer::self, TriggerTime::game_begin,
+			TriggerPlayer::self, 
+			TriggerTime::game_begin,
 			爬竿_伤害::makeWith(t)
 		), targetId(t) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;

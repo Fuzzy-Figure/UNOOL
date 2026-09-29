@@ -11,6 +11,16 @@
 class Player;
 class GameLogic;
 
+enum class DrawReason {
+	unknown,
+	phase_draw,
+	skill
+};
+enum class DrawPosition {
+	top,
+	bottom
+};
+
 class PassiveSkill;
 class InstantSkill;
 class TransformSkill;
@@ -22,15 +32,6 @@ class InstantSkillImpl;
 template<class T>
 class TransformSkillImpl;
 
-enum class DrawReason {
-	unknown,
-	phase_draw,
-	skill
-};
-enum class DrawPosition {
-	top,
-	bottom
-};
 
 template<typename T, template<typename> class Impl>
 concept crtp_self = std::derived_from<T, Impl<T>>;
@@ -43,6 +44,11 @@ template<typename T>
 concept SpecificTransformSkill = crtp_self<T, TransformSkillImpl>;
 template<typename T>
 concept SpecificSkill = SpecificPassiveSkill<T> || SpecificInstantSkill<T> || SpecificTransformSkill<T>;
+
+template<typename T>
+concept SpecificSkillUPtr =
+SpecificSkill<typename T::element_type>;
+
 
 class Skill {
 protected:
@@ -184,16 +190,12 @@ public:
 				 const TriggerTime& triggerTime);
 
 	//有子技能（子技能可为任意 Skill 派生类型）
-	template<typename... SubSkills>
-		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
+	template<SpecificSkillUPtr... SubSkills>
 	PassiveSkill(const std::string& _name, const std::string& _description,
 				 const limit_t& _limit, bool _forced,
 				 const TriggerPlayer& _triggerPlayer,
 				 const TriggerTime& _triggerTime,
-				 SubSkills&&... _subSkills)
-		: PassiveSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
-		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
-	}
+				 SubSkills&&... _subSkills);
 	bool matchTrigger(const TriggerTime& currentTriggerTime, const Player& carrier, const Trigger& trigger) const;
 	void launch(GameLogic& game, Player& carrier, Trigger& trigger);
 	void reset() override;
@@ -206,6 +208,16 @@ private:
 	TriggerTime triggerTime;
 	bool forced = false;
 };
+
+template<SpecificSkillUPtr... SubSkills>
+PassiveSkill::PassiveSkill(const std::string& _name, const std::string& _description,
+						   const limit_t& _limit, bool _forced,
+						   const TriggerPlayer& _triggerPlayer,
+						   const TriggerTime& _triggerTime,
+						   SubSkills&&... _subSkills)
+	: PassiveSkill(_name, _description, _limit, _forced, _triggerPlayer, _triggerTime) {
+	(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
+}
 
 class ActiveSkill : public Skill {
 public:
@@ -221,10 +233,11 @@ public:
 				const limit_t& _phaseLimit, TriggerTime _triggerTime);
 
 	//有子技能（子技能可为任意 Skill 派生类型）
-	template<typename... SubSkills>
-		requires (std::derived_from<typename std::remove_reference_t<SubSkills>::element_type, Skill> && ...)
-	ActiveSkill(const std::string& _name, const std::string& _info, const limit_t& _limit,
-				const limit_t& _phaseLimit, TriggerTime _triggerTime, SubSkills&&... _subSkills)
+	template<SpecificSkillUPtr... SubSkills>
+	ActiveSkill(const std::string& _name, const std::string& _info,
+				const limit_t& _limit, const limit_t& _phaseLimit, 
+				TriggerTime _triggerTime, 
+				SubSkills&&... _subSkills)
 		: ActiveSkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);
 	}
@@ -303,30 +316,33 @@ protected:
 template<class Derived>
 class PassiveSkillImpl : public PassiveSkill {
 public:
-	static std::unique_ptr<PassiveSkill> make() {
+	static std::unique_ptr<Derived> make() {
+		static_assert(SpecificSkill<Derived>,
+					  "技能必须写成 class X : PassiveSkillImpl<X>，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:
 	using PassiveSkill::PassiveSkill;
 };
-//template<class Derived> std::unique_ptr<PassiveSkill> PassiveSkillImpl<Derived>::make() 
 
-//即时型 CRTP 层：只提供 make()
 template<class Derived>
 class InstantSkillImpl : public InstantSkill {
 public:
-	static std::unique_ptr<InstantSkill> make() {
+	static std::unique_ptr<Derived> make() {
+		static_assert(SpecificSkill<Derived>,
+					  "技能必须写成 class X : InstantSkillImpl<X>，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:
 	using InstantSkill::InstantSkill;
 };
 
-//转换型 CRTP 层：只提供 make()
 template<class Derived>
 class TransformSkillImpl : public TransformSkill {
 public:
-	static std::unique_ptr<TransformSkill> make() {
+	static std::unique_ptr<Derived> make() {
+		static_assert(SpecificSkill<Derived>,
+					  "技能必须写成 class X : TransformSkillImpl<X>，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:

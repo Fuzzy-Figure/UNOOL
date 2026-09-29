@@ -2069,7 +2069,7 @@ void 灵爆::reset() {
 bool 灵爆_子::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
 	const Card& c = trigger.getCard();
 	//有目标的牌：封禁/+2/+4
-	bool isTargeted = c.is(Card::Name::action_skip, Card::Name::action_draw2, Card::Name::wild_draw4);
+	bool isTargeted = c.isTargeted();
 	return isTargeted && carrier.hasMark("幽灵");
 }
 
