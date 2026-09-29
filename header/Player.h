@@ -101,7 +101,8 @@ public:
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
-	std::size_t removeSkill(const std::string& name) { const auto n = character->removeSkill(name); if (n) markCharInfoDirty(); return n; }
+	template<class T>
+	bool removeSkill() { if (character->removeSkill<T>()) { markCharInfoDirty(); return true; } return false; }
 	void resetSkills() { character->resetSkills(); }
 #pragma endregion
 

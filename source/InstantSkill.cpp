@@ -146,7 +146,7 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 bool 舞爪::content(GameLogic& game, Player& carrier) {
 	auto drawn = carrier.drawTo(10, DrawReason::skill);
 	carrier.recover(2 * drawn.size());
-	carrier.removeSkill("暗忍");
+	carrier.removeSkill<暗忍>();
 	carrier.addSkill(暗忍_改::make());
 	std::cout << "<技能> " << carrier.characterName() << "发动舞爪，摸"
 		<< drawn.size() << "张，回复" << (2 * drawn.size()) << "点体力，【暗忍】移除失体力效果" << std::endl;
@@ -456,7 +456,7 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 void 引力::reset() {
 	//本局结束：从目标身上移除引力_目标
 	if (target.has_value()) {
-		target.value().get().removeSkill("引力_目标");
+		target.value().get().removeSkill<引力_目标>();
 		target = std::nullopt;
 	}
 	ActiveSkill::reset();

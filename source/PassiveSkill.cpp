@@ -2121,7 +2121,7 @@ bool 走位::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//未输过（X=0）：失去走位+获得芜湖
 	if (X == 0) {
-		carrier.removeSkill("走位");
+		carrier.removeSkill<走位>();
 		carrier.addSkill(芜湖::make());
 		std::cout << "<技能> " << carrier.characterName() << "未输过局，失去【走位】并获得【芜湖】" << std::endl;
 		game.broadcastState();
@@ -2138,7 +2138,7 @@ bool 走位::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//玩家取消或选0张：失去走位+获得芜湖
 	if (choice == 0 || choice == 1) {
-		carrier.removeSkill("走位");
+		carrier.removeSkill<走位>();
 		carrier.addSkill(芜湖::make());
 		std::cout << "<技能> " << carrier.characterName() << "未决议牌，失去【走位】并获得【芜湖】" << std::endl;
 		game.broadcastState();
@@ -2458,7 +2458,7 @@ bool 引力_清除目标::content(GameLogic& game, Player& carrier, Trigger& tri
 	//清除所有玩家身上的引力_目标
 	for (auto& p : game.getPlayers()) {
 		Player& player = p.get();
-		player.removeSkill("引力_目标");
+		player.removeSkill<引力_目标>();
 	}
 	game.broadcastState();
 	return true;
@@ -2490,10 +2490,11 @@ bool 铃铛::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//失去其他技能（5个衍生技）
 	if (X == 3) {
-		static const std::vector<std::string> derivedNames = { "爆糖", "硬糖", "甘草", "跳糖", "薄荷" };
-		for (const std::string& name : derivedNames) {
-			carrier.removeSkill(name);
-		}
+		carrier.removeSkill<爆糖>();
+		carrier.removeSkill<硬糖>();
+		carrier.removeSkill<甘草>();
+		carrier.removeSkill<跳糖>();
+		carrier.removeSkill<薄荷>();
 
 		//随机获得一个衍生技
 		switch (const std::size_t r = unool::random::randomInt(0, 4); r) {

@@ -10,9 +10,17 @@
 
 class Player;
 class GameLogic;
+
 class PassiveSkill;
 class InstantSkill;
 class TransformSkill;
+
+template<class T>
+class PassiveSkillImpl;
+template<class T>
+class InstantSkillImpl;
+template<class T>
+class TransformSkillImpl;
 
 enum class DrawReason {
 	unknown,
@@ -23,6 +31,15 @@ enum class DrawPosition {
 	top,
 	bottom
 };
+
+template<typename T>
+concept SpecificPassiveSkill = std::derived_from <T, PassiveSkillImpl<T>>;
+template<typename T>
+concept SpecificInstantSkill = std::derived_from<T, InstantSkillImpl<T>>;
+template<typename T>
+concept SpecificTransformSkill = std::derived_from<T, TransformSkillImpl<T>>;
+template<typename T>
+concept SpecificSkill = SpecificPassiveSkill<T> || SpecificInstantSkill<T> || SpecificTransformSkill<T>;
 
 class Skill {
 protected:
@@ -63,6 +80,9 @@ public:
 	PassiveSkill& toPassive();
 	InstantSkill& toInstant();
 	TransformSkill& toTransform();
+
+
+
 	template<class SpecificSkill>
 	SpecificSkill& to() {
 		return static_cast<SpecificSkill&>(*this);

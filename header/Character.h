@@ -100,11 +100,23 @@ public:
 		if (auto s = findSkill<T>(); s.has_value()) return s.value();
 		else throw std::runtime_error("没有找到技能");
 	}
+	template<class T>
+	bool removeSkill() {
+		for (auto it = passiveSkills.begin(); it != passiveSkills.end(); ++it) {
+			if (typeid(**it) == typeid(T)) { passiveSkills.erase(it); return true; }
+		}
+		for (auto it = instantSkills.begin(); it != instantSkills.end(); ++it) {
+			if (typeid(**it) == typeid(T)) { instantSkills.erase(it); return true; }
+		}
+		for (auto it = transformSkills.begin(); it != transformSkills.end(); ++it) {
+			if (typeid(**it) == typeid(T)) { transformSkills.erase(it); return true; }
+		}
+		return false;
+	}
 	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, GameLogic& game, Player& carrier, PassiveSkill::Trigger& trigger);
 	void addSkill(std::unique_ptr<PassiveSkill> skill);
 	void addSkill(std::unique_ptr<InstantSkill> skill);
 	void addSkill(std::unique_ptr<TransformSkill> skill);
-	std::size_t removeSkill(const std::string& name);
 	void resetSkills();
 #pragma endregion
 
