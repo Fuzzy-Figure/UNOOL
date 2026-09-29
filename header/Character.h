@@ -83,9 +83,9 @@ public:
 #pragma region 技能管理
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
-	template<class T>
+	template<SpecificSkill T>
 	bool hasSkill() const { return findSkill<T>().has_value(); }
-	template<class T>
+	template<SpecificSkill T>
 	opt_ref<T> findSkill() const {
 		for (auto& s : passiveSkills)
 			if (typeid(*s) == typeid(T)) return s->to<T>();
@@ -95,12 +95,12 @@ public:
 			if (typeid(*s) == typeid(T)) return s->to<T>();
 		return std::nullopt;
 	}
-	template<class T>
+	template<SpecificSkill T>
 	T& getSkill() {
 		if (auto s = findSkill<T>(); s.has_value()) return s.value();
 		else throw std::runtime_error("没有找到技能");
 	}
-	template<class T>
+	template<SpecificSkill T>
 	bool removeSkill() {
 		for (auto it = passiveSkills.begin(); it != passiveSkills.end(); ++it) {
 			if (typeid(**it) == typeid(T)) { passiveSkills.erase(it); return true; }

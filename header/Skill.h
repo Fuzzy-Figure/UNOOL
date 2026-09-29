@@ -32,12 +32,15 @@ enum class DrawPosition {
 	bottom
 };
 
+template<typename T, template<typename> class Impl>
+concept crtp_self = std::derived_from<T, Impl<T>>;
+
 template<typename T>
-concept SpecificPassiveSkill = std::derived_from <T, PassiveSkillImpl<T>>;
+concept SpecificPassiveSkill = crtp_self<T, PassiveSkillImpl>;
 template<typename T>
-concept SpecificInstantSkill = std::derived_from<T, InstantSkillImpl<T>>;
+concept SpecificInstantSkill = crtp_self<T, InstantSkillImpl>;
 template<typename T>
-concept SpecificTransformSkill = std::derived_from<T, TransformSkillImpl<T>>;
+concept SpecificTransformSkill = crtp_self<T, TransformSkillImpl>;
 template<typename T>
 concept SpecificSkill = SpecificPassiveSkill<T> || SpecificInstantSkill<T> || SpecificTransformSkill<T>;
 
@@ -81,11 +84,9 @@ public:
 	InstantSkill& toInstant();
 	TransformSkill& toTransform();
 
-
-
-	template<class SpecificSkill>
-	SpecificSkill& to() {
-		return static_cast<SpecificSkill&>(*this);
+	template<SpecificSkill T>
+	T& to() {
+		return static_cast<T&>(*this);
 	}
 
 	//子技能：任意类型的技能均可拥有任意类型的子技能

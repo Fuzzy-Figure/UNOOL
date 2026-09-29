@@ -94,14 +94,14 @@ public:
 
 #pragma region 角色属性 - 技能 - 委托到 Character
 	std::string skillsName() const { return character->skillsName(); }
-	template<class T> bool hasSkill() const { return character->hasSkill<T>(); }
-	template<class T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
-	template<class T> T& getSkill() { return character->getSkill<T>(); }
+	template<SpecificSkill T> bool hasSkill() const { return character->hasSkill<T>(); }
+	template<SpecificSkill T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
+	template<SpecificSkill T> T& getSkill() { return character->getSkill<T>(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
 	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
-	template<class T>
+	template<SpecificSkill T>
 	bool removeSkill() { if (character->removeSkill<T>()) { markCharInfoDirty(); return true; } return false; }
 	void resetSkills() { character->resetSkills(); }
 #pragma endregion
