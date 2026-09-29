@@ -603,24 +603,19 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 	}
 	else if (count == 3) {
 		//第3次：随机获得一张万能牌
-		carrier.gainCard(std::make_unique<Card>(Card::randomCard([](const Card& c) {
-			return c.isWild();
-		})));
+		carrier.gainCard(std::make_unique<Card>(Card::randomCard(&Card::isWild)));
 		std::cout << "<技能> " << carrier.characterName() << "发动绝技（第3次），随机获得一张万能牌" << std::endl;
 	}
 	else {
-		//第4次及以上：将一张手牌变为指定颜色的随机非数字牌，回复发动次数点体力
+		//第4次及以上：将一张手牌变为随机颜色的随机非数字牌，回复发动次数点体力
 		auto idxOpt = carrier.chooseCard(unool::alwaysTrue, false);
 		if (!idxOpt) return false;
 
-		auto colorOpt = carrier.chooseCardColor(L"【绝技】指定颜色", false);
-		if (!colorOpt) return false;
-
 		Card::ColorName cn = Card::randomCard(&Card::isNotNumber);
-		carrier.getCardByIndex(*idxOpt).set(*colorOpt, cn.second);
+		carrier.getCardByIndex(*idxOpt).set(cn);
 		carrier.recover(count);
 		std::cout << "<技能> " << carrier.characterName() << "发动绝技（第" << count << "次），"
-			<< "将一张手牌变为" << *colorOpt << "随机非数字牌，回复" << count << "点体力" << std::endl;
+			<< "将一张手牌变为随机颜色的非数字牌，回复" << count << "点体力" << std::endl;
 	}
 
 	game.broadcastState();
