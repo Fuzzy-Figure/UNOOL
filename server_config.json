@@ -3,7 +3,7 @@
   //"characters": [ "8比特", "斯派克" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "mode": "normal",
+  "mode": "double",
   "shielded": {
     "characters": [],
     "groups": []
