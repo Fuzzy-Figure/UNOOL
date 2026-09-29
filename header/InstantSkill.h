@@ -247,7 +247,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-//突袭：限定技，出牌阶段，你可令一名其他角色的"毒"标记数量翻倍
+
 class 突袭 : public InstantSkillImpl<突袭> {
 public:
 	突袭() : InstantSkillImpl<突袭>(
@@ -259,7 +259,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-//猛击：限定技，出牌阶段，与一名其他角色各回复10%已损体力，回复较少者被封印五回合
+
 class 猛击 : public InstantSkillImpl<猛击> {
 public:
 	猛击() : InstantSkillImpl<猛击>(
@@ -272,7 +272,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-//绝技：出牌阶段，每局限0次（靠劲凉增加可用次数），根据发动次数有不同效果
+
 class 绝技 : public InstantSkillImpl<绝技> {
 public:
 	绝技() : InstantSkillImpl<绝技>(
