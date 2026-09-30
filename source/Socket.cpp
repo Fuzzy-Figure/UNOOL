@@ -1,6 +1,6 @@
-#include "../header/Socket.h"
-#include "../header/AccountProtocol.h"
-#include "../header/UserDB.h"
+#include "Socket.h"
+#include "AccountProtocol.h"
+#include "UserDB.h"
 #include <iostream>
 #include <thread>
 

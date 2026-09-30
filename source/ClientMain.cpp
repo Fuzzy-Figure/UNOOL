@@ -1,8 +1,8 @@
-#include "../header/GameRenderer.h"
-#include "../header/LoginScene.h"
-#include "../header/Socket.h"
-#include "../header/utils.h"
-#include "../header/AccountProtocol.h"
+#include "GameRenderer.h"
+#include "LoginScene.h"
+#include "Socket.h"
+#include "utils.h"
+#include "AccountProtocol.h"
 #include <Windows.h>
 #include <thread>
 #include <chrono>

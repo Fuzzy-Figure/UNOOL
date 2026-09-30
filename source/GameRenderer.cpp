@@ -1,6 +1,6 @@
-#include "../header/GameRenderer.h"
-#include "../header/Card.h"
-#include "../header/Character.h"
+#include "GameRenderer.h"
+#include "Card.h"
+#include "Character.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>

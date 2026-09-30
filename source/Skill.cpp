@@ -1,6 +1,6 @@
-#include "../header/Skill.h"
-#include "../header/Player.h"
-#include "../header/GameLogic.h"
+#include "Skill.h"
+#include "Player.h"
+#include "GameLogic.h"
 #include <iostream>
 
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)

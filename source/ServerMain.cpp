@@ -1,7 +1,7 @@
-#include "../header/GameLogic.h"
-#include "../header/Socket.h"
-#include "../header/utils.h"
-#include "../header/UserDB.h"
+#include "GameLogic.h"
+#include "Socket.h"
+#include "utils.h"
+#include "UserDB.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>

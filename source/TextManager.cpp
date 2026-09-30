@@ -1,5 +1,5 @@
-#include "../header/TextManager.h"
-#include "../header/utils.h"
+#include "TextManager.h"
+#include "utils.h"
 #include <iostream>
 
 TextManager::TextManager(sf::RenderWindow& _window)

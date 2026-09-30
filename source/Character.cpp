@@ -1,7 +1,7 @@
-#include "../header/Character.h"
-#include "../header/PassiveSkill.h"
-#include "../header/InstantSkill.h"
-#include "../header/TransformSkill.h"
+#include "Character.h"
+#include "PassiveSkill.h"
+#include "InstantSkill.h"
+#include "TransformSkill.h"
 #include <filesystem>
 #include <algorithm>
 #include <stdexcept>

@@ -1,7 +1,7 @@
-#include "../header/GameLogic.h"
-#include "../header/Player.h"
-#include "../header/Character.h"
-#include "../header/Card.h"
+#include "GameLogic.h"
+#include "Player.h"
+#include "Character.h"
+#include "Card.h"
 #include <iostream>
 #include <ranges>
 #include <algorithm>

@@ -1,7 +1,7 @@
-﻿#include "../header/PassiveSkill.h"
-#include "../header/InstantSkill.h"
-#include "../header/TransformSkill.h"
-#include "../header/GameLogic.h"
+#include "PassiveSkill.h"
+#include "InstantSkill.h"
+#include "TransformSkill.h"
+#include "GameLogic.h"
 
 // ==================== 技能：八爪 ====================
 std::size_t 八爪::getCardCount() const {

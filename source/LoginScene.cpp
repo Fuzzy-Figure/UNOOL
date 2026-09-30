@@ -1,6 +1,6 @@
-#include "../header/LoginScene.h"
-#include "../header/GameRenderer.h"
-#include "../header/AccountProtocol.h"
+#include "LoginScene.h"
+#include "GameRenderer.h"
+#include "AccountProtocol.h"
 #include <iostream>
 
 LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title)

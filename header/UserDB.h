@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <optional>
 #include <json.hpp>
-#include "../header/Character.h"
+#include "Character.h"
 
 struct UserInfo {
 	std::string password;

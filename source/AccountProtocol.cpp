@@ -1,5 +1,5 @@
-#include "../header/AccountProtocol.h"
-#include "../header/Socket.h"
+#include "AccountProtocol.h"
+#include "Socket.h"
 
 namespace AccountProtocol {
 

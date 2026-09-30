@@ -1,8 +1,8 @@
-#include "../header/PassiveSkill.h"
-#include "../header/InstantSkill.h"
-#include "../header/TransformSkill.h"
-#include "../header/GameLogic.h"
-#include "../header/utils.h"
+#include "PassiveSkill.h"
+#include "InstantSkill.h"
+#include "TransformSkill.h"
+#include "GameLogic.h"
+#include "utils.h"
 
 
 bool 装弹::filter(const GameLogic& game, const Player& carrier) const {

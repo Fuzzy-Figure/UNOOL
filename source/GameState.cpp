@@ -1,4 +1,4 @@
-#include "../header/GameState.h"
+#include "GameState.h"
 
 PlayerState& PlayerState::operator=(const PlayerState& other) {
 	if (this != &other) {

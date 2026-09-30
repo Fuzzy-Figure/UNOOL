@@ -1,5 +1,5 @@
-#include "../header/UserDB.h"
-#include "../header/utils.h"
+#include "UserDB.h"
+#include "utils.h"
 #include <fstream>
 #include <iostream>
 

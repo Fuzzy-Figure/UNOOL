@@ -1,7 +1,7 @@
-#include "../header/Effect.h"
-#include "../header/GameLogic.h"
-#include "../header/Player.h"
-#include "../header/Card.h"
+#include "Effect.h"
+#include "GameLogic.h"
+#include "Player.h"
+#include "Card.h"
 
 void Effect::ban(Card& card, Player& source, Player& target) {
 	std::cout << "玩家" << source.getId() << "封禁了玩家" << target.getId() << std::endl;
