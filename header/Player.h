@@ -85,8 +85,8 @@ public:
 #pragma region 角色属性 - 标记 - 委托到 Character
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
 	std::size_t getMarkCount(const std::string& m) const { return character->getMarkCount(m); }
-	void addMark(const std::string& m, std::size_t count = 1) { character->addMark(m, count); markCharInfoDirty(); }
-	void removeMark(const std::string& m, std::size_t count = 1) { character->removeMark(m, count); markCharInfoDirty(); }
+	void addMark(const std::string& m, std::size_t count = 1);
+	void removeMark(const std::string& m, std::size_t count = 1);
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
 	void clearMark(const std::string& m) { character->clearMark(m); markCharInfoDirty(); }
 	void clearAllMarks() { character->clearAllMarks(); markCharInfoDirty(); }

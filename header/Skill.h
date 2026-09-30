@@ -152,6 +152,7 @@ public:
 		judge_begin, judge_end,
 		decree_begin, decree_end,
 		card_discard_begin, card_discard_end,
+		add_mark, remove_mark,
 		round_begin, round_end
 	};
 	struct Trigger {
@@ -160,12 +161,14 @@ public:
 		opt_ref<Player> source = std::nullopt;
 		opt_ref<std::size_t> number = std::nullopt;
 		std::optional<DrawReason> drawReason = std::nullopt;
+		std::optional<std::string> mark = std::nullopt;
 
 		bool hasPlayer() const { return player.has_value(); }
 		bool hasCards() const { return cards.has_value(); }
 		bool hasSource() const { return source.has_value(); }
 		bool hasNumber() const { return number.has_value(); }
 		bool hasDrawReason() const { return drawReason.has_value(); }
+		bool hasMark() const { return mark.has_value(); }
 
 		Player& getPlayer() const { return player.value().get(); }
 		Card& getCard() const {
@@ -177,6 +180,7 @@ public:
 		Player& getSource() const { return source.value().get(); }
 		std::size_t& getNumber() const { return number.value().get(); }
 		DrawReason getDrawReason() const { return drawReason.value(); }
+		const std::string& getMark() const { return mark.value(); }
 	};
 	using Factory = std::function<std::unique_ptr<PassiveSkill>()>;
 

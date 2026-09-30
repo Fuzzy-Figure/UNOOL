@@ -2477,50 +2477,63 @@ bool 飞刃::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：淬毒 ====================
 bool 淬毒::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	return trigger.getPlayer().hasMark("毒");
+	return true;
 }
 bool 淬毒::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	Player& player = trigger.getPlayer();
-	std::size_t dmg = player.getMarkCount("毒");
-	player.damage(dmg, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "淬毒令" << player.characterName() << "受到" << dmg << "点伤害" << std::endl;
-
-	//每过五回合，若毒标记未叠加则每回合减少一个
+	//每回合结束 tick+1，作为全局回合计数
 	++tick;
+
+	Player& player = trigger.getPlayer();
+	if (player.hasMark("毒")) {
+		std::size_t dmg = player.getMarkCount("毒");
+		player.damage(dmg, carrier);
+		std::cout << "<技能> " << carrier.characterName() << "淬毒令" << player.characterName() << "受到" << dmg << "点伤害" << std::endl;
+	}
+	return true;
+}
+
+void 淬毒::tryDecay(GameLogic& game) {
 	game.forEachPlayer([this](Player& p) {
 		if (!p.hasMark("毒")) return;
 		std::size_t id = p.getId();
-		std::size_t cnt = p.getMarkCount("毒");
-
-		auto it = lastCount.find(id);
-		if (it == lastCount.end()) {
-			//首次记录
-			lastCount[id] = cnt;
+		auto it = lastChangeTick.find(id);
+		if (it == lastChangeTick.end()) {
+			//首次记录，开始计时
 			lastChangeTick[id] = tick;
+			return;
 		}
-		else if (cnt > it->second) {
-			//被叠加了，重置计时
-			lastCount[id] = cnt;
-			lastChangeTick[id] = tick;
-		}
-		else if (tick - lastChangeTick[id] >= 5) {
-			//五回合未叠加，减1（不重置计时，后续每回合继续减）
+		if (tick - it->second >= 5) {
+			//满五回合未叠加，减1（不重置计时，后续每回合继续减）
+			std::size_t before = p.getMarkCount("毒");
 			p.removeMark("毒");
-			lastCount[id] = cnt - 1;
-			std::cout << "<淬毒> " << p.characterName() << "的毒标记五回合未叠加，减少一个（剩余" << (cnt - 1) << "）" << std::endl;
-		}
-		else {
-			lastCount[id] = cnt;
+			std::cout << "<淬毒> " << p.characterName() << "的毒标记五回合未叠加，减少一个（剩余" << (before - 1) << "）" << std::endl;
 		}
 	});
-	return true;
 }
 
 void 淬毒::reset() {
 	PassiveSkill::reset();
 	tick = 0;
-	lastCount.clear();
 	lastChangeTick.clear();
+}
+
+// ==================== 子技能：淬毒_感毒 ====================
+bool 淬毒_感毒::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return trigger.hasMark() && trigger.getMark() == "毒";
+}
+bool 淬毒_感毒::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	if (auto qd = carrier.findSkill<淬毒>(); qd.has_value()) {
+		qd->get().resetPoisonTimer(trigger.getPlayer().getId());
+	}
+	return true;
+}
+
+// ==================== 子技能：淬毒_衰减 ====================
+bool 淬毒_衰减::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	if (auto qd = carrier.findSkill<淬毒>(); qd.has_value()) {
+		qd->get().tryDecay(game);
+	}
+	return true;
 }
 
 

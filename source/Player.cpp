@@ -165,6 +165,30 @@ void Player::gainCard(std::unique_ptr<Card> card) {
 	}
 }
 
+void Player::addMark(const std::string& m, std::size_t count) {
+	character->addMark(m, count);
+	markCharInfoDirty();
+	{
+		PassiveSkill::Trigger trigger;
+		trigger.player = *this;
+		trigger.mark = m;
+		trigger.number = count;
+		game.launchPassiveSkills(PassiveSkill::TriggerTime::add_mark, trigger);
+	}
+}
+
+void Player::removeMark(const std::string& m, std::size_t count) {
+	std::size_t actual = character->removeMark(m, count);
+	markCharInfoDirty();
+	if (actual > 0) {
+		PassiveSkill::Trigger trigger;
+		trigger.player = *this;
+		trigger.mark = m;
+		trigger.number = actual;
+		game.launchPassiveSkills(PassiveSkill::TriggerTime::remove_mark, trigger);
+	}
+}
+
 Card& Player::putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason) {
 	{
 		PassiveSkill::Trigger trigger;

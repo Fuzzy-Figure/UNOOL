@@ -1350,10 +1350,37 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+//前向声明，供子技能通过 findSkill 访问
+class 淬毒;
+
+//淬毒_感毒：子技能，监听"毒"标记增加，重置淬毒的衰减计时
+class 淬毒_感毒 : public PassiveSkillImpl<淬毒_感毒> {
+public:
+	淬毒_感毒() : PassiveSkillImpl<淬毒_感毒>(
+		"淬毒_感毒", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::add_mark
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//淬毒_衰减：子技能，回合结束时对满五回合未叠加的毒标记减一
+class 淬毒_衰减 : public PassiveSkillImpl<淬毒_衰减> {
+public:
+	淬毒_衰减() : PassiveSkillImpl<淬毒_衰减>(
+		"淬毒_衰减", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
 //淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害；每过五回合，若标记未叠加则减少一个
 class 淬毒 : public PassiveSkillImpl<淬毒> {
 	mutable std::size_t tick = 0;
-	mutable std::unordered_map<std::size_t, std::size_t> lastCount;
 	mutable std::unordered_map<std::size_t, std::size_t> lastChangeTick;
 public:
 	淬毒() : PassiveSkillImpl<淬毒>(
@@ -1362,10 +1389,14 @@ public:
 		"每过五回合，若标记未叠加则减少一个。",
 		unlimited, true,
 		TriggerPlayer::anybody,
-		TriggerTime::phase_end
+		TriggerTime::phase_end,
+		淬毒_感毒::make(),
+		淬毒_衰减::make()
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void resetPoisonTimer(std::size_t playerId) { lastChangeTick[playerId] = tick; }
+	void tryDecay(GameLogic& game);
 	void reset() override;
 };
 

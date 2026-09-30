@@ -398,12 +398,13 @@ bool Character::isDead() const {
 	return hp <= 0;
 }
 
-void Character::removeMark(const std::string& m, std::size_t count) {
+std::size_t Character::removeMark(const std::string& m, std::size_t count) {
 	auto it = marks.find(m);
-	if (it != marks.end()) {
-		if (it->second > count) it->second -= count;
-		else marks.erase(it);
-	}
+	if (it == marks.end()) return 0;
+	std::size_t actual = std::min(it->second, count);
+	if (it->second > count) it->second -= count;
+	else marks.erase(it);
+	return actual;
 }
 
 constexpr auto operator<=>(const Character::Level a, const Character::Level b) {
