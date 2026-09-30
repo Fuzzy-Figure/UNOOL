@@ -174,15 +174,11 @@ std::vector<Character::Level> Character::getLevels() const {
 }
 Character::Level Character::getMaxLevel() const {
 	auto levels = getLevels();
-	return *std::ranges::max_element(levels, [](Level a, Level b) {
-		return static_cast<int>(a) < static_cast<int>(b);
-	});
+	return *std::ranges::max_element(levels);
 }
 Character::Level Character::getMinLevel() const {
 	auto levels = getLevels();
-	return *std::ranges::min_element(levels, [](Level a, Level b) {
-		return static_cast<int>(a) < static_cast<int>(b);
-	});
+	return *std::ranges::min_element(levels);
 }
 std::string Character::skillsName() const {
 	std::string result;
@@ -407,6 +403,7 @@ std::size_t Character::removeMark(const std::string& m, std::size_t count) {
 	return actual;
 }
 
-constexpr auto operator<=>(const Character::Level a, const Character::Level b) {
+std::strong_ordering operator<=>(const Character::Level a, const Character::Level b) {
 	return std::to_underlying(a) <=> std::to_underlying(b);
 }
+

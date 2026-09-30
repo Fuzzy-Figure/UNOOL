@@ -158,3 +158,4 @@ public:
 #pragma endregion
 };
 
+std::strong_ordering operator<=>(const Character::Level, const Character::Level);
