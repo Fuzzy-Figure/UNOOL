@@ -2601,3 +2601,58 @@ bool 绝技_额外摸牌::content(GameLogic& game, Player& carrier, Trigger& tri
 	game.broadcastState();
 	return true;
 }
+
+// ==================== 技能：侵蚀 ====================
+bool 侵蚀::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	const Player& player = trigger.getPlayer();
+	return player != carrier && player.handCount() <= 3;
+}
+bool 侵蚀::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& player = trigger.getPlayer();
+	std::size_t dmg = player.handCount();
+	player.damage(dmg, std::nullopt);
+	std::cout << "<技能> " << carrier.characterName() << "侵蚀令" << player.characterName() << "失去" << dmg << "点体力" << std::endl;
+	return true;
+}
+
+// ==================== 技能：修正 ====================
+bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//选一张手牌
+	auto idxOpt = carrier.chooseCard(unool::alwaysTrue, false);
+	if (!idxOpt) return false;
+	Card& card = carrier.getCardByIndex(*idxOpt);
+
+	//构建可选牌名：所有非万能牌名，排除已用过的
+	std::vector<Card::Name> availableNames;
+	for (int i = static_cast<int>(Card::Name::number_0); i <= static_cast<int>(Card::Name::action_draw2); ++i) {
+		Card::Name name = static_cast<Card::Name>(i);
+		if (!usedNames.contains(name))
+			availableNames.push_back(name);
+	}
+	if (availableNames.empty()) {
+		carrier.hint(L"所有牌名已用完，无法发动修正");
+		return false;
+	}
+
+	//声明牌名
+	auto nameOpt = carrier.chooseCardName(L"声明要改为的牌名", false, availableNames);
+	if (!nameOpt) return false;
+	Card::Name targetName = nameOpt.value();
+
+	//改牌
+	card.set(card.getColor(), targetName);
+	usedNames.insert(targetName);
+
+	//若改为数字牌，失去3%当前体力（向上取整）
+	if (card.isNumber()) {
+		std::size_t loss = unool::math::ceil(carrier.getHp() * 0.03);
+		carrier.damage(loss, std::nullopt);
+		std::cout << "<技能> " << carrier.characterName() << "修正将一张手牌改为数字牌，失去" << loss << "点体力" << std::endl;
+	}
+	else {
+		std::cout << "<技能> " << carrier.characterName() << "修正将一张手牌改为功能牌" << std::endl;
+	}
+
+	game.broadcastState();
+	return true;
+}

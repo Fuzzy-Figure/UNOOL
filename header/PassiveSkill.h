@@ -1444,3 +1444,34 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
+//侵蚀：锁定技，其他角色的回合结束时，若其手牌数≤3，其失去手牌数点体力
+class 侵蚀 : public PassiveSkillImpl<侵蚀> {
+public:
+	侵蚀() : PassiveSkillImpl<侵蚀>(
+		"侵蚀",
+		"锁定技，其他角色的回合结束时，若其手牌数≤3，其失去手牌数点体力。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//修正：回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），
+//若改为数字牌则失去3%当前体力（向上取整）
+class 修正 : public PassiveSkillImpl<修正> {
+	mutable std::unordered_set<Card::Name> usedNames;
+public:
+	修正() : PassiveSkillImpl<修正>(
+		"修正",
+		"回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），\n"
+		"若你改为数字牌则失去3%当前体力（向上取整）。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
+};
