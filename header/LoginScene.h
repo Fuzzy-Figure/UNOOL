@@ -19,7 +19,7 @@ public:
 private:
 	enum class Mode { Login, Register } mode = Mode::Login;
 	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, Done } status = Status::Idle;
-	enum class Focus { None, Username, Password } focus = Focus::None;
+	enum class Focus { None, Username, Password } focus = Focus::Username;
 
 	GameRenderer& renderer;
 	ClientNetwork& net;
