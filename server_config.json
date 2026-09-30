@@ -1,13 +1,13 @@
 {
   "banCount": 2,
-  "characters": [ "天意爷", "瑟奇" ],
+  //"characters": [ "天意爷", "瑟奇" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
   "mode": "normal",
+  "normalCandidateCount": 10,
+  "normalInitHandCount": 8,
   "shielded": {
     "characters": [],
     "groups": []
-  },
-  "singleCandidateCount": 10,
-  "singleInitHandCount": 8
+  }
 }

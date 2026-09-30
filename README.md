@@ -51,8 +51,8 @@
 | 字段 | 说明 |
 |---|---|
 | `mode` | `normal`（单人一角）/ `double`（双将，每家 2 个角色合成） |
-| `singleCandidateCount` / `doubleCandidateCount` | 候选角色数 |
-| `singleInitHandCount` / `doubleInitHandCount` | 初始手牌数 |
+| `normalCandidateCount` / `doubleCandidateCount` | 候选角色数 |
+| `normalInitHandCount` / `doubleInitHandCount` | 初始手牌数 |
 | `banCount` | Ban/Pick 阶段每人禁用次数 |
 | `characters` | 可选。指定则跳过随机候选与 Ban/Pick（normal 给 2 个、double 给 4 个） |
 | `shielded` | 屏蔽不参与随机的角色名 / 分组 |

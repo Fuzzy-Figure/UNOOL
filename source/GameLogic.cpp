@@ -160,7 +160,7 @@ void GameLogic::initPlayers() {
 
 void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//选候选角色
-	const std::size_t candidateCount = unool::getServerConfig()["singleCandidateCount"];
+	const std::size_t candidateCount = unool::getServerConfig()["normalCandidateCount"];
 	SelectionState state;
 	auto allChars = Character::randomChooseCharacters(candidateCount * 2);
 	for (std::size_t i = 0; i < 2; ++i) {
@@ -538,7 +538,7 @@ void GameLogic::resetGame() {
 		player->clearHand();
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
 		const std::string mode = unool::getServerConfig().value("mode", "normal");
-		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "singleInitHandCount";
+		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "normalInitHandCount";
 		player->draw(unool::getServerConfig()[handKey]);
 		// 重置技能使用次数
 		player->resetSkills();
