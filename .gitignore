@@ -362,5 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# 忽略图片
-images/
+# 忽略实验图片
+images\characters\实验
