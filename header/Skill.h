@@ -322,7 +322,7 @@ class PassiveSkillImpl : public PassiveSkill {
 public:
 	static std::unique_ptr<Derived> make() {
 		static_assert(SpecificSkill<Derived>,
-					  "技能必须写成 class X : PassiveSkillImpl<X>，模板参数必须是自己");
+					  "技能必须写成 class X final : PassiveSkillImpl<X>，必须是final类，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:
@@ -334,7 +334,7 @@ class InstantSkillImpl : public InstantSkill {
 public:
 	static std::unique_ptr<Derived> make() {
 		static_assert(SpecificSkill<Derived>,
-					  "技能必须写成 class X : InstantSkillImpl<X>，模板参数必须是自己");
+					  "技能必须写成 class X final : InstantSkillImpl<X>，必须是final类，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:
@@ -346,7 +346,7 @@ class TransformSkillImpl : public TransformSkill {
 public:
 	static std::unique_ptr<Derived> make() {
 		static_assert(SpecificSkill<Derived>,
-					  "技能必须写成 class X : TransformSkillImpl<X>，模板参数必须是自己");
+					  "技能必须写成 class X final : TransformSkillImpl<X>，必须是final类，模板参数必须是自己");
 		return std::make_unique<Derived>();
 	}
 protected:
