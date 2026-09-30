@@ -1,7 +1,7 @@
 #pragma once
 #include "Skill.h"
 
-class 八爪 : public TransformSkillImpl<八爪> {
+class 八爪 final : public TransformSkillImpl<八爪> {
 public:
 	八爪() : TransformSkillImpl<八爪>(
 		"八爪",
@@ -16,7 +16,7 @@ public:
 };
 
 
-class 我妈 : public TransformSkillImpl<我妈> {
+class 我妈 final : public TransformSkillImpl<我妈> {
 public:
 	我妈() : TransformSkillImpl<我妈>(
 		"我妈",
@@ -32,7 +32,7 @@ public:
 };
 
 
-class 曼巴 : public TransformSkillImpl<曼巴> {
+class 曼巴 final : public TransformSkillImpl<曼巴> {
 public:
 	曼巴() : TransformSkillImpl<曼巴>(
 		"曼巴",
@@ -48,7 +48,7 @@ public:
 
 // ==================== 切斯特衍生技 ====================
 //硬糖：将功能牌当作同色【封禁】打出
-class 硬糖 : public TransformSkillImpl<硬糖> {
+class 硬糖 final : public TransformSkillImpl<硬糖> {
 public:
 	硬糖() : TransformSkillImpl<硬糖>(
 		"硬糖", "你可将功能牌当做同色【封禁】打出。",

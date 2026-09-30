@@ -37,11 +37,11 @@ template<typename T, template<typename> class Impl>
 concept crtp_self = std::derived_from<T, Impl<T>>;
 
 template<typename T>
-concept SpecificPassiveSkill = crtp_self<T, PassiveSkillImpl>;
+concept SpecificPassiveSkill = std::is_final_v<T> && crtp_self<T, PassiveSkillImpl>;
 template<typename T>
-concept SpecificInstantSkill = crtp_self<T, InstantSkillImpl>;
+concept SpecificInstantSkill = std::is_final_v<T> && crtp_self<T, InstantSkillImpl>;
 template<typename T>
-concept SpecificTransformSkill = crtp_self<T, TransformSkillImpl>;
+concept SpecificTransformSkill = std::is_final_v<T> && crtp_self<T, TransformSkillImpl>;
 template<typename T>
 concept SpecificSkill = SpecificPassiveSkill<T> || SpecificInstantSkill<T> || SpecificTransformSkill<T>;
 
@@ -239,8 +239,8 @@ public:
 	//有子技能（子技能可为任意 Skill 派生类型）
 	template<SpecificSkillUPtr... SubSkills>
 	ActiveSkill(const std::string& _name, const std::string& _info,
-				const limit_t& _limit, const limit_t& _phaseLimit, 
-				TriggerTime _triggerTime, 
+				const limit_t& _limit, const limit_t& _phaseLimit,
+				TriggerTime _triggerTime,
 				SubSkills&&... _subSkills)
 		: ActiveSkill(_name, _info, _limit, _phaseLimit, _triggerTime) {
 		(subSkills.push_back(std::forward<SubSkills>(_subSkills)), ...);

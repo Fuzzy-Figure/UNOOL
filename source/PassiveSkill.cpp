@@ -2657,6 +2657,11 @@ bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
+void 修正::reset() {
+	PassiveSkill::reset();
+	usedNames.clear();
+}
+
 // ==================== 技能：剧变 ====================
 bool 剧变::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//跳过摸牌

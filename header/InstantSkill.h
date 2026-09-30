@@ -2,7 +2,7 @@
 #include "Skill.h"
 #include <unordered_set>
 
-class 装弹 : public InstantSkillImpl<装弹> {
+class 装弹 final : public InstantSkillImpl<装弹> {
 public:
 	装弹() : InstantSkillImpl<装弹>(
 		"装弹",
@@ -14,7 +14,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier) const override;
 	bool content(GameLogic& game, Player& carrier) override;
 };
-class 徒步 : public InstantSkillImpl<徒步> {
+class 徒步 final : public InstantSkillImpl<徒步> {
 public:
 	徒步() : InstantSkillImpl<徒步>(
 		"徒步",
@@ -26,7 +26,7 @@ public:
 };
 
 
-class 招待 : public InstantSkillImpl<招待> {
+class 招待 final : public InstantSkillImpl<招待> {
 public:
 	招待() : InstantSkillImpl<招待>(
 		"招待",
@@ -39,7 +39,7 @@ public:
 
 
 
-class 摘罩 : public InstantSkillImpl<摘罩> {
+class 摘罩 final : public InstantSkillImpl<摘罩> {
 	std::unordered_set<Card::Name> record;
 public:
 	摘罩() : InstantSkillImpl<摘罩>(
@@ -54,7 +54,7 @@ public:
 };
 
 
-class 还击 : public InstantSkillImpl<还击> {
+class 还击 final : public InstantSkillImpl<还击> {
 public:
 	还击() : InstantSkillImpl<还击>(
 		"还击",
@@ -65,7 +65,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-class 舞爪 : public InstantSkillImpl<舞爪> {
+class 舞爪 final : public InstantSkillImpl<舞爪> {
 public:
 	舞爪() : InstantSkillImpl<舞爪>(
 		"舞爪",
@@ -76,7 +76,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-class 四霸 : public InstantSkillImpl<四霸> {
+class 四霸 final : public InstantSkillImpl<四霸> {
 public:
 	四霸() : InstantSkillImpl<四霸>(
 		"四霸",
@@ -88,7 +88,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-class 装币 : public InstantSkillImpl<装币> {
+class 装币 final : public InstantSkillImpl<装币> {
 public:
 	装币() : InstantSkillImpl<装币>(
 		"装币",
@@ -99,7 +99,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-class 幽愈 : public InstantSkillImpl<幽愈> {
+class 幽愈 final : public InstantSkillImpl<幽愈> {
 public:
 	幽愈() : InstantSkillImpl<幽愈>(
 		"幽愈",
@@ -112,7 +112,7 @@ public:
 };
 
 //炫技：出牌阶段，从牌堆顶或底摸两张，将一张置于牌堆底；若两牌同色可弃两张令加速+1
-class 炫技 : public InstantSkillImpl<炫技> {
+class 炫技 final : public InstantSkillImpl<炫技> {
 public:
 	炫技() : InstantSkillImpl<炫技>(
 		"炫技",
@@ -125,7 +125,7 @@ public:
 };
 
 //调羹：每局限三次，摸一张，展示数字牌给其他角色并回复其分值体力
-class 调羹 : public InstantSkillImpl<调羹> {
+class 调羹 final : public InstantSkillImpl<调羹> {
 public:
 	调羹() : InstantSkillImpl<调羹>(
 		"调羹",
@@ -139,7 +139,7 @@ public:
 };
 
 //挥金：每种类型限一次，出牌阶段，若手牌数≥3，可将一张黄色手牌交给一名其他角色
-class 挥金 : public InstantSkillImpl<挥金> {
+class 挥金 final : public InstantSkillImpl<挥金> {
 	std::set<Card::Type> usedTypes;
 public:
 	挥金() : InstantSkillImpl<挥金>(
@@ -154,7 +154,7 @@ public:
 };
 
 //再生：限定技，出牌阶段，弃置所有绿色牌回复至50点；若回复≤25则次数改为2
-class 再生 : public InstantSkillImpl<再生> {
+class 再生 final : public InstantSkillImpl<再生> {
 public:
 	再生() : InstantSkillImpl<再生>(
 		"再生",
@@ -167,7 +167,7 @@ public:
 };
 
 //手枪：每回合限一次，出牌阶段，对一名其他角色造成1点伤害（伤害值由【弹暴】递增）
-class 手枪 : public InstantSkillImpl<手枪> {
+class 手枪 final : public InstantSkillImpl<手枪> {
 private:
 	std::size_t damageValue = 1;
 	friend class 弹暴;
@@ -183,7 +183,7 @@ public:
 };
 
 //芜湖：限定技，出牌阶段，声明颜色+牌名组合，从牌堆获得一张匹配牌；无匹配则视为未发动且可弃一张
-class 芜湖 : public InstantSkillImpl<芜湖> {
+class 芜湖 final : public InstantSkillImpl<芜湖> {
 public:
 	芜湖() : InstantSkillImpl<芜湖>(
 		"芜湖",
@@ -196,7 +196,7 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
-class 引力 : public InstantSkillImpl<引力> {
+class 引力 final : public InstantSkillImpl<引力> {
 private:
 	opt_ref<Player> target = std::nullopt;
 public:
@@ -214,7 +214,7 @@ public:
 
 
 //甘草：每回合限一次，观看一名角色所有非数字牌，可弃置其中一张
-class 甘草 : public InstantSkillImpl<甘草> {
+class 甘草 final : public InstantSkillImpl<甘草> {
 public:
 	甘草() : InstantSkillImpl<甘草>(
 		"甘草", "每回合限一次，出牌阶段，你可以观看一名角色所有非数字牌，并可弃置其中一张。",
@@ -225,7 +225,7 @@ public:
 };
 
 //跳糖：每回合限一次，与一名角色拼点，胜者获得一张切斯特指定颜色的【+2】
-class 跳糖 : public InstantSkillImpl<跳糖> {
+class 跳糖 final : public InstantSkillImpl<跳糖> {
 public:
 	跳糖() : InstantSkillImpl<跳糖>(
 		"跳糖", "每回合限一次，出牌阶段，你可以与一名角色拼点，胜者获得一张你指定颜色的【+2】。",
@@ -236,7 +236,7 @@ public:
 };
 
 //肘击：限定技，出牌阶段，摸两张牌并获得两张【变色】
-class 肘击 : public InstantSkillImpl<肘击> {
+class 肘击 final : public InstantSkillImpl<肘击> {
 public:
 	肘击() : InstantSkillImpl<肘击>(
 		"肘击",
@@ -248,7 +248,7 @@ public:
 };
 
 
-class 突袭 : public InstantSkillImpl<突袭> {
+class 突袭 final : public InstantSkillImpl<突袭> {
 public:
 	突袭() : InstantSkillImpl<突袭>(
 		"突袭",
@@ -260,7 +260,7 @@ public:
 };
 
 
-class 猛击 : public InstantSkillImpl<猛击> {
+class 猛击 final : public InstantSkillImpl<猛击> {
 public:
 	猛击() : InstantSkillImpl<猛击>(
 		"猛击",
@@ -273,7 +273,7 @@ public:
 };
 
 
-class 绝技 : public InstantSkillImpl<绝技> {
+class 绝技 final : public InstantSkillImpl<绝技> {
 public:
 	绝技() : InstantSkillImpl<绝技>(
 		"绝技",

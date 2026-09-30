@@ -3,7 +3,7 @@
 #include <set>
 #include <unordered_set>
 
-class 粪怒 : public PassiveSkillImpl<粪怒> {
+class 粪怒 final : public PassiveSkillImpl<粪怒> {
 public:
 	粪怒() : PassiveSkillImpl<粪怒>(
 		"粪怒",
@@ -16,7 +16,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 隐身 : public PassiveSkillImpl<隐身> {
+class 隐身 final : public PassiveSkillImpl<隐身> {
 public:
 	隐身() : PassiveSkillImpl<隐身>(
 		"隐身",
@@ -29,7 +29,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 顶置 : public PassiveSkillImpl<顶置> {
+class 顶置 final : public PassiveSkillImpl<顶置> {
 public:
 	顶置() : PassiveSkillImpl<顶置>(
 		"顶置",
@@ -41,7 +41,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 带派 : public PassiveSkillImpl<带派> {
+class 带派 final : public PassiveSkillImpl<带派> {
 public:
 	带派() : PassiveSkillImpl<带派>(
 		"带派",
@@ -53,7 +53,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 寒魄 : public PassiveSkillImpl<寒魄> {
+class 寒魄 final : public PassiveSkillImpl<寒魄> {
 public:
 	寒魄() : PassiveSkillImpl<寒魄>(
 		"寒魄",
@@ -66,7 +66,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 割腕 : public PassiveSkillImpl<割腕> {
+class 割腕 final : public PassiveSkillImpl<割腕> {
 public:
 	割腕() : PassiveSkillImpl<割腕>(
 		"割腕",
@@ -78,7 +78,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 丑皇 : public PassiveSkillImpl<丑皇> {
+class 丑皇 final : public PassiveSkillImpl<丑皇> {
 public:
 	丑皇() : PassiveSkillImpl<丑皇>(
 		"丑皇",
@@ -91,7 +91,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 军国 : public PassiveSkillImpl<军国> {
+class 军国 final : public PassiveSkillImpl<军国> {
 public:
 	军国() : PassiveSkillImpl<军国>(
 		"军国",
@@ -102,7 +102,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 家暴 : public PassiveSkillImpl<家暴> {
+class 家暴 final : public PassiveSkillImpl<家暴> {
 public:
 	家暴() : PassiveSkillImpl<家暴>(
 		"家暴",
@@ -115,7 +115,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 健身 : public PassiveSkillImpl<健身> {
+class 健身 final : public PassiveSkillImpl<健身> {
 public:
 	健身() : PassiveSkillImpl<健身>(
 		"健身",
@@ -126,7 +126,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 做题 : public PassiveSkillImpl<做题> {
+class 做题 final : public PassiveSkillImpl<做题> {
 public:
 	做题() : PassiveSkillImpl<做题>(
 		"做题",
@@ -139,7 +139,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 棍击 : public PassiveSkillImpl<棍击> {
+class 棍击 final : public PassiveSkillImpl<棍击> {
 public:
 	棍击() : PassiveSkillImpl<棍击>(
 		"棍击",
@@ -151,7 +151,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 神木 : public PassiveSkillImpl<神木> {
+class 神木 final : public PassiveSkillImpl<神木> {
 public:
 	神木() : PassiveSkillImpl<神木>(
 		"神木",
@@ -163,7 +163,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 雷剑 : public PassiveSkillImpl<雷剑> {
+class 雷剑 final : public PassiveSkillImpl<雷剑> {
 public:
 	雷剑() : PassiveSkillImpl<雷剑>(
 		"雷剑",
@@ -176,7 +176,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 买棋 : public PassiveSkillImpl<买棋> {
+class 买棋 final : public PassiveSkillImpl<买棋> {
 public:
 	买棋() : PassiveSkillImpl<买棋>(
 		"买棋",
@@ -187,7 +187,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 卖棋 : public PassiveSkillImpl<卖棋> {
+class 卖棋 final : public PassiveSkillImpl<卖棋> {
 public:
 	卖棋() : PassiveSkillImpl<卖棋>(
 		"卖棋",
@@ -200,7 +200,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 耐克 : public PassiveSkillImpl<耐克> {
+class 耐克 final : public PassiveSkillImpl<耐克> {
 public:
 	耐克() : PassiveSkillImpl<耐克>(
 		"耐克",
@@ -213,7 +213,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 轰炸 : public PassiveSkillImpl<轰炸> {
+class 轰炸 final : public PassiveSkillImpl<轰炸> {
 public:
 	轰炸() : PassiveSkillImpl<轰炸>(
 		"轰炸",
@@ -226,7 +226,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 爆破 : public PassiveSkillImpl<爆破> {
+class 爆破 final : public PassiveSkillImpl<爆破> {
 public:
 	爆破() : PassiveSkillImpl<爆破>(
 		"爆破",
@@ -239,7 +239,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 电音 : public PassiveSkillImpl<电音> {
+class 电音 final : public PassiveSkillImpl<电音> {
 public:
 	电音() : PassiveSkillImpl<电音>(
 		"电音",
@@ -250,7 +250,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 蒙面 : public PassiveSkillImpl<蒙面> {
+class 蒙面 final : public PassiveSkillImpl<蒙面> {
 public:
 	蒙面() : PassiveSkillImpl<蒙面>(
 		"蒙面",
@@ -262,7 +262,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 锐刻 : public PassiveSkillImpl<锐刻> {
+class 锐刻 final : public PassiveSkillImpl<锐刻> {
 	bool disabled = false;
 public:
 	锐刻() : PassiveSkillImpl<锐刻>(
@@ -278,7 +278,7 @@ public:
 };
 
 //巨富_摸牌：摸牌阶段额外摸一张牌
-class 巨富_摸牌 : public PassiveSkillImpl<巨富_摸牌> {
+class 巨富_摸牌 final : public PassiveSkillImpl<巨富_摸牌> {
 public:
 	巨富_摸牌() : PassiveSkillImpl<巨富_摸牌>(
 		"巨富_摸牌", "",
@@ -290,7 +290,7 @@ public:
 };
 
 //巨富：游戏开始时初始手牌改为十二张；摸牌阶段额外摸一张牌
-class 巨富 : public PassiveSkillImpl<巨富> {
+class 巨富 final : public PassiveSkillImpl<巨富> {
 public:
 	巨富() : PassiveSkillImpl<巨富>(
 		"巨富",
@@ -302,7 +302,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 破产 : public PassiveSkillImpl<破产> {
+class 破产 final : public PassiveSkillImpl<破产> {
 public:
 	破产() : PassiveSkillImpl<破产>(
 		"破产",
@@ -315,7 +315,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 假酒 : public PassiveSkillImpl<假酒> {
+class 假酒 final : public PassiveSkillImpl<假酒> {
 	bool number = false, action = false, wild = false;
 public:
 	假酒() : PassiveSkillImpl<假酒>(
@@ -331,7 +331,7 @@ public:
 	void reset() override;
 };
 
-class 窃观 : public PassiveSkillImpl<窃观> {
+class 窃观 final : public PassiveSkillImpl<窃观> {
 public:
 	窃观() : PassiveSkillImpl<窃观>(
 		"窃观",
@@ -344,7 +344,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 生存 : public PassiveSkillImpl<生存> {
+class 生存 final : public PassiveSkillImpl<生存> {
 public:
 	生存() : PassiveSkillImpl<生存>(
 		"生存",
@@ -356,7 +356,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 创造 : public PassiveSkillImpl<创造> {
+class 创造 final : public PassiveSkillImpl<创造> {
 	std::unordered_set<Card::Color> usedColors;
 public:
 	创造() : PassiveSkillImpl<创造>(
@@ -371,7 +371,7 @@ public:
 	void reset() override { PassiveSkill::reset(); usedColors.clear(); }
 };
 
-class 炼兵 : public PassiveSkillImpl<炼兵> {
+class 炼兵 final : public PassiveSkillImpl<炼兵> {
 	std::unordered_set<Card::Name> usedNames;
 	std::map<Card::Name, std::size_t> buildPairs(const Player& carrier) const;
 public:
@@ -386,7 +386,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
 };
-class 好火 : public PassiveSkillImpl<好火> {
+class 好火 final : public PassiveSkillImpl<好火> {
 	std::unordered_set<std::size_t> usedPlayerIds;
 public:
 	好火() : PassiveSkillImpl<好火>(
@@ -401,7 +401,7 @@ public:
 	void reset() override { PassiveSkill::reset(); usedPlayerIds.clear(); }
 };
 
-class 森罗 : public PassiveSkillImpl<森罗> {
+class 森罗 final : public PassiveSkillImpl<森罗> {
 public:
 	森罗() : PassiveSkillImpl<森罗>(
 		"森罗",
@@ -412,7 +412,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 大脚 : public PassiveSkillImpl<大脚> {
+class 大脚 final : public PassiveSkillImpl<大脚> {
 public:
 	大脚() : PassiveSkillImpl<大脚>(
 		"大脚",
@@ -425,7 +425,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 过江 : public PassiveSkillImpl<过江> {
+class 过江 final : public PassiveSkillImpl<过江> {
 public:
 	过江() : PassiveSkillImpl<过江>(
 		"过江",
@@ -437,7 +437,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 大盏 : public PassiveSkillImpl<大盏> {
+class 大盏 final : public PassiveSkillImpl<大盏> {
 	static void randomEnlarge(Card& c);
 public:
 	大盏() : PassiveSkillImpl<大盏>(
@@ -452,7 +452,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 举报 : public PassiveSkillImpl<举报> {
+class 举报 final : public PassiveSkillImpl<举报> {
 public:
 	举报() : PassiveSkillImpl<举报>(
 		"举报",
@@ -465,7 +465,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override;
 };
-class 猥琐 : public PassiveSkillImpl<猥琐> {
+class 猥琐 final : public PassiveSkillImpl<猥琐> {
 public:
 	猥琐() : PassiveSkillImpl<猥琐>(
 		"猥琐",
@@ -478,7 +478,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 棋王 : public PassiveSkillImpl<棋王> {
+class 棋王 final : public PassiveSkillImpl<棋王> {
 public:
 	棋王() : PassiveSkillImpl<棋王>(
 		"棋王",
@@ -490,7 +490,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 金铲 : public PassiveSkillImpl<金铲> {
+class 金铲 final : public PassiveSkillImpl<金铲> {
 public:
 	金铲() : PassiveSkillImpl<金铲>(
 		"金铲",
@@ -503,7 +503,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 淘汰 : public PassiveSkillImpl<淘汰> {
+class 淘汰 final : public PassiveSkillImpl<淘汰> {
 public:
 	淘汰() : PassiveSkillImpl<淘汰>(
 		"淘汰",
@@ -518,7 +518,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 光合 : public PassiveSkillImpl<光合> {
+class 光合 final : public PassiveSkillImpl<光合> {
 public:
 	光合() : PassiveSkillImpl<光合>(
 		"光合",
@@ -533,7 +533,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 射门 : public PassiveSkillImpl<射门> {
+class 射门 final : public PassiveSkillImpl<射门> {
 public:
 	射门() : PassiveSkillImpl<射门>(
 		"射门",
@@ -547,7 +547,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 追番 : public PassiveSkillImpl<追番> {
+class 追番 final : public PassiveSkillImpl<追番> {
 public:
 	追番() : PassiveSkillImpl<追番>(
 		"追番",
@@ -559,7 +559,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 崩三 : public PassiveSkillImpl<崩三> {
+class 崩三 final : public PassiveSkillImpl<崩三> {
 	mutable std::size_t count3 = 0; //累计打出的【3】次数
 public:
 	崩三() : PassiveSkillImpl<崩三>(
@@ -575,7 +575,7 @@ public:
 };
 
 
-class 望日_子 : public PassiveSkillImpl<望日_子> {
+class 望日_子 final : public PassiveSkillImpl<望日_子> {
 public:
 	望日_子() : PassiveSkillImpl<望日_子>(
 		"望日", "",
@@ -587,7 +587,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 望日 : public PassiveSkillImpl<望日> {
+class 望日 final : public PassiveSkillImpl<望日> {
 public:
 	望日() : PassiveSkillImpl<望日>(
 		"望日",
@@ -602,7 +602,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 朔日 : public PassiveSkillImpl<朔日> {
+class 朔日 final : public PassiveSkillImpl<朔日> {
 public:
 	朔日() : PassiveSkillImpl<朔日>(
 		"朔日",
@@ -617,7 +617,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 健忘 : public PassiveSkillImpl<健忘> {
+class 健忘 final : public PassiveSkillImpl<健忘> {
 public:
 	健忘() : PassiveSkillImpl<健忘>(
 		"健忘",
@@ -629,7 +629,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 豪赌 : public PassiveSkillImpl<豪赌> {
+class 豪赌 final : public PassiveSkillImpl<豪赌> {
 public:
 	豪赌() : PassiveSkillImpl<豪赌>(
 		"豪赌",
@@ -646,7 +646,7 @@ public:
 };
 
 
-class 黑帮 : public PassiveSkillImpl<黑帮> {
+class 黑帮 final : public PassiveSkillImpl<黑帮> {
 public:
 	黑帮() : PassiveSkillImpl<黑帮>(
 		"黑帮",
@@ -659,7 +659,7 @@ public:
 };
 
 
-class 有活 : public PassiveSkillImpl<有活> {
+class 有活 final : public PassiveSkillImpl<有活> {
 public:
 	有活() : PassiveSkillImpl<有活>(
 		"有活",
@@ -672,7 +672,7 @@ public:
 };
 
 
-class 拖拉 : public PassiveSkillImpl<拖拉> {
+class 拖拉 final : public PassiveSkillImpl<拖拉> {
 public:
 	拖拉() : PassiveSkillImpl<拖拉>(
 		"拖拉",
@@ -685,7 +685,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 迷烟 : public PassiveSkillImpl<迷烟> {
+class 迷烟 final : public PassiveSkillImpl<迷烟> {
 public:
 	迷烟() : PassiveSkillImpl<迷烟>(
 		"迷烟",
@@ -698,7 +698,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 创世 : public PassiveSkillImpl<创世> {
+class 创世 final : public PassiveSkillImpl<创世> {
 public:
 	创世() : PassiveSkillImpl<创世>(
 		"创世",
@@ -709,7 +709,7 @@ public:
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 补天 : public PassiveSkillImpl<补天> {
+class 补天 final : public PassiveSkillImpl<补天> {
 	std::vector<Card::Name> record;
 public:
 	补天() : PassiveSkillImpl<补天>(
@@ -723,7 +723,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 水鬼 : public PassiveSkillImpl<水鬼> {
+class 水鬼 final : public PassiveSkillImpl<水鬼> {
 public:
 	水鬼() : PassiveSkillImpl<水鬼>(
 		"水鬼",
@@ -736,7 +736,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 爆缸 : public PassiveSkillImpl<爆缸> {
+class 爆缸 final : public PassiveSkillImpl<爆缸> {
 public:
 	爆缸() : PassiveSkillImpl<爆缸>(
 		"爆缸",
@@ -750,7 +750,7 @@ public:
 	void reset() override;
 };
 
-class 叛党 : public PassiveSkillImpl<叛党> {
+class 叛党 final : public PassiveSkillImpl<叛党> {
 public:
 	叛党() : PassiveSkillImpl<叛党>(
 		"叛党",
@@ -762,7 +762,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 清洗 : public PassiveSkillImpl<清洗> {
+class 清洗 final : public PassiveSkillImpl<清洗> {
 public:
 	清洗() : PassiveSkillImpl<清洗>(
 		"清洗",
@@ -776,7 +776,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 落水 : public PassiveSkillImpl<落水> {
+class 落水 final : public PassiveSkillImpl<落水> {
 public:
 	落水() : PassiveSkillImpl<落水>(
 		"落水",
@@ -790,7 +790,7 @@ public:
 	void reset() override { PassiveSkill::reset(); setForced(false); }
 };
 
-class 骚扰 : public PassiveSkillImpl<骚扰> {
+class 骚扰 final : public PassiveSkillImpl<骚扰> {
 	bool disabled = false;
 public:
 	骚扰() : PassiveSkillImpl<骚扰>(
@@ -806,7 +806,7 @@ public:
 	void reset() override { PassiveSkill::reset(); disabled = false; }
 };
 
-class 犬子 : public PassiveSkillImpl<犬子> {
+class 犬子 final : public PassiveSkillImpl<犬子> {
 	mutable std::size_t playCount = 0;
 public:
 	犬子() : PassiveSkillImpl<犬子>(
@@ -824,7 +824,7 @@ public:
 };
 
 
-class 黑洞 : public PassiveSkillImpl<黑洞> {
+class 黑洞 final : public PassiveSkillImpl<黑洞> {
 	std::set<Card::Name> record;
 public:
 	黑洞() : PassiveSkillImpl<黑洞>(
@@ -840,7 +840,7 @@ public:
 };
 
 
-class 好事 : public PassiveSkillImpl<好事> {
+class 好事 final : public PassiveSkillImpl<好事> {
 public:
 	好事() : PassiveSkillImpl<好事>(
 		"好事",
@@ -852,7 +852,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 压抑 : public PassiveSkillImpl<压抑> {
+class 压抑 final : public PassiveSkillImpl<压抑> {
 public:
 	压抑() : PassiveSkillImpl<压抑>(
 		"压抑",
@@ -866,7 +866,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 捉奸_弃牌 : public PassiveSkillImpl<捉奸_弃牌> {
+class 捉奸_弃牌 final : public PassiveSkillImpl<捉奸_弃牌> {
 public:
 	捉奸_弃牌() : PassiveSkillImpl<捉奸_弃牌>(
 		"捉奸_弃牌",
@@ -878,7 +878,7 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
-class 捉奸 : public PassiveSkillImpl<捉奸> {
+class 捉奸 final : public PassiveSkillImpl<捉奸> {
 public:
 	捉奸() : PassiveSkillImpl<捉奸>(
 		"捉奸",
@@ -893,7 +893,7 @@ public:
 };
 
 
-class 爬竿_伤害 : public PassiveSkillImpl<爬竿_伤害> {
+class 爬竿_伤害 final : public PassiveSkillImpl<爬竿_伤害> {
 public:
 	爬竿_伤害() : PassiveSkillImpl<爬竿_伤害>(
 		"爬竿_伤害",
@@ -906,7 +906,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 爬竿 : public PassiveSkillImpl<爬竿> {
+class 爬竿 final : public PassiveSkillImpl<爬竿> {
 	friend class 爬竿_伤害;
 	opt_ref<Player> targetOpt_;
 public:
@@ -923,7 +923,7 @@ public:
 
 
 //渊涡：你每个未出过牌的回合结束时，回复1点体力
-class 渊涡 : public PassiveSkillImpl<渊涡> {
+class 渊涡 final : public PassiveSkillImpl<渊涡> {
 public:
 	渊涡() : PassiveSkillImpl<渊涡>(
 		"渊涡",
@@ -936,7 +936,7 @@ public:
 };
 
 //没座：回合开始时，没红牌则摸一张（手牌为1时不触发），有红牌则可弃一张非红色牌
-class 没座 : public PassiveSkillImpl<没座> {
+class 没座 final : public PassiveSkillImpl<没座> {
 public:
 	没座() : PassiveSkillImpl<没座>(
 		"没座",
@@ -950,7 +950,7 @@ public:
 };
 
 //空空：每局限两次，回合结束时，可将一张功能牌变为红色的【封禁】
-class 空空 : public PassiveSkillImpl<空空> {
+class 空空 final : public PassiveSkillImpl<空空> {
 public:
 	空空() : PassiveSkillImpl<空空>(
 		"空空",
@@ -962,7 +962,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 暗忍 : public PassiveSkillImpl<暗忍> {
+class 暗忍 final : public PassiveSkillImpl<暗忍> {
 public:
 	暗忍() : PassiveSkillImpl<暗忍>(
 		"暗忍",
@@ -976,7 +976,7 @@ public:
 };
 
 //暗忍_改：移除失体力效果后由【舞爪】替换【暗忍】所得，仅将随机一张手牌变为【封禁】
-class 暗忍_改 : public PassiveSkillImpl<暗忍_改> {
+class 暗忍_改 final : public PassiveSkillImpl<暗忍_改> {
 public:
 	暗忍_改() : PassiveSkillImpl<暗忍_改>(
 		"暗忍",
@@ -989,7 +989,7 @@ public:
 };
 
 //治病：其他角色首次打出某种牌名的非数字牌时，大中医三选一（无效/弃牌/摸牌），剩余多选项则移除本次所选
-class 治病 : public PassiveSkillImpl<治病> {
+class 治病 final : public PassiveSkillImpl<治病> {
 	std::unordered_set<Card::Name> playedNames;   //本局已触发过的非数字牌名
 	std::vector<std::size_t> options{ 1, 2, 3 };    //剩余可选项编号
 public:
@@ -1007,7 +1007,7 @@ public:
 	void reset() override;
 };
 
-class 连营 : public PassiveSkillImpl<连营> {
+class 连营 final : public PassiveSkillImpl<连营> {
 	friend class 困界;
 private:
 	std::set<Card::Type> triggered;
@@ -1024,7 +1024,7 @@ public:
 	void reset() override;
 };
 
-class 困界 : public PassiveSkillImpl<困界> {
+class 困界 final : public PassiveSkillImpl<困界> {
 	mutable opt_ref<std::set<Card::Type>> triggeredCache;  //缓存连营的triggered引用，避免重复查找
 	std::set<Card::Type>& getTriggered(const Player& carrier) const;
 public:
@@ -1042,7 +1042,7 @@ public:
 
 
 //四麻：锁定技，回合结束时，将手牌调整至四张
-class 四麻 : public PassiveSkillImpl<四麻> {
+class 四麻 final : public PassiveSkillImpl<四麻> {
 public:
 	四麻() : PassiveSkillImpl<四麻>(
 		"四麻",
@@ -1056,7 +1056,7 @@ public:
 };
 
 //爆射：锁定技，打出牌后，若手牌数恰为某其他角色两倍，弃置至多两张牌并对一名其他角色造成6点伤害
-class 爆射 : public PassiveSkillImpl<爆射> {
+class 爆射 final : public PassiveSkillImpl<爆射> {
 public:
 	爆射() : PassiveSkillImpl<爆射>(
 		"爆射",
@@ -1070,7 +1070,7 @@ public:
 };
 
 //灵爆_子：打出有目标的牌时，若有幽灵标记则移去并对目标造成10点伤害
-class 灵爆_子 : public PassiveSkillImpl<灵爆_子> {
+class 灵爆_子 final : public PassiveSkillImpl<灵爆_子> {
 public:
 	灵爆_子() : PassiveSkillImpl<灵爆_子>(
 		"灵爆_子", "",
@@ -1083,7 +1083,7 @@ public:
 };
 
 //灵爆：累计打出三张牌后获得"幽灵"标记（限一个）；拥有标记期间不计数，标记移去后重新累计
-class 灵爆 : public PassiveSkillImpl<灵爆> {
+class 灵爆 final : public PassiveSkillImpl<灵爆> {
 private:
 	std::shared_ptr<std::size_t> playCount = std::make_shared<std::size_t>(0);
 public:
@@ -1104,7 +1104,7 @@ public:
 };
 
 //加速：每局游戏限零次，成为牌的目标时可发动一次炫技并令此牌无效
-class 加速 : public PassiveSkillImpl<加速> {
+class 加速 final : public PassiveSkillImpl<加速> {
 public:
 	加速() : PassiveSkillImpl<加速>(
 		"加速",
@@ -1119,7 +1119,7 @@ public:
 };
 
 //走位：回合开始时，决议至多X张牌（X为已输局数，至多3）；若未因此决议牌，失去此技能并获芜湖
-class 走位 : public PassiveSkillImpl<走位> {
+class 走位 final : public PassiveSkillImpl<走位> {
 public:
 	走位() : PassiveSkillImpl<走位>(
 		"走位",
@@ -1134,7 +1134,7 @@ public:
 
 
 //九一：任意角色打出9/1后，可弃一张9/1
-class 九一 : public PassiveSkillImpl<九一> {
+class 九一 final : public PassiveSkillImpl<九一> {
 public:
 	九一() : PassiveSkillImpl<九一>(
 		"九一",
@@ -1148,7 +1148,7 @@ public:
 };
 
 //白虎：每局每名角色限一次，回合开始时若其仅剩一张牌，令其获得一张指定颜色牌名的9/1
-class 白虎 : public PassiveSkillImpl<白虎> {
+class 白虎 final : public PassiveSkillImpl<白虎> {
 	std::unordered_set<std::size_t> triggeredPlayers;
 public:
 	白虎() : PassiveSkillImpl<白虎>(
@@ -1166,7 +1166,7 @@ public:
 
 
 //易主：每回合限一次，一次性获得恰好2张牌时，可弃置这些牌并令渡荆+1
-class 易主 : public PassiveSkillImpl<易主> {
+class 易主 final : public PassiveSkillImpl<易主> {
 public:
 	易主() : PassiveSkillImpl<易主>(
 		"易主",
@@ -1183,7 +1183,7 @@ private:
 };
 
 //渡荆：每局限一次，回合结束时若手牌全场最多，与一名其他角色拼点，没赢的获得随机+2
-class 渡荆 : public PassiveSkillImpl<渡荆> {
+class 渡荆 final : public PassiveSkillImpl<渡荆> {
 public:
 	渡荆() : PassiveSkillImpl<渡荆>(
 		"渡荆",
@@ -1198,7 +1198,7 @@ public:
 };
 
 //返现：限定技，结束阶段，重铸所有非黄色手牌并回复等量体力
-class 返现 : public PassiveSkillImpl<返现> {
+class 返现 final : public PassiveSkillImpl<返现> {
 public:
 	返现() : PassiveSkillImpl<返现>(
 		"返现",
@@ -1212,7 +1212,7 @@ public:
 };
 
 //尖刺：锁定技，受到伤害后，对一名其他角色造成等量伤害并回复1点体力
-class 尖刺 : public PassiveSkillImpl<尖刺> {
+class 尖刺 final : public PassiveSkillImpl<尖刺> {
 public:
 	尖刺() : PassiveSkillImpl<尖刺>(
 		"尖刺",
@@ -1226,7 +1226,7 @@ public:
 };
 
 //弹暴：回合结束时，可弃一张万能牌发动X次手枪（X为本局发动次数），然后手枪伤害+1
-class 弹暴 : public PassiveSkillImpl<弹暴> {
+class 弹暴 final : public PassiveSkillImpl<弹暴> {
 public:
 	弹暴() : PassiveSkillImpl<弹暴>(
 		"弹暴",
@@ -1241,7 +1241,7 @@ public:
 };
 
 //星轨：回合开始时，三次判定类型全相同则引力+1
-class 星轨 : public PassiveSkillImpl<星轨> {
+class 星轨 final : public PassiveSkillImpl<星轨> {
 public:
 	星轨() : PassiveSkillImpl<星轨>(
 		"星轨",
@@ -1254,7 +1254,7 @@ public:
 };
 
 //引力_目标：引力重定向拦截器，数字牌进弃牌堆后给自身获得
-class 引力_目标 : public PassiveSkillImpl<引力_目标> {
+class 引力_目标 final : public PassiveSkillImpl<引力_目标> {
 public:
 	引力_目标() : PassiveSkillImpl<引力_目标>(
 		"引力_目标",
@@ -1268,7 +1268,7 @@ public:
 };
 
 //引力_清除目标：轮开始时清除所有玩家身上的引力_目标
-class 引力_清除目标 : public PassiveSkillImpl<引力_清除目标> {
+class 引力_清除目标 final : public PassiveSkillImpl<引力_清除目标> {
 public:
 	引力_清除目标() : PassiveSkillImpl<引力_清除目标>(
 		"引力_清除目标",
@@ -1281,7 +1281,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 铃铛 : public PassiveSkillImpl<铃铛> {
+class 铃铛 final : public PassiveSkillImpl<铃铛> {
 public:
 	铃铛() : PassiveSkillImpl<铃铛>(
 		"铃铛",
@@ -1296,7 +1296,7 @@ public:
 };
 
 //爆糖：锁定技，打出有目标的牌后，对目标造成5%最大体力伤害（向上取整）
-class 爆糖 : public PassiveSkillImpl<爆糖> {
+class 爆糖 final : public PassiveSkillImpl<爆糖> {
 public:
 	爆糖() : PassiveSkillImpl<爆糖>(
 		"爆糖",
@@ -1310,7 +1310,7 @@ public:
 };
 
 //薄荷：锁定技，回合结束时，随机回复1~3体力
-class 薄荷 : public PassiveSkillImpl<薄荷> {
+class 薄荷 final : public PassiveSkillImpl<薄荷> {
 public:
 	薄荷() : PassiveSkillImpl<薄荷>(
 		"薄荷",
@@ -1323,7 +1323,7 @@ public:
 };
 
 //健体：锁定技，打出手中非唯一牌名的牌后，回复1点体力
-class 健体 : public PassiveSkillImpl<健体> {
+class 健体 final : public PassiveSkillImpl<健体> {
 public:
 	健体() : PassiveSkillImpl<健体>(
 		"健体",
@@ -1337,7 +1337,7 @@ public:
 };
 
 //飞刃：当你打出万能牌后，你可令一名其他角色获得一个"毒"标记
-class 飞刃 : public PassiveSkillImpl<飞刃> {
+class 飞刃 final : public PassiveSkillImpl<飞刃> {
 public:
 	飞刃() : PassiveSkillImpl<飞刃>(
 		"飞刃",
@@ -1354,7 +1354,7 @@ public:
 class 淬毒;
 
 //淬毒_感毒：子技能，监听"毒"标记增加，重置淬毒的衰减计时
-class 淬毒_感毒 : public PassiveSkillImpl<淬毒_感毒> {
+class 淬毒_感毒 final : public PassiveSkillImpl<淬毒_感毒> {
 public:
 	淬毒_感毒() : PassiveSkillImpl<淬毒_感毒>(
 		"淬毒_感毒", "",
@@ -1367,7 +1367,7 @@ public:
 };
 
 //淬毒_衰减：子技能，回合结束时对满五回合未叠加的毒标记减一
-class 淬毒_衰减 : public PassiveSkillImpl<淬毒_衰减> {
+class 淬毒_衰减 final : public PassiveSkillImpl<淬毒_衰减> {
 public:
 	淬毒_衰减() : PassiveSkillImpl<淬毒_衰减>(
 		"淬毒_衰减", "",
@@ -1379,7 +1379,7 @@ public:
 };
 
 //淬毒：锁定技，有"毒"标记角色的回合结束时，其受到标记数量点伤害；每过五回合，若标记未叠加则减少一个
-class 淬毒 : public PassiveSkillImpl<淬毒> {
+class 淬毒 final : public PassiveSkillImpl<淬毒> {
 	mutable std::size_t tick = 0;
 	mutable std::unordered_map<std::size_t, std::size_t> lastChangeTick;
 public:
@@ -1401,7 +1401,7 @@ public:
 };
 
 //重锤：锁定技，回合结束时，若体力值>100，失去10%当前体力（向下取整），对一名其他角色造成3%已损体力点伤害（向上取整）
-class 重锤 : public PassiveSkillImpl<重锤> {
+class 重锤 final : public PassiveSkillImpl<重锤> {
 public:
 	重锤() : PassiveSkillImpl<重锤>(
 		"重锤",
@@ -1416,7 +1416,7 @@ public:
 };
 
 //劲凉：锁定技，每连续打出3张同类型牌后，摸一张牌且【绝技】使用次数+1
-class 劲凉 : public PassiveSkillImpl<劲凉> {
+class 劲凉 final : public PassiveSkillImpl<劲凉> {
 	mutable Card::Type lastType = Card::Type::unknown;
 	mutable std::size_t consecutive = 0;
 public:
@@ -1432,7 +1432,7 @@ public:
 };
 
 //绝技_额外摸牌：被动，瑟奇打出+2时目标额外摸一张牌（绝技第2次发动后获得）
-class 绝技_额外摸牌 : public PassiveSkillImpl<绝技_额外摸牌> {
+class 绝技_额外摸牌 final : public PassiveSkillImpl<绝技_额外摸牌> {
 public:
 	绝技_额外摸牌() : PassiveSkillImpl<绝技_额外摸牌>(
 		"绝技_额外摸牌",
@@ -1446,7 +1446,7 @@ public:
 };
 
 //侵蚀：锁定技，其他角色的回合结束时，若其手牌数≤3，其失去手牌数点体力
-class 侵蚀 : public PassiveSkillImpl<侵蚀> {
+class 侵蚀 final : public PassiveSkillImpl<侵蚀> {
 public:
 	侵蚀() : PassiveSkillImpl<侵蚀>(
 		"侵蚀",
@@ -1461,7 +1461,7 @@ public:
 
 //修正：回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），
 //若改为数字牌则失去3%当前体力（向上取整）
-class 修正 : public PassiveSkillImpl<修正> {
+class 修正 final : public PassiveSkillImpl<修正> {
 	mutable std::unordered_set<Card::Name> usedNames;
 public:
 	修正() : PassiveSkillImpl<修正>(
@@ -1473,11 +1473,11 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
+	void reset() override;
 };
 
 //剧变：限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，手牌数因此减少的角色摸两张牌
-class 剧变 : public PassiveSkillImpl<剧变> {
+class 剧变 final : public PassiveSkillImpl<剧变> {
 public:
 	剧变() : PassiveSkillImpl<剧变>(
 		"剧变",
