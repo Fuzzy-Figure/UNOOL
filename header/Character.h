@@ -158,4 +158,7 @@ public:
 #pragma endregion
 };
 
-std::strong_ordering operator<=>(const Character::Level, const Character::Level);
+inline constexpr std::strong_ordering
+operator<=>(const Character::Level a, const Character::Level b) noexcept {
+	return std::to_underlying(a) <=> std::to_underlying(b); 
+}

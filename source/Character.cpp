@@ -403,7 +403,4 @@ std::size_t Character::removeMark(const std::string& m, std::size_t count) {
 	return actual;
 }
 
-std::strong_ordering operator<=>(const Character::Level a, const Character::Level b) {
-	return std::to_underlying(a) <=> std::to_underlying(b);
-}
 

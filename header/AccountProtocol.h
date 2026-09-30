@@ -1,8 +1,9 @@
 #pragma once
-#include <SFML/Network.hpp>
 #include <string>
 #include <optional>
-#include "../header/Socket.h"
+//#include "../header/Socket.h"
+enum class MessageType;
+#include <SFML/Network.hpp>
 
 namespace AccountProtocol {
 	// 构造请求 packet（客户端用）
