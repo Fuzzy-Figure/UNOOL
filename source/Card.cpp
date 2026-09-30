@@ -613,7 +613,7 @@ std::unique_ptr<Pile> Pile::standard() {
 [[nodiscard]] std::unique_ptr<Card> Pile::take_front(Pile& discardPile) {
 	//牌堆里没牌了，回收弃牌堆
 	if (cards.empty()) recycle(discardPile);
-	if (cards.empty()) throw std::runtime_error("无法摸牌，因为牌堆和弃牌堆里都没有牌了");
+	if (cards.empty()) throw std::runtime_error("无法取牌，因为牌堆和弃牌堆里都没有牌了");
 	//取牌
 	std::unique_ptr<Card> frontCard = std::move(cards.front());
 	cards.pop_front();
@@ -623,7 +623,7 @@ std::unique_ptr<Pile> Pile::standard() {
 [[nodiscard]] std::unique_ptr<Card> Pile::take_back(Pile& discardPile) {
 	//牌堆里没牌了，回收弃牌堆
 	if (cards.empty()) recycle(discardPile);
-	if (cards.empty()) throw std::runtime_error("无法摸牌，因为牌堆和弃牌堆里都没有牌了");
+	if (cards.empty()) throw std::runtime_error("无法取牌，因为牌堆和弃牌堆里都没有牌了");
 	//取牌
 	std::unique_ptr<Card> backCard = std::move(cards.back());
 	cards.pop_back();
