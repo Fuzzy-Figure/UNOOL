@@ -2656,3 +2656,47 @@ bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	game.broadcastState();
 	return true;
 }
+
+// ==================== 技能：剧变 ====================
+bool 剧变::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//跳过摸牌
+	trigger.getNumber() = 0;
+
+	//记录每个玩家原有手牌数
+	std::unordered_map<std::size_t, std::size_t> oldCounts;
+	game.forEachPlayer([&](Player& p) {
+		oldCounts[p.getId()] = p.handCount();
+	});
+
+	//阶段1：所有玩家把手牌全部取出
+	std::unordered_map<std::size_t, std::vector<std::unique_ptr<Card>>> oldHands;
+	game.forEachPlayer([&](Player& p) {
+		std::vector<std::unique_ptr<Card>> hand;
+		while (!p.handEmpty()) {
+			hand.push_back(p.takeCardByIndex(0));
+		}
+		oldHands[p.getId()] = std::move(hand);
+	});
+
+	//阶段2：每个玩家的原手牌交给下家
+	game.forEachPlayer([&](Player& p) {
+		Player& next = p.next();
+		auto it = oldHands.find(p.getId());
+		if (it != oldHands.end()) {
+			for (auto& card : it->second) {
+				next.gainCard(std::move(card));
+			}
+		}
+	});
+
+	//手牌数减少的玩家摸两张牌
+	game.forEachPlayer([&](Player& p) {
+		if (p.handCount() < oldCounts[p.getId()]) {
+			p.draw(2, DrawReason::skill);
+		}
+	});
+
+	std::cout << "<技能> " << carrier.characterName() << "发动剧变，所有角色将手牌交给下家" << std::endl;
+	game.broadcastState();
+	return true;
+}

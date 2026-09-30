@@ -1475,3 +1475,17 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
 };
+
+//剧变：限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，手牌数因此减少的角色摸两张牌
+class 剧变 : public PassiveSkillImpl<剧变> {
+public:
+	剧变() : PassiveSkillImpl<剧变>(
+		"剧变",
+		"限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，"
+		"手牌数因此减少的角色摸两张牌。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_draw_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
