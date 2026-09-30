@@ -2618,7 +2618,7 @@ bool 侵蚀::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 // ==================== 技能：修正 ====================
 bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//选一张手牌
-	auto idxOpt = carrier.chooseCard(unool::alwaysTrue, false);
+	auto idxOpt = carrier.chooseCard(L"选择一张手牌进行修正", unool::alwaysTrue, false);
 	if (!idxOpt) return false;
 	Card& card = carrier.getCardByIndex(*idxOpt);
 

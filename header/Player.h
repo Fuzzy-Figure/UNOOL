@@ -161,7 +161,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
-	std::optional<std::size_t> chooseCard(std::function<bool(const Card&)> condition,
+	std::optional<std::size_t> chooseCard(const std::wstring& title, std::function<bool(const Card&)> condition,
 										  bool forced, ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
 #pragma endregion
 

@@ -253,7 +253,7 @@ bool 调羹::content(GameLogic& game, Player& carrier) {
 	carrier.draw(1, DrawReason::skill);
 	game.broadcastState();
 
-	auto idxOpt = carrier.chooseCard(&Card::isNumber, false);
+	auto idxOpt = carrier.chooseCard(L"选择一张数字牌", &Card::isNumber, false);
 	if (!idxOpt) return false;
 
 	auto card = carrier.takeCardByIndex(*idxOpt);
@@ -608,7 +608,7 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 	}
 	else {
 		//第4次及以上：将一张手牌变为随机颜色的随机非数字牌，回复发动次数点体力
-		auto idxOpt = carrier.chooseCard(unool::alwaysTrue, false);
+		auto idxOpt = carrier.chooseCard(L"选择一张手牌", unool::alwaysTrue, false);
 		if (!idxOpt) return false;
 
 		Card::ColorName cn = Card::randomCard(&Card::isNotNumber);

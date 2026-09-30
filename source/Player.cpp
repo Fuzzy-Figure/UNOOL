@@ -399,10 +399,11 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 
 // === 交互 ===
 
-std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> condition,
+std::optional<std::size_t> Player::chooseCard(const std::wstring& title, std::function<bool(const Card&)> condition,
 											  bool forced, ActiveSkill::TriggerTime phase) {
 	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
+	network.sendPlayerChoice(id, title, {}, forced);
 	opt_ref<TransformSkill> activeMode;  //当前激活的转换型主动技
 
 	std::vector<ref<InstantSkill>>   instantRefs;
@@ -436,12 +437,17 @@ std::optional<std::size_t> Player::chooseCard(std::function<bool(const Card&)> c
 				break;
 			case sf::Keyboard::Scancode::Up:
 			case sf::Keyboard::Scancode::W:
-				if (auto result = handleConfirm(condition, activeMode); result.has_value())
+				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
+					network.sendPlayerChoice(id, L"", {}, false);
 					return result.value();
+				}
 				break;
 			case sf::Keyboard::Scancode::Down:
 			case sf::Keyboard::Scancode::S:
-				if (!forced) return std::nullopt;
+				if (!forced) {
+					network.sendPlayerChoice(id, L"", {}, false);
+					return std::nullopt;
+				}
 				break;
 			default:
 				break;
@@ -546,7 +552,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 }
 
 opt_ref<Card> Player::chooseToUse(ActiveSkill::TriggerTime phase) {
-	auto index = chooseCard([this](const Card& c) { return canUse(c); }, false, phase);
+	auto index = chooseCard(L"请选择要打出的牌", [this](const Card& c) { return canUse(c); }, false, phase);
 	if (index.has_value()) {
 		return useCardByIndex(index.value());
 	}
@@ -572,10 +578,8 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::wstring& titl
 	while (discardedCount < num) {
 		std::wstring fullTitle = title + L"（" + std::to_wstring(discardedCount + 1) + L"/" + std::to_wstring(num) + L"）\n"
 			+ (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
-		network.sendPlayerChoice(id, fullTitle, {}, forced);
-		auto index = chooseCard(condition, forced);
+		auto index = chooseCard(fullTitle, condition, forced);
 		if (!index.has_value()) {
-			network.sendPlayerChoice(id, L"", {}, false);
 			std::wcout << L"玩家" << id << L"取消了" << Card::to_wstring(reason) << std::endl;
 			return discardedCards;
 		}
@@ -586,7 +590,6 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::wstring& titl
 			<< discardedCount << L"/" << num << L"）" << std::endl;
 		game.broadcastState();
 	}
-	network.sendPlayerChoice(id, L"", {}, false);
 	return discardedCards;
 }
 
@@ -638,11 +641,8 @@ void Player::inherit(std::unique_ptr<Card>& card) {
 opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 									  const std::function<bool(const Card&)>& condition,
 									  const std::function<void(Card&)>& operation) {
-	ServerNetwork& network = game.getNetwork();
-	if (forced) network.sendPlayerChoice(id, title + L"\n（↑确认，不可取消）", {}, true);
-	else network.sendPlayerChoice(id, title + L"\n（↑确认，↓取消）", {}, false);
-	std::optional<std::size_t> index = chooseCard(condition, forced);
-	network.sendPlayerChoice(id, L"", {}, false);
+	std::wstring fullTitle = title + L"\n" + (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
+	std::optional<std::size_t> index = chooseCard(fullTitle, condition, forced);
 	if (!index.has_value()) return std::nullopt;
 	ref<Card> cardRef = getHand().getCardByIndex(index.value());
 	operation(getHand().getCardByIndex(index.value()));
@@ -653,11 +653,7 @@ opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 								   bool forced, const std::function<bool(const Card&)>& condition) {
 	if (handEmpty()) return std::nullopt;
 
-	ServerNetwork& network = game.getNetwork();
-
-	network.sendPlayerChoice(id, title, {}, true, L"", std::nullopt);
-	auto index = chooseCard(condition, forced);
-	network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
+	auto index = chooseCard(title, condition, forced);
 
 	if (!index.has_value()) {
 		std::cout << "玩家" << id << "取消了给" << target.characterName() << "牌" << std::endl;
@@ -916,17 +912,12 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 	}
 
 	//发起者选一张数字牌
-	ServerNetwork& network = game.getNetwork();
-	network.sendPlayerChoice(id, L"【拼点】选择一张手牌", {}, forced);
-	auto myIdx = chooseCard(&Card::isNumber, forced);
-	network.sendPlayerChoice(id, L"", {}, false);
+	auto myIdx = chooseCard(L"【拼点】选择一张手牌", &Card::isNumber, forced);
 	if (!myIdx.has_value()) return std::nullopt;  //发起者取消
 	Card& myCard = getHand().getCardByIndex(myIdx.value());
 
 	//目标选一张数字牌（强制）
-	network.sendPlayerChoice(target.getId(), L"【拼点】选择一张手牌", {}, true);
-	auto tgtIdx = target.chooseCard(&Card::isNumber, true);
-	network.sendPlayerChoice(target.getId(), L"", {}, false);
+	auto tgtIdx = target.chooseCard(L"【拼点】选择一张手牌", &Card::isNumber, true);
 	//目标有数字牌且forced=true，必有返回
 	Card& tgtCard = target.getHand().getCardByIndex(tgtIdx.value());
 
