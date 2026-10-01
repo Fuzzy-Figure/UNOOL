@@ -2255,7 +2255,7 @@ bool 尖刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t dmg = trigger.getNumber();
 
 	//选一名其他角色造成等量伤害
-	auto targetOpt = carrier.choosePlayer(L"【尖刺】选择一名角色造成" + std::to_wstring(dmg) + L"点伤害", true);
+	auto targetOpt = carrier.chooseOtherPlayer(L"【尖刺】选择一名其他角色造成" + std::to_wstring(dmg) + L"点伤害", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
