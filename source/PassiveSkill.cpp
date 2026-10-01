@@ -2719,12 +2719,12 @@ bool 通天::filter(const GameLogic& game, const Player& carrier, const Trigger&
 bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (auto skill = carrier.findSkill<修正>()) {
 		skill->get().increaseLimit(1);
-		std::cout << "<技能> " << carrier.characterName() << "通天，修正次数+1" << std::endl;
+		std::cout << "<技能> " << carrier.characterName() << "发动通天，修正次数+1" << std::endl;
 	}
 	else {
 		carrier.addSkill(std::make_unique<修正>());
 		carrier.findSkill<修正>()->get().setLimit(1);
-		std::cout << "<技能> " << carrier.characterName() << "通天，获得修正技能（1次）" << std::endl;
+		std::cout << "<技能> " << carrier.characterName() << "发动通天，获得修正技能（1次）" << std::endl;
 	}
 	return true;
 }
