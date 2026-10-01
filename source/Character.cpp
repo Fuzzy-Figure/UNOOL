@@ -83,6 +83,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"弗兰肯",      {"荒野乱斗", Level::B, {重锤::make}, {猛击::make}, {}, 500}},
 	{"瑟奇",        {"荒野乱斗", Level::A, {劲凉::make}, {绝技::make}, {}, 135}},
 	{"天意爷",      {"新三国", Level::S, {侵蚀::make, 修正::make, 剧变::make}, {}, {}, 333}},
+	{"新司马懿",    {"新三国", Level::A, {兵多::make, 通天::make}, {}, {}, 150}},
 };
 
 // ==================== 构造 / 工厂 ====================

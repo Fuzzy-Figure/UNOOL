@@ -1473,7 +1473,7 @@ public:
 		TriggerTime::phase_begin
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override;
+	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
 };
 
 //剧变：限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，手牌数因此减少的角色摸两张牌
@@ -1487,5 +1487,33 @@ public:
 		TriggerPlayer::self,
 		TriggerTime::phase_draw_begin
 	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//兵多：回合开始时，你可以失去1点体力并决议一张牌；若你体力值≤50，则改为决议两张
+class 兵多 final : public PassiveSkillImpl<兵多> {
+public:
+	兵多() : PassiveSkillImpl<兵多>(
+		"兵多",
+		"回合开始时，你可以失去1点体力并决议一张牌；\n"
+		"若你体力值≤50，则改为决议两张。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//通天：锁定技，你打出【+4】后，本局你获得一次发动【修正】的次数
+class 通天 final : public PassiveSkillImpl<通天> {
+public:
+	通天() : PassiveSkillImpl<通天>(
+		"通天",
+		"锁定技，你打出【+4】后，本局你获得一次发动【修正】的次数。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };

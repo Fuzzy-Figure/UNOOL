@@ -2657,11 +2657,6 @@ bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
-void 修正::reset() {
-	PassiveSkill::reset();
-	usedNames.clear();
-}
-
 // ==================== 技能：剧变 ====================
 bool 剧变::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//跳过摸牌
@@ -2703,5 +2698,33 @@ bool 剧变::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	std::cout << "<技能> " << carrier.characterName() << "发动剧变，所有角色将手牌交给下家" << std::endl;
 	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：兵多 ====================
+bool 兵多::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.damage(1, std::nullopt);
+	std::size_t num = (carrier.getHp() <= 50) ? 2 : 1;
+	carrier.decree(L"兵多决议", num, false);
+
+	std::cout << "<技能> " << carrier.characterName() << "发动兵多，决议" << num << "张牌" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：通天 ====================
+bool 通天::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return trigger.getCard().is(Card::Name::wild_draw4);
+}
+bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	if (auto skill = carrier.findSkill<修正>()) {
+		skill->get().increaseLimit(1);
+		std::cout << "<技能> " << carrier.characterName() << "通天，修正次数+1" << std::endl;
+	}
+	else {
+		carrier.addSkill(std::make_unique<修正>());
+		carrier.findSkill<修正>()->get().setLimit(1);
+		std::cout << "<技能> " << carrier.characterName() << "通天，获得修正技能（1次）" << std::endl;
+	}
 	return true;
 }
