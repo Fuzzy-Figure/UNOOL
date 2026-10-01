@@ -129,9 +129,9 @@ class 调羹 final : public InstantSkillImpl<调羹> {
 public:
 	调羹() : InstantSkillImpl<调羹>(
 		"调羹",
-		"每局游戏限三次，出牌阶段，你可以摸一张牌，展示一张数字牌令一名角色获得之，\n"
+		"每局游戏限三次，每回合限一次，出牌阶段，你可以摸一张牌，展示一张数字牌令一名角色获得之，\n"
 		"并令其回复此牌分值点体力。",
-		3, unlimited,
+		3, 1,
 		TriggerTime::phase_use
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier) const override;

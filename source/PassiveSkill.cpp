@@ -1936,7 +1936,7 @@ bool 爆射::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	carrier.chooseToDiscard(L"【爆射】弃置至多两张牌", 2, false);
 
 	// 2. 选择一名其他角色
-	auto targetOpt = carrier.chooseOtherPlayer(L"【爆射】选择一名角色造成6点伤害", true);
+	auto targetOpt = carrier.choosePlayer(L"【爆射】选择一名角色造成6点伤害", true);
 	if (!targetOpt.has_value()) {
 		std::cout << "<技能> " << carrier.characterName() << "发动爆射，但未选择目标" << std::endl;
 		game.broadcastState();
@@ -2175,7 +2175,7 @@ bool 渡荆::filter(const GameLogic& game, const Player& carrier, const Trigger&
 
 bool 渡荆::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//选一名其他角色拼点
-	auto targetOpt = carrier.chooseOtherPlayer(L"【渡荆】选择一名角色拼点", true);
+	auto targetOpt = carrier.choosePlayer(L"【渡荆】选择一名角色拼点", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -2255,7 +2255,7 @@ bool 尖刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t dmg = trigger.getNumber();
 
 	//选一名其他角色造成等量伤害
-	auto targetOpt = carrier.chooseOtherPlayer(L"【尖刺】选择一名角色造成" + std::to_wstring(dmg) + L"点伤害", true);
+	auto targetOpt = carrier.choosePlayer(L"【尖刺】选择一名角色造成" + std::to_wstring(dmg) + L"点伤害", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 

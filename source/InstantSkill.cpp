@@ -260,7 +260,7 @@ bool 调羹::content(GameLogic& game, Player& carrier) {
 	carrier.showCard(*card);
 	std::cout << "<技能> " << carrier.characterName() << "展示" << *card << std::endl;
 
-	auto targetOpt = carrier.chooseOtherPlayer(L"【调羹】令一名角色获得此牌", true);
+	auto targetOpt = carrier.choosePlayer(L"【调羹】令一名角色获得此牌", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -288,7 +288,7 @@ bool 挥金::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 挥金::content(GameLogic& game, Player& carrier) {
 	//选目标
-	auto targetOpt = carrier.chooseOtherPlayer(L"【挥金】选择一名角色交牌", false);
+	auto targetOpt = carrier.choosePlayer(L"【挥金】选择一名角色交牌", false);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -436,7 +436,7 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 	carrier.markCharInfoDirty();
 	game.broadcastState();
 
-	auto targetOpt = carrier.chooseOtherPlayer(
+	auto targetOpt = carrier.choosePlayer(
 		L"【引力】选择一名角色，本轮数字牌进入弃牌堆后该角色获得之", false);
 	if (!targetOpt.has_value()) return false;  //取消，不消耗次数
 
@@ -467,7 +467,7 @@ void 引力::reset() {
 
 //甘草
 bool 甘草::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.chooseOtherPlayer(L"【甘草】选择一名角色", false);
+	auto targetOpt = carrier.choosePlayer(L"【甘草】选择一名角色", false);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
