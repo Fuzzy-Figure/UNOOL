@@ -228,7 +228,11 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 
 std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
 	return unool::string::to_utf16(
-		entry.first + "（" + Character::to_string(entry.second.level) + "）"
+		std::format("{}（{}）体力：{}/{}",
+					entry.first,
+					Character::to_string(entry.second.level),
+					entry.second.hp,
+					entry.second.maxHp == 0 ? entry.second.hp : entry.second.maxHp)
 	);
 }
 
@@ -245,7 +249,7 @@ std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_
 	}
 	//候选池<=1时无需再ban
 	if (validIndices.size() <= 1) return std::nullopt;
-	const std::wstring title = L"禁用对方的角色（" + std::to_wstring(banIndex + 1) + L"/" + std::to_wstring(banCount)+ L"）：";
+	const std::wstring title = L"禁用对方的角色（" + std::to_wstring(banIndex + 1) + L"/" + std::to_wstring(banCount) + L"）：";
 	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 60s);
 	if (banChoice > 0 && banChoice <= validIndices.size()) {
 		const std::size_t targetIdx = validIndices[banChoice - 1];
