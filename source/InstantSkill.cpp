@@ -144,12 +144,23 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：舞爪 ====================
 bool 舞爪::content(GameLogic& game, Player& carrier) {
-	auto drawn = carrier.drawTo(10, DrawReason::skill);
-	carrier.recover(2 * drawn.size());
-	carrier.removeSkill<暗忍>();
-	carrier.addSkill(暗忍_改::make());
-	std::cout << "<技能> " << carrier.characterName() << "发动舞爪，摸"
-		<< drawn.size() << "张，回复" << (2 * drawn.size()) << "点体力，【暗忍】移除失体力效果" << std::endl;
+	//弃置一张万能牌
+	auto discarded = carrier.chooseCardsToDiscardPile(L"选择一张万能牌弃置", 1, false, &Card::isWild);
+	if (discarded.empty()) return false;
+
+	//逐张重铸所有数字牌
+	std::size_t count = 0;
+	while (carrier.handInclude(&Card::isNumber)) {
+		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+			if (carrier.getCardByIndex(i).isNumber()) {
+				carrier.recastByIndex(i);
+				++count;
+				break;
+			}
+		}
+	}
+
+	std::cout << "<技能> " << carrier.characterName() << "发动舞爪，弃置一张万能牌，重铸" << count << "张数字牌" << std::endl;
 	game.broadcastState();
 	return true;
 }

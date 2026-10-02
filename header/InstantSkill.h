@@ -69,8 +69,8 @@ class 舞爪 final : public InstantSkillImpl<舞爪> {
 public:
 	舞爪() : InstantSkillImpl<舞爪>(
 		"舞爪",
-		"限定技，出牌阶段，你可以将手牌摸至十张并回复两倍摸牌数点体力，然后本局【暗忍】移除失去体力的效果。",
-		1, unlimited,
+		"每回合限一次，出牌阶段，你可以弃置一张万能牌，重铸手中所有数字牌。",
+		unlimited, 1,
 		TriggerTime::phase_use
 	) {}
 	bool content(GameLogic& game, Player& carrier) override;

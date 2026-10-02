@@ -1702,46 +1702,26 @@ bool 空空::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：暗忍 ====================
 bool 暗忍::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	return carrier.handInclude(&Card::isNotWild);
+	return carrier.handInclude(&Card::isAction);
 }
 
 bool 暗忍::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	carrier.damage(1, carrier);
-	//收集非万能牌索引（颜色不变，仅改牌名为封禁）
+	//收集功能牌索引
 	Hand& hand = carrier.getHand();
-	std::vector<std::size_t> nonWildIndices;
+	std::vector<std::size_t> actionIndices;
 	for (std::size_t i = 0; i < hand.count(); ++i) {
-		if (hand[i].isNotWild()) nonWildIndices.push_back(i);
+		if (hand[i].isAction()) actionIndices.push_back(i);
 	}
-	if (!nonWildIndices.empty()) {
-		std::size_t pick = nonWildIndices[unool::random::randomSize_t(0, nonWildIndices.size() - 1)];
+	if (!actionIndices.empty()) {
+		std::size_t pick = actionIndices[unool::random::randomSize_t(0, actionIndices.size() - 1)];
 		Card& c = carrier.getCardByIndex(pick);
-		c.setName(Card::Name::action_skip);
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力并将一张非万能牌变为【封禁】" << std::endl;
+		Card::Color randomColor = unool::random::randomGet(Card::fiveColors);
+		c.set(randomColor, Card::Name::action_skip);
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力并将一张功能牌变为随机颜色的【封禁】" << std::endl;
 	}
 	else {
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力（无非万能牌可变）" << std::endl;
-	}
-	game.broadcastState();
-	return true;
-}
-
-// ==================== 技能：暗忍_改 ====================
-bool 暗忍_改::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	//收集非万能牌索引（颜色不变，仅改牌名为封禁）
-	Hand& hand = carrier.getHand();
-	std::vector<std::size_t> nonWildIndices;
-	for (std::size_t i = 0; i < hand.count(); ++i) {
-		if (hand[i].isNotWild()) nonWildIndices.push_back(i);
-	}
-	if (!nonWildIndices.empty()) {
-		std::size_t pick = nonWildIndices[unool::random::randomSize_t(0, nonWildIndices.size() - 1)];
-		Card& c = carrier.getCardByIndex(pick);
-		c.setName(Card::Name::action_skip);
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍_改，将一张非万能牌变为【封禁】" << std::endl;
-	}
-	else {
-		std::cout << "<技能> " << carrier.characterName() << "发动暗忍_改（无非万能牌可变）" << std::endl;
+		std::cout << "<技能> " << carrier.characterName() << "发动暗忍，失去1点体力（无功能牌可变）" << std::endl;
 	}
 	game.broadcastState();
 	return true;

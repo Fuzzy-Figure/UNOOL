@@ -966,25 +966,12 @@ class 暗忍 final : public PassiveSkillImpl<暗忍> {
 public:
 	暗忍() : PassiveSkillImpl<暗忍>(
 		"暗忍",
-		"锁定技，回合结束时，你失去1点体力并将随机一张非万能牌变为【封禁】（颜色不变）。",
+		"锁定技，回合结束时，你失去1点体力并将随机一张功能牌变为随机颜色的【封禁】。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::phase_end
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
-	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-};
-
-//暗忍_改：移除失体力效果后由【舞爪】替换【暗忍】所得，仅将随机一张手牌变为【封禁】
-class 暗忍_改 final : public PassiveSkillImpl<暗忍_改> {
-public:
-	暗忍_改() : PassiveSkillImpl<暗忍_改>(
-		"暗忍",
-		"锁定技，回合结束时，你将随机一张非万能牌变为【封禁】（颜色不变）。",
-		unlimited, true,
-		TriggerPlayer::self,
-		TriggerTime::phase_end
-	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
