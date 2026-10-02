@@ -352,3 +352,53 @@ public:
 protected:
 	using TransformSkill::TransformSkill;
 };
+
+
+
+// ============ Skill.h 末尾 ============
+
+struct PassiveSkillTag {};
+struct InstantSkillTag {};
+struct TransformSkillTag {};
+
+template<SpecificPassiveSkill... Ts>
+struct PassiveSkillList : PassiveSkillTag {
+	operator std::vector<PassiveSkill::Factory>() const { return { &Ts::make... }; }
+};
+template<SpecificInstantSkill... Ts>
+struct InstantSkillList : InstantSkillTag {
+	operator std::vector<InstantSkill::Factory>() const { return { &Ts::make... }; }
+};
+template<SpecificTransformSkill... Ts>
+struct TransformSkillList : TransformSkillTag {
+	operator std::vector<TransformSkill::Factory>() const { return { &Ts::make... }; }
+};
+
+template<SpecificPassiveSkill... Ts>   inline constexpr PassiveSkillList<Ts...> 被动{};
+template<SpecificInstantSkill... Ts>   inline constexpr InstantSkillList<Ts...> 即时{};
+template<SpecificTransformSkill... Ts> inline constexpr TransformSkillList<Ts...> 转换{};
+
+template<class> inline constexpr bool always_false = false;
+
+// 一个花括号里混装 被动/即时/转换
+struct HybridSkills {
+	std::vector<PassiveSkill::Factory>   passive;
+	std::vector<InstantSkill::Factory>   instant;
+	std::vector<TransformSkill::Factory> transform;
+
+	HybridSkills() = default;
+
+	template<class... Xs>
+	HybridSkills(Xs... xs) {
+		static_assert((0 + ... + (std::is_base_of_v<PassiveSkillTag, Xs> ? 1 : 0)) <= 1, "被动<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<InstantSkillTag, Xs> ? 1 : 0)) <= 1, "即时<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<TransformSkillTag, Xs> ? 1 : 0)) <= 1, "转换<> 只能出现一次");
+		([&](auto x) {
+			using X = decltype(x);
+			if      constexpr (std::is_base_of_v<PassiveSkillTag, X>) passive = x;
+			else if constexpr (std::is_base_of_v<InstantSkillTag, X>) instant = x;
+			else if constexpr (std::is_base_of_v<TransformSkillTag, X>) transform = x;
+			else static_assert(always_false<X>, "花括号内只能放 被动<> / 即时<> / 转换<>");
+		}(xs), ...);
+	}
+};

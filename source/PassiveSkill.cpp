@@ -2728,3 +2728,4 @@ bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	}
 	return true;
 }
+

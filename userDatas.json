@@ -14,11 +14,11 @@
   "Lazer": {
     "losses": 79,
     "password": "114",
-    "points": 1350,
-    "wins": 100
+    "points": 1356,
+    "wins": 101
   },
   "fuzzyfigure": {
-    "losses": 100,
+    "losses": 101,
     "password": "123",
     "points": 1159,
     "wins": 79

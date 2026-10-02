@@ -15,11 +15,22 @@ public:
 	struct Info {
 		std::string group;
 		Level level;
-		std::vector<PassiveSkill::Factory> passiveSkills;
-		std::vector<InstantSkill::Factory> instantSkills;
-		std::vector<TransformSkill::Factory> transformSkills;
-		hp_t hp;
-		hp_t maxHp = 0;
+		std::vector<PassiveSkill::Factory>   passiveSkills;    // 不动
+		std::vector<InstantSkill::Factory>   instantSkills;    // 不动
+		std::vector<TransformSkill::Factory> transformSkills;  // 不动
+		hp_t hp = 0;
+		hp_t maxHp = 0;                                        // 不动
+
+		// 无技能：体力 + 可选上限
+		Info(std::string g, Level l, hp_t h, hp_t m = 0)
+			: group(std::move(g)), level(l), hp(h), maxHp(m) {}
+
+		// 有技能：技能组 + 体力 + 可选上限
+		Info(std::string g, Level l, HybridSkills s, hp_t h, hp_t m = 0)
+			: group(std::move(g)), level(l), hp(h), maxHp(m),
+			passiveSkills(std::move(s.passive)),
+			instantSkills(std::move(s.instant)),
+			transformSkills(std::move(s.transform)) {}
 	};
 	using Entry = std::pair<std::string, Info>;
 #pragma endregion
