@@ -222,13 +222,20 @@ bool ServerNetwork::sendCharInfo(const CharInfo& info) {
 	return sendPacketToAll(packet);
 }
 
-bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex, const std::wstring& title, const std::vector<std::wstring>& options, bool forced, const std::wstring& errorMsg, std::optional<std::size_t> timeoutMs, std::size_t currentPage, std::size_t totalPages) {
+bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
+									 const std::wstring& title,
+									 const std::vector<std::wstring>& options,
+									 bool forced,
+									 const std::wstring& errorMsg,
+									 std::optional<std::size_t> timeoutMs,
+									 std::size_t currentPage,
+									 std::size_t totalPages) {
 	if (clientIndex >= clientSockets.size()) return false;
 
 	sf::Packet packet;
-	packet << static_cast<int>(MessageType::Choice);
+	packet << std::to_underlying(MessageType::Choice);
 	packet << sf::String(title);
-	packet << static_cast<std::size_t>(options.size());
+	packet << options.size();
 	for (const auto& option : options) {
 		packet << sf::String(option);
 	}
