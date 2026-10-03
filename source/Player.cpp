@@ -384,9 +384,9 @@ std::string Player::chooseSkin(const std::string& charName) {
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
 	if (skins.size() > 1) {
-		std::vector<std::wstring> skinOpts;
-		for (const auto& s : skins) skinOpts.push_back(unool::string::to_utf16(s));
-		std::size_t skinChoice = ask(L"选择皮肤：", skinOpts, true);
+		std::vector<std::string> skinOpts;
+		for (const auto& s : skins) skinOpts.push_back(s);
+		std::size_t skinChoice = ask("选择皮肤：", skinOpts, true);
 		skin = skins[skinChoice - 1];
 	}
 	return skin;
@@ -399,7 +399,7 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 
 // === 交互 ===
 
-std::optional<std::size_t> Player::chooseCard(const std::wstring& title, std::function<bool(const Card&)> condition,
+std::optional<std::size_t> Player::chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
 											  bool forced, ActiveSkill::TriggerTime phase) {
 	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
@@ -438,14 +438,14 @@ std::optional<std::size_t> Player::chooseCard(const std::wstring& title, std::fu
 			case sf::Keyboard::Scancode::Up:
 			case sf::Keyboard::Scancode::W:
 				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
-					network.sendPlayerChoice(id, L"", {}, false);
+					network.sendPlayerChoice(id, "", {}, false);
 					return result.value();
 				}
 				break;
 			case sf::Keyboard::Scancode::Down:
 			case sf::Keyboard::Scancode::S:
 				if (!forced) {
-					network.sendPlayerChoice(id, L"", {}, false);
+					network.sendPlayerChoice(id, "", {}, false);
 					return std::nullopt;
 				}
 				break;
@@ -482,8 +482,8 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	if (idx < instantRefs.size()) {
 		InstantSkill& skill = instantRefs[idx].get();
 		const std::size_t confirm = ask(
-			L"是否发动【" + skill.getNameW() + L"】？",
-			{ L"是", L"否" }, false);
+			"是否发动【" + skill.getName() + "】？",
+			{ "是", "否" }, false);
 		if (confirm == 1) {
 			skill.tryActivate(game, *this);
 		}
@@ -496,11 +496,11 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 		TransformSkill& skill = transformRefs[tIdx].get();
 		if (activeMode.has_value() && &activeMode.value().get() == &skill) {
 			activeMode.reset();
-			network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);
+			network.sendPlayerChoice(id, std::string(""), std::vector<std::string>(), false);
 		}
 		else {
 			activeMode = skill;
-			network.sendPlayerChoice(id, skill.getPrompt(), std::vector<std::wstring>(), false);
+			network.sendPlayerChoice(id, skill.getPrompt(), std::vector<std::string>(), false);
 		}
 	}
 	return true;
@@ -524,7 +524,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 					//转化成功打出：执行附加效果，累加使用次数
 					mode.addition(game, *this);
 					mode.incrementCount();
-					network.sendPlayerChoice(id, std::wstring(L""), std::vector<std::wstring>(), false);  //清提示
+					network.sendPlayerChoice(id, std::string(""), std::vector<std::string>(), false);  //清提示
 					game.clearOperatingPlayer();
 					return hand->getSelectedIndex();
 				}
@@ -544,7 +544,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 		}
 	}
 	else if (condition(hand->getSelectedCard())) {
-		network.sendPlayerChoice(id, L"", {}, false);  //清提示
+		network.sendPlayerChoice(id, "", {}, false);  //清提示
 		game.clearOperatingPlayer();
 		return hand->getSelectedIndex();
 	}
@@ -552,7 +552,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 }
 
 opt_ref<Card> Player::chooseToUse(ActiveSkill::TriggerTime phase) {
-	auto index = chooseCard(L"请选择要打出的牌", [this](const Card& c) { return canUse(c); }, false, phase);
+	auto index = chooseCard("请选择要打出的牌", [this](const Card& c) { return canUse(c); }, false, phase);
 	if (index.has_value()) {
 		return useCardByIndex(index.value());
 	}
@@ -563,7 +563,7 @@ opt_ref<Card> Player::chooseToUse(ActiveSkill::TriggerTime phase) {
 	}
 }
 
-std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::wstring& title,
+std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title,
 														std::size_t num, const bool forced,
 														const std::function<bool(const Card&)>& condition,
 														Card::DiscardReason reason) {
@@ -572,34 +572,34 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::wstring& titl
 		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
-	std::wcout << L"玩家" << id << L"请选择" << Card::to_wstring(reason) << num << L"张牌" << std::endl;
+	std::cout << "玩家" << id << "请选择" << Card::to_string(reason) << num << "张牌" << std::endl;
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
-		std::wstring fullTitle = title + L"（" + std::to_wstring(discardedCount + 1) + L"/" + std::to_wstring(num) + L"）\n"
-			+ (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
+		std::string fullTitle = title + "（" + std::to_string(discardedCount + 1) + "/" + std::to_string(num) + "）\n"
+			+ (forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
 		auto index = chooseCard(fullTitle, condition, forced);
 		if (!index.has_value()) {
-			std::wcout << L"玩家" << id << L"取消了" << Card::to_wstring(reason) << std::endl;
+			std::cout << "玩家" << id << "取消了" << Card::to_string(reason) << std::endl;
 			return discardedCards;
 		}
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
 		putCardToDiscardPileByIndex(index.value(), reason);
 		discardedCount++;
-		std::wcout << L"玩家" << id << Card::to_wstring(reason) << L"了一张牌（"
-			<< discardedCount << L"/" << num << L"）" << std::endl;
+		std::cout << "玩家" << id << Card::to_string(reason) << "了一张牌（"
+			<< discardedCount << "/" << num << "）" << std::endl;
 		game.broadcastState();
 	}
 	return discardedCards;
 }
 
-std::vector<ref<Card>> Player::chooseToDiscard(const std::wstring& title,
+std::vector<ref<Card>> Player::chooseToDiscard(const std::string& title,
 											   std::size_t num, const bool forced,
 											   const std::function<bool(const Card&)>& condition) {
 	return chooseCardsToDiscardPile(title, num, forced, condition, Card::DiscardReason::discard);
 }
 
-Player::RecastResult Player::chooseToRecast(const std::wstring& title,
+Player::RecastResult Player::chooseToRecast(const std::string& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
 												{
@@ -617,7 +617,7 @@ Player::RecastResult Player::chooseToRecast(const std::wstring& title,
 												return RecastResult{ std::move(discarded), std::move(drawn) };
 }
 
-void Player::decree(const std::wstring& title,
+void Player::decree(const std::string& title,
 					const std::size_t num, const bool forced,
 					const std::function<bool(const Card&)>& condition) {
 						{
@@ -638,10 +638,10 @@ void Player::inherit(std::unique_ptr<Card>& card) {
 
 }
 
-opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
+opt_ref<Card> Player::chooseToOperate(const std::string& title, bool forced,
 									  const std::function<bool(const Card&)>& condition,
 									  const std::function<void(Card&)>& operation) {
-	std::wstring fullTitle = title + L"\n" + (forced ? L"（↑确认，不可取消）" : L"（↑确认，↓取消）");
+	std::string fullTitle = title + "\n" + (forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
 	std::optional<std::size_t> index = chooseCard(fullTitle, condition, forced);
 	if (!index.has_value()) return std::nullopt;
 	ref<Card> cardRef = getHand().getCardByIndex(index.value());
@@ -649,7 +649,7 @@ opt_ref<Card> Player::chooseToOperate(const std::wstring& title, bool forced,
 	return cardRef;
 }
 
-opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
+opt_ref<Card> Player::chooseToGive(const std::string& title, Player& target,
 								   bool forced, const std::function<bool(const Card&)>& condition) {
 	if (handEmpty()) return std::nullopt;
 
@@ -669,13 +669,13 @@ opt_ref<Card> Player::chooseToGive(const std::wstring& title, Player& target,
 	return card;
 }
 
-opt_ref<Card> Player::chooseToShow(const std::wstring& title, bool forced, const std::function<bool(const Card&)>& condition) {
+opt_ref<Card> Player::chooseToShow(const std::string& title, bool forced, const std::function<bool(const Card&)>& condition) {
 	return chooseToOperate(title, forced, condition, [this](const Card& c) {
 		showCard(c);
 	});
 }
 
-opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,
+opt_ref<Player> Player::choosePlayer(const std::string& title, bool forced,
 									 const std::function<bool(const Player&)>& condition) {
 	//选角色
 	const auto& candidates = game.getPlayersIf(condition);
@@ -685,38 +685,38 @@ opt_ref<Player> Player::choosePlayer(const std::wstring& title, bool forced,
 		return std::nullopt;
 	}
 
-	std::vector<std::wstring> options;
+	std::vector<std::string> options;
 	for (auto& p : candidates) {
-		options.push_back(p.get().characterNameW());
+		options.push_back(p.get().characterName());
 	}
 	std::size_t choice = ask(title, options, forced);
 
 	if (choice == 0) return std::nullopt;
 	return candidates[choice - 1];
 }
-opt_ref<Player> Player::chooseOtherPlayer(const std::wstring& title, bool forced,
+opt_ref<Player> Player::chooseOtherPlayer(const std::string& title, bool forced,
 										  const std::function<bool(const Player&)>& condition) {
 	return choosePlayer(title, forced, [this, &condition](const Player& p) {
 		return p != *this && condition(p);
 	});
 }
 
-std::optional<Card::Color> Player::chooseCardColor(const std::wstring& title, bool forced, const std::vector<Card::Color>& colors) {
+std::optional<Card::Color> Player::chooseCardColor(const std::string& title, bool forced, const std::vector<Card::Color>& colors) {
 	if (colors.empty()) return std::nullopt;
-	std::vector<std::wstring> options;
+	std::vector<std::string> options;
 	for (const auto& c : colors) {
-		options.push_back(Card::to_wstring(c));
+		options.push_back(Card::to_string(c));
 	}
 	std::size_t choice = ask(title, options, forced);
 	if (choice == 0) return std::nullopt;
 	return colors[choice - 1];
 }
 
-std::optional<Card::Name> Player::chooseCardName(const std::wstring& title, bool forced, const std::vector<Card::Name>& names) {
+std::optional<Card::Name> Player::chooseCardName(const std::string& title, bool forced, const std::vector<Card::Name>& names) {
 	if (names.empty()) return std::nullopt;
-	std::vector<std::wstring> options;
+	std::vector<std::string> options;
 	for (const auto& n : names) {
-		options.push_back(Card::to_wstring(n));
+		options.push_back(Card::to_string(n));
 	}
 	std::size_t choice = ask(title, options, forced);
 	if (choice == 0) return std::nullopt;
@@ -724,10 +724,10 @@ std::optional<Card::Name> Player::chooseCardName(const std::wstring& title, bool
 }
 
 
-std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstring>& options,
+std::size_t Player::ask(const std::string& title, const std::vector<std::string>& options,
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
 	ServerNetwork& network = game.getNetwork();
-	std::wstring errorMsg;
+	std::string errorMsg;
 
 	//RAII: 进入/退出操作锁
 	struct OperatingGuard {
@@ -754,7 +754,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 			network.sendPlayerChoice(id, title, options, forced, errorMsg, toTimeoutMs(), 0, 1);
 			return;
 		}
-		std::vector<std::wstring> pageOptions;
+		std::vector<std::string> pageOptions;
 		const std::size_t start = currentPage * PER_PAGE;
 		const std::size_t end = std::min(start + PER_PAGE, options.size());
 		for (std::size_t i = start; i < end; ++i) {
@@ -764,14 +764,14 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 	};
 
 	//生成"超出范围"错误提示（分页/非分页复用，消除重复）
-	auto rangeErrorMsg = [&]() -> std::wstring {
-		const std::wstring minOpt = forced ? L"1" : L"0";
+	auto rangeErrorMsg = [&]() -> std::string {
+		const std::string minOpt = forced ? "1" : "0";
 		if (usePaging) {
-			return L"超出范围，请输入" + minOpt + L"-" +
-				std::to_wstring(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-				L"范围内的数字（<-->翻页）";
+			return "超出范围，请输入" + minOpt + "-" +
+				std::to_string(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
+				"范围内的数字（<-->翻页）";
 		}
-		return L"超出范围，请输入" + minOpt + L"-" + std::to_wstring(options.size()) + L"范围内的数字";
+		return "超出范围，请输入" + minOpt + "-" + std::to_string(options.size()) + "范围内的数字";
 	};
 
 	sendPage();
@@ -780,7 +780,7 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 	while (true) {
 		if (timeoutMs.has_value()) {
 			if (clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
-				network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
+				network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
 				std::cout << "玩家" << id << "超时未选择" << std::endl;
 				return 0;
 			}
@@ -817,8 +817,8 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 		//数字键解析
 		auto digit = digitFromScancode(input);
 		if (!digit.has_value()) {
-			errorMsg = usePaging ? L"无效输入，请输入数字0-9或使用<-->翻页"
-				: L"无效输入，请输入数字0-9";
+			errorMsg = usePaging ? "无效输入，请输入数字0-9或使用<-->翻页"
+				: "无效输入，请输入数字0-9";
 			sendPage();
 			continue;
 		}
@@ -841,15 +841,15 @@ std::size_t Player::ask(const std::wstring& title, const std::vector<std::wstrin
 			continue;
 		}
 		if (forced && choice == 0) {
-			errorMsg = L"必须选择一个选项，请重新输入";
+			errorMsg = "必须选择一个选项，请重新输入";
 			sendPage();
 			continue;
 		}
 
-		network.sendPlayerChoice(id, L"", {}, false, L"", std::nullopt);
-		std::cout << "[ask] 标题：“" << unool::string::to_utf8(title) << "”，玩家" << id << "选择了" << choice << ": ";
+		network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
+		std::cout << "[ask] 标题：“" << title << "”，玩家" << id << "选择了" << choice << ": ";
 		if (choice != 0)
-			std::cout << unool::string::to_utf8(options[choice - 1]) << std::endl;
+			std::cout << options[choice - 1] << std::endl;
 		return choice;
 	}
 }
@@ -870,8 +870,8 @@ std::optional<std::size_t> Player::digitFromScancode(sf::Keyboard::Scancode inpu
 	}
 }
 
-void Player::hint(const std::wstring& message) {
-	(void)ask(message, { L"确认" }, true);
+void Player::hint(const std::string& message) {
+	(void)ask(message, { "确认" }, true);
 }
 
 Card& Player::judge() {
@@ -895,7 +895,7 @@ Card& Player::judge() {
 
 void Player::showCard(const Card& card) {
 	game.forEachOtherPlayer(*this, [this, &card](Player& p) {
-		p.hint(unool::string::to_utf16(characterName()) + L"展示了" + card.toWString());
+		p.hint(characterName() + "展示了" + card.toString());
 	});
 }
 
@@ -912,12 +912,12 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 	}
 
 	//发起者选一张数字牌
-	auto myIdx = chooseCard(L"【拼点】选择一张手牌", &Card::isNumber, forced);
+	auto myIdx = chooseCard("【拼点】选择一张手牌", &Card::isNumber, forced);
 	if (!myIdx.has_value()) return std::nullopt;  //发起者取消
 	Card& myCard = getHand().getCardByIndex(myIdx.value());
 
 	//目标选一张数字牌（强制）
-	auto tgtIdx = target.chooseCard(L"【拼点】选择一张手牌", &Card::isNumber, true);
+	auto tgtIdx = target.chooseCard("【拼点】选择一张手牌", &Card::isNumber, true);
 	//目标有数字牌且forced=true，必有返回
 	Card& tgtCard = target.getHand().getCardByIndex(tgtIdx.value());
 

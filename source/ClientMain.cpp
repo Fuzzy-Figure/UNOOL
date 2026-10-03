@@ -12,25 +12,23 @@
 
 // 解析 Choice 包并更新渲染器
 static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
-	sf::String titleSfStr;
-	packet >> titleSfStr;
-	std::wstring title = titleSfStr.toWideString();
+	std::string title;
+	packet >> title;
 
 	std::size_t optionCount;
 	packet >> optionCount;
-	std::vector<std::wstring> options;
+	std::vector<std::string> options;
 	for (std::size_t i = 0; i < optionCount; ++i) {
-		sf::String sfStr;
-		packet >> sfStr;
-		options.push_back(sfStr.toWideString());
+		std::string optionStr;
+		packet >> optionStr;
+		options.push_back(optionStr);
 	}
 
 	bool forced;
 	packet >> forced;
 
-	sf::String errorSfStr;
-	packet >> errorSfStr;
-	std::wstring errorMsg = errorSfStr.toWideString();
+	std::string errorMsg;
+	packet >> errorMsg;
 
 	bool hasTimeout;
 	packet >> hasTimeout;

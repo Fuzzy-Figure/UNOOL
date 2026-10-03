@@ -63,7 +63,6 @@ public:
 
 #pragma region 基本信息
 	std::string getName() const;
-	std::wstring getNameW() const;
 	const std::vector<std::string>& getNames() const { return names; }
 	const std::vector<std::string>& getSkins() const { return skins; }
 	//是否为组合角色（双将模式）
@@ -84,7 +83,6 @@ public:
 
 #pragma region 静态工具
 	static std::string to_string(Level level);
-	static std::wstring to_wstring(Level level);
 	static std::string getImagePath(const std::string& name, const std::string& skin = "默认");
 	static std::vector<std::string> getSkins(const std::string& name);
 

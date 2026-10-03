@@ -16,8 +16,8 @@ bool 八爪::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 	c.set(Card::Color::blue, Card::Name::number_8);
 	return true;
 }
-std::wstring 八爪::getPrompt() const {
-	return L"将一张数字牌当作蓝8打出";
+std::string 八爪::getPrompt() const {
+	return "将一张数字牌当作蓝8打出";
 }
 
 
@@ -42,8 +42,8 @@ void 我妈::addition(GameLogic& game, Player& carrier) const {
 	game.broadcastState();
 }
 
-std::wstring 我妈::getPrompt() const {
-	return L"将一张非红色牌当作红【封禁】打出";
+std::string 我妈::getPrompt() const {
+	return "将一张非红色牌当作红【封禁】打出";
 }
 
 
@@ -60,21 +60,21 @@ bool 曼巴::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 	if (cards.empty()) return false;
 	Card& c = cards.front().get();
 
-	auto color = carrier.chooseCardColor(L"[曼巴] 选择颜色", false);
+	auto color = carrier.chooseCardColor("[曼巴] 选择颜色", false);
 	if (!color.has_value()) return false;
 
 	std::vector<Card::Name> names;
 	names.append_range(Card::numberCardsFrom0);
 	names.append_range(Card::actionCards);
-	auto name = carrier.chooseCardName(L"[曼巴] 选择牌名", false, names);
+	auto name = carrier.chooseCardName("[曼巴] 选择牌名", false, names);
 	if (!name.has_value()) return false;
 
 	c.set(color.value(), name.value());
 	return true;
 }
 
-std::wstring 曼巴::getPrompt() const {
-	return L"将一张万能牌或【8】当作任意颜色的任意牌打出";
+std::string 曼巴::getPrompt() const {
+	return "将一张万能牌或【8】当作任意颜色的任意牌打出";
 }
 
 // ==================== 切斯特衍生技 ====================
@@ -88,6 +88,6 @@ bool 硬糖::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 	c.set(c.getColor(), Card::Name::action_skip);
 	return true;
 }
-std::wstring 硬糖::getPrompt() const {
-	return L"将一张功能牌当作同色【封禁】打出";
+std::string 硬糖::getPrompt() const {
+	return "将一张功能牌当作同色【封禁】打出";
 }

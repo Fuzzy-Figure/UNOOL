@@ -107,7 +107,6 @@ public:
 	bool isNotTargeted() const;
 	std::size_t value() const;
 	std::string toString() const;
-	std::wstring toWString() const;
 	std::string getImagePath() const;
 	bool operator<(const Card& other) const;
 	bool operator==(const Card& other) const;
@@ -131,11 +130,9 @@ public:
 
 #pragma region 静态转换 / 静态方法
 	static std::string to_string(const Color& color);
-	static std::wstring to_wstring(const Color& color);
 	static std::string to_string(const Name& name);
-	static std::wstring to_wstring(const Name& name);
-	static std::wstring to_wstring(const Type& type);
-	static std::wstring to_wstring(const DiscardReason reason);
+	static std::string to_string(const Type& type);
+	static std::string to_string(const DiscardReason reason);
 	static bool is_number(const Card::Name name);
 	static bool is_action(const Card::Name name);
 	static bool is_wild(const Card::Name name);

@@ -68,7 +68,6 @@ public:
 #pragma region 角色属性 - 委托到 Character
 	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); markCharInfoDirty(); }
 	std::string characterName() const { return character->getName(); }
-	std::wstring characterNameW() const { return character->getNameW(); }
 	const std::vector<std::string>& getNames() const { return character->getNames(); }
 	const std::vector<std::string>& getSkins() const { return character->getSkins(); }
 	bool isCombined() const { return character->isCombined(); }
@@ -161,7 +160,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
-	std::optional<std::size_t> chooseCard(const std::wstring& title, std::function<bool(const Card&)> condition,
+	std::optional<std::size_t> chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
 										  bool forced, ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
 #pragma endregion
 
@@ -189,13 +188,13 @@ public:
 
 #pragma region 交互 - 选牌
 	//选num张符合条件的牌放进弃牌堆，reason标识原因
-	std::vector<ref<Card>> chooseCardsToDiscardPile(const std::wstring& title,
+	std::vector<ref<Card>> chooseCardsToDiscardPile(const std::string& title,
 													std::size_t num, const bool forced,
 													const std::function<bool(const Card&)>& condition
 													= unool::alwaysTrue,
 													Card::DiscardReason reason = Card::DiscardReason::discard);
 	//弃置num张符合条件的牌（reason固定为discard）
-	std::vector<ref<Card>> chooseToDiscard(const std::wstring& title,
+	std::vector<ref<Card>> chooseToDiscard(const std::string& title,
 										   std::size_t num, const bool forced,
 										   const std::function<bool(const Card&)>& condition
 										   = unool::alwaysTrue);
@@ -203,40 +202,40 @@ public:
 		std::vector<ref<Card>> discarded;
 		std::vector<ref<Card>> drawn;
 	};
-	RecastResult chooseToRecast(const std::wstring& title,
+	RecastResult chooseToRecast(const std::string& title,
 								const std::size_t num, const bool forced,
 								const std::function<bool(const Card&)>& condition
 								= unool::alwaysTrue);
-	void decree(const std::wstring& title,
+	void decree(const std::string& title,
 				const std::size_t num, const bool forced,
 				const std::function<bool(const Card&)>& condition
 				= unool::alwaysTrue);
 	void inherit(std::unique_ptr<Card>& card);
-	opt_ref<Card> chooseToOperate(const std::wstring& title, bool forced,
+	opt_ref<Card> chooseToOperate(const std::string& title, bool forced,
 								  const std::function<bool(const Card&)>& condition,
 								  const std::function<void(Card&)>& operation);
-	opt_ref<Card> chooseToGive(const std::wstring& title, Player& target,
+	opt_ref<Card> chooseToGive(const std::string& title, Player& target,
 							   bool forced, const std::function<bool(const Card&)>& condition
 							   = unool::alwaysTrue);
-	opt_ref<Card> chooseToShow(const std::wstring& title, bool forced,
+	opt_ref<Card> chooseToShow(const std::string& title, bool forced,
 							   const std::function<bool(const Card&)>& condition);
 #pragma endregion
 
 #pragma region 交互 - 选玩家与选项
-	[[nodiscard]] opt_ref<Player> choosePlayer(const std::wstring& title, bool forced,
+	[[nodiscard]] opt_ref<Player> choosePlayer(const std::string& title, bool forced,
 											   const std::function<bool(const Player&)>& condition
 											   = unool::alwaysTrue);
-	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::wstring& title, bool forced,
+	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::string& title, bool forced,
 													const std::function<bool(const Player&)>& condition
 													= unool::alwaysTrue);
-	[[nodiscard]] std::optional<Card::Color> chooseCardColor(const std::wstring& title, bool forced,
+	[[nodiscard]] std::optional<Card::Color> chooseCardColor(const std::string& title, bool forced,
 															 const std::vector<Card::Color>& colors
 															 = { Card::Color::blue, Card::Color::green, Card::Color::red, Card::Color::yellow });
-	[[nodiscard]] std::optional<Card::Name> chooseCardName(const std::wstring& title, bool forced,
+	[[nodiscard]] std::optional<Card::Name> chooseCardName(const std::string& title, bool forced,
 														   const std::vector<Card::Name>& names);
-	[[nodiscard]] std::size_t ask(const std::wstring& title, const std::vector<std::wstring>& options,
+	[[nodiscard]] std::size_t ask(const std::string& title, const std::vector<std::string>& options,
 								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
-	void hint(const std::wstring& message);
+	void hint(const std::string& message);
 #pragma endregion
 
 #pragma region 交互 - 判定与拼点

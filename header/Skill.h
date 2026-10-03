@@ -62,9 +62,7 @@ protected:
 
 public:
 	std::string getName() const { return name; }
-	std::wstring getNameW() const { return unool::string::to_utf16(name); }
 	std::string getInfo() const { return formatInfo(); }
-	std::wstring getInfoW() const { return unool::string::to_utf16(formatInfo()); }
 	std::size_t getCount() const { return count; }
 	void incrementCount() { ++count; }
 	limit_t getLimit() const { return limit; }
@@ -310,7 +308,7 @@ public:
 	//转化成功并打出后执行的附加效果（摸牌、扣血等）
 	virtual void addition(GameLogic& game, Player& carrier) const {}
 	//激活时右侧显示的提示文字
-	virtual std::wstring getPrompt() const = 0;
+	virtual std::string getPrompt() const = 0;
 	Type getType() const override { return Type::transform; }
 protected:
 	using ActiveSkill::ActiveSkill;

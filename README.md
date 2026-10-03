@@ -45,7 +45,7 @@ userDatas.json          运行时生成的账号数据（密码明文）
 
 ### 运行前必做：补 DLL
 
-`dep/SFML` 只带了 `include` 和 `lib`，**没有 `bin` 目录**，项目也没有 PostBuildEvent。链接能过，但**运行时会报"找不到 sfml-graphics-3.dll"**。二选一：
+`dep/SFML` 只带了 `include` 和 `lib`，**没有 `bin` 目录**，项目也没有 PostBuildEvent。链接能过，但**运行时会报"找不到 sfml-graphics-3.dl"**。二选一：
 
 - 从 [SFML 3.1.0 官方包](https://www.sfml-dev.org/download.php) 取 `bin/*.dll` 拷到输出目录（`x64/Debug/`）；或
 - 改链接 `sfml-*-s-d.lib`（静态版，`dep/SFML/lib` 里已带），并为项目添加预处理器定义 `SFML_STATIC`

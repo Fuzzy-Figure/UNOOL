@@ -28,7 +28,7 @@ bool 装弹::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 bool 徒步::content(GameLogic& game, Player& carrier) {
-	Player::RecastResult result = carrier.chooseToRecast(L"[徒步] 重铸一张牌", 1, false);
+	Player::RecastResult result = carrier.chooseToRecast("[徒步] 重铸一张牌", 1, false);
 	if (result.discarded.size() == 0) return false;
 
 	carrier.recover(1);
@@ -41,11 +41,11 @@ bool 徒步::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：招待 ====================
 bool 招待::content(GameLogic& game, Player& carrier) {
-	std::optional targetOpt = carrier.chooseOtherPlayer(L"[招待] 选择一名其他角色", true);
+	std::optional targetOpt = carrier.chooseOtherPlayer("[招待] 选择一名其他角色", true);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	carrier.chooseToGive(L"选择一张手牌交给" + target.characterNameW(), target, true);
+	carrier.chooseToGive("选择一张手牌交给" + target.characterName(), target, true);
 	return true;
 }
 
@@ -53,12 +53,12 @@ bool 招待::content(GameLogic& game, Player& carrier) {
 
 
 bool 摘罩::content(GameLogic& game, Player& carrier) {
-	std::wstring recordStr;
+	std::string recordStr;
 	for (const Card::Name& name : record) {
-		recordStr += Card::to_wstring(name) + L',';
+		recordStr += Card::to_string(name) + ',';
 	}
 	//1. 展示一张未展示过点数的数字牌
-	auto cardOpt = carrier.chooseToShow(L"[摘罩] 展示一张数字牌\n已展示：" + recordStr, false, [this](const Card& c) {
+	auto cardOpt = carrier.chooseToShow("[摘罩] 展示一张数字牌\n已展示：" + recordStr, false, [this](const Card& c) {
 		return c.isNumber() && !record.contains(c.getName());
 	});
 	if (!cardOpt.has_value()) return false;
@@ -66,7 +66,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 	Card::Name point = card.getName();
 
 	//2. 选一名其他角色，令其展示相同点数的牌
-	auto targetOpt = carrier.chooseOtherPlayer(L"[摘罩] 选择一名其他角色", false);
+	auto targetOpt = carrier.chooseOtherPlayer("[摘罩] 选择一名其他角色", false);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 	record.insert(point);  //技能确认发动，记录已展示点数
@@ -81,7 +81,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 	}
 	if (targetShowed) {
 		auto otherCardOpt = target.chooseToShow(
-			L"[摘罩] 展示一张" + Card::to_wstring(point), false,
+			"[摘罩] 展示一张" + Card::to_string(point), false,
 			[point](const Card& c) { return c.getName() == point; }
 		);
 		targetShowed = otherCardOpt.has_value();
@@ -89,7 +89,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 
 	//4. 若目标未展示牌，carrier 可任意更改所展示牌的颜色
 	if (!targetShowed) {
-		auto color = carrier.chooseCardColor(L"[摘罩] 更改你展示的牌的颜色", false);
+		auto color = carrier.chooseCardColor("[摘罩] 更改你展示的牌的颜色", false);
 		if (color.has_value()) {
 			card.setColor(color.value());
 			game.broadcastState();
@@ -107,7 +107,7 @@ void 摘罩::reset() {
 // ==================== 技能：还击 ====================
 bool 还击::content(GameLogic& game, Player& carrier) {
 	//1. 选一名其他角色
-	auto targetOpt = carrier.chooseOtherPlayer(L"[还击] 选择一名其他角色", false);
+	auto targetOpt = carrier.chooseOtherPlayer("[还击] 选择一名其他角色", false);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
@@ -132,8 +132,8 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 	//4. 交还等量张牌（forced=true，强制完成义务）
 	for (std::size_t i = 0; i < takeCount; ++i) {
 		carrier.chooseToGive(
-			L"[还击] 交还一张牌给" + target.characterNameW()
-			+ L"（" + std::to_wstring(i + 1) + L"/" + std::to_wstring(takeCount) + L"）",
+			"[还击] 交还一张牌给" + target.characterName()
+			+ "（" + std::to_string(i + 1) + "/" + std::to_string(takeCount) + "）",
 			target, true
 		);
 	}
@@ -145,7 +145,7 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 // ==================== 技能：舞爪 ====================
 bool 舞爪::content(GameLogic& game, Player& carrier) {
 	//弃置一张万能牌
-	auto discarded = carrier.chooseCardsToDiscardPile(L"选择一张万能牌弃置", 1, false, &Card::isWild);
+	auto discarded = carrier.chooseCardsToDiscardPile("选择一张万能牌弃置", 1, false, &Card::isWild);
 	if (discarded.empty()) return false;
 
 	//逐张重铸所有数字牌
@@ -177,7 +177,7 @@ bool 四霸::filter(const GameLogic& game, const Player& carrier) const {
 }
 
 bool 四霸::content(GameLogic& game, Player& carrier) {
-	carrier.chooseToDiscard(L"【四霸】弃置三张【4】", 3, true,
+	carrier.chooseToDiscard("【四霸】弃置三张【4】", 3, true,
 							[](const Card& c) { return c.is(Card::Name::number_4); });
 	std::cout << "<技能> " << carrier.characterName() << "发动四霸，弃置了三张【4】" << std::endl;
 	game.broadcastState();
@@ -214,7 +214,7 @@ bool 幽愈::content(GameLogic& game, Player& carrier) {
 // ==================== 技能：炫技 ====================
 bool 炫技::content(GameLogic& game, Player& carrier) {
 	//选牌堆顶或底
-	std::size_t pos = carrier.ask(L"【炫技】从牌堆顶或牌堆底摸两张", { L"牌堆顶", L"牌堆底" }, false);
+	std::size_t pos = carrier.ask("【炫技】从牌堆顶或牌堆底摸两张", { "牌堆顶", "牌堆底" }, false);
 	if (pos == 0) return false;  //玩家取消
 	DrawPosition dp = (pos == 1) ? DrawPosition::top : DrawPosition::bottom;
 
@@ -228,18 +228,18 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	Card::Color c2 = drawn[1].get().getColor();
 
 	//选一张置于牌堆底
-	std::size_t put = carrier.ask(L"【炫技】将一张牌置于牌堆底",
-								  { carrier.getHand()[idx1].toWString(), carrier.getHand()[idx2].toWString() }, true);
+	std::size_t put = carrier.ask("【炫技】将一张牌置于牌堆底",
+								  { carrier.getHand()[idx1].toString(), carrier.getHand()[idx2].toString() }, true);
 	std::size_t putIdx = (put == 1) ? idx1 : idx2;
 	game.getPile().push_back(carrier.takeCardByIndex(putIdx));
 	std::cout << "<技能> " << carrier.characterName() << "发动炫技，摸2张并置1张于牌堆底" << std::endl;
 
 	//若两牌同色且手牌>=2，可弃两张令加速+1
 	if (c1 == c2 && carrier.handCount() >= 2) {
-		std::size_t choice = carrier.ask(L"【炫技】两牌同色，是否弃置两张令【加速】+1？",
-										 { L"弃两张", L"不弃" }, false);
+		std::size_t choice = carrier.ask("【炫技】两牌同色，是否弃置两张令【加速】+1？",
+										 { "弃两张", "不弃" }, false);
 		if (choice == 1) {
-			carrier.chooseToDiscard(L"【炫技】弃置两张牌", 2, true);
+			carrier.chooseToDiscard("【炫技】弃置两张牌", 2, true);
 			if (auto sp = carrier.findSkill<加速>(); sp.has_value()) {
 				auto& acc = sp.value().get();
 				acc.increaseLimit(1);
@@ -264,14 +264,14 @@ bool 调羹::content(GameLogic& game, Player& carrier) {
 	carrier.draw(1, DrawReason::skill);
 	game.broadcastState();
 
-	auto idxOpt = carrier.chooseCard(L"选择一张数字牌", &Card::isNumber, false);
+	auto idxOpt = carrier.chooseCard("选择一张数字牌", &Card::isNumber, false);
 	if (!idxOpt) return false;
 
 	auto card = carrier.takeCardByIndex(*idxOpt);
 	carrier.showCard(*card);
 	std::cout << "<技能> " << carrier.characterName() << "展示" << *card << std::endl;
 
-	auto targetOpt = carrier.choosePlayer(L"【调羹】令一名角色获得此牌", true);
+	auto targetOpt = carrier.choosePlayer("【调羹】令一名角色获得此牌", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -299,12 +299,12 @@ bool 挥金::filter(const GameLogic& game, const Player& carrier) const {
 
 bool 挥金::content(GameLogic& game, Player& carrier) {
 	//选目标
-	auto targetOpt = carrier.choosePlayer(L"【挥金】选择一名角色交牌", false);
+	auto targetOpt = carrier.choosePlayer("【挥金】选择一名角色交牌", false);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
 	//选黄色牌（类型未用过）
-	auto cardOpt = carrier.chooseToGive(L"【挥金】交一张黄色牌", target, false,
+	auto cardOpt = carrier.chooseToGive("【挥金】交一张黄色牌", target, false,
 										[this](const Card& c) { return c.is(Card::Color::yellow) && !usedTypes.contains(c.getType()); });
 	if (!cardOpt) return false;
 
@@ -359,7 +359,7 @@ bool 再生::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：手枪 ====================
 bool 手枪::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.chooseOtherPlayer(L"【手枪】选择一名其他角色造成" + std::to_wstring(damageValue) + L"点伤害", false);
+	auto targetOpt = carrier.chooseOtherPlayer("【手枪】选择一名其他角色造成" + std::to_string(damageValue) + "点伤害", false);
 	if (!targetOpt.has_value()) return false;  //取消，返还可用次数（tryActivate 不累加 count）
 	Player& target = *targetOpt;
 
@@ -379,7 +379,7 @@ void 手枪::reset() {
 // ==================== 技能：芜湖 ====================
 bool 芜湖::content(GameLogic& game, Player& carrier) {
 	//先选颜色
-	std::size_t colorChoice = carrier.ask(L"【芜湖】声明颜色", { L"红", L"黄", L"绿", L"蓝", L"黑" }, true);
+	std::size_t colorChoice = carrier.ask("【芜湖】声明颜色", { "红", "黄", "绿", "蓝", "黑" }, true);
 	Card::Color targetColor;
 	std::vector<Card::Name> nameOpts;
 	if (colorChoice <= 4) {
@@ -405,9 +405,9 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	}
 
 	//选牌名
-	std::vector<std::wstring> nameStrs;
-	for (auto n : nameOpts) nameStrs.push_back(Card::to_wstring(n));
-	std::size_t nameChoice = carrier.ask(L"【芜湖】声明牌名", nameStrs, true);
+	std::vector<std::string> nameStrs;
+	for (auto n : nameOpts) nameStrs.push_back(Card::to_string(n));
+	std::size_t nameChoice = carrier.ask("【芜湖】声明牌名", nameStrs, true);
 	Card::Name targetName = nameOpts[nameChoice - 1];
 
 	std::cout << "<技能> " << carrier.characterName() << "发动芜湖，声明"
@@ -435,7 +435,7 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	}
 	else {
 		//无匹配：视为未发动（return false 不消耗次数），可弃一张
-		carrier.chooseToDiscard(L"牌堆无此牌，弃置一张牌", 1, false);
+		carrier.chooseToDiscard("牌堆无此牌，弃置一张牌", 1, false);
 		std::cout << "<技能> " << carrier.characterName() << "声明牌堆无此牌，芜湖视为未发动" << std::endl;
 		game.broadcastState();
 		return false;
@@ -448,7 +448,7 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 	game.broadcastState();
 
 	auto targetOpt = carrier.choosePlayer(
-		L"【引力】选择一名角色，本轮数字牌进入弃牌堆后该角色获得之", false);
+		"【引力】选择一名角色，本轮数字牌进入弃牌堆后该角色获得之", false);
 	if (!targetOpt.has_value()) return false;  //取消，不消耗次数
 
 	Player& tgt = targetOpt->get();
@@ -478,26 +478,26 @@ void 引力::reset() {
 
 //甘草
 bool 甘草::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.choosePlayer(L"【甘草】选择一名角色", false);
+	auto targetOpt = carrier.choosePlayer("【甘草】选择一名角色", false);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
 	//收集非数字牌的索引和描述
 	std::vector<std::size_t> indices;
-	std::vector<std::wstring> options;
+	std::vector<std::string> options;
 	std::size_t i = 0;
 	for (auto it = target.getHand().begin(); it != target.getHand().end(); ++it, ++i) {
 		const Card& c = **it;
 		if (!c.isNumber()) {
 			indices.push_back(i);
-			options.push_back(c.toWString());
+			options.push_back(c.toString());
 		}
 	}
 	if (options.empty()) {
-		carrier.hint(L"该角色没有非数字牌");
+		carrier.hint("该角色没有非数字牌");
 		return true;
 	}
-	auto choice = carrier.ask(L"【甘草】弃置一张非数字牌？", options, false);
+	auto choice = carrier.ask("【甘草】弃置一张非数字牌？", options, false);
 	if (choice == 0) return true;  //不弃置
 	target.discardByIndex(indices[choice - 1]);
 	game.broadcastState();
@@ -507,11 +507,11 @@ bool 甘草::content(GameLogic& game, Player& carrier) {
 //跳糖
 bool 跳糖::content(GameLogic& game, Player& carrier) {
 	//切斯特指定颜色
-	auto colorOpt = carrier.chooseCardColor(L"【跳糖】指定【+2】的颜色", false);
+	auto colorOpt = carrier.chooseCardColor("【跳糖】指定【+2】的颜色", false);
 	if (!colorOpt) return false;
 
 	//选一名其他角色拼点
-	auto targetOpt = carrier.chooseOtherPlayer(L"【跳糖】选择拼点目标", true);
+	auto targetOpt = carrier.chooseOtherPlayer("【跳糖】选择拼点目标", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -553,11 +553,11 @@ bool 肘击::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：突袭 ====================
 bool 突袭::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.chooseOtherPlayer(L"【突袭】令一名其他角色的\"毒\"标记数量翻倍", false);
+	auto targetOpt = carrier.chooseOtherPlayer("【突袭】令一名其他角色的\"毒\"标记数量翻倍", false);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 	if (!target.hasMark("毒")) {
-		carrier.hint(L"该角色没有\"毒\"标记");
+		carrier.hint("该角色没有\"毒\"标记");
 		return false;
 	}
 	std::size_t cnt = target.getMarkCount("毒");
@@ -570,7 +570,7 @@ bool 突袭::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：猛击 ====================
 bool 猛击::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.chooseOtherPlayer(L"【猛击】选择一名其他角色", false);
+	auto targetOpt = carrier.chooseOtherPlayer("【猛击】选择一名其他角色", false);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
@@ -619,7 +619,7 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 	}
 	else {
 		//第4次及以上：将一张手牌变为随机颜色的随机非数字牌，回复发动次数点体力
-		auto idxOpt = carrier.chooseCard(L"选择一张手牌", unool::alwaysTrue, false);
+		auto idxOpt = carrier.chooseCard("选择一张手牌", unool::alwaysTrue, false);
 		if (!idxOpt) return false;
 
 		Card::ColorName cn = Card::randomCard(&Card::isNotNumber);

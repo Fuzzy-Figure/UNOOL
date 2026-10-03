@@ -29,7 +29,7 @@ namespace unool {
 
 	namespace string {
 		std::wstring to_utf16(const std::string& utf8);
-		std::string to_utf8(const std::wstring& wstr);
+		std::string to_utf8(const std::wstring& utf16);
 	}
 
 	namespace random {

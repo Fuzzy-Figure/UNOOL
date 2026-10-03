@@ -12,7 +12,7 @@ public:
 	std::size_t getCardCount() const override;
 	bool canSelect(const Card& c) const override;
 	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
-	std::wstring getPrompt() const override;
+	std::string getPrompt() const override;
 };
 
 
@@ -28,7 +28,7 @@ public:
 	bool canSelect(const Card& c) const override;
 	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
 	void addition(GameLogic& game, Player& carrier) const override;
-	std::wstring getPrompt() const override;
+	std::string getPrompt() const override;
 };
 
 
@@ -43,7 +43,7 @@ public:
 	std::size_t getCardCount() const override;
 	bool canSelect(const Card& c) const override;
 	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
-	std::wstring getPrompt() const override;
+	std::string getPrompt() const override;
 };
 
 // ==================== 切斯特衍生技 ====================
@@ -57,5 +57,5 @@ public:
 	) {}
 	bool canSelect(const Card& c) const override;
 	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
-	std::wstring getPrompt() const override;
+	std::string getPrompt() const override;
 };

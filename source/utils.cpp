@@ -48,7 +48,7 @@ namespace unool {
 			if (utf8.empty()) return std::wstring();
 
 			int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
-			std::wstring utf16(len, L'\0');
+			std::wstring utf16(len, '\0');
 			MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &utf16[0], len);
 			utf16.pop_back(); // 去掉结尾的空字符
 			return utf16;

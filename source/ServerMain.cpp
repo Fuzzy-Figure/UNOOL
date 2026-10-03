@@ -105,14 +105,14 @@ int main() {
 			for (std::size_t i = 0; i < 2; ++i) {
 				auto& player = gameLogic.getPlayerById(i);
 				std::size_t choice = player.ask(
-					L"是否继续下一场对战？", { L"继续", L"退出" }, true);
+					"是否继续下一场对战？", { "继续", "退出" }, true);
 				if (choice == 2) {
 					std::cout << "[Server] 玩家" << i << "选择退出，游戏结束" << std::endl;
 					goto gameSessionEnd;
 				}
 			}
 		}
-		gameSessionEnd:;
+		gameSessionEnd:
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;

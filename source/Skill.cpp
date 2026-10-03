@@ -73,15 +73,15 @@ bool Skill::isTransform() const {
 	return getType() == Type::transform;
 }
 PassiveSkill& Skill::toPassive() {
-	if (!isPassive()) throw std::runtime_error("不能将非Passive技能转化为PassiveSkill");
+	if (!isPassive()) throw std::runtime_error("不能将非Passive技能转化为PassiveSkil");
 	return static_cast<PassiveSkill&>(*this);
 }
 InstantSkill& Skill::toInstant() {
-	if (!isInstant()) throw std::runtime_error("不能将非Instant技能转化为InstantSkill");
+	if (!isInstant()) throw std::runtime_error("不能将非Instant技能转化为InstantSkil");
 	return static_cast<InstantSkill&>(*this);
 }
 TransformSkill& Skill::toTransform() {
-	if (!isTransform()) throw std::runtime_error("不能将非Transform技能转化为TransformSkill");
+	if (!isTransform()) throw std::runtime_error("不能将非Transform技能转化为TransformSkil");
 	return static_cast<TransformSkill&>(*this);
 }
 
@@ -129,8 +129,8 @@ void PassiveSkill::launch(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//如果不是锁定技，询问玩家是否发动
 	if (!forced) {
 		const std::size_t choice = carrier.ask(
-			L"是否发动 [" + getNameW() + L"]？",
-			{ L"发动", L"不发动" },
+			"是否发动 [" + getName() + "]？",
+			{ "发动", "不发动" },
 			true
 		);
 		if (choice == 2) return;

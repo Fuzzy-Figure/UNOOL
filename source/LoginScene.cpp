@@ -133,46 +133,46 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 
 void LoginScene::sendLoginRequest() {
 	if (username.empty() || password.empty()) {
-		message = L"用户名和密码不能为空";
+		message = "用户名和密码不能为空";
 		return;
 	}
 	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
 	if (!net.send(req)) {
-		message = L"发送失败，请重试";
+		message = "发送失败，请重试";
 		return;
 	}
 	status = Status::WaitingLogin;
-	message = L"登录中...";
+	message = "登录中...";
 }
 
 void LoginScene::sendRegisterRequest() {
 	if (password.empty()) {
-		message = L"密码不能为空";
+		message = "密码不能为空";
 		status = Status::Idle;
 		return;
 	}
 	sf::Packet req = AccountProtocol::makeRegisterRequest(username, password);
 	if (!net.send(req)) {
-		message = L"发送失败，请重试";
+		message = "发送失败，请重试";
 		status = Status::Idle;
 		return;
 	}
 	status = Status::WaitingRegister;
-	message = L"注册中...";
+	message = "注册中...";
 }
 
 void LoginScene::sendCheckUsername() {
 	if (username.empty()) {
-		message = L"用户名不能为空";
+		message = "用户名不能为空";
 		return;
 	}
 	sf::Packet req = AccountProtocol::makeCheckUsernameRequest(username);
 	if (!net.send(req)) {
-		message = L"发送失败，请重试";
+		message = "发送失败，请重试";
 		return;
 	}
 	status = Status::WaitingCheck;
-	message = L"检查用户名...";
+	message = "检查用户名...";
 }
 
 void LoginScene::pollAccountPackets() {
@@ -193,13 +193,13 @@ void LoginScene::pollAccountPackets() {
 
 		if (mt == MessageType::CheckUsernameResponse && status == Status::WaitingCheck) {
 			auto exists = AccountProtocol::parseCheckUsernameResponse(packet);
-			if (!exists) { message = L"响应解析失败"; status = Status::Idle; continue; }
+			if (!exists) { message = "响应解析失败"; status = Status::Idle; continue; }
 			if (*exists) {
-				message = L"该用户名已存在";
+				message = "该用户名已存在";
 				status = Status::Idle;
 			}
 			else {
-				message = L"用户名可用，继续注册";
+				message = "用户名可用，继续注册";
 				sendRegisterRequest(); // 自动进入注册请求
 			}
 			continue;
@@ -207,13 +207,13 @@ void LoginScene::pollAccountPackets() {
 
 		if (mt == MessageType::RegisterResponse && status == Status::WaitingRegister) {
 			auto resp = AccountProtocol::parseAccountResponse(packet);
-			if (!resp) { message = L"响应解析失败"; status = Status::Idle; continue; }
+			if (!resp) { message = "响应解析失败"; status = Status::Idle; continue; }
 			if (resp->ok) {
-				message = L"注册成功，自动登录中...";
+				message = "注册成功，自动登录中...";
 				sendLoginRequest(); // 注册成功，自动登录
 			}
 			else {
-				message = L"注册失败: " + unool::string::to_utf16(resp->msg);
+				message = "注册失败: " + resp->msg;
 				status = Status::Idle;
 			}
 			continue;
@@ -221,7 +221,7 @@ void LoginScene::pollAccountPackets() {
 
 		if (mt == MessageType::LoginResponse && status == Status::WaitingLogin) {
 			auto resp = AccountProtocol::parseAccountResponse(packet);
-			if (!resp) { message = L"响应解析失败"; status = Status::Idle; continue; }
+			if (!resp) { message = "响应解析失败"; status = Status::Idle; continue; }
 			if (resp->ok) {
 				result.username = username;
 				result.points = resp->points;
@@ -229,14 +229,14 @@ void LoginScene::pollAccountPackets() {
 				result.losses = resp->losses;
 				result.ok = true;
 				status = Status::Done;
-				message = L"登录成功";
+				message = "登录成功";
 				std::cout << titleBrackets << " 登录成功: " << resp->msg
 					<< " 积分=" << resp->points
 					<< " 胜=" << resp->wins
 					<< " 负=" << resp->losses << std::endl;
 			}
 			else {
-				message = L"登录失败: " + unool::string::to_utf16(resp->msg);
+				message = "登录失败: " + resp->msg;
 				status = Status::Idle;
 			}
 			continue;
@@ -250,7 +250,7 @@ void LoginScene::render() {
 	window.clear(sf::Color::White);
 
 	// 标题（靠上居中，避免与输入框重叠）
-	textMgr.displayTextInUp(L"UNOOL", { 40, 80 }, sf::Color::Black);
+	textMgr.displayTextInUp("UNOOL", { 40, 80 }, sf::Color::Black);
 
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
@@ -261,7 +261,7 @@ void LoginScene::render() {
 		window.draw(shape);
 	};
 
-	auto drawButton = [&](const sf::FloatRect& r, const std::wstring& label) {
+	auto drawButton = [&](const sf::FloatRect& r, const std::string& label) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
 		shape.setPosition({ r.position.x, r.position.y });
 		shape.setFillColor(sf::Color(220, 230, 240));
@@ -277,20 +277,20 @@ void LoginScene::render() {
 	};
 
 	// 用户名行
-	textMgr.displayText(L"用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 	drawBox(usernameBox, focus == Focus::Username);
-	textMgr.displayText(unool::string::to_utf16(username),
+	textMgr.displayText(username,
 		{ usernameBox.position.x + 15.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 
 	// 密码行 (明文显示)
-	textMgr.displayText(L"密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText("密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 	drawBox(passwordBox, focus == Focus::Password);
-	textMgr.displayText(unool::string::to_utf16(password),
+	textMgr.displayText(password,
 		{ passwordBox.position.x + 15.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
 
 	// 按钮
-	drawButton(loginBtn, L"登录");
-	drawButton(registerBtn, L"注册");
+	drawButton(loginBtn, "登录");
+	drawButton(registerBtn, "注册");
 
 	// 状态提示（按钮下方居中，避免与输入框重叠）
 	const sf::Vector2u winSize = window.getSize();
@@ -303,7 +303,7 @@ void LoginScene::render() {
 	}
 
 	// 操作提示（底部居中）
-	const std::wstring hint = L"Tab 切换输入框 | Enter 提交 | Esc 退出";
+	const std::string hint = "Tab 切换输入框 | Enter 提交 | Esc 退出";
 	const sf::Vector2f hintSize = { 18, 36 };
 	const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
 	textMgr.displayText(hint,

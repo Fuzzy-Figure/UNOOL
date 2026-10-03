@@ -223,10 +223,10 @@ bool ServerNetwork::sendCharInfo(const CharInfo& info) {
 }
 
 bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
-									 const std::wstring& title,
-									 const std::vector<std::wstring>& options,
+									 const std::string& title,
+									 const std::vector<std::string>& options,
 									 bool forced,
-									 const std::wstring& errorMsg,
+									 const std::string& errorMsg,
 									 std::optional<std::size_t> timeoutMs,
 									 std::size_t currentPage,
 									 std::size_t totalPages) {
@@ -234,13 +234,13 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 
 	sf::Packet packet;
 	packet << std::to_underlying(MessageType::Choice);
-	packet << sf::String(title);
+	packet << title;
 	packet << options.size();
 	for (const auto& option : options) {
-		packet << sf::String(option);
+		packet << option;
 	}
 	packet << forced;
-	packet << sf::String(errorMsg);
+	packet << errorMsg;
 	bool hasTimeout = timeoutMs.has_value();
 	packet << hasTimeout;
 	if (hasTimeout) {

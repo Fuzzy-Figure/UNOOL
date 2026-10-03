@@ -27,7 +27,7 @@ private:
 
 	std::string username;
 	std::string password;
-	std::wstring message; // 状态/错误提示
+	std::string message; // 状态/错误提示
 	Result result;
 
 	// 固定布局矩形

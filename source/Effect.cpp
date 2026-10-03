@@ -16,24 +16,8 @@ void Effect::draw2(Card& card, Player& source, Player& target) {
 }
 
 void Effect::pal(Card& card, GameLogic& game, Player& source) {
-	std::vector<std::wstring> options = {
-		Card::to_wstring(Card::Color::blue),
-		Card::to_wstring(Card::Color::red),
-		Card::to_wstring(Card::Color::green),
-		Card::to_wstring(Card::Color::yellow)
-	};
-
-	std::size_t choice = source.ask(L"请选择颜色", options, true);
-
-	Card::Color newColor;
-	switch (choice) {
-	case 1: newColor = Card::Color::blue; break;
-	case 2: newColor = Card::Color::red; break;
-	case 3: newColor = Card::Color::green; break;
-	case 4: newColor = Card::Color::yellow; break;
-	default: newColor = Card::Color::blue; break;
-	}
-
+	std::vector<Card::Color> colorVec(Card::fourColors.begin(), Card::fourColors.end());
+	const Card::Color newColor = source.chooseCardColor("请选择颜色", true, colorVec).value();
 	game.setCurrentColor(newColor);
 	std::cout << "玩家" << source.getId() << "选择了颜色：" << Card::to_string(newColor) << std::endl;
 }
@@ -41,9 +25,9 @@ void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) 
 	const Card::Color& colorBeforeDraw4 = game.getCurrentColor();
 	pal(card, game, source);
 	const std::size_t choice = target.ask(
-		source.characterNameW() + L"对你使用了[+4]，是否质疑？", {
-		L"质疑",
-		L"不质疑"
+		source.characterName() + "对你使用了[+4]，是否质疑？", {
+		"质疑",
+		"不质疑"
 		}, true);
 	if (choice == 1) { //质疑
 		if (source.handInclude([&colorBeforeDraw4](const Card& card) {

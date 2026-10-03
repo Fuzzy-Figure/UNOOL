@@ -29,10 +29,10 @@ public:
 	};
 	//选项提示相关
 	struct Choice {
-		std::wstring title;
-		std::vector<std::wstring> options;
+		std::string title;
+		std::vector<std::string> options;
 		bool forced{};
-		std::wstring errorMsg;
+		std::string errorMsg;
 		std::optional<std::size_t> timeoutMs;
 		std::size_t currentPage = 0;
 		std::size_t totalPages = 1;
@@ -51,7 +51,7 @@ private:
 	//infoBox 缓存：仅当切换角色时重算
 	struct InfoBoxCache {
 		std::size_t playerId = static_cast<std::size_t>(-1);
-		std::wstring text;
+		std::string text;
 		float boxHeight = 0.f;
 	};
 	InfoBoxCache infoBoxCache;
@@ -83,20 +83,20 @@ public:
 	void handleMouseClick(const sf::Vector2f& mousePos);
 
 	//显示文字
-	void displayText(const std::wstring& text,
+	void displayText(const std::string& text,
 					 const sf::Vector2f& pos,
 					 const sf::Vector2f& size = { 20,40 },
 					 const sf::Color& color = sf::Color::Black);
-	void displayTextInCenter(const std::wstring& text,
+	void displayTextInCenter(const std::string& text,
 							 const sf::Vector2f& size = { 20,40 },
 							 const sf::Color& color = sf::Color::Black);
-	void displayTextInRight(const std::wstring& text,
+	void displayTextInRight(const std::string& text,
 							const sf::Vector2f& size = { 20,40 },
 							const sf::Color& color = sf::Color::Black);
-	void displayTextInUpRight(const std::wstring& text,
+	void displayTextInUpRight(const std::string& text,
 							  const sf::Vector2f& size = { 20,40 },
 							  const sf::Color& color = sf::Color::Black);
-	void displayTextInLeft(const std::wstring& text,
+	void displayTextInLeft(const std::string& text,
 						   const sf::Vector2f& size = { 20,40 },
 						   const sf::Color& color = sf::Color::Black);
 

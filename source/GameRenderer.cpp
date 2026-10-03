@@ -120,9 +120,9 @@ void GameRenderer::renderPlayers() {
 		if (!currentState.seatOrder.empty()) {
 			//座位号
 			std::size_t seat = currentState.seatOrder[playerState.id];
-			std::wstring seatText = (seat == 0) ? L"一号位" : L"二号位";
+			std::string seatText = (seat == 0) ? "一号位" : "二号位";
 			//体力
-			std::wstring hpText = L"体力：" + std::to_wstring(playerState.hp) + L"/" + std::to_wstring(playerState.maxHp);
+			std::string hpText = "体力：" + std::to_string(playerState.hp) + "/" + std::to_string(playerState.maxHp);
 			//显示
 			sf::Vector2f pos;
 			if (playerState.id == 0) {
@@ -131,14 +131,14 @@ void GameRenderer::renderPlayers() {
 			else {
 				pos = { charPos.x, charPos.y - 50 };
 			}
-			displayText(seatText + L"，" + hpText, pos);
+			displayText(seatText + "，" + hpText, pos);
 		}
 
 		const bool isLocalPlayer = playerState.id == localPlayerId;
 		//手牌信息
-		std::wstring cardsInfoText = L"手牌数：" + std::to_wstring(playerState.hand.count());
+		std::string cardsInfoText = "手牌数：" + std::to_string(playerState.hand.count());
 		if (isLocalPlayer) {
-			cardsInfoText += L"；总价值：" + std::to_wstring(playerState.hand.value());
+			cardsInfoText += "；总价值：" + std::to_string(playerState.hand.value());
 		}
 		sf::Vector2f cardsInfoPos;
 		if (playerState.id == 0) {
@@ -169,7 +169,7 @@ void GameRenderer::renderDiscardPile() {
 									 config.windowSize.y / 2.0f - config.cardSize.y / 2 };
 		displayCard(lastCard, currentCardPos, config.cardSize);
 		//下方写 DiscardReason（按真实字宽水平居中于卡牌下方）
-		const std::wstring reasonText = Card::to_wstring(lastCard.getDiscardReason());
+		const std::string reasonText = Card::to_string(lastCard.getDiscardReason());
 		if (!reasonText.empty()) {
 			const sf::Vector2f textSize{ 20, 40 };
 			const float textPad = 8.0f;
@@ -193,7 +193,7 @@ void GameRenderer::renderDiscardPile() {
 		for (size_t i = 1; i <= historyCount; ++i) {
 			const Card& histCard = currentState.discardPile[i];
 			displayCard(histCard, historyPos, historySize);
-			const std::wstring histReason = Card::to_wstring(histCard.getDiscardReason());
+			const std::string histReason = Card::to_string(histCard.getDiscardReason());
 			if (!histReason.empty()) {
 				const sf::Vector2f actualTextSize = textMgr.measureText(histReason, static_cast<unsigned int>(historyTextSize.y));
 				const float cardCenterX = historyPos.x + historySize.x / 2.0f;
@@ -206,42 +206,42 @@ void GameRenderer::renderDiscardPile() {
 			historyPos.x -= historySize.x;
 		}
 	}
-	displayTextInLeft(L"当前颜色：" + Card::to_wstring(currentState.currentColor) + L'\n' +
-					  L"当前牌名：" + Card::to_wstring(currentState.currentName));
+	displayTextInLeft("当前颜色：" + Card::to_string(currentState.currentColor) + '\n' +
+					  "当前牌名：" + Card::to_string(currentState.currentName));
 }
 
 void GameRenderer::renderChoice() {
 	if (!choice.has_value()) return;
 
-	std::wstring choiceText;
+	std::string choiceText;
 	if (!choice->title.empty()) {
-		choiceText += choice->title + L'\n';
+		choiceText += choice->title + '\n';
 	}
 	for (const auto& [i, option] : choice->options | std::views::enumerate) {
-		choiceText += (L"[" + std::to_wstring(i + 1) + L"] " + option + L'\n');
+		choiceText += ("[" + std::to_string(i + 1) + "] " + option + '\n');
 	}
 	if (!choice->options.empty()) {
 		if (choice->forced) {
 			if (choice->totalPages > 1) {
-				choiceText += (L"第 " + std::to_wstring(choice->currentPage + 1) + L"/" + std::to_wstring(choice->totalPages) + L"页，<-->翻页\n");
-				choiceText += (L"输入数字1-" + std::to_wstring(choice->options.size()) + L"选择（必须选择）" + L'\n');
+				choiceText += ("第 " + std::to_string(choice->currentPage + 1) + "/" + std::to_string(choice->totalPages) + "页，<-->翻页\n");
+				choiceText += ("输入数字1-" + std::to_string(choice->options.size()) + "选择（必须选择）" + '\n');
 			}
 			else {
-				choiceText += (L"输入数字1-" + std::to_wstring(choice->options.size()) + L"选择（必须选择）" + L'\n');
+				choiceText += ("输入数字1-" + std::to_string(choice->options.size()) + "选择（必须选择）" + '\n');
 			}
 		}
 		else {
 			if (choice->totalPages > 1) {
-				choiceText += (L"第 " + std::to_wstring(choice->currentPage + 1) + L"/" + std::to_wstring(choice->totalPages) + L"页，<-->翻页\n");
-				choiceText += (L"输入数字0-" + std::to_wstring(choice->options.size()) + L"选择（0表示不选择）" + L'\n');
+				choiceText += ("第 " + std::to_string(choice->currentPage + 1) + "/" + std::to_string(choice->totalPages) + "页，<-->翻页\n");
+				choiceText += ("输入数字0-" + std::to_string(choice->options.size()) + "选择（0表示不选择）" + '\n');
 			}
 			else {
-				choiceText += (L"输入数字0-" + std::to_wstring(choice->options.size()) + L"选择（0表示不选择）" + L'\n');
+				choiceText += ("输入数字0-" + std::to_string(choice->options.size()) + "选择（0表示不选择）" + '\n');
 			}
 		}
 	}
 	if (!choice->errorMsg.empty()) {
-		choiceText += choice->errorMsg + L'\n';
+		choiceText += choice->errorMsg + '\n';
 	}
 	if (choice->timeoutMs.has_value()) {
 		float elapsedMs = static_cast<float>(countdownClock.getElapsedTime().asMilliseconds());
@@ -250,7 +250,7 @@ void GameRenderer::renderChoice() {
 		float remainingSec = remainingMs / 1000.f;
 		int intPart = static_cast<int>(remainingSec);
 		int decPart = static_cast<int>((remainingSec - intPart) * 10.f);
-		choiceText += L"剩余时间：" + std::to_wstring(intPart) + L"." + std::to_wstring(decPart) + L" 秒" + L'\n';
+		choiceText += "剩余时间：" + std::to_string(intPart) + "." + std::to_string(decPart) + " 秒" + '\n';
 	}
 	displayTextInRight(choiceText);
 }
@@ -273,8 +273,8 @@ void GameRenderer::renderInfoBox() {
 
 	//缓存判断：仅当切换角色时重算
 	if (infoBoxCache.playerId != infoBoxPlayerId.value()) {
-		std::wstring infoText = textMgr.wrapText(
-			unool::string::to_utf16(ciCache), maxWidth, textSize);
+		std::string infoText = textMgr.wrapText(
+			ciCache, maxWidth, textSize);
 
 		const sf::Vector2f measured = textMgr.measureText(infoText, charSize);
 
@@ -298,32 +298,32 @@ void GameRenderer::renderInfoBox() {
 	displayText(infoBoxCache.text, { boxPos.x + sidePad, boxPos.y + topPad }, textSize);
 }
 
-void GameRenderer::displayText(const std::wstring& text,
+void GameRenderer::displayText(const std::string& text,
 							   const sf::Vector2f& pos,
 							   const sf::Vector2f& size,
 							   const sf::Color& color) {
 	textMgr.displayText(text, pos, size, color);
 }
 
-void GameRenderer::displayTextInCenter(const std::wstring& text,
+void GameRenderer::displayTextInCenter(const std::string& text,
 									   const sf::Vector2f& size,
 									   const sf::Color& color) {
 	textMgr.displayTextInCenter(text, size, color);
 }
 
-void GameRenderer::displayTextInRight(const std::wstring& text,
+void GameRenderer::displayTextInRight(const std::string& text,
 									  const sf::Vector2f& size,
 									  const sf::Color& color) {
 	textMgr.displayTextInRight(text, size, color);
 }
 
-void GameRenderer::displayTextInUpRight(const std::wstring& text,
+void GameRenderer::displayTextInUpRight(const std::string& text,
 										const sf::Vector2f& size,
 										const sf::Color& color) {
 	textMgr.displayTextInUpRight(text, size, color);
 }
 
-void GameRenderer::displayTextInLeft(const std::wstring& text,
+void GameRenderer::displayTextInLeft(const std::string& text,
 									 const sf::Vector2f& size,
 									 const sf::Color& color) {
 	textMgr.displayTextInLeft(text, size, color);

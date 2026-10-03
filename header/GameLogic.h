@@ -37,9 +37,9 @@ private:
 		std::vector<std::size_t> bannedIdx[2];
 	};
 
-	static std::wstring formatCharacterLabelW(const Character::Entry& entry);
+	static std::string formatCharacterLabel(const Character::Entry& entry);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
-	std::optional<std::wstring> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
+	std::optional<std::string> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
 	//双将模式选将：5选1再4选1，两轮 chooseSkin 后 makeCombined，期间每选完即 markCharInfoDirty+broadcast
 	void selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands);

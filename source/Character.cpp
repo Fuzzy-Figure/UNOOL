@@ -157,12 +157,10 @@ std::string Character::getName() const {
 	if (names.size() == 1) return names[0];
 	return names[0] + "&" + names[1];
 }
-std::wstring Character::getNameW() const {
-	return unool::string::to_utf16(getName());
-}
+
 Character::Level Character::getLevel() const {
 	//组合角色调用属编程错误，应由调用方改用 getMaxLevel/getMinLevel
-	if (isCombined()) throw std::logic_error("组合角色不支持 getLevel，请用 getMaxLevel/getMinLevel");
+	if (isCombined()) throw std::logic_error("组合角色不支持 getLevel，请用 getMaxLevel/getMinLeve");
 	if (auto it = infos.find(names[0]); it != infos.end()) return it->second.level;
 	else throw std::invalid_argument("此角色未定义等级");
 }
@@ -242,17 +240,7 @@ std::string Character::to_string(Level level) {
 		default:       return "?";
 	}
 }
-std::wstring Character::to_wstring(Level level) {
-	switch (level) {
-		case Level::S: return L"S";
-		case Level::A: return L"A";
-		case Level::B: return L"B";
-		case Level::C: return L"C";
-		case Level::D: return L"D";
-		case Level::F: return L"F";
-		default:       return L"?";
-	}
-}
+
 std::string Character::getImagePath(const std::string& name, const std::string& skin) {
 	auto it = infos.find(name);
 	if (it == infos.end()) {
@@ -268,13 +256,13 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
 	}
 	const std::string& group = it->second.group;
-	const fs::path dir = fs::path(L"../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
+	const fs::path dir = fs::path("../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
 	if (!fs::exists(dir) || !fs::is_directory(dir)) {
 		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录不存在");
 	}
 	std::vector<std::string> skins;
 	for (const auto& entry : fs::directory_iterator(dir)) {
-		if (entry.is_regular_file() && entry.path().extension() == L".jpg") {
+		if (entry.is_regular_file() && entry.path().extension() == ".jpg") {
 			skins.push_back(unool::string::to_utf8(entry.path().stem().wstring()));
 		}
 	}

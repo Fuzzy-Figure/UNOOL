@@ -130,7 +130,7 @@ void GameLogic::determineSeatOrder() {
 	std::ranges::iota(seatOrder, 0);
 	std::ranges::shuffle(seatOrder, unool::random::rng);
 	for (std::size_t id = 0; id < 2; ++id) {
-		players[id]->hint(std::format(L"你是{}号位", seatOrder[id] + 1));
+		players[id]->hint(std::format("你是{}号位", seatOrder[id] + 1));
 	}
 }
 
@@ -148,7 +148,7 @@ void GameLogic::initPlayers() {
 	std::size_t secondSeatId = getSeatPlayerId(1);
 
 	//读取模式：normal（默认）/ double
-	const std::string mode = unool::getServerConfig().value("mode", "normal");
+	const std::string mode = unool::getServerConfig().value("mode", "norma");
 	if (mode == "double") {
 		initPlayersDouble(firstSeatId, secondSeatId);
 	}
@@ -172,11 +172,11 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	}
 
 	//Ban环节：玩家A先连续ban banCount次，再一次性告诉B；然后B同理，最后提示A
-	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::wstring>& labels) -> std::wstring {
-		if (labels.empty()) return players[targetId]->characterNameW() + L"没有禁用你的任何角色";
-		std::wstring msg = L"对方禁用了你的角色：\n";
+	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::string>& labels) -> std::string {
+		if (labels.empty()) return players[targetId]->characterName() + "没有禁用你的任何角色";
+		std::string msg = "对方禁用了你的角色：\n";
 		for (std::size_t i = 0; i < labels.size(); ++i) {
-			if (i > 0) msg += L"\n";
+			if (i > 0) msg += "\n";
 			msg += labels[i];
 		}
 		return msg;
@@ -184,7 +184,7 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 
 	const std::size_t banCount = unool::getServerConfig().value("banCount", 0);
 
-	std::vector<std::wstring> bannedByA;
+	std::vector<std::string> bannedByA;
 	bannedByA.reserve(banCount);
 	for (std::size_t b = 0; b < banCount; ++b) {
 		auto label = banPhase(firstSeatId, secondSeatId, b, banCount, state);
@@ -192,7 +192,7 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	}
 	players[secondSeatId]->hint(formatBanSummary(secondSeatId, bannedByA));
 
-	std::vector<std::wstring> bannedByB;
+	std::vector<std::string> bannedByB;
 	bannedByB.reserve(banCount);
 	for (std::size_t b = 0; b < banCount; ++b) {
 		auto label = banPhase(secondSeatId, firstSeatId, b, banCount, state);
@@ -227,7 +227,7 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 	throw std::logic_error("座位号无效");
 }
 
-std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
+std::string GameLogic::formatCharacterLabel(const Character::Entry& entry) {
 	const Character::Info info = entry.second;
 	std::string label = std::format(
 		"{}（{}）体力：{}",
@@ -238,41 +238,41 @@ std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
 	if (info.maxHp != info.hp) {
 		label += std::format("/{}", info.maxHp);
 	}
-	return unool::string::to_utf16(label);
+	return label;
 }
 
 
 
-std::optional<std::wstring> GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state) {
-	std::vector<std::wstring> banOpts;
+std::optional<std::string> GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state) {
+	std::vector<std::string> banOpts;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[targetId].size(); ++i) {
 		const bool alreadyBanned = std::ranges::contains(state.bannedIdx[targetId], i);
 		if (alreadyBanned) continue;
-		banOpts.push_back(formatCharacterLabelW(state.cands[targetId][i]));
+		banOpts.push_back(formatCharacterLabel(state.cands[targetId][i]));
 		validIndices.push_back(i);
 	}
 	//候选池<=1时无需再ban
 	if (validIndices.size() <= 1) return std::nullopt;
-	const std::wstring title = std::format(L"禁用对方的角色（{}/{}）：", banIndex + 1, banCount);
+	const std::string title = std::format("禁用对方的角色（{}/{}）：", banIndex + 1, banCount);
 	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 60s);
 	if (banChoice > 0 && banChoice <= validIndices.size()) {
 		const std::size_t targetIdx = validIndices[banChoice - 1];
 		state.bannedIdx[targetId].push_back(targetIdx);
-		return formatCharacterLabelW(state.cands[targetId][targetIdx]);
+		return formatCharacterLabel(state.cands[targetId][targetIdx]);
 	}
 	return std::nullopt;
 }
 
 void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
-	std::vector<std::wstring> opts;
+	std::vector<std::string> opts;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
 		if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
-		opts.push_back(formatCharacterLabelW(state.cands[playerId][i]));
+		opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
 		validIndices.push_back(i);
 	}
-	std::size_t choice = players[playerId]->ask(L"选择你的角色：", opts, true);
+	std::size_t choice = players[playerId]->ask("选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	players[playerId]->chooseSkinAndSet(charName);
 	broadcastState();
@@ -280,18 +280,18 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 
 void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands) {
 	//第一轮：5选1
-	std::vector<std::wstring> opts1;
-	for (const auto& e : cands) opts1.push_back(formatCharacterLabelW(e));
-	const std::size_t choice1 = players[playerId]->ask(L"选择你的第1个角色（5选1）：", opts1, true);
+	std::vector<std::string> opts1;
+	for (const auto& e : cands) opts1.push_back(formatCharacterLabel(e));
+	const std::size_t choice1 = players[playerId]->ask("选择你的第1个角色（5选1）：", opts1, true);
 	const std::string char1 = cands[choice1 - 1].first;
 	const std::string skin1 = players[playerId]->chooseSkin(char1);
 	//移除已选
 	cands.erase(cands.begin() + (choice1 - 1));
 
 	//第二轮：4选1
-	std::vector<std::wstring> opts2;
-	for (const auto& e : cands) opts2.push_back(formatCharacterLabelW(e));
-	const std::size_t choice2 = players[playerId]->ask(L"选择你的第2个角色（4选1）：", opts2, true);
+	std::vector<std::string> opts2;
+	for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
+	const std::size_t choice2 = players[playerId]->ask("选择你的第2个角色（4选1）：", opts2, true);
 	const std::string char2 = cands[choice2 - 1].first;
 	const std::string skin2 = players[playerId]->chooseSkin(char2);
 
@@ -301,7 +301,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
-	const std::string mode = unool::getServerConfig().value("mode", "normal");
+	const std::string mode = unool::getServerConfig().value("mode", "norma");
 	if (mode == "double") {
 		//双将模式：4 个角色，前 2 个给玩家1，后 2 个给玩家2，各自 makeCombined
 		if (chars.size() != 4)
@@ -481,7 +481,7 @@ void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime
 //返回置入弃牌堆的牌的引用
 Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player) {
 	card->setDiscardReason(reason);
-	std::cout << "[" << *card << "](" << unool::string::to_utf8(Card::to_wstring(reason))
+	std::cout << "[" << *card << "](" << Card::to_string(reason)
 		<< ") 进入了弃牌堆" << std::endl;
 	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
@@ -546,7 +546,7 @@ void GameLogic::resetGame() {
 		// 重置手牌
 		player->clearHand();
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
-		const std::string mode = unool::getServerConfig().value("mode", "normal");
+		const std::string mode = unool::getServerConfig().value("mode", "norma");
 		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "normalInitHandCount";
 		player->draw(unool::getServerConfig()[handKey]);
 		// 重置技能使用次数
