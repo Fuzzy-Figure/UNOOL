@@ -36,9 +36,9 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 	packet >> hasTimeout;
 	std::optional<std::size_t> timeoutMs;
 	if (hasTimeout) {
-		std::uint64_t timeoutValue;
+		std::size_t timeoutValue;
 		packet >> timeoutValue;
-		timeoutMs = static_cast<std::size_t>(timeoutValue);
+		timeoutMs = timeoutValue;
 	}
 
 	std::size_t currentPage;
@@ -107,58 +107,58 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 			if (!(packet >> msgType)) continue;
 
 			switch (static_cast<MessageType>(msgType)) {
-			case MessageType::ConnectionInfo: {
-				std::size_t playerId;
-				if (packet >> playerId) {
-					net.setPlayerId(playerId);
-					std::cout << titleBrackets << " 分配到玩家ID：" << playerId << std::endl;
-				}
-				break;
-			}
-			case MessageType::GameStart:
-				std::cout << titleBrackets << " 游戏开始！" << std::endl;
-				break;
-			case MessageType::GameState: {
-				GameState state;
-				packet >> state;
-				renderer.updateState(state);
-				break;
-			}
-			case MessageType::PointerUpdate: {
-				std::size_t playerId, selectedIndex;
-				packet >> playerId >> selectedIndex;
-				renderer.updatePointer(playerId, selectedIndex);
-				break;
-			}
-			case MessageType::CharInfo: {
-				CharInfo info;
-				packet >> info;
-				renderer.updateCharInfo(info.playerIndex, info.fullText);
-				break;
-			}
-			case MessageType::GameEnd: {
-				bool hasWinner;
-				if (packet >> hasWinner) {
-					if (hasWinner) {
-						std::size_t winnerId;
-						packet >> winnerId;
-						std::cout << titleBrackets << " 游戏结束，玩家" << winnerId << "获胜！" << std::endl;
+				case MessageType::ConnectionInfo: {
+					std::size_t playerId;
+					if (packet >> playerId) {
+						net.setPlayerId(playerId);
+						std::cout << titleBrackets << " 分配到玩家ID：" << playerId << std::endl;
 					}
-					else {
-						std::cout << titleBrackets << " 游戏结束，无人获胜！" << std::endl;
-					}
+					break;
 				}
-				break;
-			}
-			case MessageType::ConnectionRefused:
-				std::cout << titleBrackets << " 连接被拒绝（服务器已满）" << std::endl;
-				renderer.closeWindow();
-				break;
-			case MessageType::Choice:
-				handleChoicePacket(packet, renderer);
-				break;
-			default:
-				break;
+				case MessageType::GameStart:
+					std::cout << titleBrackets << " 游戏开始！" << std::endl;
+					break;
+				case MessageType::GameState: {
+					GameState state;
+					packet >> state;
+					renderer.updateState(state);
+					break;
+				}
+				case MessageType::PointerUpdate: {
+					std::size_t playerId, selectedIndex;
+					packet >> playerId >> selectedIndex;
+					renderer.updatePointer(playerId, selectedIndex);
+					break;
+				}
+				case MessageType::CharInfo: {
+					CharInfo info;
+					packet >> info;
+					renderer.updateCharInfo(info.playerIndex, info.fullText);
+					break;
+				}
+				case MessageType::GameEnd: {
+					bool hasWinner;
+					if (packet >> hasWinner) {
+						if (hasWinner) {
+							std::size_t winnerId;
+							packet >> winnerId;
+							std::cout << titleBrackets << " 游戏结束，玩家" << winnerId << "获胜！" << std::endl;
+						}
+						else {
+							std::cout << titleBrackets << " 游戏结束，无人获胜！" << std::endl;
+						}
+					}
+					break;
+				}
+				case MessageType::ConnectionRefused:
+					std::cout << titleBrackets << " 连接被拒绝（服务器已满）" << std::endl;
+					renderer.closeWindow();
+					break;
+				case MessageType::Choice:
+					handleChoicePacket(packet, renderer);
+					break;
+				default:
+					break;
 			}
 		}
 

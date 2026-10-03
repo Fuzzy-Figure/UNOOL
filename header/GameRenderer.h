@@ -31,7 +31,7 @@ public:
 	struct Choice {
 		std::wstring title;
 		std::vector<std::wstring> options;
-		bool forced;
+		bool forced{};
 		std::wstring errorMsg;
 		std::optional<std::size_t> timeoutMs;
 		std::size_t currentPage = 0;

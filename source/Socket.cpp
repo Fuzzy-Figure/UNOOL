@@ -244,7 +244,7 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 	bool hasTimeout = timeoutMs.has_value();
 	packet << hasTimeout;
 	if (hasTimeout) {
-		packet << static_cast<std::uint64_t>(timeoutMs.value());
+		packet << timeoutMs.value();
 	}
 	packet << currentPage;
 	packet << totalPages;
