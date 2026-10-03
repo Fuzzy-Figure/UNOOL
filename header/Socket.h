@@ -79,7 +79,14 @@ public:
 	bool sendConnectionInfo(std::size_t playerId);
 	bool sendGameStart();
 	bool sendGameEnd(std::optional<std::size_t> winnerId);
-	bool sendPlayerChoice(std::size_t clientIndex, const std::string& title, const std::vector<std::string>& options, bool forced, const std::string& errorMsg = "", std::optional<std::size_t> timeoutMs = std::nullopt, std::size_t currentPage = 0, std::size_t totalPages = 1);
+	bool sendPlayerChoice(std::size_t clientIndex,
+						  const std::string& title,
+						  const std::vector<std::string>& options,
+						  bool forced,
+						  const std::string& errorMsg = "",
+						  std::optional<std::size_t> timeoutMs = std::nullopt,
+						  std::size_t currentPage = 0,
+						  std::size_t totalPages = 1);
 	bool sendCharInfo(const CharInfo& info);
 
 	bool isReady() const { return serverReady; }
