@@ -232,10 +232,10 @@ std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
 	std::string label = std::format(
 		"{}（{}）体力：{}",
 		entry.first,
-		Character::to_string(entry.second.level),
+		Character::to_string(info.level),
 		info.hp
 	);
-	if (entry.second.maxHp != entry.second.hp) {
+	if (info.maxHp != info.hp) {
 		label += std::format("/{}", info.maxHp);
 	}
 	return unool::string::to_utf16(label);
