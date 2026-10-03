@@ -439,6 +439,7 @@ void GameLogic::flushCharInfo() {
 				player.characterName() + "（" + levelPart + "）\n"
 				+ "标记：" + (marksPart == "" ? "无" : marksPart) + "\n"
 				+ "技能：\n" + player.getSkillsText();
+			
 			network.sendCharInfo(info);
 			player.clearCharInfoDirty();
 		}
