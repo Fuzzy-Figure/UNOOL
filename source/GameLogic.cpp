@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ranges>
 #include <algorithm>
+#include <format>
 
 //获取curIndex的下一个玩家的id（curIndex不一定是当前回合玩家的id）
 std::size_t GameLogic::nextPlayerIndex(const std::size_t curIndex) const {
@@ -227,13 +228,17 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 }
 
 std::wstring GameLogic::formatCharacterLabelW(const Character::Entry& entry) {
-	return unool::string::to_utf16(
-		std::format("{}（{}）体力：{}/{}",
-					entry.first,
-					Character::to_string(entry.second.level),
-					entry.second.hp,
-					entry.second.maxHp == 0 ? entry.second.hp : entry.second.maxHp)
+	const Character::Info info = entry.second;
+	std::string label = std::format(
+		"{}（{}）体力：{}",
+		entry.first,
+		Character::to_string(entry.second.level),
+		info.hp
 	);
+	if (entry.second.maxHp != entry.second.hp) {
+		label += std::format("/{}", info.maxHp);
+	}
+	return unool::string::to_utf16(label);
 }
 
 

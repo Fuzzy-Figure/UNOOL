@@ -23,11 +23,11 @@ public:
 
 		// 无技能：体力 + 可选上限
 		Info(std::string g, Level l, hp_t h, hp_t m = 0)
-			: group(std::move(g)), level(l), hp(h), maxHp(m) {}
+			: group(std::move(g)), level(l), hp(h), maxHp() {}
 
 		// 有技能：技能组 + 体力 + 可选上限
 		Info(std::string g, Level l, HybridSkills s, hp_t h, hp_t m = 0)
-			: group(std::move(g)), level(l), hp(h), maxHp(m),
+			: group(std::move(g)), level(l), hp(h), maxHp(m == 0 ? h : m),
 			passiveSkills(std::move(s.passive)),
 			instantSkills(std::move(s.instant)),
 			transformSkills(std::move(s.transform)) {}
@@ -171,5 +171,5 @@ public:
 
 inline constexpr std::strong_ordering
 operator<=>(const Character::Level a, const Character::Level b) noexcept {
-	return std::to_underlying(a) <=> std::to_underlying(b); 
+	return std::to_underlying(a) <=> std::to_underlying(b);
 }
