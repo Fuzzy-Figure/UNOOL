@@ -58,6 +58,7 @@ protected:
 	std::string name = "未知技能";
 	std::string info = "无";
 	limit_t limit; //每局使用限制次数，std::nullopt代表无次数限制
+	limit_t initialLimit; //构造时的初始值，reset 时恢复
 	std::size_t count = 0; //使用次数
 
 public:

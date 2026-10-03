@@ -4,7 +4,7 @@
 #include <iostream>
 
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)
-	:name(_name), info(_info), limit(_limit) {}
+	:name(_name), info(_info), limit(_limit), initialLimit(_limit) {}
 
 std::string Skill::formatInfo() const {
 	std::string result;
@@ -59,6 +59,7 @@ std::string Skill::formatInfo() const {
 }
 
 void Skill::reset() {
+	limit = initialLimit;
 	count = 0;
 	for (auto& sub : subSkills) sub->reset();
 }

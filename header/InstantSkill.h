@@ -217,7 +217,8 @@ public:
 class 甘草 final : public InstantSkillImpl<甘草> {
 public:
 	甘草() : InstantSkillImpl<甘草>(
-		"甘草", "每回合限一次，出牌阶段，你可以观看一名角色所有非数字牌，并可弃置其中一张。",
+		"甘草",
+		"每回合限一次，出牌阶段，你可以观看一名角色所有非数字牌，并可弃置其中一张。",
 		unlimited, 1,
 		TriggerTime::phase_use
 	) {}
@@ -228,7 +229,8 @@ public:
 class 跳糖 final : public InstantSkillImpl<跳糖> {
 public:
 	跳糖() : InstantSkillImpl<跳糖>(
-		"跳糖", "每回合限一次，出牌阶段，你可以与一名角色拼点，胜者获得一张你指定颜色的【+2】。",
+		"跳糖",
+		"每回合限一次，出牌阶段，你可以与一名其他角色拼点，胜者获得一张你指定颜色的【+2】。",
 		unlimited, 1,
 		TriggerTime::phase_use
 	) {}

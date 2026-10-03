@@ -1,9 +1,9 @@
 {
-  "banCount": 0,
+  "banCount": 2,
   //"characters": [ "白板", "白板" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
-  "mode": "normal",
+  "mode": "double",
   "normalCandidateCount": 10,
   "normalInitHandCount": 8,
   "shielded": {

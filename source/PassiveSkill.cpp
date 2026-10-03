@@ -2145,7 +2145,7 @@ bool 渡荆::filter(const GameLogic& game, const Player& carrier, const Trigger&
 
 bool 渡荆::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//选一名其他角色拼点
-	auto targetOpt = carrier.choosePlayer("【渡荆】选择一名角色拼点", true);
+	auto targetOpt = carrier.chooseOtherPlayer("【渡荆】选择一名其他角色拼点", true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 

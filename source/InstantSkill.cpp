@@ -628,6 +628,7 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 		std::cout << "<技能> " << carrier.characterName() << "发动绝技（第" << count << "次），"
 			<< "将一张手牌变为随机颜色的非数字牌，回复" << count << "点体力" << std::endl;
 	}
+	carrier.markCharInfoDirty();
 
 	game.broadcastState();
 	return true;
