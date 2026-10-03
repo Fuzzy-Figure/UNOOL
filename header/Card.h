@@ -40,7 +40,7 @@ public:
 		}
 	};
 #pragma endregion
-
+	
 private:
 	Color color = Color::no;
 	Name name = Name::no;
