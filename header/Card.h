@@ -1,10 +1,19 @@
 #pragma once
-#include <SFML/Network.hpp>
-#include <SFML/Graphics.hpp>
-#include <iostream>
+#include <array>
+#include <bit>
+#include <cstddef>
 #include <deque>
+#include <functional>
+#include <iosfwd>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include "Effect.h"
 #include "utils.h"
+
+namespace sf { class Packet; }
 
 class GameLogic;
 

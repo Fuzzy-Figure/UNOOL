@@ -1,6 +1,7 @@
 #include "Socket.h"
 #include "AccountProtocol.h"
 #include "UserDB.h"
+#include "GameState.h"
 #include <iostream>
 #include <thread>
 

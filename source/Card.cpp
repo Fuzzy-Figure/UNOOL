@@ -1,5 +1,7 @@
 #include "Card.h"
 #include "utils.h"
+#include <SFML/Network.hpp>
+#include <iostream>
 
 
 // ==================== Card 静态数据 ====================

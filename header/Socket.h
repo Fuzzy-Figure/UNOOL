@@ -1,12 +1,17 @@
 #pragma once
-#include <vector>
 #include <array>
+#include <cstddef>
 #include <memory>
-#include <string>
-#include <queue>
 #include <optional>
+#include <queue>
+#include <string>
+#include <vector>
+#include <SFML/Network.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
-#include "GameState.h"
+struct GameState;
+struct CharInfo;
+
 //网络
 enum class MessageType {
 	None,

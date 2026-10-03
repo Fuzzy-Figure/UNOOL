@@ -1,4 +1,5 @@
 #include "GameState.h"
+#include <SFML/Network.hpp>
 
 PlayerState& PlayerState::operator=(const PlayerState& other) {
 	if (this != &other) {

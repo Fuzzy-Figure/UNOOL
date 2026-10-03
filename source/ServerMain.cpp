@@ -112,9 +112,8 @@ int main() {
 				}
 			}
 		}
-		gameSessionEnd:
-	}
-	catch (std::exception& e) {
+	gameSessionEnd:
+	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 

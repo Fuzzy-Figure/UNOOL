@@ -3,15 +3,16 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <json.hpp>
 
 namespace unool {
-	json& getServerConfig() {
-		static json config = [] {
+	nlohmann::json& getServerConfig() {
+		static nlohmann::json config = [] {
 			std::ifstream configFile("../server_config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 server_config.json");
-			}
-			return json::parse(configFile, nullptr, true, true);
+			} 
+			return nlohmann::json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
 	}
@@ -21,16 +22,16 @@ namespace unool {
 		if (!configFile.is_open()) {
 			throw std::runtime_error("无法打开配置文件 server_config.json");
 		}
-		getServerConfig() = json::parse(configFile, nullptr, true, true);
+		getServerConfig() = nlohmann::json::parse(configFile, nullptr, true, true);
 	}
 
-	json& getClientConfig() {
-		static json config = [] {
+	nlohmann::json& getClientConfig() {
+		static nlohmann::json config = [] {
 			std::ifstream configFile("../client_config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 client_config.json");
 			}
-			return json::parse(configFile, nullptr, true, true);
+			return nlohmann::json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
 	}
@@ -40,7 +41,7 @@ namespace unool {
 		if (!configFile.is_open()) {
 			throw std::runtime_error("无法打开配置文件 client_config.json");
 		}
-		getClientConfig() = json::parse(configFile, nullptr, true, true);
+		getClientConfig() = nlohmann::json::parse(configFile, nullptr, true, true);
 	}
 
 	namespace string {

@@ -1,9 +1,13 @@
 #pragma once
+#include <cstddef>
+#include <functional>
 #include <iostream>
-#include <vector>
+#include <list>
 #include <optional>
 #include <string>
-#include <functional>
+#include <unordered_map>
+#include <vector>
+#include <SFML/Window/Keyboard.hpp>
 #include "Character.h"
 #include "Card.h"
 #include "utils.h"
