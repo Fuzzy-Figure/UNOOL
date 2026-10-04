@@ -29,12 +29,11 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 		std::size_t lId = 1 - wId;
 
 		auto& players = gameLogic.getPlayers();
-		//胜者按最高等级，败者按最低等级
-		Character::Level wLv = players[wId].get().getMaxLevel();
-		Character::Level lLv = players[lId].get().getMinLevel();
 		const auto& slots = serverNetwork.getClientSlots();
 		UserDB::instance().addMatchResult(
-			slots[wId].username, slots[lId].username, wLv, lLv,
+			slots[wId].username, slots[lId].username,
+			players[wId].get().getLevels(),
+			players[lId].get().getLevels(),
 			players[wId].get().getHp() == players[wId].get().getMaxHp());
 
 		std::cout << "[Server] 游戏结束，玩家" << wId << "获胜！" << std::endl;

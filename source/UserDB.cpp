@@ -1,5 +1,6 @@
 #include "UserDB.h"
 #include "utils.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -51,11 +52,14 @@ std::optional<UserInfo> UserDB::login(const std::string& username, const std::st
 }
 
 void UserDB::addMatchResult(const std::string& winnerUser, const std::string& loserUser,
-							Character::Level winnerLevel, Character::Level loserLevel,
+							const std::vector<Character::Level>& winnerLevels,
+							const std::vector<Character::Level>& loserLevels,
 							bool winnerFullHp) {
-	int wi = static_cast<int>(winnerLevel);
-	int li = static_cast<int>(loserLevel);
-	int delta = unool::scoreboard[wi][li];
+	int delta = 0;
+	std::size_t n = std::min(winnerLevels.size(), loserLevels.size());
+	for (std::size_t i = 0; i < n; ++i) {
+		delta += Character::getScore(winnerLevels[i], loserLevels[i]);
+	}
 	if (winnerFullHp) delta *= 2;
 
 	auto wit = users_.find(winnerUser);

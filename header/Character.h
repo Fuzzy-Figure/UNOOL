@@ -11,19 +11,19 @@ class Character {
 #pragma region 类型定义
 public:
 	using hp_t = int;
-	enum class Level { S, A, B, C, D, F };
+	enum class Level { F, D, C, B, A, S };
 	struct Info {
 		std::string group;
 		Level level;
-		std::vector<PassiveSkill::Factory>   passiveSkills;    // 不动
-		std::vector<InstantSkill::Factory>   instantSkills;    // 不动
-		std::vector<TransformSkill::Factory> transformSkills;  // 不动
+		std::vector<PassiveSkill::Factory>   passiveSkills;
+		std::vector<InstantSkill::Factory>   instantSkills;
+		std::vector<TransformSkill::Factory> transformSkills;
 		hp_t hp = 0;
-		hp_t maxHp = 0;                                        // 不动
+		hp_t maxHp = 0;
 
 		// 无技能：体力 + 可选上限
 		Info(std::string g, Level l, hp_t h, hp_t m = 0)
-			: group(std::move(g)), level(l), hp(h), maxHp() {}
+			: group(std::move(g)), level(l), hp(h), maxHp(m == 0 ? h : m) {}
 
 		// 有技能：技能组 + 体力 + 可选上限
 		Info(std::string g, Level l, HybridSkills s, hp_t h, hp_t m = 0)
@@ -72,6 +72,8 @@ public:
 	std::vector<Level> getLevels() const;
 	Level getMaxLevel() const;
 	Level getMinLevel() const;
+	//按角色等级查积分表
+	static int getScore(Level winner, Level loser);
 	std::string skillsName() const;
 	std::string getSkillsText() const;
 	std::string getImagePath() const;

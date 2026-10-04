@@ -181,6 +181,10 @@ Character::Level Character::getMinLevel() const {
 	auto levels = getLevels();
 	return *std::ranges::min_element(levels);
 }
+int Character::getScore(Level winner, Level loser) {
+	auto idx = [](Level lv) { return 5 - static_cast<int>(lv); };
+	return unool::scoreboard[idx(winner)][idx(loser)];
+}
 std::string Character::skillsName() const {
 	std::string result;
 	for (const auto& ps : passiveSkills) {
