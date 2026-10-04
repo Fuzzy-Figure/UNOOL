@@ -9,6 +9,8 @@
 #include <SFML/Network.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
+constexpr std::size_t MAX_PLAYERS = 2;
+
 struct GameState;
 struct CharInfo;
 
@@ -59,16 +61,17 @@ public:
 
 private:
 	std::unique_ptr<sf::TcpListener> listener;
-	std::vector<std::unique_ptr<sf::TcpSocket>> clientSockets;
-	std::array<ClientSlot, 2> clientSlots_;
+	std::array<std::unique_ptr<sf::TcpSocket>, MAX_PLAYERS> clientSockets;
+	std::array<ClientSlot, MAX_PLAYERS> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
 	std::queue<sf::Packet> receivedPackets;
 
 private:
-	bool sendPacketToClient(sf::TcpSocket& socket, sf::Packet& packet);
+	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
 	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
+	void removeClient(std::size_t clientIndex);
 
 public:
 	ServerNetwork() = default;
@@ -81,7 +84,7 @@ public:
 	std::optional<ClientInput> receiveClientInput();
 	bool sendGameState(const GameState& state);
 	bool sendGameStateToClient(std::size_t clientIndex, const GameState& state);
-	bool sendConnectionInfo(std::size_t playerId);
+	bool sendConnectionInfo(std::size_t newPlayerId);
 	bool sendGameStart();
 	bool sendGameEnd(std::optional<std::size_t> winnerId);
 	bool sendPlayerChoice(std::size_t clientIndex,
@@ -95,8 +98,9 @@ public:
 	bool sendCharInfo(const CharInfo& info);
 
 	bool isReady() const { return serverReady; }
-	std::size_t getClientCount() const { return clientSockets.size(); }
-	const std::array<ClientSlot, 2>& getClientSlots() const { return clientSlots_; }
+	std::size_t getClientCount() const;
+	bool isClientConnected(std::size_t clientIndex) const;
+	const std::array<ClientSlot, MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
 };
 
 class ClientNetwork {
@@ -123,4 +127,5 @@ public:
 
 	void setPlayerId(std::size_t id) { playerId = id; }
 	std::size_t getPlayerId() const { return playerId; }
+	bool isConnected() const { return socket != nullptr; }
 };

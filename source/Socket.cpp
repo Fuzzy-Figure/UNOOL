@@ -27,10 +27,9 @@ bool ServerNetwork::start(unsigned short port) {
 }
 
 void ServerNetwork::disconnect() {
-	for (auto& socket : clientSockets) {
-		socket->disconnect();
+	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+		removeClient(i);
 	}
-	clientSockets.clear();
 	if (listener) {
 		listener->close();
 		listener.reset();
@@ -39,17 +38,48 @@ void ServerNetwork::disconnect() {
 	std::cout << "[ServerNetwork] 已断开所有连接" << std::endl;
 }
 
+void ServerNetwork::removeClient(std::size_t clientIndex) {
+	if (clientIndex >= MAX_PLAYERS) return;
+	if (clientSockets[clientIndex]) {
+		selector.remove(*clientSockets[clientIndex]);
+		clientSockets[clientIndex]->disconnect();
+		clientSockets[clientIndex].reset();
+	}
+	clientSlots_[clientIndex].loggedIn = false;
+	clientSlots_[clientIndex].username.clear();
+}
+
+std::size_t ServerNetwork::getClientCount() const {
+	std::size_t count = 0;
+	for (const auto& s : clientSockets) {
+		if (s) ++count;
+	}
+	return count;
+}
+
+bool ServerNetwork::isClientConnected(std::size_t clientIndex) const {
+	return clientIndex < MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
+}
+
 void ServerNetwork::update() {
 	if (selector.wait(sf::milliseconds(10))) {
 		if (selector.isReady(*listener)) {
 			std::unique_ptr<sf::TcpSocket> newSocket = std::make_unique<sf::TcpSocket>();
 			if (listener->accept(*newSocket) == sf::Socket::Status::Done) {
-				if (clientSockets.size() < 2) {
+				// 找一个空槽位
+				std::size_t newPlayerId = MAX_PLAYERS;
+				for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+					if (!clientSockets[i]) {
+						newPlayerId = i;
+						break;
+					}
+				}
+
+				if (newPlayerId < MAX_PLAYERS) {
 					newSocket->setBlocking(false);
 					selector.add(*newSocket);
-					clientSockets.push_back(std::move(newSocket));
+					clientSockets[newPlayerId] = std::move(newSocket);
 
-					std::size_t newPlayerId = clientSockets.size() - 1;
 					sendConnectionInfo(newPlayerId);
 
 					std::cout << "[ServerNetwork] 客户端" << newPlayerId << "已连接，等待登录..." << std::endl;
@@ -60,7 +90,9 @@ void ServerNetwork::update() {
 			}
 		}
 
-		for (std::size_t i = 0; i < clientSockets.size(); ) {
+		for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+			if (!clientSockets[i]) continue;
+
 			sf::TcpSocket& socket = *clientSockets[i];
 			if (selector.isReady(socket)) {
 				sf::Packet packet;
@@ -80,22 +112,17 @@ void ServerNetwork::update() {
 						}
 					}
 				}
-				else if (status == sf::Socket::Status::Disconnected) {
-					std::cout << "[ServerNetwork] 客户端" << i << " 断开连接" << std::endl;
-					selector.remove(socket);
-					clientSockets.erase(clientSockets.begin() + i);
-					clientSlots_[i].loggedIn = false;
-					clientSlots_[i].username.clear();
-					continue;
+				else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
+					std::cout << "[ServerNetwork] 客户端" << i << " 断开连接（status=" << static_cast<int>(status) << "）" << std::endl;
+					removeClient(i);
 				}
 			}
-			++i;
 		}
 	}
 }
 
 void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet) {
-	if (clientIdx >= clientSockets.size()) return;
+	if (!isClientConnected(clientIdx)) return;
 
 	// 跳过 msgType（调用方已在 update() 中 peek 过，但 packet 内部仍保留完整数据）
 	int discardedMsgType;
@@ -108,7 +135,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		bool ok = UserDB::instance().registerUser(req->username, req->password, errMsg);
 		std::string msg = ok ? "注册成功" : errMsg;
 		auto resp = AccountProtocol::makeAccountResponse(MessageType::RegisterResponse, ok, msg);
-		sendPacketToClient(*clientSockets[clientIdx], resp);
+		sendPacketToClient(clientIdx, resp);
 	}
 	else if (type == MessageType::LoginRequest) {
 		auto req = AccountProtocol::parseAccountRequest(packet);
@@ -120,7 +147,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		// 检查另一端是否已用同一账号登录
 		if (ok) {
 			std::size_t other = 1 - clientIdx;
-			if (other < clientSlots_.size()
+			if (other < MAX_PLAYERS
 				&& clientSlots_[other].loggedIn
 				&& clientSlots_[other].username == req->username) {
 				ok = false;
@@ -134,7 +161,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		std::string msg = ok ? "登录成功" : errMsg;
 
 		auto resp = AccountProtocol::makeAccountResponse(MessageType::LoginResponse, ok, msg, pts, w, l);
-		sendPacketToClient(*clientSockets[clientIdx], resp);
+		sendPacketToClient(clientIdx, resp);
 
 		if (ok) {
 			clientSlots_[clientIdx].loggedIn = true;
@@ -159,7 +186,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		if (!username) return;
 		bool exists = UserDB::instance().exists(*username);
 		auto resp = AccountProtocol::makeCheckUsernameResponse(exists);
-		sendPacketToClient(*clientSockets[clientIdx], resp);
+		sendPacketToClient(clientIdx, resp);
 	}
 }
 
@@ -189,18 +216,20 @@ bool ServerNetwork::sendGameState(const GameState& state) {
 }
 
 bool ServerNetwork::sendGameStateToClient(std::size_t clientIndex, const GameState& state) {
-	if (clientIndex >= clientSockets.size()) return false;
+	if (!isClientConnected(clientIndex)) return false;
 
 	sf::Packet packet;
 	packet << static_cast<int>(MessageType::GameState);
 	packet << state;
-	return sendPacketToClient(*clientSockets[clientIndex], packet);
+	return sendPacketToClient(clientIndex, packet);
 }
 
 bool ServerNetwork::sendConnectionInfo(std::size_t newPlayerId) {
+	if (!isClientConnected(newPlayerId)) return false;
+
 	sf::Packet packet;
 	packet << static_cast<int>(MessageType::ConnectionInfo) << newPlayerId;
-	return sendPacketToClient(*clientSockets.back(), packet);
+	return sendPacketToClient(newPlayerId, packet);
 }
 
 bool ServerNetwork::sendGameStart() {
@@ -231,7 +260,7 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 									 std::optional<std::size_t> timeoutMs,
 									 std::size_t currentPage,
 									 std::size_t totalPages) {
-	if (clientIndex >= clientSockets.size()) return false;
+	if (!isClientConnected(clientIndex)) return false;
 
 	sf::Packet packet;
 	packet << std::to_underlying(MessageType::Choice);
@@ -250,23 +279,31 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 	packet << currentPage;
 	packet << totalPages;
 
-	return sendPacketToClient(*clientSockets[clientIndex], packet);
+	return sendPacketToClient(clientIndex, packet);
 }
 
 bool ServerNetwork::sendPacketToAll(sf::Packet& packet) {
 	bool allOk = true;
-	for (auto& socket : clientSockets) {
-		if (!sendPacketToClient(*socket, packet)) {
+	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+		if (clientSockets[i] && !sendPacketToClient(i, packet)) {
 			allOk = false;
 		}
 	}
 	return allOk;
 }
 
-bool ServerNetwork::sendPacketToClient(sf::TcpSocket& socket, sf::Packet& packet) {
+bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& packet) {
+	if (!isClientConnected(clientIndex)) return false;
+
+	sf::TcpSocket& socket = *clientSockets[clientIndex];
 	for (int attempt = 0; attempt < 3; ++attempt) {
 		sf::Socket::Status status = socket.send(packet);
 		if (status == sf::Socket::Status::Done) return true;
+		if (status == sf::Socket::Status::Disconnected) {
+			std::cout << "[ServerNetwork] 发送时检测到客户端" << clientIndex << " 断开" << std::endl;
+			removeClient(clientIndex);
+			return false;
+		}
 		if (attempt < 2) std::this_thread::sleep_for(5ms);
 	}
 	return false;
@@ -312,8 +349,8 @@ void ClientNetwork::update() {
 			if (status == sf::Socket::Status::Done) {
 				receivedPackets.push(packet);
 			}
-			else if (status == sf::Socket::Status::Disconnected) {
-				std::cout << "[ClientNetwork] 与服务器断开连接" << std::endl;
+			else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
+				std::cout << "[ClientNetwork] 与服务器断开连接（status=" << static_cast<int>(status) << "）" << std::endl;
 				disconnect();
 			}
 		}

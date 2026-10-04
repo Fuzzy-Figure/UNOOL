@@ -98,6 +98,11 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 
 		net.update();
 
+		if (!net.isConnected()) {
+			std::cout << titleBrackets << " 与服务器断开连接，退出游戏" << std::endl;
+			break;
+		}
+
 		auto packetOpt = net.receivePacket();
 		if (packetOpt.has_value()) {
 			sf::Packet packet = packetOpt.value();

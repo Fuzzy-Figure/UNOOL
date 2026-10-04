@@ -412,6 +412,12 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 
 	while (true) {
 		network.update();
+		if (!network.isClientConnected(id)) {
+			std::cout << "[Player] 玩家" << id << " 已掉线，结束选择" << std::endl;
+			network.sendPlayerChoice(id, "", {}, false);
+			return std::nullopt;
+		}
+
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
 			std::this_thread::sleep_for(16ms);
@@ -787,6 +793,12 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		}
 
 		network.update();
+		if (!network.isClientConnected(id)) {
+			std::cout << "[Player] 玩家" << id << " 已掉线，ask 返回默认值" << std::endl;
+			network.sendPlayerChoice(id, "", {}, false);
+			return 0;
+		}
+
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
 			std::this_thread::sleep_for(16ms);
