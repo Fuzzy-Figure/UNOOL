@@ -12,6 +12,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <format>
 
 using namespace std::chrono_literals;
 
@@ -52,13 +53,14 @@ namespace unool {
 			using T = std::ranges::range_value_t<R>;
 
 			if (n > std::ranges::size(range))
-				throw std::out_of_range(
-					"randomGet：需要选" + std::to_string(n) +
-					"个元素，但容器中只有" +
-					std::to_string(std::ranges::size(range)) + "个元素");
+				throw std::out_of_range(std::format(
+					"randomGet：需要选{}个元素，但容器中只有{}个元素",
+					n, std::ranges::size(range)
+				));
+
 
 			if (n == 0 || std::ranges::empty(range)) return {};
-			
+
 			std::vector<ref<T>> all_refs;
 			for (auto& elem : range)
 				all_refs.emplace_back(elem);

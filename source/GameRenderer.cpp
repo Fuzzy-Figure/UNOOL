@@ -122,7 +122,7 @@ void GameRenderer::renderPlayers() {
 			std::size_t seat = currentState.seatOrder[playerState.id];
 			std::string seatText = (seat == 0) ? "一号位" : "二号位";
 			//体力
-			std::string hpText = "体力：" + std::to_string(playerState.hp) + "/" + std::to_string(playerState.maxHp);
+			std::string hpText = std::format("体力：{}/{}", playerState.hp, playerState.maxHp);
 			//显示
 			sf::Vector2f pos;
 			if (playerState.id == 0) {
@@ -136,9 +136,9 @@ void GameRenderer::renderPlayers() {
 
 		const bool isLocalPlayer = playerState.id == localPlayerId;
 		//手牌信息
-		std::string cardsInfoText = "手牌数：" + std::to_string(playerState.hand.count());
+		std::string cardsInfoText = std::format("手牌数：{}", playerState.hand.count());
 		if (isLocalPlayer) {
-			cardsInfoText += "；总价值：" + std::to_string(playerState.hand.value());
+			cardsInfoText += std::format("；总价值：{}", playerState.hand.value());
 		}
 		sf::Vector2f cardsInfoPos;
 		if (playerState.id == 0) {
@@ -218,7 +218,7 @@ void GameRenderer::renderChoice() {
 		choiceText += choice->title + '\n';
 	}
 	for (const auto& [i, option] : choice->options | std::views::enumerate) {
-		choiceText += ("[" + std::to_string(i + 1) + "] " + option + '\n');
+		choiceText += std::format("[{}] {}\n", i + 1, option);
 	}
 	if (!choice->options.empty()) {
 		if (choice->forced) {

@@ -292,3 +292,18 @@ public:
 	void shuffle();
 #pragma endregion
 };
+
+
+template <>
+struct std::formatter<Card::Color> : std::formatter<std::string_view> {
+	auto format(Card::Color c, std::format_context& ctx) const {
+		return std::formatter<std::string_view>::format(Card::to_string(c), ctx);
+	}
+};
+
+template <>
+struct std::formatter<Card::Name> : std::formatter<std::string_view> {
+	auto format(Card::Name n, std::format_context& ctx) const {
+		return std::formatter<std::string_view>::format(Card::to_string(n), ctx);
+	}
+};
