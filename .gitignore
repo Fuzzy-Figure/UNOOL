@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # 忽略实验图片
 images\characters\实验
+
+userDatas.json

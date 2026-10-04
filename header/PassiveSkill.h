@@ -1553,4 +1553,60 @@ public:
 	void reset() override { PassiveSkill::reset(); armedColor.reset(); usedColors.clear(); }
 };
 
+//冲撞_加速：子技能，出牌时获得1个"速度"标记（上限10）
+class 冲撞_加速 final : public PassiveSkillImpl<冲撞_加速> {
+public:
+	冲撞_加速() : PassiveSkillImpl<冲撞_加速>(
+		"冲撞_加速", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//冲撞_伤害：子技能，打出有目标的牌后，目标受到2×速度标记数量点伤害
+class 冲撞_伤害 final : public PassiveSkillImpl<冲撞_伤害> {
+public:
+	冲撞_伤害() : PassiveSkillImpl<冲撞_伤害>(
+		"冲撞_伤害", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//冲撞_清标记：子技能，未出牌的回合结束时清空"速度"标记
+class 冲撞_清标记 final : public PassiveSkillImpl<冲撞_清标记> {
+public:
+	冲撞_清标记() : PassiveSkillImpl<冲撞_清标记>(
+		"冲撞_清标记", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//冲撞：锁定技，出牌时获得"速度"标记（上限10）；打出有目标的牌后对目标造成2×速度伤害；未出牌的回合结束时清空标记
+class 冲撞 final : public PassiveSkillImpl<冲撞> {
+public:
+	冲撞() : PassiveSkillImpl<冲撞>(
+		"冲撞",
+		"锁定技，你出牌时获得1个\"速度\"标记（上限10）。\n"
+		"你打出有目标的牌后，目标受到2×\"速度\"标记数量点伤害。\n"
+		"你未出牌的回合结束时，清空所有\"速度\"标记。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		冲撞_加速::make(),
+		冲撞_伤害::make(),
+		冲撞_清标记::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
 

@@ -2737,3 +2737,45 @@ bool 地雷_撤雷::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	return true;
 }
 
+// ==================== 技能：冲撞 ====================
+bool 冲撞_加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	if (carrier.getMarkCount("速度") < 10) {
+		carrier.addMark("速度", 1);
+		std::cout << "<技能> " << carrier.characterName() << "发动冲撞_加速，速度标记+1（当前"
+			<< carrier.getMarkCount("速度") << "/10）" << std::endl;
+	}
+	game.broadcastState();
+	return true;
+}
+
+bool 冲撞_伤害::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return trigger.getCard().isTargeted();
+}
+
+bool 冲撞_伤害::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = carrier.next();
+	const std::size_t speed = carrier.getMarkCount("速度");
+	const std::size_t dmg = 2 * speed;
+	target.damage(dmg, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "发动冲撞_伤害，对" << target.characterName()
+		<< "造成" << dmg << "点伤害（速度×2=" << speed << "×2）" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+bool 冲撞_清标记::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return !carrier.getHasUsed();
+}
+
+bool 冲撞_清标记::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.clearMark("速度");
+	std::cout << "<技能> " << carrier.characterName() << "本回合未出牌，清空速度标记" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+bool 冲撞::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//主技能本体无事可做，逻辑由子技能承担
+	return true;
+}
+

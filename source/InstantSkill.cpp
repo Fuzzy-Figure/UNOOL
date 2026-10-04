@@ -633,3 +633,13 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+// ==================== 技能：过载 ====================
+bool 过载::content(GameLogic& game, Player& carrier) {
+	carrier.clearMark("速度");
+	carrier.addMark("速度", 10);
+	std::cout << "<技能> " << carrier.characterName() << "发动过载，将速度标记设为10" << std::endl;
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
