@@ -27,12 +27,12 @@ std::string Skill::formatInfo() const {
 			}
 			const std::string key = info.substr(i + 1, end - i - 1);
 			if (key == "limit") {
-				result += limit.has_value() ? std::to_string(limit.value()) : "无限";
+				result += (limit == unlimited ? "无限" :
+						   std::to_string(limit.value()));
 			}
 			else if (key == "remaining") {
-				result += limit.has_value()
-					? std::to_string(limit.value() - std::min(count, limit.value()))
-					: "无限";
+				result += (limit == unlimited ? "无限" :
+						   std::to_string(limit.value() - std::min(count, limit.value())));
 			}
 			else if (key == "count") {
 				result += std::to_string(count);
@@ -130,7 +130,7 @@ void PassiveSkill::launch(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//如果不是锁定技，询问玩家是否发动
 	if (!forced) {
 		const std::size_t choice = carrier.ask(
-			"是否发动 [" + getName() + "]？",
+			std::format("是否发动 [{}]？", getName()),
 			{ "发动", "不发动" },
 			true
 		);

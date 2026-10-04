@@ -213,7 +213,7 @@ void LoginScene::pollAccountPackets() {
 				sendLoginRequest(); // 注册成功，自动登录
 			}
 			else {
-				message = "注册失败: " + resp->msg;
+				message = std::format("注册失败: {}", resp->msg);
 				status = Status::Idle;
 			}
 			continue;
@@ -237,7 +237,7 @@ void LoginScene::pollAccountPackets() {
 					<< " 负=" << resp->losses << std::endl;
 			}
 			else {
-				message = "登录失败: " + resp->msg;
+				message = std::format("登录失败: {}", resp->msg);
 				status = Status::Idle;
 			}
 			continue;

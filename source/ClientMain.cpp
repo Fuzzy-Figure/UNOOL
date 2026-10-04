@@ -192,7 +192,7 @@ int main() {
 		return 1;
 	}
 
-	GameRenderer::Config rendererConfig("UNOOL - " + windowTitle);
+	GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle));
 	GameRenderer renderer(rendererConfig);
 
 	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);

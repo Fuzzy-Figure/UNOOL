@@ -5,7 +5,7 @@
 
 
 ImageManager::ImageManager(sf::RenderWindow& _window) :window(_window) {
-	UNOOL = std::filesystem::current_path().parent_path().string() + '/';
+	UNOOL = std::format("{}/", std::filesystem::current_path().parent_path().string());
 	std::cout << "UNOOL路径：" << UNOOL << std::endl;
 }
 
@@ -21,9 +21,9 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 		auto texture = std::make_unique<sf::Texture>();
 		if (!texture->loadFromFile(unool::string::to_utf16(absolutePath))) {
 			//回退到默认图片
-			const std::string defaultPath = UNOOL + "images/default.jpg";
+			const std::string defaultPath = std::format("{}images/default.jpg", UNOOL);
 			if (!texture->loadFromFile(unool::string::to_utf16(defaultPath))) {
-				throw std::runtime_error("[ImageManager] 纹理加载失败，路径：" + absolutePath);
+				throw std::runtime_error(std::format("[ImageManager] 纹理加载失败，路径：{}", absolutePath));
 			}
 			std::cout << "[ImageManager] 使用默认图片，原路径：" << absolutePath << std::endl;
 		}
@@ -55,9 +55,9 @@ sf::Vector2u ImageManager::getTextureSize(const std::string& path) {
 		auto texture = std::make_unique<sf::Texture>();
 		if (!texture->loadFromFile(unool::string::to_utf16(absolutePath))) {
 			//回退到默认图片
-			const std::string defaultPath = UNOOL + "images/default.jpg";
+			const std::string defaultPath = std::format("{}images/default.jpg", UNOOL);
 			if (!texture->loadFromFile(unool::string::to_utf16(defaultPath))) {
-				throw std::runtime_error("[ImageManager] 纹理加载失败，路径：" + absolutePath);
+				throw std::runtime_error(std::format("[ImageManager] 纹理加载失败，路径：{}", absolutePath));
 			}
 		}
 		textureCache.emplace(absolutePath, std::move(texture));

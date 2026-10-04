@@ -38,7 +38,7 @@ bool 顶置::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	const Card& bottomCard = pile.back();
 	std::size_t choice = carrier.ask(
-		"牌堆底是" + bottomCard.toString() + "，是否顶置？",
+		std::format("牌堆底是{}，是否顶置？", bottomCard.toString()),
 		{ "顶置", "不顶置" },
 		true
 	);
@@ -435,8 +435,7 @@ bool 窃观::filter(const GameLogic& game, const Player& carrier, const Trigger&
 bool 窃观::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& drawer = trigger.getPlayer();
 	const Card& card = trigger.getCard();
-	std::string title = "【窃观】" + drawer.characterName()
-		+ "获得了 " + card.toString();
+	std::string title = std::format("【窃观】{}获得了 {}", drawer.characterName(), card.toString());
 	carrier.hint(title);
 	return true;
 }
@@ -455,7 +454,7 @@ bool 生存::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	std::unique_ptr<Card> target = Card::make(targetColor, targetName);
 	auto opt = carrier.chooseToOperate(
-		"请选择一张牌变为【" + std::to_string(x) + "】",
+		std::format("请选择一张牌变为【{}】", x),
 		true, unool::alwaysTrue,
 		[&target](Card& c) {
 		c.set(*target);
@@ -485,7 +484,7 @@ bool 创造::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		"6", "7", "8", "9", "0",
 		"反转", "封禁", "+2"
 	};
-	std::size_t idx = carrier.ask("【创造】选择获得的牌名（" + Card::to_string(targetColor) + "色）：", opts, true);
+	std::size_t idx = carrier.ask(std::format("【创造】选择获得的牌名（{}色）：", Card::to_string(targetColor)), opts, true);
 	Card::Name name;
 	if (1 <= idx && idx <= 10) { //数字牌
 		name = Card::numberCardsFrom1[idx];
@@ -533,7 +532,7 @@ bool 炼兵::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	for (const auto& kv : cnt) {
 		if (kv.second >= 2 && usedNames.find(kv.first) == usedNames.end()) {
 			validPairs.push_back(kv.first);
-			opts.push_back(Card::to_string(kv.first) + "(" + std::to_string(static_cast<unsigned long long>(kv.second)) + "张)");
+			opts.push_back(std::format("{}({}张)", Card::to_string(kv.first), kv.second));
 		}
 	}
 	if (validPairs.empty()) return false;
@@ -580,7 +579,7 @@ bool 好火::filter(const GameLogic& game, const Player& carrier, const Trigger&
 bool 好火::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = trigger.getPlayer();
 
-	auto result = carrier.chooseToGive("选择一张手牌交给" + target.characterName(),
+	auto result = carrier.chooseToGive(std::format("选择一张手牌交给{}", target.characterName()),
 									   target, false, unool::alwaysTrue);
 	if (!result.has_value()) return false;
 
@@ -748,8 +747,7 @@ bool 淘汰::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (card.isNumber()) {
 		int half = static_cast<int>(unool::math::floor(card.value() / 2.0));
 		carrier.chooseToDiscard(
-			"弃置一张点数 <= " + std::to_string(half) + "的" +
-			Card::to_string(card.getColor()) + "色数字牌", 1, true, [&card, &half](const Card& c) {
+			std::format("弃置一张点数 <= {}的{}色数字牌", half, Card::to_string(card.getColor())), 1, true, [&card, &half](const Card& c) {
 			return c.value() <= half && c.sameColorAs(card) && c.isNumber();
 		});
 	}
@@ -982,7 +980,7 @@ bool 豪赌::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//判定
 	Card& card = carrier.judge();
 	game.forEachPlayer([&card](Player& p) {
-		p.hint("[豪赌] 判定结果是" + card.toString());
+		p.hint(std::format("[豪赌] 判定结果是{}", card.toString()));
 	});
 
 	if (card.is(Card::Color::green, Card::Color::black)) {
@@ -1026,7 +1024,7 @@ bool 有活::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	carrier.draw(2, DrawReason::skill);
 	std::cout << "<技能> " << carrier.characterName() << "发动有活，摸了2张牌" << std::endl;
 
-	carrier.chooseToDiscard("[有活] 弃置" + std::to_string(X) + "张牌", X, true);
+	carrier.chooseToDiscard(std::format("[有活] 弃置{}张牌", X), X, true);
 	std::cout << "<技能> " << carrier.characterName() << "发动有活，弃置了" << X << "张牌" << std::endl;
 
 	game.broadcastState();
@@ -1073,7 +1071,7 @@ bool 迷烟::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	std::string colorStr = Card::to_string(card.getColor());
 	std::vector discard = target.chooseToDiscard(
-		"[迷烟]\n弃置一张" + colorStr + "色手牌或万能牌，\n或取消并摸一张牌", 1, false,
+		std::format("[迷烟]\n弃置一张{}色手牌或万能牌，\n或取消并摸一张牌", colorStr), 1, false,
 		[&card](const Card& c) {
 		return c.sameColorAs(card) || c.isWild();
 	});
@@ -1115,7 +1113,7 @@ bool 创世::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//选手牌变为此牌
 	Card targetCard(selectedColor, selectedName);
 	auto cardOpt = carrier.chooseToOperate(
-		"【创世】选择一张手牌变为" + targetCard.toString(), false, unool::alwaysTrue,
+		std::format("【创世】选择一张手牌变为{}", targetCard.toString()), false, unool::alwaysTrue,
 		[&targetCard](Card& c) {
 		c.set(targetCard);
 	});
@@ -1180,7 +1178,7 @@ bool 补天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	}
 	else {
 		auto colorOpt = carrier.chooseCardColor(
-			"【补天】牌名是" + Card::to_string(targetName) + "，选择颜色", true);
+			std::format("【补天】牌名是{}，选择颜色", Card::to_string(targetName)), true);
 		if (!colorOpt.has_value()) return false;
 		targetColor = colorOpt.value();
 	}
@@ -1188,7 +1186,7 @@ bool 补天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//选择一张手牌变为此牌
 	auto cardOpt = carrier.chooseToOperate(
-		"【补天】选择一张手牌变为" + targetCard.toString(), true, unool::alwaysTrue,
+		std::format("【补天】选择一张手牌变为{}", targetCard.toString()), true, unool::alwaysTrue,
 		[&targetCard](Card& c) {
 		c.set(targetCard);
 	});
@@ -1276,7 +1274,7 @@ bool 叛党::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//构造选项：1.弃1张 2.弃2张 ...
 	std::vector<std::string> options;
 	for (std::size_t i = 1; i <= colorSet.size(); ++i) {
-		options.push_back("弃" + std::to_string(i) + "张颜色各不相同的牌");
+		options.push_back(std::format("弃{}张颜色各不相同的牌", i));
 	}
 	//选数量，0=取消
 	std::size_t count = carrier.ask("【叛党】选择弃牌数量", options, false,
@@ -1287,7 +1285,7 @@ bool 叛党::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t discarded = 0;
 	for (std::size_t i = 0; i < count; ++i) {
 		auto result = carrier.chooseToDiscard(
-			"【叛党】选择第" + std::to_string(i + 1) + "张牌弃置（颜色各不相同）",
+			std::format("【叛党】选择第{}张牌弃置（颜色各不相同）", i + 1),
 			1, false,
 			[&](const Card& c) {
 			return c.getColor() != Card::Color::no
@@ -1333,8 +1331,8 @@ bool 清洗::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//ask 让玩家二选一：弃哪种颜色
 	std::vector<std::string> options;
-	options.push_back("弃置所有" + Card::to_string(colors[0]) + "色牌");
-	options.push_back("弃置所有" + Card::to_string(colors[1]) + "色牌");
+	options.push_back(std::format("弃置所有{}色牌", Card::to_string(colors[0])));
+	options.push_back(std::format("弃置所有{}色牌", Card::to_string(colors[1])));
 	std::size_t choice = carrier.ask("【清洗】选择弃置哪种颜色的手牌", options, false);
 	if (choice == 0) return false; //0取消
 	Card::Color target = colors[choice - 1];
@@ -1742,7 +1740,7 @@ bool 治病::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		}
 	}
 
-	std::size_t choiceIdx = carrier.ask("【治病】对方打出了" + card.toString() + "，选择一项：", optionTexts, true);
+	std::size_t choiceIdx = carrier.ask(std::format("【治病】对方打出了{}，选择一项：", card.toString()), optionTexts, true);
 	std::size_t chosenOpt = options[choiceIdx - 1];
 
 	switch (chosenOpt) {
@@ -1846,7 +1844,7 @@ bool 困界::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//2. 选目标重铸的类别
 	std::size_t typeAIdx = carrier.ask(
-		"【困界】选择" + target.characterName() + "重铸的类别",
+		std::format("【困界】选择{}重铸的类别", target.characterName()),
 		{ "数字牌", "功能牌", "万能牌" }, true);
 	Card::Type typeA = static_cast<Card::Type>(typeAIdx);
 	recastAll(target, typeA);
@@ -1974,7 +1972,7 @@ bool 加速::filter(const GameLogic& game, const Player& carrier, const Trigger&
 bool 加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Card& card = trigger.getCard();
 	const std::size_t choice = carrier.ask(
-		"你成为了" + card.toString() + "的目标，是否发动加速？",
+		std::format("你成为了{}的目标，是否发动加速？", card.toString()),
 		{ "发动", "不发动" },
 		true
 	);
@@ -2014,9 +2012,9 @@ bool 走位::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::vector<std::string> opts;
 	opts.push_back("不决议");
 	for (std::size_t i = 1; i <= X; ++i) {
-		opts.push_back("决议" + std::to_string(i) + "张");
+		opts.push_back(std::format("决议{}张", i));
 	}
-	std::size_t choice = carrier.ask("【走位】决议至多" + std::to_string(X) + "张牌", opts, false);
+	std::size_t choice = carrier.ask(std::format("【走位】决议至多{}张牌", X), opts, false);
 
 	//玩家取消或选0张：失去走位+获得芜湖
 	if (choice == 0 || choice == 1) {
@@ -2225,7 +2223,7 @@ bool 尖刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t dmg = trigger.getNumber();
 
 	//选一名其他角色造成等量伤害
-	auto targetOpt = carrier.chooseOtherPlayer("【尖刺】选择一名其他角色造成" + std::to_string(dmg) + "点伤害", true);
+	auto targetOpt = carrier.chooseOtherPlayer(std::format("【尖刺】选择一名其他角色造成{}点伤害", dmg), true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 
@@ -2260,8 +2258,7 @@ bool 弹暴::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//循环 X 次：选角色 -> 造成伤害（取消则继续循环）
 	for (std::size_t i = 0; i < X; ++i) {
 		auto targetOpt = carrier.chooseOtherPlayer(
-			"【弹暴】选择一名其他角色造成" + std::to_string(handgun.damageValue)
-			+ "点伤害（" + std::to_string(i + 1) + "/" + std::to_string(X) + "）",
+			std::format("【弹暴】选择一名其他角色造成{}点伤害（{}/{}）", handgun.damageValue, i + 1, X),
 			false);
 		if (!targetOpt.has_value()) continue;  //玩家取消，继续下一次循环
 		Player& target = *targetOpt;
@@ -2287,18 +2284,18 @@ bool 星轨::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Card& c1 = carrier.judge();
 	Card& c2 = carrier.judge();
 	Card& c3 = carrier.judge();
-	const std::string judgeResultStr = c1.toString() + "，" + c2.toString() + "，" + c3.toString();
+	const std::string judgeResultStr = std::format("{}，{}，{}", c1.toString(), c2.toString(), c3.toString());
 
 	if (c1.getType() == c2.getType() && c2.getType() == c3.getType()) {
 		//类型全相同，引力可用次数+1
 		carrier.getSkill<引力>().increaseLimit(1);
 		carrier.markCharInfoDirty();
-		carrier.hint("判定结果是：" + judgeResultStr + "\n获得一次【引力】使用次数！");
+		carrier.hint(std::format("判定结果是：{}\n获得一次【引力】使用次数！", judgeResultStr));
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定三次类型相同，【引力】可用次数+1" << std::endl;
 
 	}
 	else {
-		carrier.hint("判定结果是：" + judgeResultStr + "\n残念だ、未获得【引力】使用次数");
+		carrier.hint(std::format("判定结果是：{}\n残念だ、未获得【引力】使用次数", judgeResultStr));
 		std::cout << "<技能> " << carrier.characterName() << "星轨判定类型不同" << std::endl;
 	}
 
@@ -2520,7 +2517,7 @@ bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Character::hp_t lostHp = carrier.getMaxHp() - carrier.getHp();
 	std::size_t dmg = unool::math::ceil(lostHp * 0.03);
 
-	auto targetOpt = carrier.chooseOtherPlayer("【重锤】选择一名其他角色造成" + std::to_string(dmg) + "点伤害", true);
+	auto targetOpt = carrier.chooseOtherPlayer(std::format("【重锤】选择一名其他角色造成{}点伤害", dmg), true);
 	if (!targetOpt) return false;
 	Player& target = *targetOpt;
 

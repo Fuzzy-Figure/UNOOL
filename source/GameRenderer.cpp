@@ -131,7 +131,7 @@ void GameRenderer::renderPlayers() {
 			else {
 				pos = { charPos.x, charPos.y - 50 };
 			}
-			displayText(seatText + "，" + hpText, pos);
+			displayText(std::format("{}，{}", seatText, hpText), pos);
 		}
 
 		const bool isLocalPlayer = playerState.id == localPlayerId;
@@ -206,8 +206,7 @@ void GameRenderer::renderDiscardPile() {
 			historyPos.x -= historySize.x;
 		}
 	}
-	displayTextInLeft("当前颜色：" + Card::to_string(currentState.currentColor) + '\n' +
-					  "当前牌名：" + Card::to_string(currentState.currentName));
+	displayTextInLeft(std::format("当前颜色：{}\n当前牌名：{}", Card::to_string(currentState.currentColor), Card::to_string(currentState.currentName)));
 }
 
 void GameRenderer::renderChoice() {
@@ -215,7 +214,7 @@ void GameRenderer::renderChoice() {
 
 	std::string choiceText;
 	if (!choice->title.empty()) {
-		choiceText += choice->title + '\n';
+		choiceText += std::format("{}\n", choice->title);
 	}
 	for (const auto& [i, option] : choice->options | std::views::enumerate) {
 		choiceText += std::format("[{}] {}\n", i + 1, option);
@@ -223,25 +222,25 @@ void GameRenderer::renderChoice() {
 	if (!choice->options.empty()) {
 		if (choice->forced) {
 			if (choice->totalPages > 1) {
-				choiceText += ("第 " + std::to_string(choice->currentPage + 1) + "/" + std::to_string(choice->totalPages) + "页，<-->翻页\n");
-				choiceText += ("输入数字1-" + std::to_string(choice->options.size()) + "选择（必须选择）" + '\n');
+				choiceText += std::format("第 {}/{}页，<-->翻页\n", choice->currentPage + 1, choice->totalPages);
+				choiceText += std::format("输入数字1-{}选择（必须选择）\n", choice->options.size());
 			}
 			else {
-				choiceText += ("输入数字1-" + std::to_string(choice->options.size()) + "选择（必须选择）" + '\n');
+				choiceText += std::format("输入数字1-{}选择（必须选择）\n", choice->options.size());
 			}
 		}
 		else {
 			if (choice->totalPages > 1) {
-				choiceText += ("第 " + std::to_string(choice->currentPage + 1) + "/" + std::to_string(choice->totalPages) + "页，<-->翻页\n");
-				choiceText += ("输入数字0-" + std::to_string(choice->options.size()) + "选择（0表示不选择）" + '\n');
+				choiceText += std::format("第 {}/{}页，<-->翻页\n", choice->currentPage + 1, choice->totalPages);
+				choiceText += std::format("输入数字0-{}选择（0表示不选择）\n", choice->options.size());
 			}
 			else {
-				choiceText += ("输入数字0-" + std::to_string(choice->options.size()) + "选择（0表示不选择）" + '\n');
+				choiceText += std::format("输入数字0-{}选择（0表示不选择）\n", choice->options.size());
 			}
 		}
 	}
 	if (!choice->errorMsg.empty()) {
-		choiceText += choice->errorMsg + '\n';
+		choiceText += std::format("{}\n", choice->errorMsg);
 	}
 	if (choice->timeoutMs.has_value()) {
 		float elapsedMs = static_cast<float>(countdownClock.getElapsedTime().asMilliseconds());
@@ -250,7 +249,7 @@ void GameRenderer::renderChoice() {
 		float remainingSec = remainingMs / 1000.f;
 		int intPart = static_cast<int>(remainingSec);
 		int decPart = static_cast<int>((remainingSec - intPart) * 10.f);
-		choiceText += "剩余时间：" + std::to_string(intPart) + "." + std::to_string(decPart) + " 秒" + '\n';
+		choiceText += std::format("剩余时间：{}.{} 秒\n", intPart, decPart);
 	}
 	displayTextInRight(choiceText);
 }

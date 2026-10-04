@@ -86,11 +86,11 @@ std::string TextManager::wrapText(const std::string& text, float maxWidth,
 		const auto [cp, len] = decodeUtf8(text, i);
 		const std::string ch = text.substr(i, len);
 		i += len;
-		if (cp == U'\n') { result += line + '\n'; line.clear(); width = 0.f; continue; }
+		if (cp == U'\n') { result += std::format("{}\n", line); line.clear(); width = 0.f; continue; }
 
 		const float adv = font.getGlyph(cp, charSize, false).advance;  // 按码位量，不再是字节
 		if (width + adv > maxWidth && !line.empty()) {
-			result += line + '\n';
+			result += std::format("{}\n", line);
 			line = ch; width = adv;
 		}
 		else { line += ch; width += adv; }

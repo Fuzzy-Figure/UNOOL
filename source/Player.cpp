@@ -506,7 +506,7 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	if (idx < instantRefs.size()) {
 		InstantSkill& skill = instantRefs[idx].get();
 		const std::size_t confirm = ask(
-			"是否发动【" + skill.getName() + "】？",
+			std::format("是否发动【{}】？", skill.getName()),
 			{ "是", "否" }, false);
 		if (confirm == 1) {
 			skill.tryActivate(game, *this);
@@ -600,8 +600,7 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
-		std::string fullTitle = title + "（" + std::to_string(discardedCount + 1) + "/" + std::to_string(num) + "）\n"
-			+ (forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
+		std::string fullTitle = std::format("{}（{}/{}）\n{}", title, discardedCount + 1, num, forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
 		auto index = chooseCard(fullTitle, condition, forced);
 		if (!index.has_value()) {
 			std::cout << "玩家" << id << "取消了" << Card::to_string(reason) << std::endl;
@@ -665,7 +664,7 @@ void Player::inherit(std::unique_ptr<Card>& card) {
 opt_ref<Card> Player::chooseToOperate(const std::string& title, bool forced,
 									  const std::function<bool(const Card&)>& condition,
 									  const std::function<void(Card&)>& operation) {
-	std::string fullTitle = title + "\n" + (forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
+	std::string fullTitle = std::format("{}\n{}", title, forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
 	std::optional<std::size_t> index = chooseCard(fullTitle, condition, forced);
 	if (!index.has_value()) return std::nullopt;
 	ref<Card> cardRef = getHand().getCardByIndex(index.value());
@@ -791,11 +790,9 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 	auto rangeErrorMsg = [&]() -> std::string {
 		const std::string minOpt = forced ? "1" : "0";
 		if (usePaging) {
-			return "超出范围，请输入" + minOpt + "-" +
-				std::to_string(std::min(PER_PAGE, options.size() - currentPage * PER_PAGE)) +
-				"范围内的数字（<-->翻页）";
+			return std::format("超出范围，请输入{}-{}范围内的数字（<-->翻页）", minOpt, std::min(PER_PAGE, options.size() - currentPage * PER_PAGE));
 		}
-		return "超出范围，请输入" + minOpt + "-" + std::to_string(options.size()) + "范围内的数字";
+		return std::format("超出范围，请输入{}-{}范围内的数字", minOpt, options.size());
 	};
 
 	sendPage();
@@ -943,7 +940,7 @@ Card& Player::judge() {
 
 void Player::showCard(const Card& card) {
 	game.forEachOtherPlayer(*this, [this, &card](Player& p) {
-		p.hint(characterName() + "展示了" + card.toString());
+		p.hint(std::format("{}展示了{}", characterName(), card.toString()));
 	});
 }
 

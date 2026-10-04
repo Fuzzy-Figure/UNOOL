@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <stdexcept>
+#include <format>
 
 
 // ==================== 静态数据 ====================
@@ -95,7 +96,7 @@ Character::Character(const std::string& _name,
 std::unique_ptr<Character> Character::make(const std::string& name, const std::string& skin) {
 	auto it = infos.find(name);
 	if (it == infos.end()) {
-		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+		throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name));
 	}
 	const Info& info = it->second;
 
@@ -122,8 +123,8 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 												   const std::string& name2, const std::string& skin2) {
 	auto it1 = infos.find(name1);
 	auto it2 = infos.find(name2);
-	if (it1 == infos.end()) throw std::invalid_argument("角色 <" + name1 + "> 未在 Character::infos 中定义");
-	if (it2 == infos.end()) throw std::invalid_argument("角色 <" + name2 + "> 未在 Character::infos 中定义");
+	if (it1 == infos.end()) throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name1));
+	if (it2 == infos.end()) throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name2));
 	const Info& info1 = it1->second;
 	const Info& info2 = it2->second;
 
@@ -155,7 +156,7 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 // ==================== 基本信息 ====================
 std::string Character::getName() const {
 	if (names.size() == 1) return names[0];
-	return names[0] + "&" + names[1];
+	return std::format("{}&{}", names[0], names[1]);
 }
 
 Character::Level Character::getLevel() const {
@@ -169,7 +170,7 @@ std::vector<Character::Level> Character::getLevels() const {
 	result.reserve(names.size());
 	for (const auto& n : names) {
 		if (auto it = infos.find(n); it != infos.end()) result.push_back(it->second.level);
-		else throw std::invalid_argument("角色 <" + n + "> 未在 Character::infos 中定义");
+		else throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", n));
 	}
 	return result;
 }
@@ -188,26 +189,26 @@ int Character::getScore(Level winner, Level loser) {
 std::string Character::skillsName() const {
 	std::string result;
 	for (const auto& ps : passiveSkills) {
-		result += ps->getName() + ", ";
+		result += std::format("{}, ", ps->getName());
 	}
 	for (const auto& as : instantSkills) {
-		result += as->getName() + ", ";
+		result += std::format("{}, ", as->getName());
 	}
 	for (const auto& as : transformSkills) {
-		result += as->getName() + ", ";
+		result += std::format("{}, ", as->getName());
 	}
 	return result;
 }
 std::string Character::getSkillsText() const {
 	std::string result;
 	for (const auto& ps : passiveSkills) {
-		result += "【" + ps->getName() + "】（被动技能）\n" + ps->getInfo() + "\n";
+		result += std::format("【{}】（被动技能）\n{}\n", ps->getName(), ps->getInfo());
 	}
 	for (const auto& as : instantSkills) {
-		result += "【" + as->getName() + "】（主动技能）\n" + as->getInfo() + "\n";
+		result += std::format("【{}】（主动技能）\n{}\n", as->getName(), as->getInfo());
 	}
 	for (const auto& as : transformSkills) {
-		result += "【" + as->getName() + "】（主动技能）\n" + as->getInfo() + "\n";
+		result += std::format("【{}】（主动技能）\n{}\n", as->getName(), as->getInfo());
 	}
 	return result;
 }
@@ -248,21 +249,21 @@ std::string Character::to_string(Level level) {
 std::string Character::getImagePath(const std::string& name, const std::string& skin) {
 	auto it = infos.find(name);
 	if (it == infos.end()) {
-		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+		throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name));
 	}
 	const std::string& group = it->second.group;
-	return "images/characters/" + group + "/" + name + "/" + skin + ".jpg";
+	return std::format("images/characters/{}/{}/{}.jpg", group, name, skin);
 }
 std::vector<std::string> Character::getSkins(const std::string& name) {
 	namespace fs = std::filesystem;
 	auto it = infos.find(name);
 	if (it == infos.end()) {
-		throw std::invalid_argument("角色 <" + name + "> 未在 Character::infos 中定义");
+		throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name));
 	}
 	const std::string& group = it->second.group;
 	const fs::path dir = fs::path("../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
 	if (!fs::exists(dir) || !fs::is_directory(dir)) {
-		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录不存在");
+		throw std::invalid_argument(std::format("角色 <{}> 的皮肤目录不存在", name));
 	}
 	std::vector<std::string> skins;
 	for (const auto& entry : fs::directory_iterator(dir)) {
@@ -271,7 +272,7 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 		}
 	}
 	if (skins.empty()) {
-		throw std::invalid_argument("角色 <" + name + "> 的皮肤目录下无 .jpg 文件");
+		throw std::invalid_argument(std::format("角色 <{}> 的皮肤目录下无 .jpg 文件", name));
 	}
 	//排序，"默认"置首
 	std::ranges::sort(skins,
@@ -307,8 +308,7 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 	//判断可用角色数量是否足够
 	if (n > filteredCharsSize) {
 		throw std::invalid_argument(
-			"候选角色数量(" + std::to_string(n) + ")"
-			"不能超过可选角色数量(" + std::to_string(filteredCharsSize) + ")"
+			std::format("候选角色数量({})不能超过可选角色数量({})", n, filteredCharsSize)
 		);
 	}
 

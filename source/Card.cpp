@@ -247,7 +247,7 @@ std::string Card::toString() const {
 std::string Card::getImagePath() const {
 	if (auto it = imagePaths.find(std::pair(color, name)); it != imagePaths.end())
 		return it->second;
-	else throw std::invalid_argument("未找到[" + toString() + "]的图片路径");
+	else throw std::invalid_argument(std::format("未找到[{}]的图片路径", toString()));
 }
 
 // 属性设置
@@ -372,8 +372,7 @@ std::ostream& operator<<(std::ostream& ostr, const Card& card) {
 // 修改容器
 std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	if (index >= cards.size())
-		throw std::out_of_range("Cards::takeCardByIndex: index " + std::to_string(index) +
-								" out of range, size is " + std::to_string(cards.size()));
+		throw std::out_of_range(std::format("Cards::takeCardByIndex: index {} out of range, size is {}", index, cards.size()));
 	std::unique_ptr<Card> card = std::move(cards[index]);
 	cards.erase(cards.begin() + index);
 	return card;

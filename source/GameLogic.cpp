@@ -427,7 +427,7 @@ void GameLogic::flushCharInfo() {
 			std::string levelPart;
 			if (player.isCombined()) {
 				auto levels = player.getLevels();
-				levelPart = Character::to_string(levels[0]) + "+" + Character::to_string(levels[1]);
+				levelPart = std::format("{}+{}", Character::to_string(levels[0]), Character::to_string(levels[1]));
 			}
 			else {
 				levelPart = Character::to_string(player.characterLevel());

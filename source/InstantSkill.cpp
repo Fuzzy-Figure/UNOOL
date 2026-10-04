@@ -45,7 +45,7 @@ bool 招待::content(GameLogic& game, Player& carrier) {
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	carrier.chooseToGive("选择一张手牌交给" + target.characterName(), target, true);
+	carrier.chooseToGive(std::format("选择一张手牌交给{}", target.characterName()), target, true);
 	return true;
 }
 
@@ -55,10 +55,10 @@ bool 招待::content(GameLogic& game, Player& carrier) {
 bool 摘罩::content(GameLogic& game, Player& carrier) {
 	std::string recordStr;
 	for (const Card::Name& name : record) {
-		recordStr += Card::to_string(name) + ',';
+		recordStr += std::format("{},", Card::to_string(name));
 	}
 	//1. 展示一张未展示过点数的数字牌
-	auto cardOpt = carrier.chooseToShow("[摘罩] 展示一张数字牌\n已展示：" + recordStr, false, [this](const Card& c) {
+	auto cardOpt = carrier.chooseToShow(std::format("[摘罩] 展示一张数字牌\n已展示：{}", recordStr), false, [this](const Card& c) {
 		return c.isNumber() && !record.contains(c.getName());
 	});
 	if (!cardOpt.has_value()) return false;
@@ -81,7 +81,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 	}
 	if (targetShowed) {
 		auto otherCardOpt = target.chooseToShow(
-			"[摘罩] 展示一张" + Card::to_string(point), false,
+			std::format("[摘罩] 展示一张{}", Card::to_string(point)), false,
 			[point](const Card& c) { return c.getName() == point; }
 		);
 		targetShowed = otherCardOpt.has_value();
@@ -132,8 +132,7 @@ bool 还击::content(GameLogic& game, Player& carrier) {
 	//4. 交还等量张牌（forced=true，强制完成义务）
 	for (std::size_t i = 0; i < takeCount; ++i) {
 		carrier.chooseToGive(
-			"[还击] 交还一张牌给" + target.characterName()
-			+ "（" + std::to_string(i + 1) + "/" + std::to_string(takeCount) + "）",
+			std::format("[还击] 交还一张牌给{}（{}/{}）", target.characterName(), i + 1, takeCount),
 			target, true
 		);
 	}
@@ -359,7 +358,7 @@ bool 再生::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：手枪 ====================
 bool 手枪::content(GameLogic& game, Player& carrier) {
-	auto targetOpt = carrier.chooseOtherPlayer("【手枪】选择一名其他角色造成" + std::to_string(damageValue) + "点伤害", false);
+	auto targetOpt = carrier.chooseOtherPlayer(std::format("【手枪】选择一名其他角色造成{}点伤害", damageValue), false);
 	if (!targetOpt.has_value()) return false;  //取消，返还可用次数（tryActivate 不累加 count）
 	Player& target = *targetOpt;
 

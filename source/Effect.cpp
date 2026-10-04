@@ -44,5 +44,5 @@ void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) 
 		target.draw(4);
 		target.ban(source, card);
 	}
-	else throw std::runtime_error("意外的ask返回值：" + std::to_string(choice));
+	else throw std::runtime_error(std::format("意外的ask返回值：{}", choice));
 }
