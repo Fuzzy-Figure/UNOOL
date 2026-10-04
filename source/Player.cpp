@@ -414,7 +414,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		network.update();
 		if (!network.isClientConnected(id)) {
 			// 玩家掉线，等待重连
-			const auto timeoutSec = unool::getServerConfig().value("reconnectTimeoutSec", 600);
+			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
 			sf::Clock clock;
 			bool reconnected = false;
 			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
@@ -813,7 +813,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		network.update();
 		if (!network.isClientConnected(id)) {
 			// 玩家掉线，等待重连
-			const auto timeoutSec = unool::getServerConfig().value("reconnectTimeoutSec", 600);
+			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
 			sf::Clock dcClock;
 			bool reconnected = false;
 			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;

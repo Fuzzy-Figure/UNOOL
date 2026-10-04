@@ -138,7 +138,7 @@ void LoginScene::sendLoginRequest() {
 	}
 	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
 	if (!net.send(req)) {
-		message = "发送失败，请重试";
+		message = "发送失败，请关闭客户端的.exe文件后重试";
 		return;
 	}
 	status = Status::WaitingLogin;

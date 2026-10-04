@@ -286,11 +286,11 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 	//加载被屏蔽的角色和分组
 	const std::unordered_set<std::string> shieldedCharacters = [] {
-		std::vector chars = unool::getServerConfig()["shielded"]["characters"].get<std::vector<std::string>>();
+		std::vector chars = unool::getServerConfig()["characters"]["shielded"]["characters"].get<std::vector<std::string>>();
 		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
 	}();
 	const std::unordered_set<std::string> shieldedGroups = [] {
-		std::vector chars = unool::getServerConfig()["shielded"]["groups"].get<std::vector<std::string>>();
+		std::vector chars = unool::getServerConfig()["characters"]["shielded"]["groups"].get<std::vector<std::string>>();
 		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
 	}();
 

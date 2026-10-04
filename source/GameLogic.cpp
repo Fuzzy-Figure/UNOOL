@@ -161,7 +161,7 @@ void GameLogic::initPlayers() {
 
 void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//选候选角色
-	const std::size_t candidateCount = unool::getServerConfig()["normalCandidateCount"];
+	const std::size_t candidateCount = unool::getServerConfig()["rules"]["normal"]["candidateCount"];
 	SelectionState state;
 	auto allChars = Character::randomChooseCharacters(candidateCount * 2);
 	for (std::size_t i = 0; i < 2; ++i) {
@@ -182,7 +182,7 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 		return msg;
 	};
 
-	const std::size_t banCount = unool::getServerConfig().value("banCount", 0);
+	const std::size_t banCount = unool::getServerConfig()["rules"].value("banCount", 0);
 
 	std::vector<std::string> bannedByA;
 	bannedByA.reserve(banCount);
@@ -207,7 +207,7 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 
 void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//双将模式：无ban，抽 doubleCandidateCount*2 个候选平分各 doubleCandidateCount 个
-	const std::size_t doubleCandidateCount = unool::getServerConfig().value("doubleCandidateCount", 5);
+	const std::size_t doubleCandidateCount = unool::getServerConfig()["rules"]["double"].value("candidateCount", 5);
 	auto allChars = Character::randomChooseCharacters(doubleCandidateCount * 2);
 
 	std::vector<Character::Entry> cands1(
@@ -552,8 +552,8 @@ void GameLogic::resetGame() {
 		player->clearHand();
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
 		const std::string mode = unool::getServerConfig().value("mode", "norma");
-		const std::string handKey = (mode == "double") ? "doubleInitHandCount" : "normalInitHandCount";
-		player->draw(unool::getServerConfig()[handKey]);
+		const std::string handKey = (mode == "double") ? "double" : "normal";
+		player->draw(unool::getServerConfig()["rules"][handKey]["initHandCount"]);
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁

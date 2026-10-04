@@ -1,15 +1,25 @@
 {
-  "banCount": 2,
-  "characters": [ "白板", "白板" ],
-  "doubleCandidateCount": 5,
-  "doubleInitHandCount": 10,
-  "maxReconnectAttempts": 100,
   "mode": "normal",
-  "normalCandidateCount": 10,
-  "normalInitHandCount": 8,
-  "reconnectTimeoutSec": 600,
-  "shielded": {
-    "characters": [],
-    "groups": []
+  "characters": {
+    "assign": [ "白板", "白板" ],
+    "shielded": {
+      "characters": [],
+      "groups": []
+    }
+  },
+  "rules": {
+    "banCount": 2,
+    "double": {
+      "candidateCount": 5,
+      "initHandCount": 10
+    },
+    "normal": {
+      "candidateCount": 10,
+      "initHandCount": 8
+    }
+  },
+  "network": {
+    "maxReconnectAttempts": 100,
+    "reconnectTimeoutSec": 600
   }
 }

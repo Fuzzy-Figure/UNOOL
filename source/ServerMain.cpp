@@ -8,8 +8,8 @@
 
 // 根据 server_config.json 初始化角色（指定或随机）
 static void initCharacters(GameLogic& gameLogic) {
-	if (unool::getServerConfig().contains("characters")) {
-		auto chars = unool::getServerConfig()["characters"].get<std::vector<std::string>>();
+	if (unool::getServerConfig().contains("characters") && unool::getServerConfig()["characters"].contains("assign")) {
+		auto chars = unool::getServerConfig()["characters"]["assign"].get<std::vector<std::string>>();
 		//角色数量由 GameLogic::initPlayers(vector) 按 mode 校验
 		gameLogic.initPlayers(chars);
 	}
