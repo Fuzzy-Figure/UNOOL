@@ -99,8 +99,26 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		net.update();
 
 		if (!net.isConnected()) {
-			std::cout << titleBrackets << " 与服务器断开连接，退出游戏" << std::endl;
-			break;
+			// 断线重连
+			const auto maxAttempts = unool::getServerConfig().value("maxReconnectAttempts", 100);
+			std::cout << titleBrackets << " 与服务器断开连接，开始重连（最多 " << maxAttempts << " 次）" << std::endl;
+
+			bool reconnected = false;
+			for (int attempt = 1; attempt <= maxAttempts; ++attempt) {
+				std::cout << titleBrackets << " 重连尝试 " << attempt << "/" << maxAttempts << std::endl;
+				if (net.reconnect()) {
+					reconnected = true;
+					std::cout << titleBrackets << " 重连成功，继续游戏" << std::endl;
+					break;
+				}
+				std::this_thread::sleep_for(1s);
+			}
+
+			if (!reconnected) {
+				std::cout << titleBrackets << " 重连失败，退出游戏" << std::endl;
+				break;
+			}
+			continue;
 		}
 
 		auto packetOpt = net.receivePacket();
@@ -202,6 +220,9 @@ int main() {
 		system("pause");
 		return 1;
 	}
+
+	// 保存凭证供断线重连使用
+	clientNetwork.setCredentials(session.username, session.password);
 
 	std::cout << windowTitleWithBrackets << " 已登录，等待对手登录并开始游戏..." << std::endl;
 	gamePhase(clientNetwork, renderer, windowTitleWithBrackets);

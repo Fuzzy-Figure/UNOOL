@@ -10,6 +10,7 @@ class LoginScene {
 public:
 	struct Result {
 		std::string username;
+		std::string password;
 		int points = 0;
 		int wins = 0;
 		int losses = 0;

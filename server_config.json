@@ -3,9 +3,11 @@
   "characters": [ "白板", "白板" ],
   "doubleCandidateCount": 5,
   "doubleInitHandCount": 10,
+  "maxReconnectAttempts": 100,
   "mode": "normal",
   "normalCandidateCount": 10,
   "normalInitHandCount": 8,
+  "reconnectTimeoutSec": 600,
   "shielded": {
     "characters": [],
     "groups": []

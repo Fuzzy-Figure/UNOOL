@@ -224,6 +224,7 @@ void LoginScene::pollAccountPackets() {
 			if (!resp) { message = "响应解析失败"; status = Status::Idle; continue; }
 			if (resp->ok) {
 				result.username = username;
+				result.password = password;
 				result.points = resp->points;
 				result.wins = resp->wins;
 				result.losses = resp->losses;

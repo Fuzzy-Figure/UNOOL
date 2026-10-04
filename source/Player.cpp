@@ -413,9 +413,27 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 	while (true) {
 		network.update();
 		if (!network.isClientConnected(id)) {
-			std::cout << "[Player] 玩家" << id << " 已掉线，结束选择" << std::endl;
-			network.sendPlayerChoice(id, "", {}, false);
-			return std::nullopt;
+			// 玩家掉线，等待重连
+			const auto timeoutSec = unool::getServerConfig().value("reconnectTimeoutSec", 600);
+			sf::Clock clock;
+			bool reconnected = false;
+			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
+			while (clock.getElapsedTime().asSeconds() < timeoutSec) {
+				network.update();
+				if (network.isClientConnected(id)) {
+					reconnected = true;
+					break;
+				}
+				std::this_thread::sleep_for(100ms);
+			}
+			if (!reconnected) {
+				std::cout << "[Player] 玩家" << id << " 掉线超时，结束选择" << std::endl;
+				return std::nullopt;
+			}
+			std::cout << "[Player] 玩家" << id << " 重连成功，恢复选择" << std::endl;
+			game.broadcastState();
+			network.sendPlayerChoice(id, title, {}, forced);
+			continue;
 		}
 
 		auto inputOpt = network.receiveClientInput();
@@ -794,9 +812,27 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 		network.update();
 		if (!network.isClientConnected(id)) {
-			std::cout << "[Player] 玩家" << id << " 已掉线，ask 返回默认值" << std::endl;
-			network.sendPlayerChoice(id, "", {}, false);
-			return 0;
+			// 玩家掉线，等待重连
+			const auto timeoutSec = unool::getServerConfig().value("reconnectTimeoutSec", 600);
+			sf::Clock dcClock;
+			bool reconnected = false;
+			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
+			while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
+				network.update();
+				if (network.isClientConnected(id)) {
+					reconnected = true;
+					break;
+				}
+				std::this_thread::sleep_for(100ms);
+			}
+			if (!reconnected) {
+				std::cout << "[Player] 玩家" << id << " 掉线超时，ask 返回默认值" << std::endl;
+				return 0;
+			}
+			std::cout << "[Player] 玩家" << id << " 重连成功，恢复选择" << std::endl;
+			game.broadcastState();
+			sendPage();
+			continue;
 		}
 
 		auto inputOpt = network.receiveClientInput();
