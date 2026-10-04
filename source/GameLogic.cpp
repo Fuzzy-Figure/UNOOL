@@ -434,15 +434,22 @@ void GameLogic::flushCharInfo() {
 			}
 
 			//marksPart
-			std::string marksPart;
+			std::string marksPart = "标记：";
 			for (const auto& [name, count] : player.getMarks()) {
-				marksPart += name + "*" + std::to_string(count) + "，";
+				marksPart += std::format("{}*{}，", name, count);
 			}
+
+			//skillsPart
+			std::string skillsPart;
+			if (!player.isSealed()) skillsPart = "技能：\n";
+			else skillsPart = std::format("技能（已被封印，{}回合后解除）：\n", player.getSealed());
+			skillsPart += player.getSkillsText();
+
 			//合并
-			info.fullText =
-				player.characterName() + "（" + levelPart + "）\n"
-				+ "标记：" + (marksPart == "" ? "无" : marksPart) + "\n"
-				+ "技能：\n" + player.getSkillsText();
+			info.fullText = std::format(
+				"{}（{}）\n{}\n{}",
+				player.characterName(), levelPart, marksPart, skillsPart
+			);
 
 			network.sendCharInfo(info);
 			player.clearCharInfoDirty();

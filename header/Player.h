@@ -175,6 +175,7 @@ public:
 	void unban() { banned = false; }
 	void seal(std::size_t duration);
 	bool isSealed() const { return sealed > 0; }
+	std::size_t getSealed() const { return sealed; }
 	void markCharInfoDirty() const { charInfoDirty = true; }
 	bool isCharInfoDirty() const { return charInfoDirty; }
 	void clearCharInfoDirty() { charInfoDirty = false; }

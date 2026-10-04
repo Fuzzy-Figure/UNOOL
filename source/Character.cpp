@@ -235,12 +235,12 @@ bool Character::operator==(const Character& other) const {
 // ==================== 静态工具 ====================
 std::string Character::to_string(Level level) {
 	switch (level) {
-		case Level::S: return "S";
-		case Level::A: return "A";
-		case Level::B: return "B";
-		case Level::C: return "C";
-		case Level::D: return "D";
 		case Level::F: return "F";
+		case Level::D: return "D";
+		case Level::C: return "C";
+		case Level::B: return "B";
+		case Level::A: return "A";
+		case Level::S: return "S";
 		default:       return "?";
 	}
 }
