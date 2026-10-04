@@ -232,8 +232,7 @@ std::string GameLogic::formatCharacterLabel(const Character::Entry& entry) {
 	std::string label = std::format(
 		"{}（{}）体力：{}",
 		entry.first,
-		Character::to_string(info.level),
-		info.hp
+		info.level, info.hp
 	);
 	if (info.maxHp != info.hp) {
 		label += std::format("/{}", info.maxHp);
@@ -427,10 +426,10 @@ void GameLogic::flushCharInfo() {
 			std::string levelPart;
 			if (player.isCombined()) {
 				auto levels = player.getLevels();
-				levelPart = std::format("{}+{}", Character::to_string(levels[0]), Character::to_string(levels[1]));
+				levelPart = std::format("{}+{}", levels[0], levels[1]);
 			}
 			else {
-				levelPart = Character::to_string(player.characterLevel());
+				levelPart = std::format("{}", player.characterLevel());
 			}
 
 			//marksPart

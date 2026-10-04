@@ -206,7 +206,7 @@ void GameRenderer::renderDiscardPile() {
 			historyPos.x -= historySize.x;
 		}
 	}
-	displayTextInLeft(std::format("当前颜色：{}\n当前牌名：{}", Card::to_string(currentState.currentColor), Card::to_string(currentState.currentName)));
+	displayTextInLeft(std::format("当前颜色：{}\n当前牌名：{}", currentState.currentColor, currentState.currentName));
 }
 
 void GameRenderer::renderChoice() {
