@@ -143,6 +143,7 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					GameState state;
 					packet >> state;
 					renderer.updateState(state);
+					std::cout << titleBrackets << " 收到 GameState，玩家数=" << state.players.size() << std::endl;
 					break;
 				}
 				case MessageType::PointerUpdate: {

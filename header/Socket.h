@@ -101,6 +101,7 @@ public:
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const;
 	bool isClientConnected(std::size_t clientIndex) const;
+	bool isClientLoggedIn(std::size_t clientIndex) const;
 	const std::array<ClientSlot, MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
 };
 

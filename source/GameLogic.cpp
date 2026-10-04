@@ -350,7 +350,8 @@ void GameLogic::broadcastState() {
 	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
 		if (!network.isClientConnected(i)) continue;
 		GameState state = packStateForPlayer(i);
-		network.sendGameStateToClient(i, state);
+		bool ok = network.sendGameStateToClient(i, state);
+		std::cout << "[broadcastState] 发给玩家" << i << (ok ? " 成功" : " 失败") << std::endl;
 	}
 	flushCharInfo();
 }

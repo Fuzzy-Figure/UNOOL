@@ -62,6 +62,10 @@ bool ServerNetwork::isClientConnected(std::size_t clientIndex) const {
 	return clientIndex < MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
 }
 
+bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
+	return isClientConnected(clientIndex) && clientSlots_[clientIndex].loggedIn;
+}
+
 void ServerNetwork::update() {
 	if (selector.wait(sf::milliseconds(10))) {
 		if (selector.isReady(*listener)) {
@@ -367,28 +371,38 @@ bool ClientNetwork::reconnect() {
 	}
 
 	// 等待登录响应（最多等 5 秒）
+	// 暂存非登录包（如 GameState），登录成功后放回队列供主循环处理
+	std::queue<sf::Packet> savedPackets;
 	sf::Clock clock;
 	while (clock.getElapsedTime().asSeconds() < 5.f) {
 		update();
 		while (auto packetOpt = receivePacket()) {
 			sf::Packet packet = *packetOpt;
+			sf::Packet peek = packet;  // 用副本判断类型，不移动原始 packet 的读指针
 			int msgType;
-			if (!(packet >> msgType)) continue;
+			if (!(peek >> msgType)) continue;
 
 			if (msgType == static_cast<int>(MessageType::ConnectionInfo)) {
 				std::size_t pid;
-				if (packet >> pid) setPlayerId(pid);
+				if (peek >> pid) setPlayerId(pid);
 				continue;
 			}
 			if (msgType == static_cast<int>(MessageType::LoginResponse)) {
-				auto resp = AccountProtocol::parseAccountResponse(packet);
+				auto resp = AccountProtocol::parseAccountResponse(peek);
 				if (resp && resp->ok) {
 					std::cout << "[ClientNetwork] 重连成功：" << resp->msg << std::endl;
+					// 把暂存的包放回队列
+					while (!savedPackets.empty()) {
+						receivedPackets.push(savedPackets.front());
+						savedPackets.pop();
+					}
 					return true;
 				}
 				std::cerr << "[ClientNetwork] 重连登录失败：" << (resp ? resp->msg : "解析失败") << std::endl;
 				return false;
 			}
+			// 其他包暂存（原始 packet 读指针未移动）
+			savedPackets.push(packet);
 		}
 		std::this_thread::sleep_for(50ms);
 	}
@@ -399,6 +413,7 @@ bool ClientNetwork::reconnect() {
 
 void ClientNetwork::disconnect() {
 	if (socket) {
+		selector.remove(*socket);
 		socket->disconnect();
 		socket.reset();
 	}

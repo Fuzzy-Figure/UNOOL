@@ -420,7 +420,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
 			while (clock.getElapsedTime().asSeconds() < timeoutSec) {
 				network.update();
-				if (network.isClientConnected(id)) {
+				if (network.isClientLoggedIn(id)) {
 					reconnected = true;
 					break;
 				}
@@ -819,7 +819,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
 			while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
 				network.update();
-				if (network.isClientConnected(id)) {
+				if (network.isClientLoggedIn(id)) {
 					reconnected = true;
 					break;
 				}
