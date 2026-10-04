@@ -2696,3 +2696,44 @@ bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
+// ==================== 技能：地雷 ====================
+bool 地雷::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return usedColors.size() < 5;
+}
+bool 地雷::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//计算剩余可选颜色
+	std::vector<Card::Color> remaining;
+	for (auto c : Card::fiveColors) {
+		if (!usedColors.contains(c)) remaining.push_back(c);
+	}
+	auto colorOpt = carrier.chooseCardColor("选择一种颜色布置地雷", false, remaining);
+	if (!colorOpt) return false;
+
+	armedColor = colorOpt.value();
+	usedColors.insert(colorOpt.value());
+	if (usedColors.size() == 5) usedColors.clear();
+	//std::cout << "<技能> " << carrier.characterName() << "发动地雷，布置了颜色" << Card::to_string(colorOpt.value()) << "的地雷" << std::endl;
+	std::println("<技能> {}发动地雷，布置了颜色{}的地雷", carrier.characterName(), colorOpt.value());
+	game.broadcastState();
+	return true;
+}
+
+bool 地雷_引爆::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	if (trigger.getPlayer() == carrier) return false;
+	auto color = carrier.getSkill<地雷>().getArmedColor();
+	if (!color.has_value()) return false;
+	return trigger.getCard().getColor() == color.value();
+}
+bool 地雷_引爆::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	target.damage(1, carrier);
+	std::cout << "<技能> " << carrier.characterName() << "的地雷引爆，" << target.characterName() << "受到1点伤害" << std::endl;
+	game.broadcastState();
+	return true;
+}
+
+bool 地雷_撤雷::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.getSkill<地雷>().disarm();
+	return true;
+}
+

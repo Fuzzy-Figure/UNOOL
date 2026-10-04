@@ -1505,4 +1505,52 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+//地雷_引爆：子技能，其他角色打出地雷颜色牌时受到1点伤害
+class 地雷_引爆 final : public PassiveSkillImpl<地雷_引爆> {
+public:
+	地雷_引爆() : PassiveSkillImpl<地雷_引爆>(
+		"地雷_引爆", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//地雷_撤雷：子技能，回合开始时撤掉地雷
+class 地雷_撤雷 final : public PassiveSkillImpl<地雷_撤雷> {
+public:
+	地雷_撤雷() : PassiveSkillImpl<地雷_撤雷>(
+		"地雷_撤雷", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//地雷：每种颜色限一次，回合结束时选择一种颜色，下一个回合开始前其他角色打出此颜色牌时受到1点伤害，所有颜色都选择过后重置限制
+class 地雷 final : public PassiveSkillImpl<地雷> {
+	mutable std::optional<Card::Color> armedColor;
+	mutable std::unordered_set<Card::Color> usedColors;
+public:
+	地雷() : PassiveSkillImpl<地雷>(
+		"地雷",
+		"每种颜色限一次，回合结束时，你可以选择一种颜色。\n"
+		"你的下一个回合开始前，其他角色打出此颜色牌时受到1点伤害；\n"
+		"所有颜色都选择过后重置限制。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		地雷_引爆::make(),
+		地雷_撤雷::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	std::optional<Card::Color> getArmedColor() const { return armedColor; }
+	void disarm() { armedColor.reset(); }
+	void reset() override { PassiveSkill::reset(); armedColor.reset(); usedColors.clear(); }
+};
+
 
