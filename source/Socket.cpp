@@ -46,7 +46,8 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 		clientSockets[clientIndex].reset();
 	}
 	clientSlots_[clientIndex].loggedIn = false;
-	clientSlots_[clientIndex].username.clear();
+	clientSlots_[clientIndex].disconnected = true;
+	// 保留 username，供重连时识别身份
 }
 
 std::size_t ServerNetwork::getClientCount() const {
@@ -59,6 +60,10 @@ std::size_t ServerNetwork::getClientCount() const {
 
 bool ServerNetwork::isClientConnected(std::size_t clientIndex) const {
 	return clientIndex < MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
+}
+
+bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
+	return isClientConnected(clientIndex) && clientSlots_[clientIndex].loggedIn;
 }
 
 void ServerNetwork::update() {
@@ -144,6 +149,14 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		auto userInfo = UserDB::instance().login(req->username, req->password, errMsg);
 
 		bool ok = userInfo.has_value();
+
+		// 检查该槽位是否是掉线玩家的：若有残留 username 且不匹配当前登录账号，拒绝占用
+		if (ok && clientSlots_[clientIdx].disconnected && !clientSlots_[clientIdx].username.empty()
+			&& clientSlots_[clientIdx].username != req->username) {
+			ok = false;
+			errMsg = "该座位已被其他玩家占用，请等待";
+		}
+
 		// 检查另一端是否已用同一账号登录
 		if (ok) {
 			std::size_t other = 1 - clientIdx;
@@ -164,13 +177,16 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		sendPacketToClient(clientIdx, resp);
 
 		if (ok) {
+			const bool isReconnect = clientSlots_[clientIdx].disconnected;
 			clientSlots_[clientIdx].loggedIn = true;
+			clientSlots_[clientIdx].disconnected = false;
 			clientSlots_[clientIdx].username = req->username;
 			clientSlots_[clientIdx].points = pts;
 			clientSlots_[clientIdx].wins = w;
 			clientSlots_[clientIdx].losses = l;
 
-			std::cout << "[ServerNetwork] 客户端" << clientIdx << " 登录: " << req->username
+			std::cout << "[ServerNetwork] 客户端" << clientIdx << " "
+				<< (isReconnect ? "重连" : "登录") << ": " << req->username
 				<< "（积分 " << pts << "）" << std::endl;
 
 			// 两玩家都登录后开局
@@ -314,6 +330,9 @@ ClientNetwork::~ClientNetwork() {
 }
 
 bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
+	serverIp = ip;
+	serverPort = port;
+
 	socket = std::make_unique<sf::TcpSocket>();
 
 	sf::Socket::Status connectStatus = socket->connect(sf::IpAddress::fromString(ip).value(), port, sf::seconds(3));
@@ -331,8 +350,70 @@ bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
 	return true;
 }
 
+bool ClientNetwork::reconnect() {
+	if (serverIp.empty() || username.empty()) {
+		std::cerr << "[ClientNetwork] 无法重连：缺少服务器地址或凭证" << std::endl;
+		return false;
+	}
+
+	// 清空旧的接收队列
+	while (!receivedPackets.empty()) receivedPackets.pop();
+
+	if (!connect(serverIp, serverPort)) {
+		return false;
+	}
+
+	// 发送登录请求
+	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
+	if (!send(req)) {
+		std::cerr << "[ClientNetwork] 重连：发送登录请求失败" << std::endl;
+		return false;
+	}
+
+	// 等待登录响应（最多等 5 秒）
+	// 暂存非登录包（如 GameState），登录成功后放回队列供主循环处理
+	std::queue<sf::Packet> savedPackets;
+	sf::Clock clock;
+	while (clock.getElapsedTime().asSeconds() < 5.f) {
+		update();
+		while (auto packetOpt = receivePacket()) {
+			sf::Packet packet = *packetOpt;
+			sf::Packet peek = packet;  // 用副本判断类型，不移动原始 packet 的读指针
+			int msgType;
+			if (!(peek >> msgType)) continue;
+
+			if (msgType == static_cast<int>(MessageType::ConnectionInfo)) {
+				std::size_t pid;
+				if (peek >> pid) setPlayerId(pid);
+				continue;
+			}
+			if (msgType == static_cast<int>(MessageType::LoginResponse)) {
+				auto resp = AccountProtocol::parseAccountResponse(peek);
+				if (resp && resp->ok) {
+					std::cout << "[ClientNetwork] 重连成功：" << resp->msg << std::endl;
+					// 把暂存的包放回队列
+					while (!savedPackets.empty()) {
+						receivedPackets.push(savedPackets.front());
+						savedPackets.pop();
+					}
+					return true;
+				}
+				std::cerr << "[ClientNetwork] 重连登录失败：" << (resp ? resp->msg : "解析失败") << std::endl;
+				return false;
+			}
+			// 其他包暂存（原始 packet 读指针未移动）
+			savedPackets.push(packet);
+		}
+		std::this_thread::sleep_for(50ms);
+	}
+
+	std::cerr << "[ClientNetwork] 重连：等待登录响应超时" << std::endl;
+	return false;
+}
+
 void ClientNetwork::disconnect() {
 	if (socket) {
+		selector.remove(*socket);
 		socket->disconnect();
 		socket.reset();
 	}

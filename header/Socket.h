@@ -53,6 +53,7 @@ class ServerNetwork {
 public:
 	struct ClientSlot {
 		bool loggedIn = false;
+		bool disconnected = false;
 		std::string username;
 		int points = 0;
 		int wins = 0;
@@ -100,6 +101,7 @@ public:
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const;
 	bool isClientConnected(std::size_t clientIndex) const;
+	bool isClientLoggedIn(std::size_t clientIndex) const;
 	const std::array<ClientSlot, MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
 };
 
@@ -109,6 +111,11 @@ private:
 	sf::SocketSelector selector;
 	std::size_t playerId = 0;
 	std::queue<sf::Packet> receivedPackets;
+
+	std::string serverIp;
+	unsigned short serverPort = 0;
+	std::string username;
+	std::string password;
 
 private:
 	bool sendPacket(sf::Packet& packet);
@@ -128,4 +135,7 @@ public:
 	void setPlayerId(std::size_t id) { playerId = id; }
 	std::size_t getPlayerId() const { return playerId; }
 	bool isConnected() const { return socket != nullptr; }
+
+	void setCredentials(const std::string& u, const std::string& p) { username = u; password = p; }
+	bool reconnect();
 };
