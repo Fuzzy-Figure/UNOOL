@@ -148,7 +148,7 @@ void GameLogic::initPlayers() {
 	std::size_t secondSeatId = getSeatPlayerId(1);
 
 	//读取模式：normal（默认）/ double
-	const std::string mode = unool::getServerConfig().value("mode", "norma");
+	const std::string mode = unool::getServerConfig().value("mode", "normal");
 	if (mode == "double") {
 		initPlayersDouble(firstSeatId, secondSeatId);
 	}
@@ -301,7 +301,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
-	const std::string mode = unool::getServerConfig().value("mode", "norma");
+	const std::string mode = unool::getServerConfig().value("mode", "normal");
 	if (mode == "double") {
 		//双将模式：4 个角色，前 2 个给玩家1，后 2 个给玩家2，各自 makeCombined
 		if (chars.size() != 4)
@@ -558,7 +558,7 @@ void GameLogic::resetGame() {
 		// 重置手牌
 		player->clearHand();
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
-		const std::string mode = unool::getServerConfig().value("mode", "norma");
+		const std::string mode = unool::getServerConfig().value("mode", "normal");
 		const std::string handKey = (mode == "double") ? "double" : "normal";
 		player->draw(unool::getServerConfig()["rules"][handKey]["initHandCount"]);
 		// 重置技能使用次数
