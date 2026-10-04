@@ -351,7 +351,9 @@ void GameLogic::broadcastState() {
 		if (!network.isClientConnected(i)) continue;
 		GameState state = packStateForPlayer(i);
 		bool ok = network.sendGameStateToClient(i, state);
-		std::cout << "[broadcastState] 发给玩家" << i << (ok ? " 成功" : " 失败") << std::endl;
+		if (!ok) {
+			std::cout << "[Warning] broadcastState发给玩家" << i << "失败！" << std::endl;
+		}
 	}
 	flushCharInfo();
 }
@@ -441,7 +443,7 @@ void GameLogic::flushCharInfo() {
 				player.characterName() + "（" + levelPart + "）\n"
 				+ "标记：" + (marksPart == "" ? "无" : marksPart) + "\n"
 				+ "技能：\n" + player.getSkillsText();
-			
+
 			network.sendCharInfo(info);
 			player.clearCharInfoDirty();
 		}
