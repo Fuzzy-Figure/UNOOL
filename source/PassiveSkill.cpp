@@ -2713,7 +2713,7 @@ bool 地雷::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	usedColors.insert(colorOpt.value());
 	if (usedColors.size() == 5) usedColors.clear();
 	//std::cout << "<技能> " << carrier.characterName() << "发动地雷，布置了颜色" << Card::to_string(colorOpt.value()) << "的地雷" << std::endl;
-	std::println("<技能> {}发动地雷，布置了颜色{}的地雷", carrier.characterName(), colorOpt.value());
+	std::println("<技能> {}发动地雷，布置了{}色地雷", carrier.characterName(), colorOpt.value());
 	game.broadcastState();
 	return true;
 }
