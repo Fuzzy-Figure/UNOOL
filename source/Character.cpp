@@ -70,7 +70,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"电棍",     {"网络",         Level::F, {被动<四麻>, 即时<四霸>}, 44}},
 	{"8比特",    {"荒野乱斗",     Level::S, {被动<爆射>, 即时<装币>}, 288}},
 	{"格斯",     {"荒野乱斗",     Level::C, {被动<灵爆>, 即时<幽愈>}, 100}},
-	{"斯图",     {"荒野乱斗",     Level::A, {被动<加速>, 即时<炫技>}, 120}},
+	{"斯图",     {"荒野乱斗",     Level::S, {被动<加速>, 即时<炫技>}, 120}},
 	//{"大司马",   {"网络", Level::C, {被动<走位>}, 150}},
 	{"新静姝",   {"新三国",       Level::B, {即时<调羹>},      166}},
 	{"唐伯虎",   {"网络",         Level::C, {被动<九一, 白虎>}, 91}},
@@ -146,11 +146,12 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 
 	//组合角色体力：平均向上取百
 	const hp_t hp1 = info1.hp;
+	std::println("----------------MAXHP = {}", info1.maxHp);
 	const hp_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
 	const hp_t hp2 = info2.hp;
 	const hp_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
-	newChara->hp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(hp1 + hp2) / 200.0) * 100);
-	newChara->maxHp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 200.0) * 100);
+	newChara->hp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(hp1 + hp2) / 20.0) * 10);
+	newChara->maxHp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 20.0) * 10);
 	return newChara;
 }
 

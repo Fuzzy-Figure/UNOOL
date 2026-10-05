@@ -116,7 +116,7 @@ class 炫技 final : public InstantSkillImpl<炫技> {
 public:
 	炫技() : InstantSkillImpl<炫技>(
 		"炫技",
-		"每回合限一次，出牌阶段，你可以从牌堆顶或牌堆底摸两张牌，然后将其中一张置于牌堆底。\n"
+		"每回合限一次，出牌阶段，你可以从牌堆顶或牌堆底摸两张牌，然后将一张手牌置于牌堆底。\n"
 		"若你因此获得的牌颜色相同，可弃置两张牌并令【加速】本局可发动次数+1。",
 		unlimited, 1,
 		TriggerTime::phase_use

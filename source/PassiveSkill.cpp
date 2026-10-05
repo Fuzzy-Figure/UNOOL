@@ -1921,7 +1921,8 @@ bool 加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (choice == 2) return false;
 
 	//发动一次炫技
-	carrier.getSkill<炫技>().tryActivate(game, carrier);
+	//carrier.getSkill<炫技>().tryActivate(game, carrier);
+	carrier.getSkill<炫技>().content(game, carrier);
 
 	//令此牌无效
 	card.cancelEffect();
@@ -2396,11 +2397,11 @@ void 淬毒::tryDecay(GameLogic& game) {
 			lastChangeTick[id] = tick;
 			return;
 		}
-		if (tick - it->second >= 5) {
+		if (tick - it->second >= 10) {
 			//满五回合未叠加，减1（不重置计时，后续每回合继续减）
 			std::size_t before = p.getMarkCount("毒");
 			p.removeMark("毒");
-			std::println("<淬毒> {}的毒标记五回合未叠加，减少一个（剩余{}）", p.characterName(), (before - 1));
+			std::println("<淬毒> {}的毒标记10回合未叠加，减少一个（剩余{}）", p.characterName(), (before - 1));
 		}
 	});
 }

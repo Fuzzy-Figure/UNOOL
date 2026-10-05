@@ -218,18 +218,15 @@ bool 炫技::content(GameLogic& game, Player& carrier) {
 	//摸两张（触发draw_begin/end）
 	std::vector drawn = carrier.draw(2, DrawReason::skill, dp);
 
-	//两张在hand末尾，记录颜色
-	std::size_t idx1 = carrier.getHand().count() - 2;
-	std::size_t idx2 = carrier.getHand().count() - 1;
+	//记录摸到两张牌的颜色
 	Card::Color c1 = drawn[0].get().getColor();
 	Card::Color c2 = drawn[1].get().getColor();
 
-	//选一张置于牌堆底
-	std::size_t put = carrier.ask("【炫技】将一张牌置于牌堆底",
-								  { carrier.getHand()[idx1].toString(), carrier.getHand()[idx2].toString() }, true);
-	std::size_t putIdx = (put == 1) ? idx1 : idx2;
-	game.getPile().push_back(carrier.takeCardByIndex(putIdx));
-	std::println("<技能> {}发动炫技，摸2张并置1张于牌堆底", carrier.characterName());
+	//从所有手牌中选一张置于牌堆底
+	auto putOpt = carrier.chooseCard("【炫技】将一张手牌置于牌堆底", [](const Card&) { return true; }, true);
+	if (!putOpt.has_value()) return false;
+	game.getPile().push_back(carrier.takeCardByIndex(*putOpt));
+	std::println("<技能> {}发动炫技，摸2张并置1张手牌于牌堆底", carrier.characterName());
 
 	//若两牌同色且手牌>=2，可弃两张令加速+1
 	if (c1 == c2 && carrier.handCount() >= 2) {
