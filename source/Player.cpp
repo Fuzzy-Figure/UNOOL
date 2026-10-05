@@ -44,9 +44,7 @@ void Player::recover(std::size_t num) {
 // === 游戏逻辑 ===
 
 std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position) {
-	std::cout << "玩家" << id << "(" << characterName() << ")摸了" << number << "张牌（"
-		<< (position == DrawPosition::top ? "顶" : "底") << "）" << std::endl;
-	{
+	std::println("玩家{}({})摸了{}张牌（{}）", id, characterName(), number, (position == DrawPosition::top ? "顶" : "底")); {
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
 		trigger.number = number;
@@ -609,9 +607,7 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
 		putCardToDiscardPileByIndex(index.value(), reason);
 		discardedCount++;
-		std::cout << "玩家" << id << Card::to_string(reason) << "了一张牌（"
-			<< discardedCount << "/" << num << "）" << std::endl;
-		game.broadcastState();
+		std::println("玩家{}{}了一张牌（{}/{}）", id, Card::to_string(reason), discardedCount, num);		game.broadcastState();
 	}
 	return discardedCards;
 }
@@ -950,9 +946,7 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 
 	//目标无数字牌，直接判其输
 	if (!target.handInclude(&Card::isNumber)) {
-		std::cout << "<拼点> " << characterName() << "与" << target.characterName()
-			<< "拼点，" << target.characterName() << "无数字牌，直接判负" << std::endl;
-		game.broadcastState();
+		std::println("<拼点> {}与{}拼点，{}无数字牌，直接判负", characterName(), target.characterName(), target.characterName());		game.broadcastState();
 		return CompareResult::win;
 	}
 
@@ -972,9 +966,7 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 
 	const std::size_t myVal = myCard.value();
 	const std::size_t tgtVal = tgtCard.value();
-	std::cout << "<拼点> " << characterName() << "(" << myVal << ") vs "
-		<< target.characterName() << "(" << tgtVal << ")，";
-
+	std::print("<拼点> {}({}) vs {}({})，", characterName(), myVal, target.characterName(), tgtVal);
 	CompareResult result;
 	if (myVal > tgtVal) {
 		result = CompareResult::win;

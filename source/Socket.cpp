@@ -185,10 +185,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			clientSlots_[clientIdx].wins = w;
 			clientSlots_[clientIdx].losses = l;
 
-			std::cout << "[ServerNetwork] 客户端" << clientIdx << " "
-				<< (isReconnect ? "重连" : "登录") << ": " << req->username
-				<< "（积分 " << pts << "）" << std::endl;
-
+			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
 			// 两玩家都登录后开局
 			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn) {
 				serverReady = true;

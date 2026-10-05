@@ -231,11 +231,7 @@ void LoginScene::pollAccountPackets() {
 				result.ok = true;
 				status = Status::Done;
 				message = "登录成功";
-				std::cout << titleBrackets << " 登录成功: " << resp->msg
-					<< " 积分=" << resp->points
-					<< " 胜=" << resp->wins
-					<< " 负=" << resp->losses << std::endl;
-			}
+std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);			}
 			else {
 				message = std::format("登录失败: {}", resp->msg);
 				status = Status::Idle;

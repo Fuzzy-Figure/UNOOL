@@ -67,9 +67,7 @@ void UserDB::addMatchResult(const std::string& winnerUser, const std::string& lo
 	if (wit != users_.end()) {
 		wit->second.points += delta;
 		wit->second.wins += 1;
-		std::cout << "[UserDB] 玩家" << winnerUser << "胜利，获得 "
-			<< delta << " 积分（当前 " << wit->second.points << "）"
-			<< (winnerFullHp ? " [满血翻倍]" : "") << std::endl;
+		std::println("[UserDB] 玩家{}胜利，获得 {} 积分（当前 {}）{}", winnerUser, delta, wit->second.points, (winnerFullHp ? " [满血翻倍]" : ""));
 	}
 	if (lit != users_.end()) {
 		lit->second.losses += 1;

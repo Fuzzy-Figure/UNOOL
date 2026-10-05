@@ -492,9 +492,7 @@ void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime
 //返回置入弃牌堆的牌的引用
 Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player) {
 	card->setDiscardReason(reason);
-	std::cout << "[" << *card << "](" << Card::to_string(reason)
-		<< ") 进入了弃牌堆" << std::endl;
-	discardPile->push_front(std::move(card));
+	std::println("[{}]({}) 进入了弃牌堆", *card, Card::to_string(reason));	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
 	{
 		PassiveSkill::Trigger trigger;
@@ -529,10 +527,7 @@ void GameLogic::checkRoundEnd() {
 		w.incrementWins();
 		l.incrementLosses();
 		const std::size_t actualDamageValue = l.damage(l.handValue(), w);
-		std::cout << w.characterName() << "对" << l.characterName()
-			<< "造成" << actualDamageValue << "点伤害（败者手牌价值 " << l.handValue()
-			<< " * 倍率 " << w.getDamageMultiplier() << "），"
-			<< l.characterName() << "剩余" << l.getHp() << "/" << l.getMaxHp() << std::endl;
+		std::println("{}对{}造成{}点伤害（败者手牌价值 {} * 倍率 {}），{}剩余{}/{}", w.characterName(), l.characterName(), actualDamageValue, l.handValue(), w.getDamageMultiplier(), l.characterName(), l.getHp(), l.getMaxHp());
 	}
 	else {
 		// 兜底：双方都未空手或都已空手，维持原双方各扣自己手牌value的逻辑

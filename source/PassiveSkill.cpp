@@ -194,9 +194,7 @@ bool 棍击::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = targetOpt.value();
 	std::size_t damage = unool::math::pow(2, getCount());
 	target.damage(damage, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "对" << target.characterName()
-		<< "发动棍击，造成" << damage << "点伤害！" << std::endl;
-
+	std::println("<技能> {}对{}发动棍击，造成{}点伤害！", carrier.characterName(), target.characterName(), damage);
 	game.broadcastState();
 	return true;
 }
@@ -224,9 +222,7 @@ bool 雷剑::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!discarded.empty()) {
 		std::size_t value = discarded.front().get().value();
 		carrier.recover(value);
-		std::cout << "<技能> " << carrier.characterName()
-			<< "发动雷剑，弃置 [" << discarded.front().get() << "] 并回复" << value << "点体力！！！！！！！！！！！！！" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动雷剑，弃置 [{}] 并回复{}点体力！！！！！！！！！！！！！", carrier.characterName(), discarded.front().get(), value);		game.broadcastState();
 		return true;
 	}
 	return false;
@@ -359,8 +355,7 @@ bool 锐刻::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	else {
 		target.draw(5, DrawReason::skill);
 		disabled = true;
-		std::cout << "<技能> " << carrier.characterName() << "发动锐刻，令" << target.characterName()
-			<< "摸5张牌，失去此技能至本局结束" << std::endl;
+		std::println("<技能> {}发动锐刻，令{}摸5张牌，失去此技能至本局结束", carrier.characterName(), target.characterName());
 	}
 	game.broadcastState();
 	return true;
@@ -460,8 +455,7 @@ bool 生存::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		c.set(*target);
 	});
 	if (opt.has_value()) {
-		std::cout << "<技能> " << carrier.characterName() << "发动生存，将一张手牌改为【"
-			<< *target << "】" << std::endl;
+		std::println("<技能> {}发动生存，将一张手牌改为【{}】", carrier.characterName(), *target);
 	}
 	game.broadcastState();
 	return true;
@@ -495,9 +489,7 @@ bool 创造::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	else throw std::runtime_error("意外的 idx 的值");
 
 	std::unique_ptr<Card> newCard = Card::make(targetColor, name);
-	std::cout << "<技能> " << carrier.characterName() << "发动创造，" <<
-		"获得一张【" << *newCard << "】" << std::endl;
-	carrier.gainCard(std::move(newCard));
+	std::println("<技能> {}发动创造，获得一张【{}】", carrier.characterName(), *newCard);	carrier.gainCard(std::move(newCard));
 	usedColors.insert(targetColor);
 	game.broadcastState();
 	return true;
@@ -557,10 +549,7 @@ bool 炼兵::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Card::Color color = unool::random::randomGet(Card::fourColors);
 	carrier.gainCard(Card::make(color, Card::Name::action_draw2));
 	usedNames.insert(target);
-	std::cout << "<技能> " << carrier.characterName() << "发动炼兵，弃两张"
-		<< Card::to_string(target)
-		<< "，获得一张" << Card::to_string(color) << "+2" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动炼兵，弃两张{}，获得一张{}+2", carrier.characterName(), Card::to_string(target), Card::to_string(color));	game.broadcastState();
 	return true;
 }
 
@@ -584,9 +573,7 @@ bool 好火::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!result.has_value()) return false;
 
 	usedPlayerIds.insert(target.getId());
-	std::cout << "<技能> " << carrier.characterName() << "发动好火，交给"
-		<< target.characterName() << "一张" << result.value().get() << std::endl;
-	return true;
+	std::println("<技能> {}发动好火，交给{}一张{}", carrier.characterName(), target.characterName(), result.value().get());	return true;
 }
 
 
@@ -823,9 +810,7 @@ bool 追番::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 			false
 		);
 		card.setName(Card::numberCardsFrom0[card.value() + addChoice]);
-		std::cout << "<技能> " << carrier.characterName() << "发动追番，将一张"
-			<< card << "的点数+" << addChoice << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动追番，将一张{}的点数+{}", carrier.characterName(), card, addChoice);		game.broadcastState();
 	}
 	).has_value();
 }
@@ -860,9 +845,7 @@ bool 望日::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!cardRef.has_value()) return false;
 	Card& card = cardRef->get();
 	card.setName(Card::numberCardsFrom0[card.value() + 1]);
-	std::cout << "<技能> " << carrier.characterName() << "发动望日，将一张"
-		<< card << "的点数+1" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动望日，将一张{}的点数+1", carrier.characterName(), card);	game.broadcastState();
 	return true;
 }
 
@@ -938,8 +921,7 @@ bool 朔日::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 				card.setName(Card::numberCardsFrom0[card.value() + adj]);
 			}
 		}
-		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
-			<< card << std::endl;
+		std::println("<技能> {}发动朔日，将一张牌变为{}", carrier.characterName(), card);
 	}
 	else {
 		//选择一张功能牌
@@ -953,8 +935,7 @@ bool 朔日::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		Card::Name randomName = unool::random::randomGet(Card::actionCards);
 		card.setName(randomName);
 		card.setColor(Card::Color::yellow);
-		std::cout << "<技能> " << carrier.characterName() << "发动朔日，将一张牌变为"
-			<< card << std::endl;
+		std::println("<技能> {}发动朔日，将一张牌变为{}", carrier.characterName(), card);
 	}
 
 	game.broadcastState();
@@ -969,9 +950,7 @@ bool 健忘::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	const Card::Color newColor = colorOpt.value();
 	game.setCurrentColor(newColor);
-	std::cout << "<技能> " << carrier.characterName() << "发动健忘，将公共颜色改为"
-		<< Card::to_string(newColor) << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动健忘，将公共颜色改为{}", carrier.characterName(), Card::to_string(newColor));	game.broadcastState();
 	return true;
 }
 
@@ -1118,9 +1097,7 @@ bool 创世::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		c.set(targetCard);
 	});
 	if (!cardOpt.has_value()) return false;
-	std::cout << "<技能> " << carrier.characterName() << "发动创世，将一张牌变为"
-		<< targetCard << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动创世，将一张牌变为{}", carrier.characterName(), targetCard);	game.broadcastState();
 	return true;
 }
 
@@ -1191,9 +1168,7 @@ bool 补天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		c.set(targetCard);
 	});
 	if (!cardOpt.has_value()) return false;
-	std::cout << "<技能> " << carrier.characterName() << "发动补天，将一张牌变为"
-		<< targetCard << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动补天，将一张牌变为{}", carrier.characterName(), targetCard);	game.broadcastState();
 	return true;
 }
 
@@ -1225,9 +1200,7 @@ bool 水鬼::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	for (std::size_t idx : blueIndices) {
 		carrier.discardByIndex(idx);
 	}
-	std::cout << "<技能> " << carrier.characterName() << "发动水鬼，弃置了"
-		<< blueIndices.size() << "张蓝色牌" << std::endl;
-	//发状态包，确保客户端渲染前有最新数据
+	std::println("<技能> {}发动水鬼，弃置了{}张蓝色牌", carrier.characterName(), blueIndices.size());	//发状态包，确保客户端渲染前有最新数据
 	game.broadcastState();
 	//弃置一张其他牌
 	carrier.chooseToDiscard("【水鬼】弃置一张其他牌", 1, true);
@@ -1297,9 +1270,7 @@ bool 叛党::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		++discarded;
 	}
 	if (discarded > 0) {
-		std::cout << "<技能> " << carrier.characterName() << "发动叛党，弃置了"
-			<< discarded << "张颜色各不相同的牌" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动叛党，弃置了{}张颜色各不相同的牌", carrier.characterName(), discarded);		game.broadcastState();
 	}
 	return discarded > 0;
 }
@@ -1348,15 +1319,12 @@ bool 清洗::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	}
 
 	std::size_t discardCount = indices.size();
-	std::cout << "<技能> " << carrier.characterName() << "发动清洗，弃置了"
-		<< discardCount << "张" << Card::to_string(target) << "色牌" << std::endl;
-
+	std::println("<技能> {}发动清洗，弃置了{}张{}色牌", carrier.characterName(), discardCount, Card::to_string(target));
 	//若弃置了蓝色牌，回复两倍弃牌数点体力
 	if (target == Card::Color::blue && discardCount > 0) {
 		std::size_t heal = 2 * discardCount;
 		carrier.recover(heal);
-		std::cout << "<技能> " << carrier.characterName() << "回复了"
-			<< heal << "点体力" << std::endl;
+		std::println("<技能> {}回复了{}点体力", carrier.characterName(), heal);
 	}
 
 	game.broadcastState();
@@ -1391,9 +1359,7 @@ bool 落水::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		player.gainCard(std::move(card));
 	}
 
-	std::cout << "<技能> " << carrier.characterName()
-		<< "发动落水，" << player.characterName() << "从牌堆获得了其他三色牌各一张" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动落水，{}从牌堆获得了其他三色牌各一张", carrier.characterName(), player.characterName());	game.broadcastState();
 	return true;
 }
 
@@ -1407,9 +1373,7 @@ bool 骚扰::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (result.is(Card::Color::blue)) {
 		//判定为蓝色：失去此技能至本局结束
 		disabled = true;
-		std::cout << "<技能> " << carrier.characterName()
-			<< "发动骚扰，判定为蓝色，失去此技能至本局结束" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动骚扰，判定为蓝色，失去此技能至本局结束", carrier.characterName());		game.broadcastState();
 		return true;
 	}
 
@@ -1419,9 +1383,7 @@ bool 骚扰::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (auto opt = carrier.findSkill<落水>()) {
 		opt->get().resetCount();
 	}
-	std::cout << "<技能> " << carrier.characterName()
-		<< "发动骚扰，判定非蓝色，回复1点体力并重置落水次数" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动骚扰，判定非蓝色，回复1点体力并重置落水次数", carrier.characterName());	game.broadcastState();
 	return true;
 }
 
@@ -1519,9 +1481,7 @@ bool 压抑::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		}
 	}
 	if (!maxName.has_value()) {
-		std::cout << "<技能> " << carrier.characterName() << "发动压抑，"
-			<< target.characterName() << "手中无数字牌" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动压抑，{}手中无数字牌", carrier.characterName(), target.characterName());		game.broadcastState();
 		return true;
 	}
 
@@ -1538,9 +1498,7 @@ bool 压抑::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		target.discardByIndex(*it);
 	}
 
-	std::cout << "<技能> " << carrier.characterName() << "发动压抑，"
-		<< target.characterName() << "弃置了" << indices.size() << "张点数最大的数字牌" << std::endl;
-
+	std::println("<技能> {}发动压抑，{}弃置了{}张点数最大的数字牌", carrier.characterName(), target.characterName(), indices.size());
 	//弃置牌数≥2张：失去10%最大体力（向上取整）
 	if (indices.size() >= 2) {
 		const std::size_t damage = unool::math::ceil(target.getMaxHp() * 0.1);
@@ -1602,9 +1560,7 @@ bool 爬竿::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!targetOpt.has_value()) return false;
 
 	targetOpt_ = targetOpt;
-	std::cout << "<技能> " << carrier.characterName() << "发动爬竿，选择了"
-		<< targetOpt_->get().characterName() << std::endl;
-	return true;
+	std::println("<技能> {}发动爬竿，选择了{}", carrier.characterName(), targetOpt_->get().characterName());	return true;
 }
 
 // ==================== 技能：爬竿_伤害（子技能） ====================
@@ -1620,9 +1576,7 @@ bool 爬竿_伤害::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	Player& target = trigger.getPlayer();
 	std::size_t damage = target.getMaxHp() / 100; //1%最大体力向下取整
 	if (damage > 0) target.damage(damage, carrier);
-	std::cout << "<技能> " << carrier.characterName()
-		<< "发动爬竿，" << target.characterName() << "失去" << damage << "点体力" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动爬竿，{}失去{}点体力", carrier.characterName(), target.characterName(), damage);	game.broadcastState();
 	return true;
 }
 
@@ -1746,18 +1700,14 @@ bool 治病::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	switch (chosenOpt) {
 		case 1: //此牌无效
 			card.cancelEffect();
-			std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-				<< player.characterName() << "打出的" << card << "无效" << std::endl;
-			break;
+			std::println("<技能> {}发动治病，令{}打出的{}无效", carrier.characterName(), player.characterName(), card);			break;
 		case 2: //你弃置一张牌
 			carrier.chooseToDiscard("【治病】弃置一张牌", 1, true);
 			std::println("<技能> {}发动治病，弃置一张牌", carrier.characterName());
 			break;
 		case 3: //其摸两张牌
 			player.draw(2, DrawReason::skill);
-			std::cout << "<技能> " << carrier.characterName() << "发动治病，令"
-				<< player.characterName() << "摸两张牌" << std::endl;
-			break;
+			std::println("<技能> {}发动治病，令{}摸两张牌", carrier.characterName(), player.characterName());			break;
 	}
 
 	//若此时剩余多个选项，移除本次所选
@@ -1806,9 +1756,7 @@ bool 连营::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	carrier.gainCard(Card::make(cn));
 
 	triggered.insert(lostType);
-	std::cout << "<技能> " << carrier.characterName() << "发动连营，弃置一张牌并获得一张"
-		<< (lostType == Card::Type::wild ? "万能" : lostType == Card::Type::action ? "功能" : "数字") << "牌" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动连营，弃置一张牌并获得一张{}牌", carrier.characterName(), (lostType == Card::Type::wild ? "万能" : lostType == Card::Type::action ? "功能" : "数字"));	game.broadcastState();
 	return true;
 }
 
@@ -1877,13 +1825,11 @@ bool 四麻::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t cnt = carrier.handCount();
 	if (cnt > 4) {
 		carrier.chooseToDiscard("【四麻】弃置牌调整至四张", cnt - 4, true);
-		std::cout << "<技能> " << carrier.characterName() << "发动四麻，弃置了"
-			<< (cnt - 4) << "张牌" << std::endl;
+		std::println("<技能> {}发动四麻，弃置了{}张牌", carrier.characterName(), (cnt - 4));
 	}
 	else if (cnt < 4) {
 		carrier.draw(4 - cnt, DrawReason::skill);
-		std::cout << "<技能> " << carrier.characterName() << "发动四麻，摸了"
-			<< (4 - cnt) << "张牌" << std::endl;
+		std::println("<技能> {}发动四麻，摸了{}张牌", carrier.characterName(), (4 - cnt));
 	}
 	game.broadcastState();
 	return true;
@@ -1914,9 +1860,7 @@ bool 爆射::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	// 3. 造成6点伤害
 	target.damage(6, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "发动爆射，对"
-		<< target.characterName() << "造成6点伤害" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动爆射，对{}造成6点伤害", carrier.characterName(), target.characterName());	game.broadcastState();
 	return true;
 }
 
@@ -1957,9 +1901,7 @@ bool 灵爆_子::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = carrier.next();
 	carrier.removeMark("幽灵");
 	target.damage(10, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "发动灵爆，移去\"幽灵\"标记并对"
-		<< target.characterName() << "造成10点伤害" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动灵爆，移去\"幽灵\"标记并对{}造成10点伤害", carrier.characterName(), target.characterName());	game.broadcastState();
 	return true;
 }
 
@@ -2074,9 +2016,7 @@ bool 白虎::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//新建一张牌给目标
 	auto card = Card::make(color, name);
-	std::cout << "<技能> " << caster.characterName() << "发动白虎，令" << target.characterName()
-		<< "获得" << *card << std::endl;
-	target.gainCard(std::move(card));
+	std::println("<技能> {}发动白虎，令{}获得{}", caster.characterName(), target.characterName(), *card);	target.gainCard(std::move(card));
 
 	triggeredPlayers.insert(target.getId());
 	game.broadcastState();
@@ -2115,8 +2055,7 @@ bool 易主::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		auto& dj = sp.value().get();
 		dj.increaseLimit(1);
 		carrier.markCharInfoDirty();
-		std::cout << "<技能> " << carrier.characterName() << "的【渡荆】可发动次数+1，当前="
-			<< dj.getLimit().value() << std::endl;
+		std::println("<技能> {}的【渡荆】可发动次数+1，当前={}", carrier.characterName(), dj.getLimit().value());
 	}
 
 	++phaseCount;
@@ -2207,9 +2146,7 @@ bool 返现::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//回复等量体力
 	carrier.recover(nonYellowIndices.size());
 
-	std::cout << "<技能> " << carrier.characterName() << "发动返现，重铸了"
-		<< nonYellowIndices.size() << "张非黄色牌，回复" << nonYellowIndices.size() << "点体力" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动返现，重铸了{}张非黄色牌，回复{}点体力", carrier.characterName(), nonYellowIndices.size(), nonYellowIndices.size());	game.broadcastState();
 	return true;
 }
 
@@ -2230,9 +2167,7 @@ bool 尖刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	target.damage(dmg, carrier);
 	carrier.recover(1);
 
-	std::cout << "<技能> " << carrier.characterName() << "发动尖刺，对"
-		<< target.characterName() << "造成" << dmg << "点伤害，回复1点体力" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动尖刺，对{}造成{}点伤害，回复1点体力", carrier.characterName(), target.characterName(), dmg);	game.broadcastState();
 	return true;
 }
 
@@ -2264,16 +2199,12 @@ bool 弹暴::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		Player& target = *targetOpt;
 
 		target.damage(handgun.damageValue, carrier);
-		std::cout << "<技能> " << carrier.characterName() << "发动弹暴，对"
-			<< target.characterName() << "造成" << handgun.damageValue << "点伤害" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动弹暴，对{}造成{}点伤害", carrier.characterName(), target.characterName(), handgun.damageValue);		game.broadcastState();
 	}
 
 	//【手枪】本局伤害值+1
 	handgun.damageValue += 1;
-	std::cout << "<技能> " << carrier.characterName() << "的【手枪】本局伤害值+1，当前="
-		<< handgun.damageValue << std::endl;
-
+	std::println("<技能> {}的【手枪】本局伤害值+1，当前={}", carrier.characterName(), handgun.damageValue);
 	return true;
 }
 
@@ -2318,9 +2249,7 @@ bool 引力_目标::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	auto cardPtr = discardPile.takeCardByIndex(0);
 	carrier.gainCard(std::move(cardPtr));
 
-	std::cout << "<技能> 引力将一张数字牌重定向给"
-		<< carrier.characterName() << "获得" << std::endl;
-	game.broadcastState();
+	std::println("<技能> 引力将一张数字牌重定向给{}获得", carrier.characterName());	game.broadcastState();
 	return true;
 }
 
@@ -2400,9 +2329,7 @@ bool 爆糖::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//5%最大体力伤害，向上取整
 	std::size_t damage = (carrier.getMaxHp() * 5 + 99) / 100;  //向上取整
 	target.damage(damage, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "爆糖对"
-		<< target.characterName() << "造成" << damage << "点伤害" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}爆糖对{}造成{}点伤害", carrier.characterName(), target.characterName(), damage);	game.broadcastState();
 	return true;
 }
 
@@ -2522,9 +2449,7 @@ bool 重锤::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = *targetOpt;
 
 	target.damage(dmg, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "发动重锤，失去" << loss << "点体力，对"
-		<< target.characterName() << "造成" << dmg << "点伤害" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动重锤，失去{}点体力，对{}造成{}点伤害", carrier.characterName(), loss, target.characterName(), dmg);	game.broadcastState();
 	return true;
 }
 
@@ -2546,9 +2471,7 @@ bool 劲凉::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 			skill->get().increaseLimit(1);
 			carrier.markCharInfoDirty();
 		}
-		std::cout << "<技能> " << carrier.characterName() << "发动劲凉，连续打出" << consecutive
-			<< "张同类型牌，摸一张牌且【绝技】可用次数+1" << std::endl;
-		game.broadcastState();
+		std::println("<技能> {}发动劲凉，连续打出{}张同类型牌，摸一张牌且【绝技】可用次数+1", carrier.characterName(), consecutive);		game.broadcastState();
 	}
 	return true;
 }
@@ -2741,8 +2664,7 @@ bool 地雷_撤雷::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 bool 冲撞_加速::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (carrier.getMarkCount("速度") < 10) {
 		carrier.addMark("速度", 1);
-		std::cout << "<技能> " << carrier.characterName() << "发动冲撞_加速，速度标记+1（当前"
-			<< carrier.getMarkCount("速度") << "/10）" << std::endl;
+		std::println("<技能> {}发动冲撞_加速，速度标记+1（当前{}/10）", carrier.characterName(), carrier.getMarkCount("速度"));
 	}
 	game.broadcastState();
 	return true;
@@ -2757,9 +2679,7 @@ bool 冲撞_伤害::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	const std::size_t speed = carrier.getMarkCount("速度");
 	const std::size_t dmg = 2 * speed;
 	target.damage(dmg, carrier);
-	std::cout << "<技能> " << carrier.characterName() << "发动冲撞_伤害，对" << target.characterName()
-		<< "造成" << dmg << "点伤害（速度×2=" << speed << "×2）" << std::endl;
-	game.broadcastState();
+	std::println("<技能> {}发动冲撞_伤害，对{}造成{}点伤害（速度×2={}×2）", carrier.characterName(), target.characterName(), dmg, speed);	game.broadcastState();
 	return true;
 }
 

@@ -11,7 +11,7 @@ namespace unool {
 			std::ifstream configFile("../server_config.json");
 			if (!configFile.is_open()) {
 				throw std::runtime_error("无法打开配置文件 server_config.json");
-			} 
+			}
 			return nlohmann::json::parse(configFile, nullptr, true, true);
 		}();
 		return config;
