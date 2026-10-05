@@ -36,10 +36,10 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 			players[lId].get().getLevels(),
 			players[wId].get().getHp() == players[wId].get().getMaxHp());
 
-		std::cout << "[Server] 游戏结束，玩家" << wId << "获胜！" << std::endl;
+		std::println("[Server] 游戏结束，玩家{}获胜！", wId);
 	}
 	else {
-		std::cout << "[Server] 游戏结束，无人获胜！" << std::endl;
+		std::println("[Server] 游戏结束，无人获胜！");
 	}
 }
 
@@ -74,7 +74,7 @@ int main() {
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 
-	std::cout << "[Server] 启动服务器..." << std::endl;
+	std::println("[Server] 启动服务器...");
 
 	ServerNetwork serverNetwork;
 	unsigned short port = 8888;
@@ -86,7 +86,7 @@ int main() {
 
 	GameLogic gameLogic(serverNetwork);
 
-	std::cout << "[Server] 等待客户端连接..." << std::endl;
+	std::println("[Server] 等待客户端连接...");
 	while (!serverNetwork.isReady()) {
 		serverNetwork.update();
 		std::this_thread::sleep_for(16ms);
@@ -94,7 +94,7 @@ int main() {
 
 	try {
 		while (true) {
-			std::cout << "[Server] 游戏开始！" << std::endl;
+			std::println("[Server] 游戏开始！");
 			unool::reloadServerConfig();
 			initCharacters(gameLogic);
 			gameLogic.broadcastState();
@@ -106,7 +106,7 @@ int main() {
 				std::size_t choice = player.ask(
 					"是否继续下一场对战？", { "继续", "退出" }, true);
 				if (choice == 2) {
-					std::cout << "[Server] 玩家" << i << "选择退出，游戏结束" << std::endl;
+					std::println("[Server] 玩家{}选择退出，游戏结束", i);
 					goto gameSessionEnd;
 				}
 			}

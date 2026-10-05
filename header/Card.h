@@ -49,7 +49,7 @@ public:
 		}
 	};
 #pragma endregion
-	
+
 private:
 	Color color = Color::no;
 	Name name = Name::no;
@@ -183,6 +183,25 @@ std::ostream& operator<<(std::ostream& ostr, const Card& card);
 sf::Packet& operator>>(sf::Packet& packet, Card& card);
 sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 
+template <>
+struct std::formatter<Card::Color> : std::formatter<std::string> {
+	auto format(Card::Color c, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(Card::to_string(c), ctx);
+	}
+};
+template <>
+struct std::formatter<Card::Name> : std::formatter<std::string> {
+	auto format(Card::Name n, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(Card::to_string(n), ctx);
+	}
+};
+template <>
+struct std::formatter<Card> : std::formatter<std::string> {
+	auto format(const Card& c, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(c.toString(), ctx);
+	}
+};
+
 
 class Cards {
 protected:
@@ -195,6 +214,8 @@ public:
 	Cards& operator=(const Cards&) = delete;
 	Cards(Cards&&) = default;
 	Cards& operator=(Cards&&) = default;
+
+	std::string toString() const;
 #pragma endregion
 
 #pragma region 元素访问
@@ -242,6 +263,15 @@ public:
 
 std::ostream& operator<<(std::ostream& ostr, const Cards& cards);
 
+template <>
+struct std::formatter<Cards> : std::formatter<std::string> {
+	auto format(const Cards& cards, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(cards.toString(), ctx);
+	}
+};
+
+
+
 
 class Hand :public Cards {
 private:
@@ -278,6 +308,13 @@ public:
 #pragma endregion
 };
 
+template <>
+struct std::formatter<Hand> : std::formatter<std::string> {
+	auto format(const Hand& hand, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(hand.toString(), ctx);
+	}
+};
+
 
 class Pile :public Cards {
 public:
@@ -294,16 +331,7 @@ public:
 };
 
 
-template <>
-struct std::formatter<Card::Color> : std::formatter<std::string_view> {
-	auto format(Card::Color c, std::format_context& ctx) const {
-		return std::formatter<std::string_view>::format(Card::to_string(c), ctx);
-	}
-};
 
-template <>
-struct std::formatter<Card::Name> : std::formatter<std::string_view> {
-	auto format(Card::Name n, std::format_context& ctx) const {
-		return std::formatter<std::string_view>::format(Card::to_string(n), ctx);
-	}
-};
+
+
+

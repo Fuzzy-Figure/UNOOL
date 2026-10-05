@@ -4,7 +4,7 @@
 #include "Card.h"
 
 void Effect::ban(Card& card, Player& source, Player& target) {
-	std::cout << "玩家" << source.getId() << "封禁了玩家" << target.getId() << std::endl;
+	std::println("玩家{}封禁了玩家{}", source.getId(), target.getId());
 	target.ban(source, card);
 }
 void Effect::rev(Card& card, GameLogic& game) {
@@ -19,7 +19,7 @@ void Effect::pal(Card& card, GameLogic& game, Player& source) {
 	std::vector<Card::Color> colorVec(Card::fourColors.begin(), Card::fourColors.end());
 	const Card::Color newColor = source.chooseCardColor("请选择颜色", true, colorVec).value();
 	game.setCurrentColor(newColor);
-	std::cout << "玩家" << source.getId() << "选择了颜色：" << Card::to_string(newColor) << std::endl;
+	std::println("玩家{}选择了颜色：{}", source.getId(), Card::to_string(newColor));
 }
 void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) {
 	const Card::Color& colorBeforeDraw4 = game.getCurrentColor();

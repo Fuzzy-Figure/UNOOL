@@ -22,7 +22,7 @@ bool ServerNetwork::start(unsigned short port) {
 	listener->setBlocking(false);
 	selector.add(*listener);
 
-	std::cout << "[ServerNetwork] 已启动，监听端口：" << port << std::endl;
+	std::println("[ServerNetwork] 已启动，监听端口：{}", port);
 	return true;
 }
 
@@ -35,7 +35,7 @@ void ServerNetwork::disconnect() {
 		listener.reset();
 	}
 	serverReady = false;
-	std::cout << "[ServerNetwork] 已断开所有连接" << std::endl;
+	std::println("[ServerNetwork] 已断开所有连接");
 }
 
 void ServerNetwork::removeClient(std::size_t clientIndex) {
@@ -87,10 +87,10 @@ void ServerNetwork::update() {
 
 					sendConnectionInfo(newPlayerId);
 
-					std::cout << "[ServerNetwork] 客户端" << newPlayerId << "已连接，等待登录..." << std::endl;
+					std::println("[ServerNetwork] 客户端{}已连接，等待登录...", newPlayerId);
 				}
 				else {
-					std::cout << "[ServerNetwork] 客户端连接被拒绝（已达到最大人数）" << std::endl;
+					std::println("[ServerNetwork] 客户端连接被拒绝（已达到最大人数）");
 				}
 			}
 		}
@@ -118,7 +118,7 @@ void ServerNetwork::update() {
 					}
 				}
 				else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
-					std::cout << "[ServerNetwork] 客户端" << i << " 断开连接（status=" << static_cast<int>(status) << "）" << std::endl;
+					std::println("[ServerNetwork] 客户端{} 断开连接（status={}）", i, static_cast<int>(status));
 					removeClient(i);
 				}
 			}
@@ -193,7 +193,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn) {
 				serverReady = true;
 				sendGameStart();
-				std::cout << "[ServerNetwork] 两个客户端都已登录，游戏开始" << std::endl;
+				std::println("[ServerNetwork] 两个客户端都已登录，游戏开始");
 			}
 		}
 	}
@@ -316,7 +316,7 @@ bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& pack
 		sf::Socket::Status status = socket.send(packet);
 		if (status == sf::Socket::Status::Done) return true;
 		if (status == sf::Socket::Status::Disconnected) {
-			std::cout << "[ServerNetwork] 发送时检测到客户端" << clientIndex << " 断开" << std::endl;
+			std::println("[ServerNetwork] 发送时检测到客户端{} 断开", clientIndex);
 			removeClient(clientIndex);
 			return false;
 		}
@@ -346,7 +346,7 @@ bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
 	socket->setBlocking(false);
 	selector.add(*socket);
 
-	std::cout << "[ClientNetwork] 已连接到服务器：" << ip << ":" << port << std::endl;
+	std::println("[ClientNetwork] 已连接到服务器：{}:{}", ip, port);
 	return true;
 }
 
@@ -390,7 +390,7 @@ bool ClientNetwork::reconnect() {
 			if (msgType == static_cast<int>(MessageType::LoginResponse)) {
 				auto resp = AccountProtocol::parseAccountResponse(peek);
 				if (resp && resp->ok) {
-					std::cout << "[ClientNetwork] 重连成功：" << resp->msg << std::endl;
+					std::println("[ClientNetwork] 重连成功：{}", resp->msg);
 					// 把暂存的包放回队列
 					while (!savedPackets.empty()) {
 						receivedPackets.push(savedPackets.front());
@@ -418,7 +418,7 @@ void ClientNetwork::disconnect() {
 		socket.reset();
 	}
 	playerId = 0;
-	std::cout << "[ClientNetwork] 已断开连接" << std::endl;
+	std::println("[ClientNetwork] 已断开连接");
 }
 
 void ClientNetwork::update() {
@@ -431,7 +431,7 @@ void ClientNetwork::update() {
 				receivedPackets.push(packet);
 			}
 			else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
-				std::cout << "[ClientNetwork] 与服务器断开连接（status=" << static_cast<int>(status) << "）" << std::endl;
+				std::println("[ClientNetwork] 与服务器断开连接（status={}）", static_cast<int>(status));
 				disconnect();
 			}
 		}

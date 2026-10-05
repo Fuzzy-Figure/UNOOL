@@ -6,7 +6,7 @@ TextManager::TextManager(sf::RenderWindow& _window)
 	:window(_window) {
 	const auto& config = unool::getClientConfig();
 	if (!font.openFromFile(config["fonts"])) {
-		std::cout << "错误：加载字体失败" << std::endl;
+		std::println("错误：加载字体失败");
 	}
 }
 std::size_t TextManager::MeasureKeyHash::operator()(const MeasureKey& k) const noexcept {

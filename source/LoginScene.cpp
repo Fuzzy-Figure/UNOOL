@@ -186,7 +186,7 @@ void LoginScene::pollAccountPackets() {
 			std::size_t pid;
 			if (packet >> pid) {
 				net.setPlayerId(pid);
-				std::cout << titleBrackets << " 分配到玩家ID: " << pid << std::endl;
+				std::println("{} 分配到玩家ID: {}", titleBrackets, pid);
 			}
 			continue;
 		}

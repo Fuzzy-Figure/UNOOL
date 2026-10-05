@@ -377,6 +377,13 @@ std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	cards.erase(cards.begin() + index);
 	return card;
 }
+std::string Cards::toString() const {
+	std::string str;
+	for (const auto& card : cards) {
+		str += std::format("{}，", *card);
+	}
+	return str;
+}
 void Cards::push_front(std::unique_ptr<Card> card, const std::size_t number) {
 	for (std::size_t i = 0; i < number - 1; ++i) {
 		cards.push_front(Card::make(card));
@@ -432,10 +439,7 @@ void Cards::forEachIf(const std::function<bool(const Card&)>& condition,
 
 // 友元流输出
 std::ostream& operator<<(std::ostream& ostr, const Cards& cards) {
-	for (const auto& card : cards) {
-		ostr << *card << "，";
-	}
-	return ostr;
+	return ostr << cards.toString();
 }
 
 
@@ -488,9 +492,9 @@ void Hand::sort() {
 	});
 }
 void Hand::print() const {
-	std::cout << *this;
-	if (!empty()) std::cout << "；当前选择了第" << getSelectedIndex() << "张牌：" << getSelectedCard();
-	std::cout << std::endl;
+	std::print("{}", *this);
+	if (!empty()) std::print("；当前选择了第{}张牌：{}", getSelectedIndex(), getSelectedCard());
+	std::println();
 }
 // 工具方法
 std::size_t Hand::value() const {

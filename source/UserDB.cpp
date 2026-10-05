@@ -33,7 +33,7 @@ bool UserDB::registerUser(const std::string& username, const std::string& passwo
 	info.losses = 0;
 	users_[username] = info;
 	save();
-	std::cout << "[UserDB] 注册成功: " << username << std::endl;
+	std::println("[UserDB] 注册成功: {}", username);
 	return true;
 }
 
@@ -47,7 +47,7 @@ std::optional<UserInfo> UserDB::login(const std::string& username, const std::st
 		errorMessage = "密码错误";
 		return std::nullopt;
 	}
-	std::cout << "[UserDB] 登录成功: " << username << std::endl;
+	std::println("[UserDB] 登录成功: {}", username);
 	return it->second;
 }
 
@@ -80,7 +80,7 @@ void UserDB::addMatchResult(const std::string& winnerUser, const std::string& lo
 void UserDB::load() {
 	std::ifstream file(DATA_FILE);
 	if (!file.is_open()) {
-		std::cout << "[UserDB] " << DATA_FILE << " 不存在，初始化空数据库" << std::endl;
+		std::println("[UserDB] {} 不存在，初始化空数据库", DATA_FILE);
 		users_.clear();
 		save();
 		return;

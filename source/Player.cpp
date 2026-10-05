@@ -98,7 +98,7 @@ std::vector<ref<Card>> Player::drawTo(const std::size_t num, const DrawReason re
 Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	std::unique_ptr<Card> card = hand->takeCardByIndex(cardIndex);
 	hasUsed = true;
-	std::cout << "玩家" << id << "打出了：" << *card << std::endl;
+	std::println("玩家{}打出了：{}", id, *card);
 
 	{
 		PassiveSkill::Trigger trigger;
@@ -265,7 +265,7 @@ void Player::ban(Player& source, Card& card) {
 
 void Player::seal(std::size_t duration) {
 	sealed = duration;
-	std::cout << "玩家" << id << "(" << characterName() << ")被封印" << duration << "回合" << std::endl;
+	std::println("玩家{}({})被封印{}回合", id, characterName(), duration);
 }
 
 
@@ -347,7 +347,7 @@ bool Player::turn() {
 	bool used = false;
 
 	if (banned) {
-		std::cout << "玩家" << id << "跳过了他的回合" << std::endl;
+		std::println("玩家{}跳过了他的回合", id);
 		unban();
 		goto PhaseEnd;
 	}
@@ -417,7 +417,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
 			sf::Clock clock;
 			bool reconnected = false;
-			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
+			std::println("[Player] 玩家{} 掉线，等待重连（最多 {} 秒）", id, timeoutSec);
 			while (clock.getElapsedTime().asSeconds() < timeoutSec) {
 				network.update();
 				if (network.isClientLoggedIn(id)) {
@@ -427,10 +427,10 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 				std::this_thread::sleep_for(100ms);
 			}
 			if (!reconnected) {
-				std::cout << "[Player] 玩家" << id << " 掉线超时，结束选择" << std::endl;
+				std::println("[Player] 玩家{} 掉线超时，结束选择", id);
 				return std::nullopt;
 			}
-			std::cout << "[Player] 玩家" << id << " 重连成功，恢复选择" << std::endl;
+			std::println("[Player] 玩家{} 重连成功，恢复选择", id);
 			game.broadcastState();
 			network.sendPlayerChoice(id, title, {}, forced);
 			continue;
@@ -554,17 +554,17 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 				}
 				else {
 					selected = original;  //还原
-					std::cout << "<" << mode.getName() << "> 转化后的牌不符合出牌规则" << std::endl;
+					std::println("<{}> 转化后的牌不符合出牌规则", mode.getName());
 				}
 			}
 			else {
 				//玩家在transform交互中取消
 				selected = original;
-				std::cout << "<" << mode.getName() << "> 玩家取消转化" << std::endl;
+				std::println("<{}> 玩家取消转化", mode.getName());
 			}
 		}
 		else {
-			std::cout << "<" << mode.getName() << "> 选中的牌不能转化" << std::endl;
+			std::println("<{}> 选中的牌不能转化", mode.getName());
 		}
 	}
 	else if (condition(hand->getSelectedCard())) {
@@ -581,7 +581,7 @@ opt_ref<Card> Player::chooseToUse(ActiveSkill::TriggerTime phase) {
 		return useCardByIndex(index.value());
 	}
 	else {
-		std::cout << "玩家" << id << "选择不跟牌" << std::endl;
+		std::println("玩家{}选择不跟牌", id);
 		game.broadcastState();
 		return std::nullopt;
 	}
@@ -596,14 +596,14 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title
 		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
-	std::cout << "玩家" << id << "请选择" << Card::to_string(reason) << num << "张牌" << std::endl;
+	std::println("玩家{}请选择{}{}张牌", id, Card::to_string(reason), num);
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
 		std::string fullTitle = std::format("{}（{}/{}）\n{}", title, discardedCount + 1, num, forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
 		auto index = chooseCard(fullTitle, condition, forced);
 		if (!index.has_value()) {
-			std::cout << "玩家" << id << "取消了" << Card::to_string(reason) << std::endl;
+			std::println("玩家{}取消了{}", id, Card::to_string(reason));
 			return discardedCards;
 		}
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
@@ -679,14 +679,14 @@ opt_ref<Card> Player::chooseToGive(const std::string& title, Player& target,
 	auto index = chooseCard(title, condition, forced);
 
 	if (!index.has_value()) {
-		std::cout << "玩家" << id << "取消了给" << target.characterName() << "牌" << std::endl;
+		std::println("玩家{}取消了给{}牌", id, target.characterName());
 		return std::nullopt;
 	}
 
 	ref<Card> card = hand->getCardByIndex(index.value());
 
 	give(target, takeCardByIndex(index.value()));
-	std::cout << characterName() << "给了" << target.characterName() << "一张" << card.get() << std::endl;
+	std::println("{}给了{}一张{}", characterName(), target.characterName(), card.get());
 	game.broadcastState();
 
 	return card;
@@ -802,7 +802,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		if (timeoutMs.has_value()) {
 			if (clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
 				network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
-				std::cout << "玩家" << id << "超时未选择" << std::endl;
+				std::println("玩家{}超时未选择", id);
 				return 0;
 			}
 		}
@@ -813,7 +813,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
 			sf::Clock dcClock;
 			bool reconnected = false;
-			std::cout << "[Player] 玩家" << id << " 掉线，等待重连（最多 " << timeoutSec << " 秒）" << std::endl;
+			std::println("[Player] 玩家{} 掉线，等待重连（最多 {} 秒）", id, timeoutSec);
 			while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
 				network.update();
 				if (network.isClientLoggedIn(id)) {
@@ -823,10 +823,10 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 				std::this_thread::sleep_for(100ms);
 			}
 			if (!reconnected) {
-				std::cout << "[Player] 玩家" << id << " 掉线超时，ask 返回默认值" << std::endl;
+				std::println("[Player] 玩家{} 掉线超时，ask 返回默认值", id);
 				return 0;
 			}
-			std::cout << "[Player] 玩家" << id << " 重连成功，恢复选择" << std::endl;
+			std::println("[Player] 玩家{} 重连成功，恢复选择", id);
 			game.broadcastState();
 			sendPage();
 			continue;
@@ -892,9 +892,9 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		}
 
 		network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
-		std::cout << "[ask] 标题：“" << title << "”，玩家" << id << "选择了" << choice << ": ";
+		std::print("[ask] 标题：“{}”，玩家{}选择了{}: ", title, id, choice);
 		if (choice != 0)
-			std::cout << options[choice - 1] << std::endl;
+			std::println("{}", options[choice - 1]);
 		return choice;
 	}
 }
@@ -926,7 +926,7 @@ Card& Player::judge() {
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::judge_begin, trigger);
 	}
 	auto card = game.getPile().take_front(game.getDiscardPile());
-	std::cout << "判定结果：" << *card << std::endl;
+	std::println("判定结果：{}", *card);
 	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::judge, *this);
 	{
 		PassiveSkill::Trigger trigger;
@@ -978,15 +978,15 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 	CompareResult result;
 	if (myVal > tgtVal) {
 		result = CompareResult::win;
-		std::cout << characterName() << "赢" << std::endl;
+		std::println("{}赢", characterName());
 	}
 	else if (myVal < tgtVal) {
 		result = CompareResult::lose;
-		std::cout << characterName() << "输" << std::endl;
+		std::println("{}输", characterName());
 	}
 	else {
 		result = CompareResult::draw;
-		std::cout << "双方平局" << std::endl;
+		std::println("双方平局");
 	}
 	game.broadcastState();
 	return result;

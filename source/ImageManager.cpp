@@ -6,7 +6,7 @@
 
 ImageManager::ImageManager(sf::RenderWindow& _window) :window(_window) {
 	UNOOL = std::format("{}/", std::filesystem::current_path().parent_path().string());
-	std::cout << "UNOOL路径：" << UNOOL << std::endl;
+	std::println("UNOOL路径：{}", UNOOL);
 }
 
 // 显示图片
@@ -25,7 +25,7 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 			if (!texture->loadFromFile(unool::string::to_utf16(defaultPath))) {
 				throw std::runtime_error(std::format("[ImageManager] 纹理加载失败，路径：{}", absolutePath));
 			}
-			std::cout << "[ImageManager] 使用默认图片，原路径：" << absolutePath << std::endl;
+			std::println("[ImageManager] 使用默认图片，原路径：{}", absolutePath);
 		}
 		else {
 			std::cout << "[ImageManager] 纹理加载成功，路径：" << absolutePath

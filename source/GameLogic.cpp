@@ -334,7 +334,7 @@ bool GameLogic::runTurn() {
 		trigger.player = *players[currentPlayerIndex];
 		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, trigger);
 	}
-	std::cout << "玩家" << getCurrentPlayerId() << "的回合" << std::endl;
+	std::println("玩家{}的回合", getCurrentPlayerId());
 	bool gameEnded = currentPlayerTurn();
 
 	if (!gameEnded) {
@@ -351,7 +351,7 @@ void GameLogic::broadcastState() {
 		GameState state = packStateForPlayer(i);
 		bool ok = network.sendGameStateToClient(i, state);
 		if (!ok) {
-			std::cout << "[Warning] broadcastState发给玩家" << i << "失败！" << std::endl;
+			std::println("[Warning] broadcastState发给玩家{}失败！", i);
 		}
 	}
 	flushCharInfo();
@@ -539,7 +539,7 @@ void GameLogic::checkRoundEnd() {
 		for (auto& player : players) {
 			std::size_t damage = player->handValue();
 			player->damage(damage, std::nullopt);
-			std::cout << "玩家" << player->getId() << "扣除" << damage << "点体力，剩余" << player->getHp() << "/" << player->getMaxHp() << std::endl;
+			std::println("玩家{}扣除{}点体力，剩余{}/{}", player->getId(), damage, player->getHp(), player->getMaxHp());
 		}
 	}
 }
@@ -584,7 +584,7 @@ void GameLogic::resetGame() {
 	direction = Direction::increase;
 	broadcastState();
 	launchPassiveSkills(PassiveSkill::TriggerTime::game_begin, PassiveSkill::Trigger{});
-	std::cout << "[Server] 新一局开始！玩家" << currentPlayerIndex << "先手" << std::endl;
+	std::println("[Server] 新一局开始！玩家{}先手", currentPlayerIndex);
 }
 
 bool GameLogic::isGameOver() const {

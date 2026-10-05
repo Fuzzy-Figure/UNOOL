@@ -99,7 +99,7 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		net.update();
 
 		if (!net.isConnected()) {
-			std::cout << titleBrackets << " 与服务器断开连接，退出游戏" << std::endl;
+			std::println("{} 与服务器断开连接，退出游戏", titleBrackets);
 			break;
 		}
 
@@ -114,12 +114,12 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					std::size_t playerId;
 					if (packet >> playerId) {
 						net.setPlayerId(playerId);
-						std::cout << titleBrackets << " 分配到玩家ID：" << playerId << std::endl;
+						std::println("{} 分配到玩家ID：{}", titleBrackets, playerId);
 					}
 					break;
 				}
 				case MessageType::GameStart:
-					std::cout << titleBrackets << " 游戏开始！" << std::endl;
+					std::println("{} 游戏开始！", titleBrackets);
 					break;
 				case MessageType::GameState: {
 					GameState state;
@@ -145,16 +145,16 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 						if (hasWinner) {
 							std::size_t winnerId;
 							packet >> winnerId;
-							std::cout << titleBrackets << " 游戏结束，玩家" << winnerId << "获胜！" << std::endl;
+							std::println("{} 游戏结束，玩家{}获胜！", titleBrackets, winnerId);
 						}
 						else {
-							std::cout << titleBrackets << " 游戏结束，无人获胜！" << std::endl;
+							std::println("{} 游戏结束，无人获胜！", titleBrackets);
 						}
 					}
 					break;
 				}
 				case MessageType::ConnectionRefused:
-					std::cout << titleBrackets << " 连接被拒绝（服务器已满）" << std::endl;
+					std::println("{} 连接被拒绝（服务器已满）", titleBrackets);
 					renderer.closeWindow();
 					break;
 				case MessageType::Choice:
@@ -179,7 +179,7 @@ int main() {
 
 	const std::string windowTitle = "Client";
 	const std::string windowTitleWithBrackets = "[Client]";
-	std::cout << windowTitleWithBrackets << " 启动客户端..." << std::endl;
+	std::println("{} 启动客户端...", windowTitleWithBrackets);
 
 	ClientNetwork clientNetwork;
 	const auto& config = unool::getClientConfig();
@@ -203,7 +203,7 @@ int main() {
 		return 1;
 	}
 
-	std::cout << windowTitleWithBrackets << " 已登录，等待对手登录并开始游戏..." << std::endl;
+	std::println("{} 已登录，等待对手登录并开始游戏...", windowTitleWithBrackets);
 	gamePhase(clientNetwork, renderer, windowTitleWithBrackets);
 
 	std::this_thread::sleep_for(3s);

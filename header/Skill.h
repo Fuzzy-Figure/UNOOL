@@ -172,7 +172,7 @@ public:
 		Player& getPlayer() const { return player.value().get(); }
 		Card& getCard() const {
 			if (cards.value().size() > 1)
-				std::cout << "[警告] 在cards含有多于一张牌的情况下调用getCard" << std::endl;
+				std::println("[警告] 在cards含有多于一张牌的情况下调用getCard");
 			return cards.value().front().get();
 		}
 		std::vector<ref<Card>> getCards() const { return cards.value(); }
