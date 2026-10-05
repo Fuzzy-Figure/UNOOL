@@ -366,3 +366,6 @@ FodyWeavers.xsd
 images\characters\实验
 
 userDatas.json
+
+!dep/SFML/bin/
+!dep/SFML/bin/**
