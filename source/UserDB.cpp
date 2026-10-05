@@ -2,7 +2,7 @@
 #include "utils.h"
 #include <algorithm>
 #include <fstream>
-#include <iostream>
+
 
 namespace {
 	constexpr const char* DATA_FILE = "../userDatas.json";
@@ -88,8 +88,7 @@ void UserDB::load() {
 		j = nlohmann::json::parse(file, nullptr, true, true);
 		users_ = j.get<std::unordered_map<std::string, UserInfo>>();
 	} catch (const std::exception& e) {
-		std::cerr << "[UserDB] 解析 " << DATA_FILE << " 失败: " << e.what() << std::endl;
-		throw;
+		std::println(stderr, "[UserDB] 解析 {} 失败: {}", DATA_FILE, e.what());		throw;
 	}
 }
 
@@ -97,8 +96,7 @@ void UserDB::save() const {
 	nlohmann::json j = users_;
 	std::ofstream file(DATA_FILE);
 	if (!file.is_open()) {
-		std::cerr << "[UserDB] 无法写入 " << DATA_FILE << std::endl;
-		return;
+		std::println(stderr, "[UserDB] 无法写入 {}", DATA_FILE);		return;
 	}
 	file << j.dump(2);
 }

@@ -79,8 +79,7 @@ int main() {
 	ServerNetwork serverNetwork;
 	unsigned short port = 8888;
 	if (!serverNetwork.start(port)) {
-		std::cerr << "[Server] 启动失败" << std::endl;
-		std::this_thread::sleep_for(3s);
+		std::println(stderr, "[Server] 启动失败");		std::this_thread::sleep_for(3s);
 		return 1;
 	}
 
@@ -113,7 +112,7 @@ int main() {
 		}
 	gameSessionEnd:
 	} catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		std::println(stderr, "{}", e.what());
 	}
 
 	while (true) {

@@ -1,7 +1,7 @@
 #include "Card.h"
 #include "utils.h"
 #include <SFML/Network.hpp>
-#include <iostream>
+
 
 
 // ==================== Card 静态数据 ====================
@@ -361,10 +361,6 @@ bool Card::is_wild(const Card::Name name) {
 }
 
 
-// 友元流输出
-std::ostream& operator<<(std::ostream& ostr, const Card& card) {
-	return ostr << card.toString();
-}
 
 
 // ==================== Cards 类 ====================
@@ -435,11 +431,6 @@ void Cards::forEachIf(const std::function<bool(const Card&)>& condition,
 	for (auto& c : cards) {
 		if (condition(*c)) operation(*c);
 	}
-}
-
-// 友元流输出
-std::ostream& operator<<(std::ostream& ostr, const Cards& cards) {
-	return ostr << cards.toString();
 }
 
 

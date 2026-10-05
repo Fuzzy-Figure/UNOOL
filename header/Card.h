@@ -179,7 +179,6 @@ public:
 #pragma endregion
 };
 
-std::ostream& operator<<(std::ostream& ostr, const Card& card);
 sf::Packet& operator>>(sf::Packet& packet, Card& card);
 sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 
@@ -260,8 +259,6 @@ public:
 				   const std::function<void(Card&)>& operation) const;
 #pragma endregion
 };
-
-std::ostream& operator<<(std::ostream& ostr, const Cards& cards);
 
 template <>
 struct std::formatter<Cards> : std::formatter<std::string> {

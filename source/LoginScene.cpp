@@ -1,7 +1,7 @@
 #include "LoginScene.h"
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
-#include <iostream>
+
 
 LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title)
 	: renderer(r), net(n), titleBrackets(title) {

@@ -2,7 +2,7 @@
 #include "AccountProtocol.h"
 #include "UserDB.h"
 #include "GameState.h"
-#include <iostream>
+
 #include <thread>
 
 ServerNetwork::~ServerNetwork() {
@@ -14,8 +14,7 @@ bool ServerNetwork::start(unsigned short port) {
 	sf::Socket::Status listenStatus = listener->listen(port);
 
 	if (listenStatus != sf::Socket::Status::Done) {
-		std::cerr << "[ServerNetwork] 启动失败" << std::endl;
-		listener.reset();
+		std::println(stderr, "[ServerNetwork] 启动失败");		listener.reset();
 		return false;
 	}
 
@@ -335,8 +334,7 @@ bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
 	sf::Socket::Status connectStatus = socket->connect(sf::IpAddress::fromString(ip).value(), port, sf::seconds(3));
 
 	if (connectStatus != sf::Socket::Status::Done) {
-		std::cerr << "[ClientNetwork] 连接服务器失败" << std::endl;
-		socket.reset();
+		std::println(stderr, "[ClientNetwork] 连接服务器失败");		socket.reset();
 		return false;
 	}
 
@@ -349,8 +347,7 @@ bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
 
 bool ClientNetwork::reconnect() {
 	if (serverIp.empty() || username.empty()) {
-		std::cerr << "[ClientNetwork] 无法重连：缺少服务器地址或凭证" << std::endl;
-		return false;
+		std::println(stderr, "[ClientNetwork] 无法重连：缺少服务器地址或凭证");		return false;
 	}
 
 	// 清空旧的接收队列
@@ -363,8 +360,7 @@ bool ClientNetwork::reconnect() {
 	// 发送登录请求
 	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
 	if (!send(req)) {
-		std::cerr << "[ClientNetwork] 重连：发送登录请求失败" << std::endl;
-		return false;
+		std::println(stderr, "[ClientNetwork] 重连：发送登录请求失败");		return false;
 	}
 
 	// 等待登录响应（最多等 5 秒）
@@ -395,8 +391,7 @@ bool ClientNetwork::reconnect() {
 					}
 					return true;
 				}
-				std::cerr << "[ClientNetwork] 重连登录失败：" << (resp ? resp->msg : "解析失败") << std::endl;
-				return false;
+				std::println(stderr, "[ClientNetwork] 重连登录失败：{}", (resp ? resp->msg : "解析失败"));				return false;
 			}
 			// 其他包暂存（原始 packet 读指针未移动）
 			savedPackets.push(packet);
@@ -404,8 +399,7 @@ bool ClientNetwork::reconnect() {
 		std::this_thread::sleep_for(50ms);
 	}
 
-	std::cerr << "[ClientNetwork] 重连：等待登录响应超时" << std::endl;
-	return false;
+	std::println(stderr, "[ClientNetwork] 重连：等待登录响应超时");	return false;
 }
 
 void ClientNetwork::disconnect() {

@@ -1,7 +1,7 @@
 #include "Skill.h"
 #include "Player.h"
 #include "GameLogic.h"
-#include <iostream>
+
 
 Skill::Skill(const std::string& _name, const std::string& _info, const limit_t& _limit)
 	:name(_name), info(_info), limit(_limit), initialLimit(_limit) {}

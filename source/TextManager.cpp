@@ -1,6 +1,6 @@
 #include "TextManager.h"
 #include "utils.h"
-#include <iostream>
+
 
 TextManager::TextManager(sf::RenderWindow& _window)
 	:window(_window) {

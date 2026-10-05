@@ -7,7 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <string>
-#include <iostream>
+
 
 
 // 解析 Choice 包并更新渲染器
@@ -187,8 +187,7 @@ int main() {
 	unsigned short port = config["server"]["port"];
 
 	if (!clientNetwork.connect(ipAddress, port)) {
-		std::cerr << windowTitleWithBrackets << " 连接服务器失败" << std::endl;
-		system("pause");
+		std::println(stderr, "{} 连接服务器失败", windowTitleWithBrackets);		system("pause");
 		return 1;
 	}
 
@@ -198,8 +197,7 @@ int main() {
 	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
 	auto session = login.run();
 	if (!session.ok) {
-		std::cerr << windowTitleWithBrackets << " 登录未完成，退出" << std::endl;
-		system("pause");
+		std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);		system("pause");
 		return 1;
 	}
 
