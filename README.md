@@ -43,14 +43,11 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 三个项目均已使用 `$(SolutionDir)dep\SFML\include`、`$(SolutionDir)dep\SFML\lib`、`$(SolutionDir)dep\nlohmann`、`$(SolutionDir)header` 相对路径，开箱即用
 3. 生成解决方案（Ctrl+Shift+B）
 
-> **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdcpp20`，而代码使用了 C++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C++20 下会编译失败。
+> **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdcpp20`，而代码使用了 C\++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C\++20 下会编译失败。
 
 ### 运行前必做：补 DLL
 
-`dep/SFML` 只带了 `include` 和 `lib`，**没有 `bin` 目录**，项目也没有 PostBuildEvent。链接能过，但**运行时会报"找不到 sfml-graphics-3.dl"**。二选一：
-
-- 从 [SFML 3.1.0 官方包](https://www.sfml-dev.org/download.php) 取 `bin/*.dll` 拷到输出目录（`x64/Debug/`）；或
-- 改链接 `sfml-*-s-d.lib`（静态版，`dep/SFML/lib` 里已带），并为项目添加预处理器定义 `SFML_STATIC`
+在 `UNOOL\dep\SFML\bin` 里有 SFML3 的 .dll 文件，把它们放入与 .exe 同级目录下
 
 ### 启动
 
@@ -117,7 +114,6 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 ## 已知限制
 
-- **缺 DLL**：`dep/SFML` 无 `bin`，需自行补（见"运行前必做"）
 - **只能选 x64**：Win32 配置为 C++20，编译不过
 - **服务端全程单线程且阻塞**：没有任何线程 / 锁 / 原子量，`ask()` / `chooseCard()` 会同步阻塞等待某个客户端输入。同时只能服务一桌；客户端断线后重连等待默认 600 秒，期间整个服务端无法推进
 - **账号安全**：密码明文存 `userDatas.json`、明文 `!=` 比较，并在网络上明文传输，无哈希 / 无盐 / 无 TLS；存档为直接覆盖写，写入中断会损坏全库（该文件已在 `.gitignore` 中，但仍会随程序目录留存）
