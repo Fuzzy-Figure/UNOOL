@@ -365,6 +365,14 @@ bool Card::is_wild(const Card::Name name) {
 
 // ==================== Cards 类 ====================
 
+// 转字符串
+std::string Cards::toString() const {
+	std::string str;
+	for (const auto& card : cards) {
+		str += std::format("{}，", *card);
+	}
+	return str;
+}
 // 修改容器
 std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	if (index >= cards.size())
@@ -373,13 +381,7 @@ std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	cards.erase(cards.begin() + index);
 	return card;
 }
-std::string Cards::toString() const {
-	std::string str;
-	for (const auto& card : cards) {
-		str += std::format("{}，", *card);
-	}
-	return str;
-}
+
 void Cards::push_front(std::unique_ptr<Card> card, const std::size_t number) {
 	for (std::size_t i = 0; i < number - 1; ++i) {
 		cards.push_front(Card::make(card));

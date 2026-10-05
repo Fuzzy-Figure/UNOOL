@@ -213,7 +213,9 @@ public:
 	Cards& operator=(const Cards&) = delete;
 	Cards(Cards&&) = default;
 	Cards& operator=(Cards&&) = default;
+#pragma endregion
 
+#pragma region 转字符串
 	std::string toString() const;
 #pragma endregion
 
@@ -270,7 +272,7 @@ struct std::formatter<Cards> : std::formatter<std::string> {
 
 
 
-class Hand :public Cards {
+class Hand : public Cards {
 private:
 	std::size_t selectedIndex = 0;
 
@@ -313,7 +315,7 @@ struct std::formatter<Hand> : std::formatter<std::string> {
 };
 
 
-class Pile :public Cards {
+class Pile : public Cards {
 public:
 #pragma region 工厂
 	static std::unique_ptr<Pile> standard();

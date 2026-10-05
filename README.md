@@ -13,8 +13,8 @@
 
 | 项 | 选型 |
 |---|---|
-| 语言 | C++23（MSVC `stdcpp23`，仅 x64 配置） |
-| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；已为 `Card::Color`、`Card::Name`、`Character::Level` 提供 `std::formatter` 特化（见 `header/Card.h`、`header/Character.h` 末尾），可直接放进 `{}` 占位符 |
+| 语言 | C++23（MSVC `stdc++23`，仅 x64 配置） |
+| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/Card.h`、`header/Character.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
 | 构建 | Visual Studio 2026（`.slnx` + 3 个 `.vcxproj`），**仅 x64** |
@@ -26,7 +26,7 @@
 UNOOL.slnx              解决方案：Server / Client1 / Client2
 header/                 头文件
 source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口）
-dep/                    外部依赖，包括 SFML 3.1.0（include + lib）和 nlohmann/json
+dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
 client_config.json      客户端配置（字体、服务端 IP、各元素显示尺寸）
 server_config.json      服务端配置（模式、候选数、手牌数、禁用角色）
@@ -43,7 +43,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 三个项目均已使用 `$(SolutionDir)dep\SFML\include`、`$(SolutionDir)dep\SFML\lib`、`$(SolutionDir)dep\nlohmann`、`$(SolutionDir)header` 相对路径，开箱即用
 3. 生成解决方案（Ctrl+Shift+B）
 
-> **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdcpp20`，而代码使用了 C\++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C\++20 下会编译失败。
+> **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdc++20`，而代码使用了 C\++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C\++20 下会编译失败。
 
 ### 运行前必做：补 DLL
 
@@ -120,7 +120,6 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 - `client_config.json` 中硬编码了作者的公网服务器 IP
 - 非阻塞 socket 上 `send` 返回 `Partial` 时重发整个 Packet，可能破坏协议流
 - **子技能强耦合父技能**：子技能通过 `carrier.getSkill<父技能>()` 访问父技能状态，若父技能被任何「失去技能」效果移除，子技能仍会触发并抛 `std::runtime_error("没有找到技能")`
-- 日志输出混用 `std::cout` 与 `std::print`，后续将全部改为std::print
 - 无单元测试、无 CI
 - 仅支持 Windows
 
