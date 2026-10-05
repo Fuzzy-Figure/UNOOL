@@ -173,7 +173,7 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 
 	//Ban环节：玩家A先连续ban banCount次，再一次性告诉B；然后B同理，最后提示A
 	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::string>& labels) -> std::string {
-		if (labels.empty()) return players[targetId]->characterName() + "没有禁用你的任何角色";
+		if (labels.empty()) return std::format("{}没有禁用你的任何角色", players[targetId]->characterName());
 		std::string msg = "对方禁用了你的角色：\n";
 		for (std::size_t i = 0; i < labels.size(); ++i) {
 			if (i > 0) msg += "\n";

@@ -25,7 +25,7 @@ void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) 
 	const Card::Color& colorBeforeDraw4 = game.getCurrentColor();
 	pal(card, game, source);
 	const std::size_t choice = target.ask(
-		source.characterName() + "对你使用了[+4]，是否质疑？", {
+		std::format("{}对你使用了[+4]，是否质疑？", source.characterName()), {
 		"质疑",
 		"不质疑"
 		}, true);

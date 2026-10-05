@@ -240,7 +240,7 @@ std::size_t Card::value() const {
 	}
 }
 std::string Card::toString() const {
-	return Card::to_string(color) + Card::to_string(name);
+	return std::format("{}{}", color, name);
 }
 
 
