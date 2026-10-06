@@ -337,7 +337,7 @@ void GameRenderer::displayImageInCenter(const std::string& path, const sf::Vecto
 		config.windowSize.x / 2 - size.x / 2,
 		config.windowSize.y / 2 - size.y / 2,
 	};
-	imageMgr.displayImage(path, pos, size);
+	displayImage(path, pos, size);
 }
 
 void GameRenderer::displayCard(const Card& card, const sf::Vector2f& pos, const sf::Vector2f& cardSize) {
