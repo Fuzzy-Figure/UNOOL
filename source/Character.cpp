@@ -265,7 +265,8 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 	const std::string& group = it->second.group;
 	const fs::path dir = fs::path("../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
 	if (!fs::exists(dir) || !fs::is_directory(dir)) {
-		throw std::invalid_argument(std::format("角色 <{}> 的皮肤目录不存在", name));
+		std::println(stderr, "角色 <{}> 的皮肤目录不存在", name);
+		return {};
 	}
 	std::vector<std::string> skins;
 	for (const auto& entry : fs::directory_iterator(dir)) {
@@ -274,7 +275,8 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 		}
 	}
 	if (skins.empty()) {
-		throw std::invalid_argument(std::format("角色 <{}> 的皮肤目录下无 .jpg 文件", name));
+		std::println(stderr, "角色 <{}> 的皮肤目录下无 .jpg 文件", name);
+		return {};
 	}
 	//排序，"默认"置首
 	std::ranges::sort(skins,

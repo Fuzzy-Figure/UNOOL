@@ -626,6 +626,7 @@ std::vector<ref<Card>> Player::chooseToDiscard(const std::string& title,
 Player::RecastResult Player::chooseToRecast(const std::string& title,
 											const std::size_t num, const bool forced,
 											const std::function<bool(const Card&)>& condition) {
+
 												{
 													PassiveSkill::Trigger trigger;
 													trigger.player = *this;

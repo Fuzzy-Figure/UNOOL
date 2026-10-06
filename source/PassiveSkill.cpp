@@ -1681,9 +1681,9 @@ bool 暗忍::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!actionIndices.empty()) {
 		std::size_t pick = actionIndices[unool::random::randomSize_t(0, actionIndices.size() - 1)];
 		Card& c = carrier.getCardByIndex(pick);
-		Card::Color randomColor = unool::random::randomGet(Card::fiveColors);
+		Card::Color randomColor = unool::random::randomGet(Card::fourColors);
 		c.set(randomColor, Card::Name::action_skip);
-		std::println("<技能> {}发动暗忍，失去1点体力并将一张功能牌变为随机颜色的【封禁】", carrier.characterName());
+		std::println("<技能> {}发动暗忍，失去1点体力并将一张功能牌变为随机基础颜色的【封禁】", carrier.characterName());
 	}
 	else {
 		std::println("<技能> {}发动暗忍，失去1点体力（无功能牌可变）", carrier.characterName());

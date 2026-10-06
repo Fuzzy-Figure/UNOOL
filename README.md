@@ -1,12 +1,14 @@
 # UNOOL — UNO Online
 
-**UNOOL** = **UNO** + **OnLine**：基于 C++ / SFML 3.1 的双人联机卡牌对战游戏。用标准 UNO 牌堆做载体，自创角色技能与体力规则（更接近三国杀的玩法框架）。
+**UNOOL**：基于 C++ / SFML 3.1 的双人联机卡牌对战游戏。用标准 UNO 牌堆做载体，自创角色技能与体力规则。
 
-- **70+ 名可选角色**，每名带 1～3 个技能；角色与技能池**持续扩充中**
+- **70+ 名可选角色**，每名带 1～3 个技能；角色与技能池持续扩充中
 - **C/S 架构**，服务端权威；每人只收到自己的真实手牌，对手手牌以背面牌填充
 - 账号注册/登录 + 按双方角色等级差查表的积分系统
 
-> 角色、技能的具体数量与完整列表以代码为准：角色表见 `source/Character.cpp` 的 `Character::infos`，技能实现见 `header/PassiveSkill.h`（被动）/ `InstantSkill.h`（即时）/ `TransformSkill.h`（转换）。
+> 角色、技能的具体数量与完整列表以代码为准<br>
+角色表见 `source/Character.cpp` 的 `Character::infos`<br>
+技能实现见 `header/PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及对应的.cpp文件。
 
 
 ## 技术栈
@@ -104,7 +106,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 ## 扩展
 
-**加角色**：在 `Character.cpp` 的 `Character::infos` 加一行 `{"角色名", {"分组", Level::X, {被动技工厂...}, {主动技工厂...}, HP}}`，并在 `images/characters/分组/角色名/` 放置 `默认.jpg`（可放多张 `.jpg` 作皮肤，「默认」会自动排在首位）。**分组名必须与目录一致**，否则运行时抛 `角色 <X> 的皮肤目录不存在`。
+**加角色**：在 `Character.cpp` 的 `Character::infos` 加一行 `{"角色名", {"分组", Level::X, 被动<被动技能名1, 被动技能名2, ...>, 即时<即时技能名1, 即时技能名2, ...>, 转换<转换技能名1, 转换技能名2, ...>, HP}}`，并在 `images/characters/分组/角色名/` 放置 `默认.jpg`（可放多张 `.jpg` 作皮肤，「默认」会自动排在首位）。**分组名必须与目录一致**，否则运行时抛 `角色 <X> 的皮肤目录不存在`。
 
 **加技能**：继承 `PassiveSkillImpl<X>` / `InstantSkillImpl<X>` / `TransformSkillImpl<X>`，**并标记为 `final`**（非 final 会编译失败），实现 `filter()` 与 `content()`，在角色 info 中挂 `X::make`。
 
