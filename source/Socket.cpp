@@ -328,6 +328,8 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			clientSlots_[clientIdx].points = pts;
 			clientSlots_[clientIdx].wins = w;
 			clientSlots_[clientIdx].losses = l;
+			//登录成功时重置心跳计时，避免重连场景下因 removeClient 至 login 之间的耗时被误判超时
+			lastRecvClocks[clientIdx].restart();
 
 			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
 			// 两玩家都登录后开局（重连顶替场景下 serverReady 已为 true，不重复发 GameStart）
