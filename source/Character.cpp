@@ -144,14 +144,13 @@ std::unique_ptr<Character> Character::makeCombined(const std::string& name1, con
 	addAllSkillsFrom(info1);
 	addAllSkillsFrom(info2);
 
-	//组合角色体力：平均向上取百
+	//组合角色体力：平均向上取十
 	const hp_t hp1 = info1.hp;
-	std::println("----------------MAXHP = {}", info1.maxHp);
-	const hp_t maxHp1 = info1.maxHp == 0 ? info1.hp : info1.maxHp;
+	const hp_t maxHp1 = info1.maxHp;
 	const hp_t hp2 = info2.hp;
-	const hp_t maxHp2 = info2.maxHp == 0 ? info2.hp : info2.maxHp;
-	newChara->hp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(hp1 + hp2) / 20.0) * 10);
-	newChara->maxHp = static_cast<hp_t>(unool::math::ceil(static_cast<double>(maxHp1 + maxHp2) / 20.0) * 10);
+	const hp_t maxHp2 = info2.maxHp;
+	newChara->hp = static_cast<hp_t>(unool::math::ceil((hp1 + hp2) / 20.0) * 10);
+	newChara->maxHp = static_cast<hp_t>(unool::math::ceil((maxHp1 + maxHp2) / 20.0) * 10);
 	return newChara;
 }
 
