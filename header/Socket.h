@@ -108,6 +108,7 @@ public:
 						  std::optional<std::size_t> timeoutMs = std::nullopt,
 						  std::size_t currentPage = 0,
 						  std::size_t totalPages = 1);
+	bool clearPlayerChoice(std::size_t clientIndex);
 	bool sendCharInfo(const CharInfo& info);
 
 	bool isReady() const { return serverReady; }

@@ -457,6 +457,10 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 	return sendPacketToClient(clientIndex, packet);
 }
 
+bool ServerNetwork::clearPlayerChoice(std::size_t clientIndex) {
+	return sendPlayerChoice(clientIndex, "", {}, false);
+}
+
 bool ServerNetwork::sendPacketToAll(sf::Packet& packet) {
 	bool allOk = true;
 	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {

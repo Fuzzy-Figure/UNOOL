@@ -61,6 +61,21 @@ private:
 											 const opt_ref<TransformSkill>& activeMode);
 #pragma endregion
 
+#pragma region 私有方法 - ask 辅助
+	//玩家掉线时最多等 reconnectTimeoutSec 秒重连，返回是否重连成功；重连成功后由 caller 负责广播状态与重发页面
+	bool waitForReconnect();
+	//处理翻页键：命中时更新 currentPage + 清空 errorMsg 并返回 true，否则返回 false
+	bool handlePagingKey(sf::Keyboard::Scancode input, bool usePaging,
+						  std::size_t& currentPage, std::size_t totalPages,
+						  std::string& errorMsg);
+	//解析数字键为最终选择（1-based，0=取消），非法时设置 errorMsg 并返回 nullopt
+	std::optional<std::size_t> resolveChoice(sf::Keyboard::Scancode input,
+											 const std::vector<std::string>& options,
+											 bool forced, bool usePaging,
+											 std::size_t currentPage,
+											 std::string& errorMsg);
+#pragma endregion
+
 public:
 #pragma region 构造与身份
 	Player(const std::size_t _id, GameLogic& _game, std::unique_ptr<Character> _character)

@@ -460,14 +460,14 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			case sf::Keyboard::Scancode::Up:
 			case sf::Keyboard::Scancode::W:
 				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
-					network.sendPlayerChoice(id, "", {}, false);
+					network.clearPlayerChoice(id);
 					return result.value();
 				}
 				break;
 			case sf::Keyboard::Scancode::Down:
 			case sf::Keyboard::Scancode::S:
 				if (!forced) {
-					network.sendPlayerChoice(id, "", {}, false);
+					network.clearPlayerChoice(id);
 					return std::nullopt;
 				}
 				break;
@@ -518,11 +518,11 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 		TransformSkill& skill = transformRefs[tIdx].get();
 		if (activeMode.has_value() && &activeMode.value().get() == &skill) {
 			activeMode.reset();
-			network.sendPlayerChoice(id, std::string(""), std::vector<std::string>(), false);
+			network.clearPlayerChoice(id);
 		}
 		else {
 			activeMode = skill;
-			network.sendPlayerChoice(id, skill.getPrompt(), std::vector<std::string>(), false);
+			network.sendPlayerChoice(id, skill.getPrompt(), {}, false);
 		}
 	}
 	return true;
@@ -546,7 +546,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 					//转化成功打出：执行附加效果，累加使用次数
 					mode.addition(game, *this);
 					mode.incrementCount();
-					network.sendPlayerChoice(id, std::string(""), std::vector<std::string>(), false);  //清提示
+					network.clearPlayerChoice(id);
 					game.clearOperatingPlayer();
 					return hand->getSelectedIndex();
 				}
@@ -566,7 +566,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 		}
 	}
 	else if (condition(hand->getSelectedCard())) {
-		network.sendPlayerChoice(id, "", {}, false);  //清提示
+		network.clearPlayerChoice(id);
 		game.clearOperatingPlayer();
 		return hand->getSelectedIndex();
 	}
@@ -782,43 +782,23 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		network.sendPlayerChoice(id, title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages);
 	};
 
-	//生成"超出范围"错误提示（分页/非分页复用，消除重复）
-	auto rangeErrorMsg = [&]() -> std::string {
-		const std::string minOpt = forced ? "1" : "0";
-		if (usePaging) {
-			return std::format("超出范围，请输入{}-{}范围内的数字（<-->翻页）", minOpt, std::min(PER_PAGE, options.size() - currentPage * PER_PAGE));
-		}
-		return std::format("超出范围，请输入{}-{}范围内的数字", minOpt, options.size());
-	};
-
 	sendPage();
 
 	sf::Clock clock;
 	while (true) {
-		if (timeoutMs.has_value()) {
-			if (clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
-				network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
-				std::println("玩家{}超时未选择", id);
-				return 0;
-			}
+		//1. 超时检测
+		if (timeoutMs.has_value()
+			&& clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
+			network.clearPlayerChoice(id);
+			std::println("玩家{}超时未选择", id);
+			return 0;
 		}
 
+		//2. 网络更新 + 掉线重连检测
 		network.update();
 		if (!network.isClientConnected(id)) {
-			// 玩家掉线，等待重连
-			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
-			sf::Clock dcClock;
-			bool reconnected = false;
-			std::println("[Player] 玩家{} 掉线，等待重连（最多 {} 秒）", id, timeoutSec);
-			while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
-				network.update();
-				if (network.isClientLoggedIn(id)) {
-					reconnected = true;
-					break;
-				}
-				std::this_thread::sleep_for(100ms);
-			}
-			if (!reconnected) {
+			std::println("[Player] 玩家{} 掉线，等待重连...", id);
+			if (!waitForReconnect()) {
 				std::println("[Player] 玩家{} 掉线超时，ask 返回默认值", id);
 				return 0;
 			}
@@ -828,71 +808,119 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 			continue;
 		}
 
+		//3. 收包
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
 			std::this_thread::sleep_for(16ms);
 			continue;
 		}
-
 		ClientInput clientInput = inputOpt.value();
 		if (clientInput.playerId != id) {
 			continue;
 		}
-
 		sf::Keyboard::Scancode input = clientInput.key;
 		setInput(input);
 
-		if (usePaging && (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right
-						  || input == sf::Keyboard::Scancode::A || input == sf::Keyboard::Scancode::D)) {
-			if (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::A) {
-				if (currentPage > 0) --currentPage;
-			}
-			else {
-				if (currentPage + 1 < totalPages) ++currentPage;
-			}
-			errorMsg.clear();
+		//4. 翻页键
+		if (handlePagingKey(input, usePaging, currentPage, totalPages, errorMsg)) {
 			sendPage();
 			continue;
 		}
 
-		//数字键解析
-		auto digit = digitFromScancode(input);
-		if (!digit.has_value()) {
-			errorMsg = usePaging ? "无效输入，请输入数字0-9或使用<-->翻页"
-				: "无效输入，请输入数字0-9";
-			sendPage();
-			continue;
-		}
-		std::size_t choice = digit.value();
-
-		//分页下换算真实索引（0 表示取消，不换算）
-		if (usePaging && choice != 0) {
-			const std::size_t realIndex = currentPage * PER_PAGE + (choice - 1);
-			if (realIndex >= options.size()) {
-				errorMsg = rangeErrorMsg();
-				sendPage();
-				continue;
-			}
-			choice = realIndex + 1;
-		}
-
-		if (choice > options.size()) {
-			errorMsg = rangeErrorMsg();
-			sendPage();
-			continue;
-		}
-		if (forced && choice == 0) {
-			errorMsg = "必须选择一个选项，请重新输入";
+		//5. 数字键解析
+		auto choice = resolveChoice(input, options, forced, usePaging, currentPage, errorMsg);
+		if (!choice.has_value()) {
 			sendPage();
 			continue;
 		}
 
-		network.sendPlayerChoice(id, "", {}, false, "", std::nullopt);
-		std::print("[ask] 标题：“{}”，玩家{}选择了{}: ", title, id, choice);
-		if (choice != 0)
-			std::println("{}", options[choice - 1]);
-		return choice;
+		//6. 返回
+		network.clearPlayerChoice(id);
+		std::print("[ask] 标题：“{}”，玩家{}选择了{}: ", title, id, *choice);
+		if (*choice != 0) {
+			std::println("{}", options[*choice - 1]);
+		}
+		return *choice;
 	}
+}
+
+bool Player::waitForReconnect() {
+	ServerNetwork& network = game.getNetwork();
+	const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
+	sf::Clock dcClock;
+	std::println("[Player] 玩家{} 掉线，等待重连（最多 {} 秒）", id, timeoutSec);
+	while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
+		network.update();
+		if (network.isClientLoggedIn(id)) {
+			return true;
+		}
+		std::this_thread::sleep_for(100ms);
+	}
+	return false;
+}
+
+bool Player::handlePagingKey(sf::Keyboard::Scancode input, bool usePaging,
+							 std::size_t& currentPage, std::size_t totalPages,
+							 std::string& errorMsg) {
+	if (!usePaging) return false;
+	if (!(input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right
+		  || input == sf::Keyboard::Scancode::A || input == sf::Keyboard::Scancode::D)) {
+		return false;
+	}
+	if (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::A) {
+		if (currentPage > 0) --currentPage;
+	}
+	else {
+		if (currentPage + 1 < totalPages) ++currentPage;
+	}
+	errorMsg.clear();
+	return true;
+}
+
+std::optional<std::size_t> Player::resolveChoice(sf::Keyboard::Scancode input,
+												 const std::vector<std::string>& options,
+												 bool forced, bool usePaging,
+												 std::size_t currentPage,
+												 std::string& errorMsg) {
+	constexpr std::size_t PER_PAGE = 9;
+	//生成"超出范围"错误提示（分页/非分页复用，消除重复）
+	auto rangeError = [&]() -> std::string {
+		const std::string minOpt = forced ? "1" : "0";
+		if (usePaging) {
+			return std::format("超出范围，请输入{}-{}范围内的数字（<-->翻页）",
+							   minOpt, std::min(PER_PAGE, options.size() - currentPage * PER_PAGE));
+		}
+		return std::format("超出范围，请输入{}-{}范围内的数字", minOpt, options.size());
+	};
+
+	auto digit = digitFromScancode(input);
+	if (!digit.has_value()) {
+		errorMsg = usePaging ? "无效输入，请输入数字0-9或使用<-->翻页"
+			: "无效输入，请输入数字0-9";
+		return std::nullopt;
+	}
+	std::size_t choice = *digit;
+
+	//分页下换算真实索引（0 表示取消，不换算）
+	if (usePaging && choice != 0) {
+		const std::size_t realIndex = currentPage * PER_PAGE + (choice - 1);
+		if (realIndex >= options.size()) {
+			errorMsg = rangeError();
+			return std::nullopt;
+		}
+		choice = realIndex + 1;
+	}
+
+	if (choice > options.size()) {
+		errorMsg = rangeError();
+		return std::nullopt;
+	}
+	if (forced && choice == 0) {
+		errorMsg = "必须选择一个选项，请重新输入";
+		return std::nullopt;
+	}
+
+	return choice;
 }
 
 std::optional<std::size_t> Player::digitFromScancode(sf::Keyboard::Scancode input) {
