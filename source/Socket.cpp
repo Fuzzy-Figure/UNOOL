@@ -29,6 +29,11 @@ void ServerNetwork::disconnect() {
 	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
 		removeClient(i);
 	}
+	if (pendingSocket) {
+		selector.remove(*pendingSocket);
+		pendingSocket->disconnect();
+		pendingSocket.reset();
+	}
 	if (listener) {
 		listener->close();
 		listener.reset();
@@ -88,8 +93,15 @@ void ServerNetwork::update() {
 
 					std::println("[ServerNetwork] 客户端{}已连接，等待登录...", newPlayerId);
 				}
+				else if (!pendingSocket) {
+					//槽位已满：先收下，等收到 LoginRequest 后识别重连意图顶替旧槽位
+					newSocket->setBlocking(false);
+					selector.add(*newSocket);
+					pendingSocket = std::move(newSocket);
+					std::println("[ServerNetwork] 槽位已满，新连接进入待登录队列，等待重连识别...");
+				}
 				else {
-					std::println("[ServerNetwork] 客户端连接被拒绝（已达到最大人数）");
+					std::println("[ServerNetwork] 客户端连接被拒绝（已达到最大人数，且待登录队列已满）");
 				}
 			}
 		}
@@ -120,6 +132,62 @@ void ServerNetwork::update() {
 					std::println("[ServerNetwork] 客户端{} 断开连接（status={}）", i, static_cast<int>(status));
 					removeClient(i);
 				}
+			}
+		}
+
+		//处理待登录队列的 socket：识别重连意图后顶替同账号的旧连接
+		if (pendingSocket && selector.isReady(*pendingSocket)) {
+			sf::Packet packet;
+			sf::Socket::Status status = pendingSocket->receive(packet);
+			if (status == sf::Socket::Status::Done) {
+				sf::Packet peek = packet;
+				int msgType;
+				std::string reqUsername, reqPassword;
+				if (peek >> msgType
+					&& msgType == static_cast<int>(MessageType::LoginRequest)
+					&& peek >> reqUsername >> reqPassword) {
+					//找匹配的、已登录且同账号的旧槽位
+					std::size_t targetIdx = MAX_PLAYERS;
+					for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+						if (clientSlots_[i].loggedIn && clientSlots_[i].username == reqUsername) {
+							targetIdx = i;
+							break;
+						}
+					}
+					if (targetIdx < MAX_PLAYERS) {
+						std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
+							targetIdx, reqUsername);
+						removeClient(targetIdx);  //selector.remove 旧 socket + reset + 标记 disconnected=true
+						//pendingSocket 仍在 selector 中，直接 move 到 targetIdx 槽位
+						clientSockets[targetIdx] = std::move(pendingSocket);
+						sendConnectionInfo(targetIdx);  //让客户端拿到正确的 playerId
+						handleAccountPacket(targetIdx, MessageType::LoginRequest, std::move(packet));
+					}
+					else {
+						//没找到匹配的旧槽位：拒绝（防止陌生人顶替）
+						auto resp = AccountProtocol::makeAccountResponse(
+							MessageType::LoginResponse, false,
+							"服务器已满，且无匹配的重连槽位");
+						pendingSocket->send(resp);
+						selector.remove(*pendingSocket);
+						pendingSocket->disconnect();
+						pendingSocket.reset();
+						std::println("[ServerNetwork] 待登录队列的连接被拒绝（无匹配槽位，账号 {}）", reqUsername);
+					}
+				}
+				else {
+					//首包非 LoginRequest：拒绝
+					selector.remove(*pendingSocket);
+					pendingSocket->disconnect();
+					pendingSocket.reset();
+					std::println("[ServerNetwork] 待登录队列的连接被拒绝（首包非登录请求）");
+				}
+			}
+			else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
+				std::println("[ServerNetwork] 待登录队列的 socket 断开（status={}）", static_cast<int>(status));
+				selector.remove(*pendingSocket);
+				pendingSocket->disconnect();
+				pendingSocket.reset();
 			}
 		}
 	}
@@ -185,8 +253,8 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			clientSlots_[clientIdx].losses = l;
 
 			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
-			// 两玩家都登录后开局
-			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn) {
+			// 两玩家都登录后开局（重连顶替场景下 serverReady 已为 true，不重复发 GameStart）
+			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn && !serverReady) {
 				serverReady = true;
 				sendGameStart();
 				std::println("[ServerNetwork] 两个客户端都已登录，游戏开始");
@@ -414,7 +482,8 @@ void ClientNetwork::disconnect() {
 
 void ClientNetwork::update() {
 	using namespace std::chrono_literals;
-	if (socket && selector.wait(sf::milliseconds(10))) {
+	//非阻塞（0ms）：避免主渲染线程被网络 IO 卡住，事件循环持续响应窗口消息
+	if (socket && selector.wait(sf::milliseconds(0))) {
 		if (selector.isReady(*socket)) {
 			sf::Packet packet;
 			sf::Socket::Status status = socket->receive(packet);

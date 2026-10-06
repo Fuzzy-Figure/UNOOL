@@ -103,9 +103,9 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 			break;
 		}
 
-		auto packetOpt = net.receivePacket();
-		if (packetOpt.has_value()) {
-			sf::Packet packet = packetOpt.value();
+		//每帧消化所有积压包，防止服务器多包推送时延迟累积
+		while (auto packetOpt = net.receivePacket()) {
+			sf::Packet packet = std::move(*packetOpt);
 			int msgType;
 			if (!(packet >> msgType)) continue;
 
@@ -166,10 +166,6 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		}
 
 		renderer.display();
-
-		if (elapsed.asSeconds() < 1.0f / 60.0f) {
-			sf::sleep(sf::seconds(1.0f / 60.0f - elapsed.asSeconds()));
-		}
 	}
 }
 
@@ -204,7 +200,5 @@ int main() {
 	std::println("{} 已登录，等待对手登录并开始游戏...", windowTitleWithBrackets);
 	gamePhase(clientNetwork, renderer, windowTitleWithBrackets);
 
-	std::this_thread::sleep_for(3s);
-	system("pause");
 	return 0;
 }

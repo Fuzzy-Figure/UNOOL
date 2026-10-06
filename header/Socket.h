@@ -67,6 +67,8 @@ private:
 	sf::SocketSelector selector;
 	bool serverReady = false;
 	std::queue<sf::Packet> receivedPackets;
+	//槽位已满时收下的待登录 socket，用于识别重连意图后顶替旧连接
+	std::unique_ptr<sf::TcpSocket> pendingSocket;
 
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
