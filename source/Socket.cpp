@@ -52,6 +52,8 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 	clientSlots_[clientIndex].loggedIn = false;
 	clientSlots_[clientIndex].disconnected = true;
 	// 保留 username，供重连时识别身份
+	//重置心跳计时，避免新连接顶替进来后因残留旧值被误判超时
+	lastRecvClocks[clientIndex].restart();
 }
 
 std::size_t ServerNetwork::getClientCount() const {
@@ -114,13 +116,18 @@ void ServerNetwork::update() {
 				sf::Packet packet;
 				sf::Socket::Status status = socket.receive(packet);
 				if (status == sf::Socket::Status::Done) {
+					//收到任何包都说明客户端活着，重置心跳计时
+					lastRecvClocks[i].restart();
 					// 先 peek 类型，账号包内部处理，其他包入队列
 					sf::Packet peeked = packet;
 					int msgType;
 					if (peeked >> msgType) {
-						if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
-							msgType == static_cast<int>(MessageType::LoginRequest) ||
-							msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
+						if (msgType == static_cast<int>(MessageType::Heartbeat)) {
+							//心跳回包：不入队，已通过 lastRecvClocks 重置完成
+						}
+						else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
+								 msgType == static_cast<int>(MessageType::LoginRequest) ||
+								 msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
 							handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
 						}
 						else {
@@ -168,7 +175,9 @@ void ServerNetwork::update() {
 						auto resp = AccountProtocol::makeAccountResponse(
 							MessageType::LoginResponse, false,
 							"服务器已满，且无匹配的重连槽位");
-						pendingSocket->send(resp);
+						if (pendingSocket->send(resp) != sf::Socket::Status::Done) {
+							std::println("[ServerNetwork] 待登录队列的拒绝响应发送失败（账号 {}）", reqUsername);
+						}
 						selector.remove(*pendingSocket);
 						pendingSocket->disconnect();
 						pendingSocket.reset();
@@ -189,6 +198,27 @@ void ServerNetwork::update() {
 				pendingSocket->disconnect();
 				pendingSocket.reset();
 			}
+		}
+	}
+
+	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat
+	if (heartbeatClock.getElapsedTime().asSeconds() >= 1.0f) {
+		heartbeatClock.restart();
+		sf::Packet hb;
+		hb << static_cast<int>(MessageType::Heartbeat);
+		for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+			if (isClientLoggedIn(i)) {
+				sendPacketToClient(i, hb);
+			}
+		}
+	}
+
+	//超时检测：loggedIn 客户端连续 3 秒未收到任何回包视为掉线
+	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+		if (isClientLoggedIn(i) && lastRecvClocks[i].getElapsedTime().asSeconds() >= 3.0f) {
+			std::println("[ServerNetwork] 客户端{}（账号 {}）已 3 秒未响应，判定为掉线，主动断开",
+						 i, clientSlots_[i].username);
+			removeClient(i);
 		}
 	}
 }

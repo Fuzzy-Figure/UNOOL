@@ -31,7 +31,8 @@ enum class MessageType {
 	LoginRequest,
 	LoginResponse,
 	CheckUsernameRequest,
-	CheckUsernameResponse
+	CheckUsernameResponse,
+	Heartbeat
 };
 
 struct ClientInput {
@@ -69,6 +70,9 @@ private:
 	std::queue<sf::Packet> receivedPackets;
 	//槽位已满时收下的待登录 socket，用于识别重连意图后顶替旧连接
 	std::unique_ptr<sf::TcpSocket> pendingSocket;
+	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat，超过 3 秒未收到任何回包则视为掉线
+	sf::Clock heartbeatClock;
+	std::array<sf::Clock, MAX_PLAYERS> lastRecvClocks;
 
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);

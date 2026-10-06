@@ -160,6 +160,13 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				case MessageType::Choice:
 					handleChoicePacket(packet, renderer);
 					break;
+				case MessageType::Heartbeat: {
+					//收到服务器心跳，立即回一个 Heartbeat 让服务器知道自己还活着
+					sf::Packet hb;
+					hb << static_cast<int>(MessageType::Heartbeat);
+					net.send(hb);
+					break;
+				}
 				default:
 					break;
 			}
