@@ -55,7 +55,7 @@ bool 招待::content(GameLogic& game, Player& carrier) {
 bool 摘罩::content(GameLogic& game, Player& carrier) {
 	std::string recordStr;
 	for (const Card::Name& name : record) {
-		recordStr += std::format("{},", Card::to_string(name));
+		recordStr += std::format("{},", name);
 	}
 	//1. 展示一张未展示过点数的数字牌
 	auto cardOpt = carrier.chooseToShow(std::format("[摘罩] 展示一张数字牌\n已展示：{}", recordStr), false, [this](const Card& c) {
@@ -81,7 +81,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 	}
 	if (targetShowed) {
 		auto otherCardOpt = target.chooseToShow(
-			std::format("[摘罩] 展示一张{}", Card::to_string(point)), false,
+			std::format("[摘罩] 展示一张{}", point), false,
 			[point](const Card& c) { return c.getName() == point; }
 		);
 		targetShowed = otherCardOpt.has_value();
@@ -188,7 +188,9 @@ bool 四霸::content(GameLogic& game, Player& carrier) {
 bool 装币::content(GameLogic& game, Player& carrier) {
 	auto drawn = carrier.drawTo(18, DrawReason::skill);
 	carrier.setDamageMultiplier(carrier.getDamageMultiplier() + 1);
-	std::println("<技能> {}发动装币，摸{}张，伤害倍率提升至{}", carrier.characterName(), drawn.size(), carrier.getDamageMultiplier());	game.broadcastState();
+	std::println("<技能> {}发动装币，摸{}张，伤害倍率提升至{}",
+				 carrier.characterName(), drawn.size(), carrier.getDamageMultiplier());
+	game.broadcastState();
 	return true;
 }
 
@@ -353,7 +355,9 @@ bool 手枪::content(GameLogic& game, Player& carrier) {
 	Player& target = *targetOpt;
 
 	target.damage(damageValue, carrier);
-	std::println("<技能> {}发动手枪，对{}造成{}点伤害", carrier.characterName(), target.characterName(), damageValue);	game.broadcastState();
+	std::println("<技能> {}发动手枪，对{}造成{}点伤害",
+				 carrier.characterName(), target.characterName(), damageValue);
+	game.broadcastState();
 	return true;
 }
 
@@ -397,7 +401,8 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 	std::size_t nameChoice = carrier.ask("【芜湖】声明牌名", nameStrs, true);
 	Card::Name targetName = nameOpts[nameChoice - 1];
 
-	std::println("<技能> {}发动芜湖，声明{}{}", carrier.characterName(), Card::to_string(targetColor), Card::to_string(targetName));
+	std::println("<技能> {}发动芜湖，声明{}{}",
+				 carrier.characterName(), targetColor, targetName);
 	//从牌堆底向牌堆顶检索，找最后一张匹配的
 	Pile& pile = game.getPile();
 	std::optional<std::size_t> matchIdx;
@@ -413,7 +418,8 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 		auto card = pile.takeCardByIndex(matchIdx.value());
 		const Card& cardRef = *card;  //move 前绑定引用，move 后仍可访问
 		carrier.gainCard(std::move(card));
-		std::println("<技能> {}从牌堆获得{}", carrier.characterName(), cardRef);		game.broadcastState();
+		std::println("<技能> {}从牌堆获得{}", carrier.characterName(), cardRef);
+		game.broadcastState();
 		return true;
 	}
 	else {
@@ -441,7 +447,9 @@ bool 引力::content(GameLogic& game, Player& carrier) {
 	}
 	target = tgt;
 
-	std::println("<技能> {}发动引力，本轮数字牌进弃牌堆后{}获得之", carrier.characterName(), tgt.characterName());	game.broadcastState();
+	std::println("<技能> {}发动引力，本轮数字牌进弃牌堆后{}获得之",
+				 carrier.characterName(), tgt.characterName());
+	game.broadcastState();
 	return true;
 }
 
@@ -504,7 +512,8 @@ bool 跳糖::content(GameLogic& game, Player& carrier) {
 	//胜者获得切斯特指定颜色的+2
 	auto giveDraw2 = [&](Player& p) {
 		auto card = Card::make(colorOpt.value(), Card::Name::action_draw2);
-		std::println("<技能> {}拼点获胜，获得{}", p.characterName(), *card);		p.gainCard(std::move(card));
+		std::println("<技能> {}拼点获胜，获得{}", p.characterName(), *card);
+		p.gainCard(std::move(card));
 	};
 
 	if (*result == Player::CompareResult::win) {
@@ -559,7 +568,7 @@ bool 猛击::content(GameLogic& game, Player& carrier) {
 	carrier.recover(cRec);
 	target.recover(tRec);
 
-	//回复体力较少的角色被封印10个回合；相等则不封印
+	//回复体力较少的角色被封印10轮；相等则不封印
 	if (cRec < tRec) {
 		carrier.seal(10);
 	}
@@ -567,7 +576,11 @@ bool 猛击::content(GameLogic& game, Player& carrier) {
 		target.seal(10);
 	}
 
-	std::println("<技能> {}发动猛击，{}回复{}点体力，{}回复{}点体力", carrier.characterName(), carrier.characterName(), cRec, target.characterName(), tRec);	game.broadcastState();
+	std::println("<技能> {}发动猛击，{}回复{}点体力，{}回复{}点体力",
+				 carrier.characterName(),
+				 carrier.characterName(), cRec,
+				 target.characterName(), tRec);
+	game.broadcastState();
 	return true;
 }
 

@@ -88,7 +88,8 @@ void UserDB::load() {
 		j = nlohmann::json::parse(file, nullptr, true, true);
 		users_ = j.get<std::unordered_map<std::string, UserInfo>>();
 	} catch (const std::exception& e) {
-		std::println(stderr, "[UserDB] 解析 {} 失败: {}", DATA_FILE, e.what());		throw;
+		std::println(stderr, "[UserDB] 解析 {} 失败: {}", DATA_FILE, e.what());
+		throw;
 	}
 }
 
@@ -96,7 +97,8 @@ void UserDB::save() const {
 	nlohmann::json j = users_;
 	std::ofstream file(DATA_FILE);
 	if (!file.is_open()) {
-		std::println(stderr, "[UserDB] 无法写入 {}", DATA_FILE);		return;
+		std::println(stderr, "[UserDB] 无法写入 {}", DATA_FILE);
+		return;
 	}
 	file << j.dump(2);
 }

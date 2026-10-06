@@ -79,7 +79,8 @@ int main() {
 	ServerNetwork serverNetwork;
 	unsigned short port = 8888;
 	if (!serverNetwork.start(port)) {
-		std::println(stderr, "[Server] 启动失败");		std::this_thread::sleep_for(3s);
+		std::println(stderr, "[Server] 启动失败");
+		std::this_thread::sleep_for(3s);
 		return 1;
 	}
 

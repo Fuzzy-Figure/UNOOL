@@ -190,7 +190,8 @@ int main() {
 	unsigned short port = config["server"]["port"];
 
 	if (!clientNetwork.connect(ipAddress, port)) {
-		std::println(stderr, "{} 连接服务器失败", windowTitleWithBrackets);		system("pause");
+		std::println(stderr, "{} 连接服务器失败", windowTitleWithBrackets);
+		system("pause");
 		return 1;
 	}
 
@@ -200,7 +201,8 @@ int main() {
 	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
 	auto session = login.run();
 	if (!session.ok) {
-		std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);		system("pause");
+		std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);
+		system("pause");
 		return 1;
 	}
 

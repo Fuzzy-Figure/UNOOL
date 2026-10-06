@@ -141,7 +141,7 @@ public:
 	static std::string to_string(const Color& color);
 	static std::string to_string(const Name& name);
 	static std::string to_string(const Type& type);
-	static std::string to_string(const DiscardReason reason);
+	static std::string to_string(const DiscardReason& reason);
 	static bool is_number(const Card::Name name);
 	static bool is_action(const Card::Name name);
 	static bool is_wild(const Card::Name name);
@@ -192,6 +192,18 @@ template <>
 struct std::formatter<Card::Name> : std::formatter<std::string> {
 	auto format(Card::Name n, std::format_context& ctx) const {
 		return std::formatter<std::string>::format(Card::to_string(n), ctx);
+	}
+};
+template <>
+struct std::formatter<Card::Type> : std::formatter<std::string> {
+	auto format(Card::Type t, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(Card::to_string(t), ctx);
+	}
+};
+template <>
+struct std::formatter<Card::DiscardReason> : std::formatter<std::string> {
+	auto format(const Card::DiscardReason& r, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(Card::to_string(r), ctx);
 	}
 };
 template <>

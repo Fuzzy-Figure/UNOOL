@@ -263,7 +263,7 @@ void Player::ban(Player& source, Card& card) {
 
 void Player::seal(std::size_t duration) {
 	sealed = duration;
-	std::println("玩家{}({})被封印{}回合", id, characterName(), duration);
+	std::println("玩家{}({})被封印{}轮", id, characterName(), duration);
 }
 
 
@@ -334,7 +334,7 @@ void Player::phaseEnd() {
 		trigger.player = *this;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_end, trigger);
 	}
-	//回合结束，封印剩余回合数-1
+	//回合结束，封印剩余轮数-1
 	if (sealed > 0) --sealed;
 }
 
@@ -594,20 +594,25 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title
 		num = _handCount;
 
 	ServerNetwork& network = game.getNetwork();
-	std::println("玩家{}请选择{}{}张牌", id, Card::to_string(reason), num);
+	std::println("玩家{}请选择{}{}张牌", id, reason, num);
 
 	std::size_t discardedCount = 0;
 	while (discardedCount < num) {
-		std::string fullTitle = std::format("{}（{}/{}）\n{}", title, discardedCount + 1, num, forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）");
+		std::string fullTitle = std::format(
+			"{}（{}/{}）\n{}",
+			title, discardedCount + 1, num,
+			forced ? "（↑确认，不可取消）" : "（↑确认，↓取消）"
+		);
 		auto index = chooseCard(fullTitle, condition, forced);
 		if (!index.has_value()) {
-			std::println("玩家{}取消了{}", id, Card::to_string(reason));
+			std::println("玩家{}取消了{}", id, reason);
 			return discardedCards;
 		}
 		discardedCards.push_back(hand->getCardByIndex(index.value()));
 		putCardToDiscardPileByIndex(index.value(), reason);
 		discardedCount++;
-		std::println("玩家{}{}了一张牌（{}/{}）", id, Card::to_string(reason), discardedCount, num);		game.broadcastState();
+		std::println("玩家{}{}了一张牌（{}/{}）", id, reason, discardedCount, num);
+		game.broadcastState();
 	}
 	return discardedCards;
 }
@@ -974,7 +979,8 @@ std::optional<Player::CompareResult> Player::comparePoint(Player& target, bool f
 
 	//目标无数字牌，直接判其输
 	if (!target.handInclude(&Card::isNumber)) {
-		std::println("<拼点> {}与{}拼点，{}无数字牌，直接判负", characterName(), target.characterName(), target.characterName());		game.broadcastState();
+		std::println("<拼点> {}与{}拼点，{}无数字牌，直接判负", characterName(), target.characterName(), target.characterName());
+		game.broadcastState();
 		return CompareResult::win;
 	}
 

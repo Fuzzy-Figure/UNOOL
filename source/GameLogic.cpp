@@ -492,7 +492,8 @@ void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime
 //返回置入弃牌堆的牌的引用
 Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player) {
 	card->setDiscardReason(reason);
-	std::println("[{}]({}) 进入了弃牌堆", *card, Card::to_string(reason));	discardPile->push_front(std::move(card));
+	std::println("[{}]({}) 进入了弃牌堆", *card, reason);
+	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
 	{
 		PassiveSkill::Trigger trigger;

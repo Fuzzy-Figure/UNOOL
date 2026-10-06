@@ -29,7 +29,7 @@ private:
 
 #pragma region 成员变量 - 状态标志
 	bool banned = false;
-	std::size_t sealed = 0;  //封印剩余回合数，0表示未封印
+	std::size_t sealed = 0;  //封印剩余轮数，0表示未封印
 	bool hasUsed = false;
 	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
 #pragma endregion

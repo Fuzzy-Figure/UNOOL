@@ -333,7 +333,7 @@ std::string Card::to_string(const Type& type) {
 	}
 }
 
-std::string Card::to_string(const DiscardReason reason) {
+std::string Card::to_string(const DiscardReason& reason) {
 	switch (reason) {
 		case DiscardReason::use:     return "打出";
 		case DiscardReason::discard: return "弃置";

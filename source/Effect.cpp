@@ -19,7 +19,7 @@ void Effect::pal(Card& card, GameLogic& game, Player& source) {
 	std::vector<Card::Color> colorVec(Card::fourColors.begin(), Card::fourColors.end());
 	const Card::Color newColor = source.chooseCardColor("请选择颜色", true, colorVec).value();
 	game.setCurrentColor(newColor);
-	std::println("玩家{}选择了颜色：{}", source.getId(), Card::to_string(newColor));
+	std::println("玩家{}选择了颜色：{}", source.getId(), newColor);
 }
 void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) {
 	const Card::Color& colorBeforeDraw4 = game.getCurrentColor();
