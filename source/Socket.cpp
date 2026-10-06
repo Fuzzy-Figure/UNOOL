@@ -156,7 +156,7 @@ void ServerNetwork::update() {
 					}
 					if (targetIdx < MAX_PLAYERS) {
 						std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
-							targetIdx, reqUsername);
+									 targetIdx, reqUsername);
 						removeClient(targetIdx);  //selector.remove 旧 socket + reset + 标记 disconnected=true
 						//pendingSocket 仍在 selector 中，直接 move 到 targetIdx 槽位
 						clientSockets[targetIdx] = std::move(pendingSocket);
@@ -482,8 +482,8 @@ void ClientNetwork::disconnect() {
 
 void ClientNetwork::update() {
 	using namespace std::chrono_literals;
-	//非阻塞（0ms）：避免主渲染线程被网络 IO 卡住，事件循环持续响应窗口消息
-	if (socket && selector.wait(sf::milliseconds(0))) {
+	//1ms 超时：避免主渲染线程被网络 IO 长时间卡住（注意 SFML 的 wait(0) 是无限阻塞，不能用 0）
+	if (socket && selector.wait(sf::milliseconds(1))) {
 		if (selector.isReady(*socket)) {
 			sf::Packet packet;
 			sf::Socket::Status status = socket->receive(packet);
