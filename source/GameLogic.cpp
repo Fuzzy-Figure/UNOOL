@@ -215,9 +215,14 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 	std::vector<Character::Entry> cands2(
 		allChars.begin() + doubleCandidateCount, allChars.end());
 
+	//提取双方候选名集合，供"换一批"时排除对方角色
+	std::unordered_set<std::string> names1, names2;
+	for (const auto& e : cands1) names1.insert(e.first);
+	for (const auto& e : cands2) names2.insert(e.first);
+
 	//按座次每家连续选完2个再下一家
-	selectCharacterDouble(firstSeatId, cands1);
-	selectCharacterDouble(secondSeatId, cands2);
+	selectCharacterDouble(firstSeatId, cands1, names2);
+	selectCharacterDouble(secondSeatId, cands2, names1);
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
@@ -277,26 +282,82 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	broadcastState();
 }
 
-void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands) {
-	//第一轮：5选1
-	std::vector<std::string> opts1;
-	for (const auto& e : cands) opts1.push_back(formatCharacterLabel(e));
-	const std::size_t choice1 = players[playerId]->ask("选择你的第1个角色（5选1）：", opts1, true);
-	const std::string char1 = cands[choice1 - 1].first;
-	const std::string skin1 = players[playerId]->chooseSkin(char1);
-	//移除已选
-	cands.erase(cands.begin() + (choice1 - 1));
+void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands,
+									   const std::unordered_set<std::string>& opponentNames) {
+	Player& player = *players[playerId];
+	const std::size_t candidateCount = cands.size();
 
-	//第二轮：4选1
-	std::vector<std::string> opts2;
-	for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
-	const std::size_t choice2 = players[playerId]->ask("选择你的第2个角色（4选1）：", opts2, true);
-	const std::string char2 = cands[choice2 - 1].first;
-	const std::string skin2 = players[playerId]->chooseSkin(char2);
+	//本方所有出现过的候选角色名（含历史批次），确保换一批不重复
+	std::unordered_set<std::string> seenNames;
+	for (const auto& e : cands) seenNames.insert(e.first);
+	bool hasSwapped = false;
 
-	//组合
-	players[playerId]->setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
-	broadcastState();
+	//"换一批"处理：扣除5积分，生成全新候选（排除对方+本方历史），重置选角进度
+	auto doSwap = [&]() -> bool {
+		if (hasSwapped) {
+			player.hint("每局限换一批一次");
+			return false;
+		}
+		if (!network.trySpendPoints(playerId, 5)) {
+			player.hint("积分不足，无法换一批");
+			return false;
+		}
+		std::unordered_set<std::string> exclude = opponentNames;
+		exclude.insert(seenNames.begin(), seenNames.end());
+		cands = Character::randomChooseCharacters(candidateCount, exclude);
+		for (const auto& e : cands) seenNames.insert(e.first);
+		hasSwapped = true;
+		player.hint("换一批成功！");
+		broadcastState();
+		return true;
+	};
+
+	std::string char1, skin1;
+	bool round1Done = false;
+
+	while (true) {
+		//第一轮：N选1
+		if (!round1Done) {
+			std::vector<std::string> opts1;
+			for (const auto& e : cands) opts1.push_back(formatCharacterLabel(e));
+			const std::string title1 = hasSwapped
+				? std::format("选择你的第1个角色（{}选1）：", opts1.size())
+				: std::format("选择你的第1个角色（{}选1，按0消耗5积分换一批，仅一次）：", opts1.size());
+			const std::size_t choice1 = player.ask(title1, opts1, false);
+			if (choice1 == 0) {
+				if (doSwap()) continue;
+				continue;
+			}
+			char1 = cands[choice1 - 1].first;
+			skin1 = player.chooseSkin(char1);
+			cands.erase(cands.begin() + (choice1 - 1));
+			round1Done = true;
+		}
+
+		//第二轮：M选1
+		std::vector<std::string> opts2;
+		for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
+		const std::string title2 = hasSwapped
+			? std::format("选择你的第2个角色（{}选1）：", opts2.size())
+			: std::format("选择你的第2个角色（{}选1，按0消耗5积分换一批，仅一次）：", opts2.size());
+		const std::size_t choice2 = player.ask(title2, opts2, false);
+		if (choice2 == 0) {
+			if (doSwap()) {
+				//换一批后丢弃第一轮选择，重新从第一轮选起
+				round1Done = false;
+				char1.clear();
+				skin1.clear();
+			}
+			continue;
+		}
+		const std::string char2 = cands[choice2 - 1].first;
+		const std::string skin2 = player.chooseSkin(char2);
+
+		//组合
+		player.setCharacter(Character::makeCombined(char1, skin1, char2, skin2));
+		broadcastState();
+		return;
+	}
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();

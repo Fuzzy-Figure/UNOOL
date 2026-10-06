@@ -842,10 +842,11 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 		//6. 返回
 		network.clearPlayerChoice(id);
-		std::print("[ask] 标题：“{}”，玩家{}选择了{}: ", title, id, *choice);
+		std::print("[ask] 标题：“{}”，玩家{}选择了{}", title, id, *choice);
 		if (*choice != 0) {
-			std::println("{}", options[*choice - 1]);
+			std::println(": {}", options[*choice - 1]);
 		}
+		else std::println();
 		return *choice;
 	}
 }

@@ -75,6 +75,23 @@ void UserDB::addMatchResult(const std::string& winnerUser, const std::string& lo
 	save();
 }
 
+int UserDB::getPoints(const std::string& username) const {
+	auto it = users_.find(username);
+	if (it == users_.end()) return 0;
+	return it->second.points;
+}
+
+bool UserDB::trySpendPoints(const std::string& username, int amount) {
+	if (amount <= 0) return false;
+	auto it = users_.find(username);
+	if (it == users_.end()) return false;
+	if (it->second.points < amount) return false;
+	it->second.points -= amount;
+	save();
+	std::println("[UserDB] 玩家{}消耗{}积分（当前{}）", username, amount, it->second.points);
+	return true;
+}
+
 void UserDB::load() {
 	std::ifstream file(DATA_FILE);
 	if (!file.is_open()) {

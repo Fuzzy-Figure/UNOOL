@@ -73,6 +73,14 @@ bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
 	return isClientConnected(clientIndex) && clientSlots_[clientIndex].loggedIn;
 }
 
+bool ServerNetwork::trySpendPoints(std::size_t clientIndex, int amount) {
+	if (clientIndex >= clientSlots_.size()) return false;
+	const std::string& username = clientSlots_[clientIndex].username;
+	if (!UserDB::instance().trySpendPoints(username, amount)) return false;
+	clientSlots_[clientIndex].points -= amount;
+	return true;
+}
+
 void ServerNetwork::update() {
 	if (selector.wait(sf::milliseconds(10))) {
 		handleNewConnections();

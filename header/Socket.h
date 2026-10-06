@@ -116,6 +116,8 @@ public:
 	bool isClientConnected(std::size_t clientIndex) const;
 	bool isClientLoggedIn(std::size_t clientIndex) const;
 	const std::array<ClientSlot, MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
+	// 尝试消耗指定客户端 amount 积分，成功则同步更新 ClientSlot.points
+	bool trySpendPoints(std::size_t clientIndex, int amount);
 };
 
 class ClientNetwork {

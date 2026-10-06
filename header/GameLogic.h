@@ -42,7 +42,9 @@ private:
 	std::optional<std::string> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
 	//双将模式选将：5选1再4选1，两轮 chooseSkin 后 makeCombined，期间每选完即 markCharInfoDirty+broadcast
-	void selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands);
+	//opponentNames：对方随机候选角色名集合，用于"换一批"时排除
+	void selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands,
+							   const std::unordered_set<std::string>& opponentNames);
 	//normal 模式：ban + selectCharacter
 	void initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId);
 	//double 模式：无ban，按座次每家5选2，makeCombined

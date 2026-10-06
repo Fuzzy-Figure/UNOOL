@@ -289,6 +289,11 @@ std::vector<std::string> Character::getSkins(const std::string& name) {
 }
 
 std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
+	const std::unordered_set<std::string> empty;
+	return randomChooseCharacters(n, empty);
+}
+
+std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n, const std::unordered_set<std::string>& exclude) {
 	//加载被屏蔽的角色和分组
 	const std::unordered_set<std::string> shieldedCharacters = [] {
 		std::vector chars = unool::getServerConfig()["characters"]["shielded"]["characters"].get<std::vector<std::string>>();
@@ -301,11 +306,12 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 
 	//构造可用角色
 	auto filteredChars = Character::infos | std::views::filter(
-		[&shieldedCharacters, &shieldedGroups](const Character::Entry& entry) {
-		//过滤掉白板和被屏蔽的角色
+		[&shieldedCharacters, &shieldedGroups, &exclude](const Character::Entry& entry) {
+		//过滤掉白板、被屏蔽的角色以及需排除的角色
 		return entry.first != "白板"
 			&& !shieldedCharacters.contains(entry.first)
-			&& !shieldedGroups.contains(entry.second.group);
+			&& !shieldedGroups.contains(entry.second.group)
+			&& !exclude.contains(entry.first);
 	});
 	const std::size_t filteredCharsSize = std::ranges::distance(filteredChars);
 

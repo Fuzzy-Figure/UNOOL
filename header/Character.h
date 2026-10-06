@@ -89,6 +89,8 @@ public:
 	static std::vector<std::string> getSkins(const std::string& name);
 
 	static std::vector<Entry> randomChooseCharacters(std::size_t n);
+	//随机抽取 n 个角色，排除 exclude 中指定的角色名
+	static std::vector<Entry> randomChooseCharacters(std::size_t n, const std::unordered_set<std::string>& exclude);
 #pragma endregion
 
 #pragma region 技能管理

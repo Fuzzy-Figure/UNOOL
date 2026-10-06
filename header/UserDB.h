@@ -27,6 +27,12 @@ public:
 	// 查询用户名是否已存在
 	bool exists(const std::string& username) const { return users_.count(username) > 0; }
 
+	// 查询用户积分，不存在返回 0
+	int getPoints(const std::string& username) const;
+
+	// 尝试消耗 amount 积分：积分足够则扣除并落盘，返回 true；不足返回 false
+	bool trySpendPoints(const std::string& username, int amount);
+
 	// 加分：按 scoreboard 表查询并更新双方积分，立即落盘
 	void addMatchResult(const std::string& winnerUser, const std::string& loserUser,
 						const std::vector<Character::Level>& winnerLevels,
