@@ -231,7 +231,8 @@ void LoginScene::pollAccountPackets() {
 				result.ok = true;
 				status = Status::Done;
 				message = "登录成功";
-std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);			}
+				std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);
+			}
 			else {
 				message = std::format("登录失败: {}", resp->msg);
 				status = Status::Idle;
@@ -247,7 +248,7 @@ void LoginScene::render() {
 	window.clear(sf::Color::White);
 
 	// 标题（靠上居中，避免与输入框重叠）
-	textMgr.displayTextInUp("UNOOL", { 40, 80 }, sf::Color::Black);
+	textMgr.displayTextInUp("UNOOL", { 100, 200 });
 
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
@@ -268,22 +269,28 @@ void LoginScene::render() {
 		const sf::Vector2f labelSize = { 30, 60 };
 		const sf::Vector2f labelMeasured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
 		textMgr.displayText(label,
-			{ r.position.x + (r.size.x - labelMeasured.x) / 2.f,
-			  r.position.y + (r.size.y - labelMeasured.y) / 2.f },
-			labelSize, sf::Color::Black);
+							{ r.position.x + (r.size.x - labelMeasured.x) / 2.f,
+							  r.position.y + (r.size.y - labelMeasured.y) / 2.f },
+							labelSize);
 	};
 
 	// 用户名行
-	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 });
 	drawBox(usernameBox, focus == Focus::Username);
-	textMgr.displayText(username,
-		{ usernameBox.position.x + 15.f, usernameBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText(
+		username,
+		{ usernameBox.position.x + 15.f, usernameBox.position.y + 15.f },
+		{ 25, 50 }
+	);
 
 	// 密码行 (明文显示)
-	textMgr.displayText("密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText("密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 });
 	drawBox(passwordBox, focus == Focus::Password);
-	textMgr.displayText(password,
-		{ passwordBox.position.x + 15.f, passwordBox.position.y + 15.f }, { 25, 50 }, sf::Color::Black);
+	textMgr.displayText(
+		password,
+		{ passwordBox.position.x + 15.f, passwordBox.position.y + 15.f },
+		{ 25, 50 }
+	);
 
 	// 按钮
 	drawButton(loginBtn, "登录");
@@ -295,8 +302,8 @@ void LoginScene::render() {
 		const sf::Vector2f msgSize = { 25, 50 };
 		const sf::Vector2f msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
 		textMgr.displayText(message,
-			{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.78f },
-			msgSize, sf::Color::Red);
+							{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.78f },
+							msgSize, sf::Color::Red);
 	}
 
 	// 操作提示（底部居中）
@@ -304,8 +311,8 @@ void LoginScene::render() {
 	const sf::Vector2f hintSize = { 18, 36 };
 	const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
 	textMgr.displayText(hint,
-		{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
-		hintSize, sf::Color(120, 120, 120));
+						{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
+						hintSize, sf::Color(120, 120, 120));
 
 	window.display();
 }

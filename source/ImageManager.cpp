@@ -28,7 +28,8 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 			std::println("[ImageManager] 使用默认图片，原路径：{}", absolutePath);
 		}
 		else {
-std::println("[ImageManager] 纹理加载成功，路径：{}，尺寸：{}*{}", absolutePath, texture->getSize().x, texture->getSize().y);		}
+			std::println("[ImageManager] 纹理加载成功，路径：{}，尺寸：{}*{}", absolutePath, texture->getSize().x, texture->getSize().y);
+		}
 		textureCache.emplace(absolutePath, std::move(texture));
 	}
 
