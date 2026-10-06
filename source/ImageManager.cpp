@@ -25,7 +25,7 @@ void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos
 			if (!texture->loadFromFile(unool::string::to_utf16(defaultPath))) {
 				throw std::runtime_error(std::format("[ImageManager] 纹理加载失败，路径：{}", absolutePath));
 			}
-			std::println("[ImageManager] 使用默认图片，原路径：{}", absolutePath);
+			std::println("[ImageManager] 纹理加载失败，路径：{}，使用默认图片", absolutePath);
 		}
 		else {
 			std::println("[ImageManager] 纹理加载成功，路径：{}，尺寸：{}*{}", absolutePath, texture->getSize().x, texture->getSize().y);

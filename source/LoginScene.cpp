@@ -248,7 +248,7 @@ void LoginScene::render() {
 	window.clear(sf::Color::White);
 
 	// 标题（靠上居中，避免与输入框重叠）
-	textMgr.displayTextInUp("UNOOL", { 100, 200 });
+	textMgr.displayTextInUp("UNOOL", { 50, 100 });
 
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
