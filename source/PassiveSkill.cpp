@@ -1060,7 +1060,7 @@ bool 迷烟::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	std::string colorStr = Card::to_string(card.getColor());
+	std::string colorStr = std::format("{}", card.getColor());
 	std::vector discard = target.chooseToDiscard(
 		std::format("[迷烟]\n弃置一张{}色手牌或万能牌，\n或取消并摸一张牌", colorStr), 1, false,
 		[&card](const Card& c) {
@@ -1147,7 +1147,7 @@ bool 补天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		std::string hintText = "【补天】已记录的牌名：";
 		for (std::size_t i = 0; i < sorted.size(); ++i) {
 			if (i > 0) hintText += "、";
-			hintText += Card::to_string(sorted[i]);
+			hintText += std::format("{}", sorted[i]);
 		}
 		carrier.hint(hintText);
 	}
@@ -1830,7 +1830,7 @@ bool 困界::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	for (int i = 1; i <= 3; ++i) {
 		Card::Type c = static_cast<Card::Type>(i);
 		if (c != typeA) {
-			otherNames.push_back(Card::to_string(c));
+			otherNames.push_back(std::format("{}", c));
 			otherTypes.push_back(c);
 		}
 	}

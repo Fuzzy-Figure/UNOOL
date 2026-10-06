@@ -397,7 +397,7 @@ bool 芜湖::content(GameLogic& game, Player& carrier) {
 
 	//选牌名
 	std::vector<std::string> nameStrs;
-	for (auto n : nameOpts) nameStrs.push_back(Card::to_string(n));
+	for (auto n : nameOpts) nameStrs.push_back(std::format("{}", n));
 	std::size_t nameChoice = carrier.ask("【芜湖】声明牌名", nameStrs, true);
 	Card::Name targetName = nameOpts[nameChoice - 1];
 

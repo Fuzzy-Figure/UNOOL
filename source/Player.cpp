@@ -729,7 +729,7 @@ std::optional<Card::Color> Player::chooseCardColor(const std::string& title, boo
 	if (colors.empty()) return std::nullopt;
 	std::vector<std::string> options;
 	for (const auto& c : colors) {
-		options.push_back(Card::to_string(c));
+		options.push_back(std::format("{}", c));
 	}
 	std::size_t choice = ask(title, options, forced);
 	if (choice == 0) return std::nullopt;
@@ -740,7 +740,7 @@ std::optional<Card::Name> Player::chooseCardName(const std::string& title, bool 
 	if (names.empty()) return std::nullopt;
 	std::vector<std::string> options;
 	for (const auto& n : names) {
-		options.push_back(Card::to_string(n));
+		options.push_back(std::format("{}", n));
 	}
 	std::size_t choice = ask(title, options, forced);
 	if (choice == 0) return std::nullopt;
