@@ -163,3 +163,4 @@ ActiveSkill::ActiveSkill(const std::string& _name, const std::string& _info, con
 	:Skill(_name, _info, _limit), triggerTime(_triggerTime), phaseLimit(_phaseLimit) {}
 
 
+//D:\Admin\Softwares\Compilers\VisualStudio\Projects\UNOOL\
