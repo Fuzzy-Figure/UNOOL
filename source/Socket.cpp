@@ -74,174 +74,188 @@ bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
 
 void ServerNetwork::update() {
 	if (selector.wait(sf::milliseconds(10))) {
-		if (selector.isReady(*listener)) {
-			std::unique_ptr<sf::TcpSocket> newSocket = std::make_unique<sf::TcpSocket>();
-			if (listener->accept(*newSocket) == sf::Socket::Status::Done) {
-				//检查是否有 disconnected 槽位（等待重连）
-				bool hasDisconnectedSlot = false;
+		handleNewConnections();
+		handleClientPackets();
+		handlePendingSocket();
+	}
+	sendHeartbeat();
+	checkTimeouts();
+}
+
+void ServerNetwork::handleNewConnections() {
+	if (selector.isReady(*listener)) {
+		std::unique_ptr<sf::TcpSocket> newSocket = std::make_unique<sf::TcpSocket>();
+		if (listener->accept(*newSocket) == sf::Socket::Status::Done) {
+			//检查是否有 disconnected 槽位（等待重连）
+			bool hasDisconnectedSlot = false;
+			for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+				if (clientSlots_[i].disconnected) {
+					hasDisconnectedSlot = true;
+					break;
+				}
+			}
+
+			if (hasDisconnectedSlot && !pendingSocket) {
+				//有掉线槽位：收下 socket 作为 pendingSocket，等 LoginRequest 识别 username 匹配后再分配槽位
+				newSocket->setBlocking(false);
+				selector.add(*newSocket);
+				pendingSocket = std::move(newSocket);
+				std::println("[ServerNetwork] 检测到掉线槽位，新连接进入待登录队列，等待 LoginRequest 匹配 username...");
+			}
+			else {
+				//无掉线槽位或 pendingSocket 已被占用：按原逻辑分配第一个空槽位
+				std::size_t newPlayerId = MAX_PLAYERS;
 				for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
-					if (clientSlots_[i].disconnected) {
-						hasDisconnectedSlot = true;
+					if (!clientSockets[i]) {
+						newPlayerId = i;
 						break;
 					}
 				}
 
-				if (hasDisconnectedSlot && !pendingSocket) {
-					//有掉线槽位：收下 socket 作为 pendingSocket，等 LoginRequest 识别 username 匹配后再分配槽位
+				if (newPlayerId < MAX_PLAYERS) {
+					newSocket->setBlocking(false);
+					selector.add(*newSocket);
+					clientSockets[newPlayerId] = std::move(newSocket);
+
+					sendConnectionInfo(newPlayerId);
+
+					std::println("[ServerNetwork] 客户端{}已连接，等待登录...", newPlayerId);
+				}
+				else if (!pendingSocket) {
+					//槽位已满：先收下，等收到 LoginRequest 后识别重连意图顶替旧槽位
 					newSocket->setBlocking(false);
 					selector.add(*newSocket);
 					pendingSocket = std::move(newSocket);
-					std::println("[ServerNetwork] 检测到掉线槽位，新连接进入待登录队列，等待 LoginRequest 匹配 username...");
+					std::println("[ServerNetwork] 槽位已满，新连接进入待登录队列，等待重连识别...");
 				}
 				else {
-					//无掉线槽位或 pendingSocket 已被占用：按原逻辑分配第一个空槽位
-					std::size_t newPlayerId = MAX_PLAYERS;
-					for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
-						if (!clientSockets[i]) {
-							newPlayerId = i;
-							break;
-						}
-					}
-
-					if (newPlayerId < MAX_PLAYERS) {
-						newSocket->setBlocking(false);
-						selector.add(*newSocket);
-						clientSockets[newPlayerId] = std::move(newSocket);
-
-						sendConnectionInfo(newPlayerId);
-
-						std::println("[ServerNetwork] 客户端{}已连接，等待登录...", newPlayerId);
-					}
-					else if (!pendingSocket) {
-						//槽位已满：先收下，等收到 LoginRequest 后识别重连意图顶替旧槽位
-						newSocket->setBlocking(false);
-						selector.add(*newSocket);
-						pendingSocket = std::move(newSocket);
-						std::println("[ServerNetwork] 槽位已满，新连接进入待登录队列，等待重连识别...");
-					}
-					else {
-						//pendingSocket 已被占用：直接拒绝
-						newSocket->disconnect();
-						std::println("[ServerNetwork] 新连接被拒（pendingSocket 已占用）");
-					}
+					//pendingSocket 已被占用：直接拒绝
+					newSocket->disconnect();
+					std::println("[ServerNetwork] 新连接被拒（pendingSocket 已占用）");
 				}
-			}
-		}
-
-		for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
-			if (!clientSockets[i]) continue;
-
-			sf::TcpSocket& socket = *clientSockets[i];
-			if (selector.isReady(socket)) {
-				sf::Packet packet;
-				sf::Socket::Status status = socket.receive(packet);
-				if (status == sf::Socket::Status::Done) {
-					//收到任何包都说明客户端活着，重置心跳计时
-					lastRecvClocks[i].restart();
-					// 先 peek 类型，账号包内部处理，其他包入队列
-					sf::Packet peeked = packet;
-					int msgType;
-					if (peeked >> msgType) {
-						if (msgType == static_cast<int>(MessageType::Heartbeat)) {
-							//心跳回包：不入队，已通过 lastRecvClocks 重置完成
-						}
-						else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
-								 msgType == static_cast<int>(MessageType::LoginRequest) ||
-								 msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
-							handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
-						}
-						else {
-							receivedPackets.push(packet);
-						}
-					}
-				}
-				else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
-					std::println("[ServerNetwork] 客户端{} 断开连接（status={}）", i, static_cast<int>(status));
-					removeClient(i);
-				}
-			}
-		}
-
-		//处理待登录队列的 socket：识别重连意图后顶替同账号的旧连接
-		if (pendingSocket && selector.isReady(*pendingSocket)) {
-			sf::Packet packet;
-			sf::Socket::Status status = pendingSocket->receive(packet);
-			if (status == sf::Socket::Status::Done) {
-				sf::Packet peek = packet;
-				int msgType;
-				std::string reqUsername, reqPassword;
-				if (peek >> msgType
-					&& msgType == static_cast<int>(MessageType::LoginRequest)
-					&& peek >> reqUsername >> reqPassword) {
-					//找匹配的 loggedIn 或 disconnected 槽位（同账号）
-					std::size_t targetIdx = MAX_PLAYERS;
-					for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
-						if ((clientSlots_[i].loggedIn || clientSlots_[i].disconnected)
-							&& clientSlots_[i].username == reqUsername) {
-							targetIdx = i;
-							break;
-						}
-					}
-					if (targetIdx < MAX_PLAYERS) {
-						if (clientSlots_[targetIdx].loggedIn) {
-							//旧连接还活着：踢旧让新顶替
-							std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
-										 targetIdx, reqUsername);
-							removeClient(targetIdx);  //selector.remove 旧 socket + reset + 标记 disconnected=true
-						}
-						//disconnected 槽位：socket 已空，不需要 removeClient，直接 move
-						//pendingSocket 仍在 selector 中，直接 move 到 targetIdx 槽位
-						clientSockets[targetIdx] = std::move(pendingSocket);
-						sendConnectionInfo(targetIdx);  //让客户端拿到正确的 playerId
-						handleAccountPacket(targetIdx, MessageType::LoginRequest, std::move(packet));
-					}
-					else {
-						//没找到匹配的 loggedIn/disconnected 槽位：尝试找空槽位（非 disconnected）分配之
-						std::size_t emptyIdx = MAX_PLAYERS;
-						for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
-							if (!clientSockets[i] && !clientSlots_[i].disconnected) {
-								emptyIdx = i;
-								break;
-							}
-						}
-						if (emptyIdx < MAX_PLAYERS) {
-							//有非 disconnected 的空槽位：分配之（覆盖首次登录新账号场景）
-							clientSockets[emptyIdx] = std::move(pendingSocket);
-							sendConnectionInfo(emptyIdx);
-							handleAccountPacket(emptyIdx, MessageType::LoginRequest, std::move(packet));
-						}
-						else {
-							//无匹配也无空槽位：拒绝（防止陌生人顶替）
-							auto resp = AccountProtocol::makeAccountResponse(
-								MessageType::LoginResponse, false,
-								"服务器已满，且无匹配的重连槽位");
-							if (pendingSocket->send(resp) != sf::Socket::Status::Done) {
-								std::println("[ServerNetwork] 待登录队列的拒绝响应发送失败（账号 {}）", reqUsername);
-							}
-							selector.remove(*pendingSocket);
-							pendingSocket->disconnect();
-							pendingSocket.reset();
-							std::println("[ServerNetwork] 待登录队列的连接被拒绝（无匹配槽位，账号 {}）", reqUsername);
-						}
-					}
-				}
-				else {
-					//首包非 LoginRequest：拒绝
-					selector.remove(*pendingSocket);
-					pendingSocket->disconnect();
-					pendingSocket.reset();
-					std::println("[ServerNetwork] 待登录队列的连接被拒绝（首包非登录请求）");
-				}
-			}
-			else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
-				std::println("[ServerNetwork] 待登录队列的 socket 断开（status={}）", static_cast<int>(status));
-				selector.remove(*pendingSocket);
-				pendingSocket->disconnect();
-				pendingSocket.reset();
 			}
 		}
 	}
+}
 
+void ServerNetwork::handleClientPackets() {
+	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+		if (!clientSockets[i]) continue;
+
+		sf::TcpSocket& socket = *clientSockets[i];
+		if (selector.isReady(socket)) {
+			sf::Packet packet;
+			sf::Socket::Status status = socket.receive(packet);
+			if (status == sf::Socket::Status::Done) {
+				//收到任何包都说明客户端活着，重置心跳计时
+				lastRecvClocks[i].restart();
+				// 先 peek 类型，账号包内部处理，其他包入队列
+				sf::Packet peeked = packet;
+				int msgType;
+				if (peeked >> msgType) {
+					if (msgType == static_cast<int>(MessageType::Heartbeat)) {
+						//心跳回包：不入队，已通过 lastRecvClocks 重置完成
+					}
+					else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
+							 msgType == static_cast<int>(MessageType::LoginRequest) ||
+							 msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
+						handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
+					}
+					else {
+						receivedPackets.push(packet);
+					}
+				}
+			}
+			else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
+				std::println("[ServerNetwork] 客户端{} 断开连接（status={}）", i, static_cast<int>(status));
+				removeClient(i);
+			}
+		}
+	}
+}
+
+void ServerNetwork::handlePendingSocket() {
+	//处理待登录队列的 socket：识别重连意图后顶替同账号的旧连接
+	if (pendingSocket && selector.isReady(*pendingSocket)) {
+		sf::Packet packet;
+		sf::Socket::Status status = pendingSocket->receive(packet);
+		if (status == sf::Socket::Status::Done) {
+			sf::Packet peek = packet;
+			int msgType;
+			std::string reqUsername, reqPassword;
+			if (peek >> msgType
+				&& msgType == static_cast<int>(MessageType::LoginRequest)
+				&& peek >> reqUsername >> reqPassword) {
+				//找匹配的 loggedIn 或 disconnected 槽位（同账号）
+				std::size_t targetIdx = MAX_PLAYERS;
+				for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+					if ((clientSlots_[i].loggedIn || clientSlots_[i].disconnected)
+						&& clientSlots_[i].username == reqUsername) {
+						targetIdx = i;
+						break;
+					}
+				}
+				if (targetIdx < MAX_PLAYERS) {
+					if (clientSlots_[targetIdx].loggedIn) {
+						//旧连接还活着：踢旧让新顶替
+						std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
+									 targetIdx, reqUsername);
+						removeClient(targetIdx);  //selector.remove 旧 socket + reset + 标记 disconnected=true
+					}
+					//disconnected 槽位：socket 已空，不需要 removeClient，直接 move
+					//pendingSocket 仍在 selector 中，直接 move 到 targetIdx 槽位
+					clientSockets[targetIdx] = std::move(pendingSocket);
+					sendConnectionInfo(targetIdx);  //让客户端拿到正确的 playerId
+					handleAccountPacket(targetIdx, MessageType::LoginRequest, std::move(packet));
+				}
+				else {
+					//没找到匹配的 loggedIn/disconnected 槽位：尝试找空槽位（非 disconnected）分配之
+					std::size_t emptyIdx = MAX_PLAYERS;
+					for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+						if (!clientSockets[i] && !clientSlots_[i].disconnected) {
+							emptyIdx = i;
+							break;
+						}
+					}
+					if (emptyIdx < MAX_PLAYERS) {
+						//有非 disconnected 的空槽位：分配之（覆盖首次登录新账号场景）
+						clientSockets[emptyIdx] = std::move(pendingSocket);
+						sendConnectionInfo(emptyIdx);
+						handleAccountPacket(emptyIdx, MessageType::LoginRequest, std::move(packet));
+					}
+					else {
+						//无匹配也无空槽位：拒绝（防止陌生人顶替）
+						auto resp = AccountProtocol::makeAccountResponse(
+							MessageType::LoginResponse, false,
+							"服务器已满，且无匹配的重连槽位");
+						if (pendingSocket->send(resp) != sf::Socket::Status::Done) {
+							std::println("[ServerNetwork] 待登录队列的拒绝响应发送失败（账号 {}）", reqUsername);
+						}
+						selector.remove(*pendingSocket);
+						pendingSocket->disconnect();
+						pendingSocket.reset();
+						std::println("[ServerNetwork] 待登录队列的连接被拒绝（无匹配槽位，账号 {}）", reqUsername);
+					}
+				}
+			}
+			else {
+				//首包非 LoginRequest：拒绝
+				selector.remove(*pendingSocket);
+				pendingSocket->disconnect();
+				pendingSocket.reset();
+				std::println("[ServerNetwork] 待登录队列的连接被拒绝（首包非登录请求）");
+			}
+		}
+		else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error) {
+			std::println("[ServerNetwork] 待登录队列的 socket 断开（status={}）", static_cast<int>(status));
+			selector.remove(*pendingSocket);
+			pendingSocket->disconnect();
+			pendingSocket.reset();
+		}
+	}
+}
+
+void ServerNetwork::sendHeartbeat() {
 	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat
 	if (heartbeatClock.getElapsedTime().asSeconds() >= 1.0f) {
 		heartbeatClock.restart();
@@ -253,7 +267,9 @@ void ServerNetwork::update() {
 			}
 		}
 	}
+}
 
+void ServerNetwork::checkTimeouts() {
 	//超时检测：loggedIn 客户端连续 3 秒未收到任何回包视为掉线
 	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
 		if (isClientLoggedIn(i) && lastRecvClocks[i].getElapsedTime().asSeconds() >= 3.0f) {

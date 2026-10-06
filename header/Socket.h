@@ -79,6 +79,12 @@ private:
 	bool sendPacketToAll(sf::Packet& packet);
 	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
 	void removeClient(std::size_t clientIndex);
+	//update() 的拆分子任务
+	void handleNewConnections();
+	void handleClientPackets();
+	void handlePendingSocket();
+	void sendHeartbeat();
+	void checkTimeouts();
 
 public:
 	ServerNetwork() = default;
