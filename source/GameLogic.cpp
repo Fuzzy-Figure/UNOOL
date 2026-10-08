@@ -407,7 +407,7 @@ bool GameLogic::runTurn() {
 }
 
 void GameLogic::broadcastState() {
-	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 		if (!network.isClientConnected(i)) continue;
 		GameState state = packStateForPlayer(i);
 		bool ok = network.sendGameStateToClient(i, state);
