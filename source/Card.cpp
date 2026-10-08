@@ -333,6 +333,7 @@ Cards Cards::clone() const {
 	return newCards;
 }
 
+/*
 // 条件遍历
 bool Cards::satisfy(const std::function<bool(const Cards&)>& condition) const {
 	return condition(*this);
@@ -360,7 +361,7 @@ void Cards::forEachIf(const std::function<bool(const Card&)>& condition,
 		if (condition(*c)) operation(*c);
 	}
 }
-
+*/
 
 // ==================== Hand 类 ====================
 

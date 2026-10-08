@@ -247,6 +247,7 @@ public:
 sf::Packet& operator>>(sf::Packet& packet, Card& card);
 sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 
+#pragma region 枚举类std::formatter特化
 template<>
 struct std::formatter<Card::Color> : std::formatter<std::string_view> {
 	auto format(Card::Color c, std::format_context& ctx) const {
@@ -277,7 +278,20 @@ struct std::formatter<Card> : std::formatter<std::string_view> {
 		return std::formatter<std::string_view>::format(c.toString(), ctx);
 	}
 };
+#pragma endregion
 
+class Cards;
+
+template<typename F>
+concept CardsPredicate = std::is_invocable_v<F, const Cards&>
+&& std::same_as<std::invoke_result_t<F, const Cards&>, bool>;
+
+template<typename F>
+concept CardPredicate = std::is_invocable_v<F, const Card&>
+&& std::same_as<std::invoke_result_t<F, const Card&>, bool>;
+
+template<typename F>
+concept CardOperation = std::is_invocable_v<F, Card&>;
 
 class Cards {
 protected:
@@ -330,12 +344,45 @@ public:
 #pragma endregion
 
 #pragma region 条件遍历
-	bool satisfy(const std::function<bool(const Cards&)>& condition) const;
-	bool include(const std::function<bool(const Card&)>& condition) const;
-	bool exclude(const std::function<bool(const Card&)>& condition) const;
-	void forEach(const std::function<void(Card&)>& operation) const;
-	void forEachIf(const std::function<bool(const Card&)>& condition,
-				   const std::function<void(Card&)>& operation) const;
+	auto view() {
+		return cards | std::views::transform([](auto& p) -> Card& { return *p; });
+	}
+	auto view() const {
+		return cards | std::views::transform([](const auto& p) -> const Card& { return *p; });
+	}
+
+	template<CardsPredicate Cond>
+	bool satisfy(Cond&& cond) const {
+		return std::invoke(cond, *this);
+	}
+
+	template<CardPredicate Cond>
+	bool include(Cond&& cond) const {
+		return std::ranges::any_of(view(), [&](const Card& c) {
+			return std::invoke(cond, c);
+		});
+	}
+
+	template<CardPredicate Cond>
+	bool exclude(Cond&& cond) const {
+		return std::ranges::none_of(view(), [&](const Card& c) {
+			return std::invoke(cond, c);
+		});
+	}
+
+	template<CardOperation Oper>
+	void forEach(Oper&& oper) {
+		for (Card& c : view()) std::invoke(oper, c);
+	}
+
+	template<CardPredicate Cond, CardOperation Oper>
+	void forEachIf(Cond&& cond, Oper&& oper) {
+		for (Card& c : view()) {
+			if (std::invoke(cond, c)) {
+				std::invoke(oper, c);
+			}
+		}
+	}
 #pragma endregion
 };
 
