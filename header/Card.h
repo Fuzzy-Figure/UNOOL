@@ -272,9 +272,9 @@ struct std::formatter<Card::DiscardReason> : std::formatter<std::string_view> {
 	}
 };
 template<>
-struct std::formatter<Card> : std::formatter<std::string> {
+struct std::formatter<Card> : std::formatter<std::string_view> {
 	auto format(const Card& c, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(c.toString(), ctx);
+		return std::formatter<std::string_view>::format(c.toString(), ctx);
 	}
 };
 
@@ -340,9 +340,9 @@ public:
 };
 
 template<>
-struct std::formatter<Cards> : std::formatter<std::string> {
+struct std::formatter<Cards> : std::formatter<std::string_view> {
 	auto format(const Cards& cards, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(cards.toString(), ctx);
+		return std::formatter<std::string_view>::format(cards.toString(), ctx);
 	}
 };
 
@@ -385,9 +385,9 @@ public:
 };
 
 template<>
-struct std::formatter<Hand> : std::formatter<std::string> {
+struct std::formatter<Hand> : std::formatter<std::string_view> {
 	auto format(const Hand& hand, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(hand.toString(), ctx);
+		return std::formatter<std::string_view>::format(hand.toString(), ctx);
 	}
 };
 
