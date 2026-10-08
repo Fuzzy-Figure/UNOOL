@@ -247,6 +247,7 @@ public:
 sf::Packet& operator>>(sf::Packet& packet, Card& card);
 sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 
+#pragma region std::formatter特化
 template<>
 struct std::formatter<Card::Color> : std::formatter<std::string_view> {
 	auto format(Card::Color c, std::format_context& ctx) const {
@@ -277,6 +278,7 @@ struct std::formatter<Card> : std::formatter<std::string_view> {
 		return std::formatter<std::string_view>::format(c.toString(), ctx);
 	}
 };
+#pragma endregion
 
 
 class Cards {
@@ -405,9 +407,3 @@ public:
 	void shuffle();
 #pragma endregion
 };
-
-
-
-
-
-
