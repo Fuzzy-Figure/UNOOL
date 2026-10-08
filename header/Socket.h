@@ -8,8 +8,8 @@
 #include <vector>
 #include <SFML/Network.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include "utils.h"
 
-constexpr std::size_t MAX_PLAYERS = 2;
 
 struct GameState;
 struct CharInfo;
@@ -63,8 +63,8 @@ public:
 
 private:
 	std::unique_ptr<sf::TcpListener> listener;
-	std::array<std::unique_ptr<sf::TcpSocket>, MAX_PLAYERS> clientSockets;
-	std::array<ClientSlot, MAX_PLAYERS> clientSlots_;
+	std::array<std::unique_ptr<sf::TcpSocket>, unool::MAX_PLAYERS> clientSockets;
+	std::array<ClientSlot, unool::MAX_PLAYERS> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
 	std::queue<sf::Packet> receivedPackets;
@@ -72,7 +72,7 @@ private:
 	std::unique_ptr<sf::TcpSocket> pendingSocket;
 	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat，超过 3 秒未收到任何回包则视为掉线
 	sf::Clock heartbeatClock;
-	std::array<sf::Clock, MAX_PLAYERS> lastRecvClocks;
+	std::array<sf::Clock, unool::MAX_PLAYERS> lastRecvClocks;
 
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
@@ -115,7 +115,7 @@ public:
 	std::size_t getClientCount() const;
 	bool isClientConnected(std::size_t clientIndex) const;
 	bool isClientLoggedIn(std::size_t clientIndex) const;
-	const std::array<ClientSlot, MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
+	const std::array<ClientSlot, unool::MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
 	// 尝试消耗指定客户端 amount 积分，成功则同步更新 ClientSlot.points
 	bool trySpendPoints(std::size_t clientIndex, int amount);
 };

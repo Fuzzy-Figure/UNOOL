@@ -27,7 +27,7 @@ bool ServerNetwork::start(unsigned short port) {
 }
 
 void ServerNetwork::disconnect() {
-	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 		removeClient(i);
 	}
 	if (pendingSocket) {
@@ -44,7 +44,7 @@ void ServerNetwork::disconnect() {
 }
 
 void ServerNetwork::removeClient(std::size_t clientIndex) {
-	if (clientIndex >= MAX_PLAYERS) return;
+	if (clientIndex >= unool::MAX_PLAYERS) return;
 	if (clientSockets[clientIndex]) {
 		selector.remove(*clientSockets[clientIndex]);
 		clientSockets[clientIndex]->disconnect();
@@ -66,7 +66,7 @@ std::size_t ServerNetwork::getClientCount() const {
 }
 
 bool ServerNetwork::isClientConnected(std::size_t clientIndex) const {
-	return clientIndex < MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
+	return clientIndex < unool::MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
 }
 
 bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
@@ -97,7 +97,7 @@ void ServerNetwork::handleNewConnections() {
 		if (listener->accept(*newSocket) == sf::Socket::Status::Done) {
 			//检查是否有 disconnected 槽位（等待重连）
 			bool hasDisconnectedSlot = false;
-			for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+			for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 				if (clientSlots_[i].disconnected) {
 					hasDisconnectedSlot = true;
 					break;
@@ -113,15 +113,15 @@ void ServerNetwork::handleNewConnections() {
 			}
 			else {
 				//无掉线槽位或 pendingSocket 已被占用：按原逻辑分配第一个空槽位
-				std::size_t newPlayerId = MAX_PLAYERS;
-				for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+				std::size_t newPlayerId = unool::MAX_PLAYERS;
+				for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 					if (!clientSockets[i]) {
 						newPlayerId = i;
 						break;
 					}
 				}
 
-				if (newPlayerId < MAX_PLAYERS) {
+				if (newPlayerId < unool::MAX_PLAYERS) {
 					newSocket->setBlocking(false);
 					selector.add(*newSocket);
 					clientSockets[newPlayerId] = std::move(newSocket);
@@ -148,7 +148,7 @@ void ServerNetwork::handleNewConnections() {
 }
 
 void ServerNetwork::handleClientPackets() {
-	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 		if (!clientSockets[i]) continue;
 
 		sf::TcpSocket& socket = *clientSockets[i];
@@ -196,15 +196,15 @@ void ServerNetwork::handlePendingSocket() {
 				&& msgType == static_cast<int>(MessageType::LoginRequest)
 				&& peek >> reqUsername >> reqPassword) {
 				//找匹配的 loggedIn 或 disconnected 槽位（同账号）
-				std::size_t targetIdx = MAX_PLAYERS;
-				for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+				std::size_t targetIdx = unool::MAX_PLAYERS;
+				for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 					if ((clientSlots_[i].loggedIn || clientSlots_[i].disconnected)
 						&& clientSlots_[i].username == reqUsername) {
 						targetIdx = i;
 						break;
 					}
 				}
-				if (targetIdx < MAX_PLAYERS) {
+				if (targetIdx < unool::MAX_PLAYERS) {
 					if (clientSlots_[targetIdx].loggedIn) {
 						//旧连接还活着：踢旧让新顶替
 						std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
@@ -219,14 +219,14 @@ void ServerNetwork::handlePendingSocket() {
 				}
 				else {
 					//没找到匹配的 loggedIn/disconnected 槽位：尝试找空槽位（非 disconnected）分配之
-					std::size_t emptyIdx = MAX_PLAYERS;
-					for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+					std::size_t emptyIdx = unool::MAX_PLAYERS;
+					for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 						if (!clientSockets[i] && !clientSlots_[i].disconnected) {
 							emptyIdx = i;
 							break;
 						}
 					}
-					if (emptyIdx < MAX_PLAYERS) {
+					if (emptyIdx < unool::MAX_PLAYERS) {
 						//有非 disconnected 的空槽位：分配之（覆盖首次登录新账号场景）
 						clientSockets[emptyIdx] = std::move(pendingSocket);
 						sendConnectionInfo(emptyIdx);
@@ -270,7 +270,7 @@ void ServerNetwork::sendHeartbeat() {
 		heartbeatClock.restart();
 		sf::Packet hb;
 		hb << static_cast<int>(MessageType::Heartbeat);
-		for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 			if (isClientLoggedIn(i)) {
 				sendPacketToClient(i, hb);
 			}
@@ -280,7 +280,7 @@ void ServerNetwork::sendHeartbeat() {
 
 void ServerNetwork::checkTimeouts() {
 	//超时检测：loggedIn 客户端连续 3 秒未收到任何回包视为掉线
-	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 		if (isClientLoggedIn(i) && lastRecvClocks[i].getElapsedTime().asSeconds() >= 3.0f) {
 			std::println("[ServerNetwork] 客户端{}（账号 {}）已 3 秒未响应，判定为掉线，主动断开",
 						 i, clientSlots_[i].username);
@@ -329,7 +329,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		// 检查另一端是否已用同一账号登录
 		if (ok) {
 			std::size_t other = 1 - clientIdx;
-			if (other < MAX_PLAYERS
+			if (other < unool::MAX_PLAYERS
 				&& clientSlots_[other].loggedIn
 				&& clientSlots_[other].username == req->username) {
 				ok = false;
@@ -472,7 +472,7 @@ bool ServerNetwork::clearPlayerChoice(std::size_t clientIndex) {
 
 bool ServerNetwork::sendPacketToAll(sf::Packet& packet) {
 	bool allOk = true;
-	for (std::size_t i = 0; i < MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 		if (clientSockets[i] && !sendPacketToClient(i, packet)) {
 			allOk = false;
 		}
