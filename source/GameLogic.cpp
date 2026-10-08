@@ -259,7 +259,7 @@ std::optional<std::string> GameLogic::banPhase(std::size_t bannerId, std::size_t
 	//候选池<=1时无需再ban
 	if (validIndices.size() <= 1) return std::nullopt;
 	const std::string title = std::format("禁用对方的角色（{}/{}）：", banIndex + 1, banCount);
-	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, 60s);
+	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, std::chrono::seconds(60));
 	if (banChoice > 0 && banChoice <= validIndices.size()) {
 		const std::size_t targetIdx = validIndices[banChoice - 1];
 		state.bannedIdx[targetId].push_back(targetIdx);
@@ -283,7 +283,7 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 }
 
 void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands,
-									   const std::unordered_set<std::string>& opponentNames) {
+									  const std::unordered_set<std::string>& opponentNames) {
 	Player& player = *players[playerId];
 	const std::size_t candidateCount = cands.size();
 

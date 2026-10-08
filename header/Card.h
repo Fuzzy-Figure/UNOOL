@@ -138,13 +138,78 @@ public:
 #pragma endregion
 
 #pragma region 静态转换 / 静态方法
-	static std::string to_string(const Color& color);
-	static std::string to_string(const Name& name);
-	static std::string to_string(const Type& type);
-	static std::string to_string(const DiscardReason& reason);
-	static bool is_number(const Card::Name name);
-	static bool is_action(const Card::Name name);
-	static bool is_wild(const Card::Name name);
+	static constexpr std::string_view to_string(const Color& color) {
+		switch (color) {
+			case Color::blue:   return "蓝";
+			case Color::green:  return "绿";
+			case Color::red:    return "红";
+			case Color::yellow: return "黄";
+			case Color::black:  return "黑";
+			case Color::no:     return "无";
+			default:            return "";
+		}
+	}
+	static constexpr std::string_view to_string(const Name& name) {
+		switch (name) {
+			// 数字牌
+			case Name::number_0: return "0";
+			case Name::number_1: return "1";
+			case Name::number_2: return "2";
+			case Name::number_3: return "3";
+			case Name::number_4: return "4";
+			case Name::number_5: return "5";
+			case Name::number_6: return "6";
+			case Name::number_7: return "7";
+			case Name::number_8: return "8";
+			case Name::number_9: return "9";
+				// 功能牌
+			case Name::action_skip:   return "封禁";
+			case Name::action_rev:   return "反转";
+			case Name::action_draw2: return "+2";
+				//万能牌
+			case Name::wild_pal:     return "变色";
+			case Name::wild_draw4:   return "+4";
+				//其他
+			case Name::back:         return "背面";
+			case Name::no:           return "无";
+			default:                 return "未知";
+		}
+	}
+	static constexpr std::string_view to_string(const Type& type) {
+		switch (type) {
+			case Type::number:  return "数字牌";
+			case Type::action:  return "功能牌";
+			case Type::wild:    return "万能牌";
+			case Type::unknown:
+			default:            return "未知类型";
+		}
+	}
+	static constexpr std::string_view to_string(const DiscardReason& reason) {
+		switch (reason) {
+			case DiscardReason::use:     return "打出";
+			case DiscardReason::discard: return "弃置";
+			case DiscardReason::recast:  return "重铸";
+			case DiscardReason::decree:  return "决议";
+			case DiscardReason::judge:   return "判定";
+			case DiscardReason::none:
+			default:                     return "";
+		}
+	}
+
+	static constexpr bool is_number(const Card::Name name) {
+		return name == Name::number_0 || name == Name::number_1
+			|| name == Name::number_2 || name == Name::number_3
+			|| name == Name::number_4 || name == Name::number_5
+			|| name == Name::number_6 || name == Name::number_7
+			|| name == Name::number_8 || name == Name::number_9;
+	}
+	static constexpr bool is_action(const Card::Name name) {
+		return name == Name::action_skip || name == Name::action_draw2
+			|| name == Name::action_rev;
+	}
+	static constexpr bool is_wild(const Card::Name name) {
+		return name == Name::wild_pal || name == Name::wild_draw4;
+	}
 #pragma endregion
 
 #pragma region 静态数据
@@ -182,31 +247,31 @@ public:
 sf::Packet& operator>>(sf::Packet& packet, Card& card);
 sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 
-template <>
-struct std::formatter<Card::Color> : std::formatter<std::string> {
+template<>
+struct std::formatter<Card::Color> : std::formatter<std::string_view> {
 	auto format(Card::Color c, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(Card::to_string(c), ctx);
+		return std::formatter<std::string_view>::format(Card::to_string(c), ctx);
 	}
 };
-template <>
-struct std::formatter<Card::Name> : std::formatter<std::string> {
+template<>
+struct std::formatter<Card::Name> : std::formatter<std::string_view> {
 	auto format(Card::Name n, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(Card::to_string(n), ctx);
+		return std::formatter<std::string_view>::format(Card::to_string(n), ctx);
 	}
 };
-template <>
-struct std::formatter<Card::Type> : std::formatter<std::string> {
+template<>
+struct std::formatter<Card::Type> : std::formatter<std::string_view> {
 	auto format(Card::Type t, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(Card::to_string(t), ctx);
+		return std::formatter<std::string_view>::format(Card::to_string(t), ctx);
 	}
 };
-template <>
-struct std::formatter<Card::DiscardReason> : std::formatter<std::string> {
+template<>
+struct std::formatter<Card::DiscardReason> : std::formatter<std::string_view> {
 	auto format(const Card::DiscardReason& r, std::format_context& ctx) const {
-		return std::formatter<std::string>::format(Card::to_string(r), ctx);
+		return std::formatter<std::string_view>::format(Card::to_string(r), ctx);
 	}
 };
-template <>
+template<>
 struct std::formatter<Card> : std::formatter<std::string> {
 	auto format(const Card& c, std::format_context& ctx) const {
 		return std::formatter<std::string>::format(c.toString(), ctx);
@@ -274,7 +339,7 @@ public:
 #pragma endregion
 };
 
-template <>
+template<>
 struct std::formatter<Cards> : std::formatter<std::string> {
 	auto format(const Cards& cards, std::format_context& ctx) const {
 		return std::formatter<std::string>::format(cards.toString(), ctx);
@@ -319,7 +384,7 @@ public:
 #pragma endregion
 };
 
-template <>
+template<>
 struct std::formatter<Hand> : std::formatter<std::string> {
 	auto format(const Hand& hand, std::format_context& ctx) const {
 		return std::formatter<std::string>::format(hand.toString(), ctx);

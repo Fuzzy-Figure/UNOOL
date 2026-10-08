@@ -422,7 +422,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 					reconnected = true;
 					break;
 				}
-				std::this_thread::sleep_for(100ms);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 			if (!reconnected) {
 				std::println("[Player] 玩家{} 掉线超时，结束选择", id);
@@ -436,7 +436,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
-			std::this_thread::sleep_for(16ms);
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
 			continue;
 		}
 
@@ -817,7 +817,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		//3. 收包
 		auto inputOpt = network.receiveClientInput();
 		if (!inputOpt.has_value()) {
-			std::this_thread::sleep_for(16ms);
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
 			continue;
 		}
 		ClientInput clientInput = inputOpt.value();
@@ -861,7 +861,7 @@ bool Player::waitForReconnect() {
 		if (network.isClientLoggedIn(id)) {
 			return true;
 		}
-		std::this_thread::sleep_for(100ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 	return false;
 }

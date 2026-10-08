@@ -15,7 +15,6 @@
 #include <format>
 #include <print>
 
-using namespace std::chrono_literals;
 
 template<typename T>
 using ref = std::reference_wrapper<T>;
