@@ -80,7 +80,7 @@ int main() {
 	unsigned short port = 8888;
 	if (!serverNetwork.start(port)) {
 		std::println(stderr, "[Server] 启动失败");
-		std::this_thread::sleep_for(3s);
+		std::this_thread::sleep_for(std::chrono::seconds(3));
 		return 1;
 	}
 
@@ -89,7 +89,7 @@ int main() {
 	std::println("[Server] 等待客户端连接...");
 	while (!serverNetwork.isReady()) {
 		serverNetwork.update();
-		std::this_thread::sleep_for(16ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
 	}
 
 	try {
@@ -117,7 +117,7 @@ int main() {
 	}
 
 	while (true) {
-		std::this_thread::sleep_for(1s);
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 	return 0;
 }

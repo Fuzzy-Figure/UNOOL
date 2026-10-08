@@ -176,7 +176,7 @@ operator<=>(const Character::Level a, const Character::Level b) noexcept {
 	return std::to_underlying(a) <=> std::to_underlying(b);
 }
 
-template <>
+template<>
 struct std::formatter<Character::Level> : std::formatter<std::string_view> {
 	auto format(Character::Level l, std::format_context& ctx) const {
 		return std::formatter<std::string_view>::format(Character::to_string(l), ctx);

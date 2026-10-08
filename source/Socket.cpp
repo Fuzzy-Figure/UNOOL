@@ -492,7 +492,7 @@ bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& pack
 			removeClient(clientIndex);
 			return false;
 		}
-		if (attempt < 2) std::this_thread::sleep_for(5ms);
+		if (attempt < 2) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 	return false;
 }
@@ -576,7 +576,7 @@ bool ClientNetwork::reconnect() {
 			// 其他包暂存（原始 packet 读指针未移动）
 			savedPackets.push(packet);
 		}
-		std::this_thread::sleep_for(50ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 
 	std::println(stderr, "[ClientNetwork] 重连：等待登录响应超时");
@@ -594,7 +594,6 @@ void ClientNetwork::disconnect() {
 }
 
 void ClientNetwork::update() {
-	using namespace std::chrono_literals;
 	//1ms 超时：避免主渲染线程被网络 IO 长时间卡住（注意 SFML 的 wait(0) 是无限阻塞，不能用 0）
 	if (socket && selector.wait(sf::milliseconds(1))) {
 		if (selector.isReady(*socket)) {
