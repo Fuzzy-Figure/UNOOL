@@ -15,6 +15,15 @@
 class GameLogic;
 class GameRenderer;
 
+class Player;
+
+template<typename F>
+concept PlayerPredicate = std::is_invocable_v<F, const Player&>
+&& std::same_as<std::invoke_result_t<F, const Player&>, bool>;
+
+template<typename F>
+concept PlayerOperation = std::is_invocable_v<F, Player&>;
+
 class Player {
 private:
 #pragma region 成员变量 - 身份与引用
@@ -57,7 +66,8 @@ private:
 						const std::vector<ref<TransformSkill>>& transformRefs,
 						opt_ref<TransformSkill>& activeMode);
 	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
-	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
+	template<CardPredicate Cond>
+	std::optional<std::size_t> handleConfirm(Cond&& condition,
 											 const opt_ref<TransformSkill>& activeMode);
 #pragma endregion
 
@@ -147,9 +157,12 @@ public:
 	std::size_t handSelectedIndex() const { return hand->getSelectedIndex(); }
 	const Card& handSelectedCard() const { return hand->getSelectedCard(); }
 	std::size_t handValue() const { return hand->value(); }
-	bool handSatisfy(const std::function<bool(const Cards&)>& condition) const { return hand->satisfy(condition); }
-	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
-	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
+	template<CardsPredicate Cond>
+	bool handSatisfy(Cond&& cond) const { return hand->satisfy(std::forward<Cond>(cond)); }
+	template<CardPredicate Cond>
+	bool handInclude(Cond&& cond) const { return hand->include(std::forward<Cond>(cond)); }
+	template<CardPredicate Cond>
+	bool handExclude(Cond&& cond) const { return hand->exclude(std::forward<Cond>(cond)); }
 #pragma endregion
 
 #pragma region 手牌操作 - 委托到 Hand
@@ -179,7 +192,8 @@ public:
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
 	bool canUse(const Card& card);
 	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
-	std::optional<std::size_t> chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
+	template<CardPredicate Cond>
+	std::optional<std::size_t> chooseCard(const std::string& title, Cond&& condition,
 										  bool forced, ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
 #pragma endregion
 
@@ -208,46 +222,47 @@ public:
 
 #pragma region 交互 - 选牌
 	//选num张符合条件的牌放进弃牌堆，reason标识原因
+	template<CardPredicate Cond>
 	std::vector<ref<Card>> chooseCardsToDiscardPile(const std::string& title,
 													std::size_t num, const bool forced,
-													const std::function<bool(const Card&)>& condition
-													= unool::alwaysTrue,
+													Cond&& cond = unool::alwaysTrue,
 													Card::DiscardReason reason = Card::DiscardReason::discard);
 	//弃置num张符合条件的牌（reason固定为discard）
+	template<CardPredicate Cond>
 	std::vector<ref<Card>> chooseToDiscard(const std::string& title,
 										   std::size_t num, const bool forced,
-										   const std::function<bool(const Card&)>& condition
-										   = unool::alwaysTrue);
+										   Cond&& cond = unool::alwaysTrue);
 	struct RecastResult {
 		std::vector<ref<Card>> discarded;
 		std::vector<ref<Card>> drawn;
 	};
+	template<CardPredicate Cond>
 	RecastResult chooseToRecast(const std::string& title,
 								const std::size_t num, const bool forced,
-								const std::function<bool(const Card&)>& condition
-								= unool::alwaysTrue);
+								Cond&& cond = unool::alwaysTrue);
+	template<CardPredicate Cond>
 	void decree(const std::string& title,
 				const std::size_t num, const bool forced,
-				const std::function<bool(const Card&)>& condition
-				= unool::alwaysTrue);
+				Cond&& cond = unool::alwaysTrue);
 	void inherit(std::unique_ptr<Card>& card);
+	template<CardPredicate Cond, CardOperation Oper>
 	opt_ref<Card> chooseToOperate(const std::string& title, bool forced,
-								  const std::function<bool(const Card&)>& condition,
-								  const std::function<void(Card&)>& operation);
+								  Cond&& cond, Oper&& operation);
+	template<CardPredicate Cond>
 	opt_ref<Card> chooseToGive(const std::string& title, Player& target,
-							   bool forced, const std::function<bool(const Card&)>& condition
-							   = unool::alwaysTrue);
+							   bool forced, Cond&& cond = unool::alwaysTrue);
+	template<CardPredicate Cond>
 	opt_ref<Card> chooseToShow(const std::string& title, bool forced,
-							   const std::function<bool(const Card&)>& condition);
+							   Cond&& cond);
 #pragma endregion
 
 #pragma region 交互 - 选玩家与选项
+	template<PlayerPredicate Cond>
 	[[nodiscard]] opt_ref<Player> choosePlayer(const std::string& title, bool forced,
-											   const std::function<bool(const Player&)>& condition
-											   = unool::alwaysTrue);
+											   Cond&& cond = unool::alwaysTrue);
+	template<PlayerPredicate Cond>
 	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::string& title, bool forced,
-													const std::function<bool(const Player&)>& condition
-													= unool::alwaysTrue);
+													Cond&& cond = unool::alwaysTrue);
 	[[nodiscard]] std::optional<Card::Color> chooseCardColor(const std::string& title, bool forced,
 															 const std::vector<Card::Color>& colors
 															 = { Card::Color::blue, Card::Color::green, Card::Color::red, Card::Color::yellow });
@@ -277,3 +292,7 @@ public:
 #pragma endregion
 
 };
+
+template<typename F>
+concept PlayersPredicate = std::is_invocable_v<F, std::vector<std::unique_ptr<Player>>&>
+&& std::same_as<std::invoke_result_t<F, std::vector<std::unique_ptr<Player>>&>, bool>;

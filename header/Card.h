@@ -76,8 +76,40 @@ public:
 	};
 	static std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash>& getPoolCache();
 
-	static Card::ColorName randomCard(const std::function<bool(const Card&)>& condition
-									  = unool::alwaysTrue);
+	static Card::ColorName randomCard() { return randomCard(unool::alwaysTrue); }
+	template<CardPredicate Cond>
+	static Card::ColorName randomCard(Cond&& cond) {
+		const auto& all = getAllCards();
+		using DecayedCond = std::decay_t<Cond>;
+		if constexpr (std::is_same_v<DecayedCond, CardMemFn>) {
+			//成员函数指针可作缓存键
+			CardMemFn memFn = cond;
+			auto& cache = getPoolCache();
+			auto it = cache.find(memFn);
+			if (it == cache.end()) {
+				std::vector<ColorName> filtered;
+				for (const auto& cn : all) {
+					if (std::invoke(cond, Card(cn))) filtered.push_back(cn);
+				}
+				if (filtered.empty()) {
+					throw std::runtime_error("randomCard: 没有牌满足该条件");
+				}
+				it = cache.emplace(memFn, std::move(filtered)).first;
+			}
+			return unool::random::randomGet(it->second);
+		}
+		else {
+			//带捕获的 Lambda 等：直接算，不缓存
+			std::vector<ColorName> candidatePool;
+			for (const auto& cn : all) {
+				if (std::invoke(cond, Card(cn))) candidatePool.push_back(cn);
+			}
+			if (candidatePool.empty()) {
+				throw std::runtime_error("randomCard: 没有牌满足该条件");
+			}
+			return unool::random::randomGet(candidatePool);
+		}
+	}
 #pragma endregion
 
 

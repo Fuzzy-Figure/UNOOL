@@ -45,17 +45,6 @@ std::size_t GameLogic::getCurrentPlayerId() const {
 	return currentPlayer().getId();
 }
 
-bool GameLogic::playersSatisfy(const std::function<bool(std::vector<std::unique_ptr<Player>>&)>& condition) {
-	return condition(players);
-}
-
-bool GameLogic::playersInclude(const std::function<bool(const Player&)>& condition) const {
-	for (const auto& p : players) {
-		if (condition(*p)) return true;
-	}
-	return false;
-}
-
 const std::vector<ref<Player>> GameLogic::getPlayers() const {
 	std::vector<ref<Player>> refs;
 	for (const auto& pl : players) {
@@ -64,51 +53,10 @@ const std::vector<ref<Player>> GameLogic::getPlayers() const {
 	return refs;
 }
 
-const std::vector<ref<Player>> GameLogic::getPlayersIf(const std::function<bool(const Player&)>& condition) const {
-	std::vector<ref<Player>> refs;
-	for (const auto& pl : players) {
-		if (condition(*pl)) refs.emplace_back(*pl);
-	}
-	return refs;
-}
-
 const std::vector<ref<Player>> GameLogic::getPlayersExcludeId(const std::size_t id) const {
 	return getPlayersIf([&id](const Player& p) {
 		return p.getId() != id;
 	});
-}
-
-void GameLogic::forEachPlayer(const std::function<void(Player&)>& operation) {
-	for (auto& p : players) {
-		operation(*p);
-	}
-}
-
-void GameLogic::forEachPlayer(const std::function<void(const Player&)>& operation) const {
-	for (const auto& p : players) {
-		operation(*p);
-	}
-}
-
-void GameLogic::forEachOtherPlayer(const Player& self,
-								   const std::function<void(Player&)>& operation) {
-	for (auto& p : players) {
-		if (*p != self) operation(*p);
-	}
-}
-
-void GameLogic::forEachPlayerIf(const std::function<bool(const Player&)>& condition,
-								const std::function<void(Player&)>& operation) {
-	for (auto& p : players) {
-		if (condition(*p)) operation(*p);
-	}
-}
-void GameLogic::forEachOtherPlayerIf(const Player& self,
-									 const std::function<bool(const Player&)>& condition,
-									 const std::function<void(Player&)>& operation) {
-	for (auto& p : players) {
-		if (*p != self && condition(*p)) operation(*p);
-	}
 }
 
 Pile& GameLogic::getPile() { return *pile; }

@@ -113,44 +113,9 @@ const std::vector<Card::ColorName>& Card::getAllCards() {
 	return allCards;
 }
 
-std::unordered_map<Card::CardMemFn, std::vector<Card::ColorName>, Card::CardMemFnHash>& Card::getPoolCache() {
+std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash>& Card::getPoolCache() {
 	static std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash> cache;
 	return cache;
-}
-
-Card::ColorName Card::randomCard(const std::function<bool(const Card&)>& condition) {
-	const auto& all = getAllCards();
-
-	// 尝试提取成员函数指针
-	if (auto target = condition.target<CardMemFn>()) {
-		CardMemFn memFn = *target;
-		auto& cache = getPoolCache();
-
-		auto it = cache.find(memFn);
-		//缓存未命中，计算候选池
-		if (it == cache.end()) {
-			std::vector<ColorName> filtered;
-			for (const auto& cn : all) {
-				if (condition(Card(cn))) filtered.push_back(cn);
-			}
-			if (filtered.empty()) {
-				throw std::runtime_error("randomCard: 没有牌满足该条件");
-			}
-			it = cache.emplace(memFn, std::move(filtered)).first;
-		}
-		return unool::random::randomGet(it->second);
-	}
-
-	// Fallback：无法提取成员函数指针（如带捕获的 Lambda）
-	// 直接算，不缓存（或者你也可以选择抛异常/警告）
-	std::vector<ColorName> candidatePool;
-	for (const auto& cn : all) {
-		if (condition(Card(cn))) candidatePool.push_back(cn);
-	}
-	if (candidatePool.empty()) {
-		throw std::runtime_error("randomCard: 没有牌满足该条件");
-	}
-	return unool::random::randomGet(candidatePool);
 }
 
 
