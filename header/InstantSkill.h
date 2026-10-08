@@ -302,3 +302,28 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//炎烈：每回合限一次，出牌阶段，随机获得两张不同牌名的红色牌，然后可以弃置其中一张
+class 炎烈 final : public InstantSkillImpl<炎烈> {
+public:
+	炎烈() : InstantSkillImpl<炎烈>(
+		"炎烈",
+		"每回合限{limit}次（剩余{remaining}次），出牌阶段，你可以随机获得两张不同牌名的红色牌，然后可以弃置其中一张。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//勇进：每回合限一次，出牌阶段，失去1点体力并摸一张牌，若为非数字牌，弃置一张其他牌并回复2点体力
+class 勇进 final : public InstantSkillImpl<勇进> {
+public:
+	勇进() : InstantSkillImpl<勇进>(
+		"勇进",
+		"每回合限{limit}次（剩余{remaining}次），出牌阶段，你可以失去1点体力并摸一张牌，"
+		"若为非数字牌，弃置一张其他牌并回复2点体力。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

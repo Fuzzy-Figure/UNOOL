@@ -632,3 +632,60 @@ bool 过载::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+// ==================== 技能：炎烈 ====================
+bool 炎烈::content(GameLogic& game, Player& carrier) {
+	//随机获得两张不同牌名的红色牌
+	auto cn1 = Card::randomCard([](const Card& c) { return c.is(Card::Color::red); });
+	auto cn2 = Card::randomCard([&cn1](const Card& c) {
+		return c.is(Card::Color::red) && c.getName() != cn1.second;
+	});
+	carrier.gainCard(Card::make(cn1.first, cn1.second));
+	carrier.gainCard(Card::make(cn2.first, cn2.second));
+	std::println("<技能> {}发动炎烈，获得红色牌{}和{}", carrier.characterName(),
+		cn1.first == Card::Color::red ? "红" : "黄", cn2.first == Card::Color::red ? "红" : "黄");
+
+	//可以弃置其中一张（两张在手牌末尾）
+	const std::size_t idx1 = carrier.getHand().count() - 2;
+	const std::size_t idx2 = carrier.getHand().count() - 1;
+	const std::size_t choice = carrier.ask(
+		std::format("【炎烈】弃置其中一张或跳过："),
+		{ carrier.getHand().getCardByIndex(idx1).toString(),
+		  carrier.getHand().getCardByIndex(idx2).toString() },
+		false
+	);
+	if (choice == 1) {
+		carrier.discardByIndex(idx1);
+		std::println("<技能> {}弃置了第一张", carrier.characterName());
+	}
+	else if (choice == 2) {
+		carrier.discardByIndex(idx2);
+		std::println("<技能> {}弃置了第二张", carrier.characterName());
+	}
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：勇进 ====================
+bool 勇进::content(GameLogic& game, Player& carrier) {
+	//失去1点体力
+	carrier.damage(1, carrier);
+	std::println("<技能> {}发动勇进，失去1点体力", carrier.characterName());
+
+	//摸一张牌
+	auto drawn = carrier.draw(1);
+	if (drawn.empty()) return true;
+	const Card& drawnCard = drawn[0].get();
+	std::println("<技能> {}摸到{}", carrier.characterName(), drawnCard.toString());
+
+	//若为非数字牌，弃置一张其他牌并回复2点体力
+	if (drawnCard.isNotNumber()) {
+		auto discarded = carrier.chooseToDiscard("【勇进】弃置一张其他牌：", 1, true);
+		carrier.recover(2);
+		std::println("<技能> {}摸到非数字牌，弃置一张牌并回复2点体力", carrier.characterName());
+	}
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
