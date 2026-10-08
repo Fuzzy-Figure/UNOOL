@@ -1618,7 +1618,8 @@ private:
 public:
 	同心() : PassiveSkillImpl<同心>(
 		"同心",
-		"锁定技，每打出两张同类型牌后随机弃置一张牌。",
+		"锁定技，每打出两张同类型牌后随机弃置一张牌。\n"
+		"当前：数字{numberCount}/2；功能{actionCount}/2；万能{wildCount}/2",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::use_card_end
@@ -1630,16 +1631,17 @@ public:
 		actionCount = 0;
 		wildCount = 0;
 	}
+	std::optional<std::string> extraPlaceholders(const std::string& key) const;
 };
 
 //蝎刺：锁定技，你打出有目标的牌后，对目标造成伤害。每次发动后本场游戏此技能造成伤害+1。
 class 蝎刺 final : public PassiveSkillImpl<蝎刺> {
 private:
-	std::size_t gameDamageBonus = 1;
+	std::size_t damageValue = 1;
 public:
 	蝎刺() : PassiveSkillImpl<蝎刺>(
 		"蝎刺",
-		"锁定技，你打出有目标的牌后，对目标造成1点伤害。\n"
+		"锁定技，你打出有目标的牌后，对目标造成{damage}点伤害。\n"
 		"每次发动此技能后，本场游戏此技能造成伤害+1。",
 		unlimited, true,
 		TriggerPlayer::self,
@@ -1647,6 +1649,7 @@ public:
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	std::optional<std::string> extraPlaceholders(const std::string& key) const;
 };
 
 

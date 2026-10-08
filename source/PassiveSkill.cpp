@@ -2746,7 +2746,7 @@ bool 同心::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		case Card::Type::number: counter = &numberCount; break;
 		case Card::Type::action: counter = &actionCount; break;
 		case Card::Type::wild:   counter = &wildCount;  break;
-		default: return true;
+		default:                 std::unreachable();
 	}
 	++(*counter);
 
@@ -2757,11 +2757,19 @@ bool 同心::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		if (handCount == 0) return true;
 		const std::size_t idx = unool::random::randomSize_t(0, handCount - 1);
 		std::println("<技能> {}打出两张同类型牌，随机弃置：{}", carrier.characterName(),
-			carrier.getHand().getCardByIndex(idx).toString());
+					 carrier.getHand().getCardByIndex(idx).toString());
 		carrier.discardByIndex(idx);
 		game.broadcastState();
 	}
+	carrier.markCharInfoDirty();
 	return true;
+}
+
+std::optional<std::string> 同心::extraPlaceholders(const std::string& key) const {
+	if (key == "numberCount") return std::to_string(numberCount);
+	else if (key == "actionCount") return std::to_string(actionCount);
+	else if (key == "wildCount") return std::to_string(wildCount);
+	return std::nullopt;
 }
 
 // ==================== 技能：蝎刺 ====================
@@ -2771,11 +2779,17 @@ bool 蝎刺::filter(const GameLogic& game, const Player& carrier, const Trigger&
 
 bool 蝎刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = carrier.next();
-	target.damage(gameDamageBonus, carrier);
+	target.damage(damageValue, carrier);
 	std::println("<技能> {}发动蝎刺，对{}造成{}点伤害", carrier.characterName(),
-		target.characterName(), gameDamageBonus);
-	++gameDamageBonus;
+				 target.characterName(), damageValue);
+	++damageValue;
+	carrier.markCharInfoDirty();
 	game.broadcastState();
 	return true;
+}
+
+std::optional<std::string> 蝎刺::extraPlaceholders(const std::string& key) const {
+	if (key == "damage") return std::to_string(damageValue);
+	return std::nullopt;
 }
 

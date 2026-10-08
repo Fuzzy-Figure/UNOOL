@@ -1,5 +1,5 @@
 {
-  "mode": "double",
+  "mode": "normal",
   "characters": {
     //"assign": [ "迪克", "博尔特" ],
     "shielded": {
@@ -14,7 +14,7 @@
       "initHandCount": 10
     },
     "normal": {
-      "candidateCount": 10,
+      "candidateCount": 30,
       "initHandCount": 8
     }
   },
