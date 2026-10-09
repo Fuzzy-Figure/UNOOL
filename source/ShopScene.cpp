@@ -81,6 +81,13 @@ void ShopScene::handleNetwork() {
 			}
 			continue;
 		}
+		// 心跳包：立即回复，防止服务器判定掉线
+		if (mt == MessageType::Heartbeat) {
+			sf::Packet hb;
+			hb << static_cast<int>(MessageType::Heartbeat);
+			net.send(hb);
+			continue;
+		}
 		// 其它包忽略（商城场景不处理游戏/账号包）
 	}
 }
