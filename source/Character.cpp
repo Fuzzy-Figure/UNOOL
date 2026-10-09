@@ -334,6 +334,75 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n, c
 	return result;
 }
 
+// ---- 皮肤品质与售价 ----
+Character::SkinQuality Character::getSkinQuality(const std::string& charName, const std::string& skinName) {
+	//从皮肤名前缀推断品质
+	if (skinName.starts_with("精品_"))	return SkinQuality::fine;
+	if (skinName.starts_with("史诗_"))	return SkinQuality::epic;
+	if (skinName.starts_with("传说_"))	return SkinQuality::legend;
+	if (skinName.starts_with("至尊_"))	return SkinQuality::supreme;
+	if (skinName.starts_with("饮料_"))	return SkinQuality::drink;
+	return SkinQuality::normal;
+}
+
+int Character::getSkinPriceByQuality(SkinQuality quality) {
+	switch (quality) {
+		case SkinQuality::normal:  return 8;
+		case SkinQuality::fine:    return 28;
+		case SkinQuality::epic:    return 48;
+		case SkinQuality::legend:  return 88;
+		case SkinQuality::supreme: return 188;
+		case SkinQuality::drink:   return -1;	//饮料限定不售卖
+		default:                   return -1;
+	}
+}
+
+int Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
+	return getSkinPriceByQuality(getSkinQuality(charName, skinName));
+}
+
+std::string Character::to_string(SkinQuality quality) {
+	switch (quality) {
+		case SkinQuality::normal:  return "普通";
+		case SkinQuality::fine:    return "精品";
+		case SkinQuality::epic:    return "史诗";
+		case SkinQuality::legend:  return "传说";
+		case SkinQuality::supreme: return "至尊";
+		case SkinQuality::drink:   return "饮料限定";
+		default:                   return "未知";
+	}
+}
+
+// ---- 角色售价 ----
+int Character::getCharacterPrice(const std::string& name) {
+	auto it = infos.find(name);
+	if (it == infos.end()) return -1;	//角色不存在
+	const Level lv = it->second.level;
+	switch (lv) {
+		case Level::F:
+			if (name == "棍母" || name == "夏搏" || name == "电棍")	return 488;
+			if (name == "幺幺" || name == "蒋介石")					return 288;
+			return 20;
+		case Level::D:
+			if (name == "Blueberrini Octopussini")	return 188;
+			return 40;
+		case Level::C:
+			if (name == "斯大林")							return 288;
+			if (name == "金日成" || name == "唐伯虎")		return 128;
+			return 88;
+		case Level::B:
+			if (name == "弗兰肯" || name == "黑鸦")		return 188;
+			if (name.starts_with("新"))					return 168;
+			return 148;
+		case Level::A:
+			return 228;
+		case Level::S:
+			return -1;	//不可直接购买
+		default:
+			return -1;
+	}
+}
+
 
 // ==================== 技能管理 ====================
 void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime,

@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Character.h"
 #include "Card.h"
+#include "UserDB.h"
 
 #include <ranges>
 #include <algorithm>
@@ -136,6 +137,8 @@ void GameLogic::determineSeatOrder() {
 
 void GameLogic::initPlayers() {
 	players.clear();
+	//重置增分卡使用状态（每场比赛开始时）
+	bonusCardUsed.fill(false);
 	//先用"白板"创建两个Player，以便使用ask
 	for (std::size_t i = 0; i < 2; ++i) {
 		auto p = std::make_unique<Player>(i, *this, Character::make("白板"));
@@ -161,15 +164,64 @@ void GameLogic::initPlayers() {
 
 void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//选候选角色
-	const std::size_t candidateCount = unool::getServerConfig()["rules"]["normal"]["candidateCount"];
+	const std::size_t candidateCount = unool::getServerConfig()["rules"]["normal"].value("candidateCount", 5);
 	SelectionState state;
-	auto allChars = Character::randomChooseCharacters(candidateCount * 2);
-	for (std::size_t i = 0; i < 2; ++i) {
-		state.cands[i].assign(
-			allChars.begin() + i * candidateCount,
-			allChars.begin() + (i + 1) * candidateCount
-		);
-	}
+
+	//获取双方用户名与角色池
+	const auto& slots = network.getClientSlots();
+	const std::string& user1 = slots[firstSeatId].username;
+	const std::string& user2 = slots[secondSeatId].username;
+	const auto& pool1 = UserDB::instance().getCharacterPool(user1);
+	const auto& pool2 = UserDB::instance().getCharacterPool(user2);
+
+	//选将扩充卡：每张扩充卡增加候选数量（非消耗品，数量即加成）
+	const int expandCount1 = UserDB::instance().getItemCount(user1, "选将扩充卡");
+	const int expandCount2 = UserDB::instance().getItemCount(user2, "选将扩充卡");
+	const std::size_t candCount1 = candidateCount + static_cast<std::size_t>(expandCount1 > 0 ? expandCount1 : 0);
+	const std::size_t candCount2 = candidateCount + static_cast<std::size_t>(expandCount2 > 0 ? expandCount2 : 0);
+
+	//双方已抽取的角色名，用于避免重复
+	std::unordered_set<std::string> pickedNames;
+
+	//从角色池中随机抽取候选：排除exclude中已有角色名，跳过infos中不存在的名字
+	auto pickFromPool = [](const std::vector<std::string>& pool, std::size_t n,
+						   const std::unordered_set<std::string>& exclude) {
+		std::vector<std::string> available;
+		for (const auto& name : pool) {
+			if (exclude.contains(name)) continue;
+			if (!Character::infos.contains(name)) continue;
+			available.push_back(name);
+		}
+		std::ranges::shuffle(available, unool::random::rng);
+		std::vector<Character::Entry> result;
+		result.reserve(n < available.size() ? n : available.size());
+		for (std::size_t i = 0; i < n && i < available.size(); ++i) {
+			result.push_back(*Character::infos.find(available[i]));
+		}
+		return result;
+	};
+
+	//从玩家1角色池抽取候选
+	state.cands[firstSeatId] = pickFromPool(pool1, candCount1, pickedNames);
+	for (const auto& e : state.cands[firstSeatId]) pickedNames.insert(e.first);
+
+	//从玩家2角色池抽取候选（排除玩家1已抽取的角色）
+	state.cands[secondSeatId] = pickFromPool(pool2, candCount2, pickedNames);
+	for (const auto& e : state.cands[secondSeatId]) pickedNames.insert(e.first);
+
+	//角色池不足时从全角色补抽（排除已抽取的，randomChooseCharacters已处理被屏蔽角色）
+	auto supplement = [&](std::size_t playerId, std::size_t targetCount) {
+		const std::size_t current = state.cands[playerId].size();
+		if (current >= targetCount) return;
+		const std::size_t needed = targetCount - current;
+		auto supplemented = Character::randomChooseCharacters(needed, pickedNames);
+		for (auto& e : supplemented) {
+			state.cands[playerId].push_back(std::move(e));
+			pickedNames.insert(state.cands[playerId].back().first);
+		}
+	};
+	supplement(firstSeatId, candCount1);
+	supplement(secondSeatId, candCount2);
 
 	//Ban环节：玩家A先连续ban banCount次，再一次性告诉B；然后B同理，最后提示A
 	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::string>& labels) -> std::string {
@@ -203,6 +255,10 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	//选角环节：一号位先选，然后二号位选
 	selectCharacter(firstSeatId, state);
 	selectCharacter(secondSeatId, state);
+
+	//增分卡使用环节：后手先选，先手随后选
+	askBonusCard(secondSeatId);
+	askBonusCard(firstSeatId);
 }
 
 void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
@@ -223,6 +279,22 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 	//按座次每家连续选完2个再下一家
 	selectCharacterDouble(firstSeatId, cands1, names2);
 	selectCharacterDouble(secondSeatId, cands2, names1);
+
+	//增分卡使用环节：后手先选，先手随后选
+	askBonusCard(secondSeatId);
+	askBonusCard(firstSeatId);
+}
+
+void GameLogic::askBonusCard(std::size_t playerId) {
+	const auto& slots = network.getClientSlots();
+	const std::string& username = slots[playerId].username;
+	if (UserDB::instance().getItemCount(username, "增分卡") <= 0) return;
+	std::size_t choice = players[playerId]->ask("是否使用增分卡？", { "使用", "不使用" }, false);
+	if (choice == 1) {
+		UserDB::instance().useItem(username, "增分卡");
+		bonusCardUsed[playerId] = true;
+		players[playerId]->hint("已使用增分卡，胜利时积分翻倍！");
+	}
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
@@ -269,12 +341,27 @@ std::optional<std::string> GameLogic::banPhase(std::size_t bannerId, std::size_t
 }
 
 void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
+	//选将时只允许选择用户 ownedCharacters 中已解锁的角色
+	const auto& slots = network.getClientSlots();
+	const std::string& username = slots[playerId].username;
+	const auto& owned = UserDB::instance().getOwnedCharacters(username);
+
 	std::vector<std::string> opts;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
 		if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
+		const std::string& charName = state.cands[playerId][i].first;
+		if (!owned.contains(charName)) continue; //未解锁的角色不可选
 		opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
 		validIndices.push_back(i);
+	}
+	//兜底：若所有候选均未解锁（理论上不应发生），则允许全部非ban候选
+	if (opts.empty()) {
+		for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
+			if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
+			opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
+			validIndices.push_back(i);
+		}
 	}
 	std::size_t choice = players[playerId]->ask("选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
@@ -361,6 +448,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
+	bonusCardUsed.fill(false);
 	const std::string mode = unool::getServerConfig().value("mode", "normal");
 	if (mode == "double") {
 		//双将模式：4 个角色，前 2 个给玩家1，后 2 个给玩家2，各自 makeCombined

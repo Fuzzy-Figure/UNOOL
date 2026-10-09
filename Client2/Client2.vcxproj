@@ -98,6 +98,11 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\source\ShopScene.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\source\TextManager.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -135,6 +140,8 @@
     <ClInclude Include="..\header\Player.h" />
     <ClInclude Include="..\header\Skill.h" />
     <ClInclude Include="..\header\Socket.h" />
+    <ClInclude Include="..\header\ShopData.h" />
+    <ClInclude Include="..\header\ShopScene.h" />
     <ClInclude Include="..\header\TextManager.h" />
     <ClInclude Include="..\header\TransformSkill.h" />
     <ClInclude Include="..\header\UserDB.h" />

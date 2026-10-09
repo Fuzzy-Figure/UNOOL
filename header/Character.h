@@ -12,6 +12,15 @@ class Character {
 public:
 	using hp_t = int;
 	enum class Level { F, D, C, B, A, S };
+	//皮肤品质
+	enum class SkinQuality {
+		normal,     // 普通
+		fine,       // 精品
+		epic,        // 史诗
+		legend,      // 传说
+		supreme,    // 至尊
+		drink        // 饮料限定
+	};
 	struct Info {
 		std::string group;
 		Level level;
@@ -91,6 +100,17 @@ public:
 	static std::vector<Entry> randomChooseCharacters(std::size_t n);
 	//随机抽取 n 个角色，排除 exclude 中指定的角色名
 	static std::vector<Entry> randomChooseCharacters(std::size_t n, const std::unordered_set<std::string>& exclude);
+
+	// 获取皮肤品质（根据角色名和皮肤名）
+	static SkinQuality getSkinQuality(const std::string& charName, const std::string& skinName);
+	// 获取皮肤售价
+	static int getSkinPrice(const std::string& charName, const std::string& skinName);
+	// 获取皮肤品质售价
+	static int getSkinPriceByQuality(SkinQuality quality);
+	// 皮肤品质转中文字符串
+	static std::string to_string(SkinQuality quality);
+	// 获取角色售价（按等级和角色名）
+	static int getCharacterPrice(const std::string& name);
 #pragma endregion
 
 #pragma region 技能管理

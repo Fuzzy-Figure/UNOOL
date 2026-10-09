@@ -22,6 +22,12 @@ void LoginScene::layoutBoxes() {
 	const float pwdY = static_cast<float>(cfg.windowSize.y) * 0.50f;
 	const float btnY = static_cast<float>(cfg.windowSize.y) * 0.62f;
 
+	// 商城入口按钮：左右与用户名框对齐，位于用户名框上方
+	const float shopBtnH = 60.f;
+	const float shopBtnGap = 30.f;
+	const float shopBtnY = unameY - shopBtnH - shopBtnGap;
+	shopBtn = sf::FloatRect({ cx - boxW / 2, shopBtnY }, { boxW, shopBtnH });
+
 	usernameBox = sf::FloatRect({ cx - boxW / 2, unameY }, { boxW, boxH });
 	passwordBox = sf::FloatRect({ cx - boxW / 2, pwdY }, { boxW, boxH });
 	loginBtn = sf::FloatRect({ cx - totalBtnW / 2, btnY }, { btnW, btnH });
@@ -109,6 +115,13 @@ void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
 
 void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 	if (status != Status::Idle) return;
+	if (shopBtn.contains(pos)) {
+		// 进入商城：先登录（复用登录请求），登录成功后由 pollAccountPackets 标记 enterShop
+		mode = Mode::Shop;
+		focus = Focus::None;
+		sendLoginRequest();
+		return;
+	}
 	if (usernameBox.contains(pos)) {
 		focus = Focus::Username;
 		return;
@@ -229,13 +242,16 @@ void LoginScene::pollAccountPackets() {
 				result.wins = resp->wins;
 				result.losses = resp->losses;
 				result.ok = true;
+				// 商城入口：登录成功后标记进入商城，由 ClientMain 启动 ShopScene
+				result.enterShop = (mode == Mode::Shop);
 				status = Status::Done;
-				message = "登录成功";
+				message = (mode == Mode::Shop) ? "登录成功，进入商城..." : "登录成功";
 				std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);
 			}
 			else {
 				message = std::format("登录失败: {}", resp->msg);
 				status = Status::Idle;
+				if (mode == Mode::Shop) mode = Mode::Login; // 商城登录失败回退为普通登录
 			}
 			continue;
 		}
@@ -273,6 +289,9 @@ void LoginScene::render() {
 							  r.position.y + (r.size.y - labelMeasured.y) / 2.f },
 							labelSize);
 	};
+
+	// 商城入口按钮（用户名框上方）
+	drawButton(shopBtn, "积分商城");
 
 	// 用户名行
 	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 });

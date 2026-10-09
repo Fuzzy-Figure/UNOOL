@@ -18,6 +18,19 @@ static void initCharacters(GameLogic& gameLogic) {
 	}
 }
 
+// 获取玩家穿戴皮肤中最高品质（饮料限定视为普通，因为其效果在万能牌时实时结算）
+static Character::SkinQuality bestSkinQuality(const Player& p) {
+	const auto& names = p.getNames();
+	const auto& skins = p.getSkins();
+	Character::SkinQuality best = Character::SkinQuality::normal;
+	for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
+		auto q = Character::getSkinQuality(names[i], skins[i]);
+		if (q == Character::SkinQuality::drink) continue; //饮料限定不参与品质加成
+		if (q > best) best = q;
+	}
+	return best;
+}
+
 // 处理游戏结束：发送 GameEnd 包、按角色等级加分、打印日志
 static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
@@ -30,11 +43,16 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 
 		auto& players = gameLogic.getPlayers();
 		const auto& slots = serverNetwork.getClientSlots();
+		//查询双方皮肤品质，供结算加成使用
+		const Character::SkinQuality wQuality = bestSkinQuality(players[wId].get());
+		const Character::SkinQuality lQuality = bestSkinQuality(players[lId].get());
+		const bool wBonusCard = gameLogic.hasUsedBonusCard(wId);
 		UserDB::instance().addMatchResult(
 			slots[wId].username, slots[lId].username,
 			players[wId].get().getLevels(),
 			players[lId].get().getLevels(),
-			players[wId].get().getHp() == players[wId].get().getMaxHp());
+			players[wId].get().getHp() == players[wId].get().getMaxHp(),
+			wQuality, lQuality, wBonusCard);
 
 		std::println("[Server] 游戏结束，玩家{}获胜！", wId);
 	}

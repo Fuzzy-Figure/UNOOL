@@ -1,8 +1,10 @@
 #include "GameRenderer.h"
 #include "LoginScene.h"
+#include "ShopScene.h"
 #include "Socket.h"
 #include "utils.h"
 #include "AccountProtocol.h"
+#include "ShopData.h"
 #include <Windows.h>
 #include <thread>
 #include <chrono>
@@ -167,6 +169,46 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					net.send(hb);
 					break;
 				}
+				case MessageType::ShopData: {
+					//商城数据（JSON 字符串载荷）：解析后供 ShopScene 使用
+					std::string jsonStr;
+					if (packet >> jsonStr) {
+						try {
+							nlohmann::json j = nlohmann::json::parse(jsonStr);
+							ShopData shopData = j.get<ShopData>();
+							std::println("{} 收到商城数据：积分{}，角色{}个，道具{}个",
+										 titleBrackets, shopData.points,
+										 shopData.characters.size(), shopData.items.size());
+							// TODO: ShopScene 将基于 shopData 渲染商城界面（Task 7）
+						}
+						catch (const std::exception& e) {
+							std::println(stderr, "{} 商城数据解析失败：{}", titleBrackets, e.what());
+						}
+					}
+					break;
+				}
+				case MessageType::ShopResult: {
+					//购买结果（JSON 字符串载荷）
+					std::string jsonStr;
+					if (packet >> jsonStr) {
+						try {
+							nlohmann::json j = nlohmann::json::parse(jsonStr);
+							ShopPurchaseResult result = j.get<ShopPurchaseResult>();
+							std::println("{} 购买结果：{}（{}），剩余积分 {}",
+										 titleBrackets,
+										 (result.ok ? "成功" : "失败"),
+										 result.msg, result.points);
+							// TODO: ShopScene 将基于 result 更新 UI 和积分显示（Task 7）
+						}
+						catch (const std::exception& e) {
+							std::println(stderr, "{} 购买结果解析失败：{}", titleBrackets, e.what());
+						}
+					}
+					break;
+				}
+				case MessageType::ShopPurchase:
+					//客户端不接收此类型（客户端→服务器的购买请求），忽略
+					break;
 				default:
 					break;
 			}
@@ -198,12 +240,29 @@ int main() {
 	GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle));
 	GameRenderer renderer(rendererConfig);
 
-	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
-	auto session = login.run();
-	if (!session.ok) {
-		std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);
-		system("pause");
-		return 1;
+	// 登录循环：用户可从登录界面进入商城，从商城返回后回到登录界面
+	while (true) {
+		LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
+		auto session = login.run();
+		if (!session.ok) {
+			std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);
+			system("pause");
+			return 1;
+		}
+		// 商城入口：登录成功后用户点击了"积分商城"，进入 ShopScene
+		if (session.enterShop) {
+			std::println("{} 进入积分商城...", windowTitleWithBrackets);
+			ShopScene shop(renderer, clientNetwork, session.username);
+			shop.run();
+			// 商城退出后若连接已断开则退出
+			if (!clientNetwork.isConnected() || !renderer.windowIsOpen()) {
+				std::println(stderr, "{} 与服务器断开连接，退出", windowTitleWithBrackets);
+				system("pause");
+				return 1;
+			}
+			continue; // 回到登录界面
+		}
+		break;
 	}
 
 	std::println("{} 已登录，等待对手登录并开始游戏...", windowTitleWithBrackets);

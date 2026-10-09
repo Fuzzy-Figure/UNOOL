@@ -164,6 +164,7 @@
     <ClInclude Include="..\header\PassiveSkill.h" />
     <ClInclude Include="..\header\Skill.h" />
     <ClInclude Include="..\header\Socket.h" />
+    <ClInclude Include="..\header\ShopData.h" />
     <ClInclude Include="..\header\TransformSkill.h" />
     <ClInclude Include="..\header\UserDB.h" />
     <ClInclude Include="..\header\utils.h" />

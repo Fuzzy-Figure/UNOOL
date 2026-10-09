@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "GameLogic.h"
+#include "UserDB.h"
 #include <thread>
 
 std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
@@ -123,6 +124,19 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	//牌恢复效果并置入弃牌堆
 	card->recoverEffect();
 	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::use, *this);
+
+	//饮料限定皮肤：打出万能牌时获得1积分（实时结算）
+	if (cardRef.isWild()) {
+		const auto& names = character->getNames();
+		const auto& skins = character->getSkins();
+		for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
+			if (Character::getSkinQuality(names[i], skins[i]) == Character::SkinQuality::drink) {
+				const auto& slots = game.getNetwork().getClientSlots();
+				UserDB::instance().addPoints(slots[id].username, 1);
+				break;
+			}
+		}
+	}
 
 	//更新客户端显示
 	game.broadcastState();

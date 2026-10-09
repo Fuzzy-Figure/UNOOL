@@ -32,7 +32,10 @@ enum class MessageType {
 	LoginResponse,
 	CheckUsernameRequest,
 	CheckUsernameResponse,
-	Heartbeat
+	Heartbeat,
+	ShopData,
+	ShopPurchase,
+	ShopResult
 };
 
 struct ClientInput {
@@ -78,6 +81,8 @@ private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
 	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
+	// 发送购买结果给客户端（JSON 字符串载荷）
+	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson);
 	void removeClient(std::size_t clientIndex);
 	//update() 的拆分子任务
 	void handleNewConnections();
@@ -110,6 +115,11 @@ public:
 						  std::size_t totalPages = 1);
 	bool clearPlayerChoice(std::size_t clientIndex);
 	bool sendCharInfo(const CharInfo& info);
+
+	// 发送商城数据给指定客户端
+	bool sendShopData(std::size_t clientIndex, const std::string& username);
+	// 处理购买请求
+	void handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData);
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const;
@@ -145,6 +155,8 @@ public:
 
 	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
 	bool send(sf::Packet& packet);
+	// 发送商城购买请求（purchaseData 为 JSON 字符串）
+	bool sendShopPurchase(const std::string& purchaseData);
 	std::optional<sf::Packet> receivePacket();
 
 	void setPlayerId(std::size_t id) { playerId = id; }

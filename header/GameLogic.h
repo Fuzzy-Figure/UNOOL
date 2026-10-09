@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Network.hpp>
+#include <array>
 #include <vector>
 #include "Card.h"
 #include "Player.h"
@@ -26,6 +27,8 @@ private:
 	ServerNetwork& network;
 	std::size_t matchCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
+	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
+	std::array<bool, unool::MAX_PLAYERS> bonusCardUsed{};
 #pragma endregion
 
 #pragma region 私有辅助方法
@@ -49,6 +52,8 @@ private:
 	void initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId);
 	//double 模式：无ban，按座次每家5选2，makeCombined
 	void initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId);
+	//增分卡使用询问：有增分卡则询问是否使用，使用则消耗一张并记录状态
+	void askBonusCard(std::size_t playerId);
 #pragma endregion
 
 public:
@@ -130,5 +135,7 @@ public:
 	void resetGame();
 	bool isGameOver() const;
 	std::optional<std::size_t> getWinnerId() const;
+	//查询某玩家本局是否使用了增分卡（供结算时使用）
+	bool hasUsedBonusCard(std::size_t playerId) const { return bonusCardUsed[playerId]; }
 #pragma endregion
 };
