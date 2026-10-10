@@ -336,12 +336,12 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n, c
 
 // ---- 皮肤品质与售价 ----
 Character::SkinQuality Character::getSkinQuality(const std::string& charName, const std::string& skinName) {
-	//从皮肤名前缀推断品质
-	if (skinName.starts_with("精品_"))	return SkinQuality::fine;
-	if (skinName.starts_with("史诗_"))	return SkinQuality::epic;
-	if (skinName.starts_with("传说_"))	return SkinQuality::legend;
-	if (skinName.starts_with("至尊_"))	return SkinQuality::supreme;
-	if (skinName.starts_with("饮料_"))	return SkinQuality::drink;
+	if (skinName == "默认")	            return SkinQuality::normal;
+	if (skinName.ends_with("_精品"))    return SkinQuality::fine;
+	if (skinName.ends_with("_史诗"))    return SkinQuality::epic;
+	if (skinName.ends_with("_传说"))	    return SkinQuality::legend;
+	if (skinName.ends_with("_至尊"))	    return SkinQuality::supreme;
+	if (skinName.ends_with("_饮料限定"))	return SkinQuality::drink;
 	return SkinQuality::normal;
 }
 
@@ -387,7 +387,7 @@ int Character::getCharacterPrice(const std::string& name) {
 			if (name == "Blueberrini Octopussini")	return 188;
 			return 40;
 		case Level::C:
-			if (name == "斯大林")							return 288;
+			if (name == "斯大林")						return 288;
 			if (name == "金日成" || name == "唐伯虎")		return 128;
 			return 88;
 		case Level::B:

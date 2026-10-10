@@ -182,27 +182,32 @@ void UserDB::save() const {
 	file << j.dump(2);
 }
 
-const std::vector<std::string>& UserDB::getCharacterPool(const std::string& username) const {
-	static const std::vector<std::string> empty;
+std::vector<std::string> UserDB::getCharacterPool(const std::string& username) const {
+	std::vector<std::string> result;
 	auto it = users_.find(username);
-	if (it == users_.end()) return empty;
-	return it->second.characterPool;
+	if (it == users_.end()) return result;
+	for (const auto& [name, skins] : it->second.ownedCharacters) {
+		result.push_back(name);
+	}
+	return result;
 }
 
-const std::set<std::string>& UserDB::getOwnedCharacters(const std::string& username) const {
-	static const std::set<std::string> empty;
+std::set<std::string> UserDB::getOwnedCharacters(const std::string& username) const {
+	std::set<std::string> result;
 	auto it = users_.find(username);
-	if (it == users_.end()) return empty;
-	return it->second.ownedCharacters;
+	if (it == users_.end()) return result;
+	for (const auto& [name, skins] : it->second.ownedCharacters) {
+		result.insert(name);
+	}
+	return result;
 }
 
-const std::set<std::string>& UserDB::getOwnedSkins(const std::string& username, const std::string& charName) const {
-	static const std::set<std::string> empty;
+std::set<std::string> UserDB::getOwnedSkins(const std::string& username, const std::string& charName) const {
 	auto it = users_.find(username);
-	if (it == users_.end()) return empty;
-	auto sit = it->second.ownedSkins.find(charName);
-	if (sit == it->second.ownedSkins.end()) return empty;
-	return sit->second;
+	if (it == users_.end()) return {};
+	auto cit = it->second.ownedCharacters.find(charName);
+	if (cit == it->second.ownedCharacters.end()) return {};
+	return cit->second;
 }
 
 int UserDB::getItemCount(const std::string& username, const std::string& itemName) const {
@@ -225,9 +230,9 @@ bool UserDB::purchaseCharacter(const std::string& username, const std::string& c
 	if (it == users_.end()) return false;
 	if (it->second.points < price) return false;
 	if (!trySpendPoints(username, price)) return false;
-	it->second.ownedCharacters.insert(charName);
+	it->second.ownedCharacters[charName] = {"默认"};
 	save();
-	std::println("[UserDB] 玩家{}解锁角色{}", username, charName);
+	std::println("[UserDB] 玩家{}解锁角色{}（含默认皮肤）", username, charName);
 	return true;
 }
 
@@ -236,7 +241,6 @@ bool UserDB::hasAllCharactersOfLevel(const std::string& username, Character::Lev
 	if (it == users_.end()) return false;
 	const auto& owned = it->second.ownedCharacters;
 	for (const auto& [name, info] : Character::infos) {
-		// 跳过白板（白板不可购买，不计入集齐判定）
 		if (name == "白板") continue;
 		if (info.level == level && !owned.contains(name)) {
 			return false;
@@ -284,18 +288,20 @@ std::optional<std::string> UserDB::checkAndUnlockSRank(const std::string& userna
 	// 随机选一个解锁
 	const std::size_t idx = unool::random::randomSize_t(0, sLocked.size() - 1);
 	std::string chosen = sLocked[idx];
-	owned.insert(chosen);
+	owned[chosen] = {"默认"};
 	save();
-	std::println("[UserDB] 玩家{}集齐档位，随机解锁S档角色{}", username, chosen);
+	std::println("[UserDB] 玩家{}集齐档位，随机解锁S档角色{}（含默认皮肤）", username, chosen);
 	return chosen;
 }
 
 bool UserDB::purchaseSkin(const std::string& username, const std::string& charName, const std::string& skinName, int price) {
 	auto it = users_.find(username);
 	if (it == users_.end()) return false;
+	// 没有英雄无法购买皮肤
+	if (!it->second.ownedCharacters.contains(charName)) return false;
 	if (it->second.points < price) return false;
 	if (!trySpendPoints(username, price)) return false;
-	it->second.ownedSkins[charName].insert(skinName);
+	it->second.ownedCharacters[charName].insert(skinName);
 	save();
 	std::println("[UserDB] 玩家{}解锁角色{}的皮肤{}", username, charName, skinName);
 	return true;
@@ -313,26 +319,23 @@ bool UserDB::purchaseItem(const std::string& username, const std::string& itemNa
 }
 
 void UserDB::initializeUserData() {
-	// 清空所有用户（除"测试用户1"、"测试用户2"外）的 ownedCharacters 和 ownedSkins
+	// 清空所有用户（除"测试用户1"、"测试用户2"外）的 ownedCharacters
 	for (auto& [username, info] : users_) {
 		if (username == "测试用户1" || username == "测试用户2") continue;
 		info.ownedCharacters.clear();
-		info.ownedSkins.clear();
 	}
-	// 设置 fuzzyfigure 的初始角色池
+	// 设置 fuzzyfigure 的初始角色（含默认皮肤）
 	if (users_.contains("fuzzyfigure")) {
 		auto& info = users_["fuzzyfigure"];
-		info.characterPool = {"霍金","科比","大章鱼","白羊座","天蝎座","特朗普","双子座","王耘浩","Alan Walker","植物人"};
-		for (const auto& name : info.characterPool) {
-			info.ownedCharacters.insert(name);
+		for (const auto& name : {"霍金","科比","大章鱼","白羊座","天蝎座","特朗普","双子座","王耘浩","Alan Walker","植物人"}) {
+			info.ownedCharacters[name] = {"默认"};
 		}
 	}
-	// 设置 lazer 的初始角色池
+	// 设置 lazer 的初始角色（含默认皮肤）
 	if (users_.contains("lazer")) {
 		auto& info = users_["lazer"];
-		info.characterPool = {"二次元","虎哥","柯尔特","狮子座","天蝎座","田淑丽","格斯","丁真","薛维旭","艾尔·普里莫"};
-		for (const auto& name : info.characterPool) {
-			info.ownedCharacters.insert(name);
+		for (const auto& name : {"二次元","虎哥","柯尔特","狮子座","天蝎座","田淑丽","格斯","丁真","薛维旭","艾尔·普里莫"}) {
+			info.ownedCharacters[name] = {"默认"};
 		}
 	}
 	save();

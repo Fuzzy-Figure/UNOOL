@@ -13,12 +13,10 @@ struct UserInfo {
 	int points = 0;
 	int wins = 0;
 	int losses = 0;
-	std::set<std::string> ownedCharacters;
-	std::map<std::string, std::set<std::string>> ownedSkins;
+	std::map<std::string, std::set<std::string>> ownedCharacters;
 	std::map<std::string, int> items;
-	std::vector<std::string> characterPool;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, password, points, wins, losses, ownedCharacters, ownedSkins, items, characterPool)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, password, points, wins, losses, ownedCharacters, items)
 };
 
 class UserDB {
@@ -60,12 +58,12 @@ public:
 	void load();
 	void save() const;
 
-	// 获取用户角色池
-	const std::vector<std::string>& getCharacterPool(const std::string& username) const;
-	// 获取用户拥有的角色集合
-	const std::set<std::string>& getOwnedCharacters(const std::string& username) const;
+	// 获取用户角色池（ownedCharacters 的 keys）
+	std::vector<std::string> getCharacterPool(const std::string& username) const;
+	// 获取用户拥有的角色集合（ownedCharacters 的 keys）
+	std::set<std::string> getOwnedCharacters(const std::string& username) const;
 	// 获取用户拥有的皮肤集合
-	const std::set<std::string>& getOwnedSkins(const std::string& username, const std::string& charName) const;
+	std::set<std::string> getOwnedSkins(const std::string& username, const std::string& charName) const;
 	// 获取用户道具数量
 	int getItemCount(const std::string& username, const std::string& itemName) const;
 	// 获取完整 UserInfo 引用（用于商城数据构建）

@@ -549,10 +549,10 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 
 			ShopSkinInfo skinInfo;
 			skinInfo.name = skinName;
-			// 检查皮肤是否已解锁
-			auto skinIt = userInfo.ownedSkins.find(name);
-			if (skinIt != userInfo.ownedSkins.end()) {
-				skinInfo.unlocked = skinIt->second.contains(skinName);
+			// 检查皮肤是否已解锁（从 ownedCharacters[charName] 的皮肤集合中查找）
+			auto charIt = userInfo.ownedCharacters.find(name);
+			if (charIt != userInfo.ownedCharacters.end()) {
+				skinInfo.unlocked = charIt->second.contains(skinName);
 			}
 			skinInfo.price = Character::getSkinPrice(name, skinName);
 			skinInfo.quality = Character::to_string(Character::getSkinQuality(name, skinName));
