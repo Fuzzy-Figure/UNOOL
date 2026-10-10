@@ -798,11 +798,11 @@ void ShopScene::renderDetailPanel() {
 		}
 		for (const auto& factory : info.instantSkills) {
 			auto skill = factory();
-			skillsText += std::format("【{}】（主动）\n{}\n\n", skill->getName(), skill->getInfo());
+			skillsText += std::format("【{}】（即时）\n{}\n\n", skill->getName(), skill->getInfo());
 		}
 		for (const auto& factory : info.transformSkills) {
 			auto skill = factory();
-			skillsText += std::format("【{}】（变身）\n{}\n\n", skill->getName(), skill->getInfo());
+			skillsText += std::format("【{}】（转换）\n{}\n\n", skill->getName(), skill->getInfo());
 		}
 	}
 
