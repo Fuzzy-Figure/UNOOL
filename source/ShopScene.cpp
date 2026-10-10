@@ -123,7 +123,7 @@ void ShopScene::tryBuyItem(const std::string& itemName) {
 
 void ShopScene::activateCurrentRow() {
 	if (rows.empty()) return;
-	const auto& row = rows[cursor];
+	const auto row = rows[cursor];  // 值拷贝，避免 rebuildRows 后悬空引用
 	if (currentView == View::Hero) {
 		if (row.type == Row::Type::HeroCollapsed) {
 			// 展开或收起皮肤列表
@@ -135,6 +135,13 @@ void ShopScene::activateCurrentRow() {
 			else {
 				expandedHeroIdx = row.heroIdx;
 				rebuildRows();
+				// 展开新英雄后，将 cursor 定位到该英雄行
+				for (std::size_t i = 0; i < rows.size(); ++i) {
+					if (rows[i].type == Row::Type::HeroCollapsed && rows[i].heroIdx == row.heroIdx) {
+						cursor = i;
+						break;
+					}
+				}
 			}
 		}
 	}
