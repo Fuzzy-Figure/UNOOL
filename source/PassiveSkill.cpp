@@ -2608,7 +2608,7 @@ bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		std::println("<技能> {}发动通天，修正次数+1", carrier.characterName());
 	}
 	else {
-		carrier.addSkill(std::make_unique<修正>());
+		carrier.addSkill(修正::make());
 		carrier.findSkill<修正>()->get().setLimit(1);
 		std::println("<技能> {}发动通天，获得修正技能（1次）", carrier.characterName());
 	}
