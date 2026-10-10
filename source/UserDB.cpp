@@ -317,26 +317,3 @@ bool UserDB::purchaseItem(const std::string& username, const std::string& itemNa
 	std::println("[UserDB] 玩家{}购买道具{}（当前{}）", username, itemName, it->second.items[itemName]);
 	return true;
 }
-
-void UserDB::initializeUserData() {
-	// 清空所有用户（除"测试用户1"、"测试用户2"外）的 ownedCharacters
-	for (auto& [username, info] : users_) {
-		if (username == "测试用户1" || username == "测试用户2") continue;
-		info.ownedCharacters.clear();
-	}
-	// 设置 fuzzyfigure 的初始角色（含默认皮肤）
-	if (users_.contains("fuzzyfigure")) {
-		auto& info = users_["fuzzyfigure"];
-		for (const auto& name : {"霍金","科比","大章鱼","白羊座","天蝎座","特朗普","双子座","王耘浩","Alan Walker","植物人"}) {
-			info.ownedCharacters[name] = {"默认"};
-		}
-	}
-	// 设置 lazer 的初始角色（含默认皮肤）
-	if (users_.contains("lazer")) {
-		auto& info = users_["lazer"];
-		for (const auto& name : {"二次元","虎哥","柯尔特","狮子座","天蝎座","田淑丽","格斯","丁真","薛维旭","艾尔·普里莫"}) {
-			info.ownedCharacters[name] = {"默认"};
-		}
-	}
-	save();
-}

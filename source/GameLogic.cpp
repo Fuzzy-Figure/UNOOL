@@ -209,19 +209,11 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	state.cands[secondSeatId] = pickFromPool(pool2, candCount2, pickedNames);
 	for (const auto& e : state.cands[secondSeatId]) pickedNames.insert(e.first);
 
-	//角色池不足时从全角色补抽（排除已抽取的，randomChooseCharacters已处理被屏蔽角色）
-	auto supplement = [&](std::size_t playerId, std::size_t targetCount) {
-		const std::size_t current = state.cands[playerId].size();
-		if (current >= targetCount) return;
-		const std::size_t needed = targetCount - current;
-		auto supplemented = Character::randomChooseCharacters(needed, pickedNames);
-		for (auto& e : supplemented) {
-			state.cands[playerId].push_back(std::move(e));
-			pickedNames.insert(state.cands[playerId].back().first);
-		}
-	};
-	supplement(firstSeatId, candCount1);
-	supplement(secondSeatId, candCount2);
+	//角色池不足时直接抛异常
+	if (state.cands[firstSeatId].size() < candCount1)
+		throw std::runtime_error(std::format("玩家{}角色池不足（{}/{}），请先购买角色", user1, state.cands[firstSeatId].size(), candCount1));
+	if (state.cands[secondSeatId].size() < candCount2)
+		throw std::runtime_error(std::format("玩家{}角色池不足（{}/{}），请先购买角色", user2, state.cands[secondSeatId].size(), candCount2));
 
 	//Ban环节：玩家A先连续ban banCount次，再一次性告诉B；然后B同理，最后提示A
 	auto formatBanSummary = [&](std::size_t targetId, const std::vector<std::string>& labels) -> std::string {
@@ -262,14 +254,51 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 }
 
 void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
-	//双将模式：无ban，抽 doubleCandidateCount*2 个候选平分各 doubleCandidateCount 个
+	//双将模式：从双方用户角色池抽取候选
 	const std::size_t doubleCandidateCount = unool::getServerConfig()["rules"]["double"].value("candidateCount", 5);
-	auto allChars = Character::randomChooseCharacters(doubleCandidateCount * 2);
+	const auto& slots = network.getClientSlots();
+	const std::string& user1 = slots[firstSeatId].username;
+	const std::string& user2 = slots[secondSeatId].username;
+	const auto pool1 = UserDB::instance().getCharacterPool(user1);
+	const auto pool2 = UserDB::instance().getCharacterPool(user2);
 
-	std::vector<Character::Entry> cands1(
-		allChars.begin(), allChars.begin() + doubleCandidateCount);
-	std::vector<Character::Entry> cands2(
-		allChars.begin() + doubleCandidateCount, allChars.end());
+	//选将扩充卡
+	const int expandCount1 = UserDB::instance().getItemCount(user1, "选将扩充卡");
+	const int expandCount2 = UserDB::instance().getItemCount(user2, "选将扩充卡");
+	const std::size_t candCount1 = doubleCandidateCount + static_cast<std::size_t>(expandCount1 > 0 ? expandCount1 : 0);
+	const std::size_t candCount2 = doubleCandidateCount + static_cast<std::size_t>(expandCount2 > 0 ? expandCount2 : 0);
+
+	//双方已抽取的角色名，用于避免重复
+	std::unordered_set<std::string> pickedNames;
+
+	//从角色池中随机抽取候选
+	auto pickFromPool = [](const std::vector<std::string>& pool, std::size_t n,
+						   const std::unordered_set<std::string>& exclude) {
+		std::vector<std::string> available;
+		for (const auto& name : pool) {
+			if (exclude.contains(name)) continue;
+			if (!Character::infos.contains(name)) continue;
+			available.push_back(name);
+		}
+		std::ranges::shuffle(available, unool::random::rng);
+		std::vector<Character::Entry> result;
+		result.reserve(n < available.size() ? n : available.size());
+		for (std::size_t i = 0; i < n && i < available.size(); ++i) {
+			result.push_back(*Character::infos.find(available[i]));
+		}
+		return result;
+	};
+
+	std::vector<Character::Entry> cands1 = pickFromPool(pool1, candCount1, pickedNames);
+	for (const auto& e : cands1) pickedNames.insert(e.first);
+	std::vector<Character::Entry> cands2 = pickFromPool(pool2, candCount2, pickedNames);
+	for (const auto& e : cands2) pickedNames.insert(e.first);
+
+	//角色池不足时直接抛异常
+	if (cands1.size() < candCount1)
+		throw std::runtime_error(std::format("玩家{}角色池不足（{}/{}），请先购买角色", user1, cands1.size(), candCount1));
+	if (cands2.size() < candCount2)
+		throw std::runtime_error(std::format("玩家{}角色池不足（{}/{}），请先购买角色", user2, cands2.size(), candCount2));
 
 	//提取双方候选名集合，供"换一批"时排除对方角色
 	std::unordered_set<std::string> names1, names2;
@@ -355,13 +384,9 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 		opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
 		validIndices.push_back(i);
 	}
-	//兜底：若所有候选均未解锁（理论上不应发生），则允许全部非ban候选
+	//角色池为空或候选均未解锁时直接抛异常
 	if (opts.empty()) {
-		for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
-			if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
-			opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
-			validIndices.push_back(i);
-		}
+		throw std::runtime_error(std::format("玩家{}未拥有任何候选角色，请先在商城购买角色", username));
 	}
 	std::size_t choice = players[playerId]->ask("选择你的角色：", opts, true);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;

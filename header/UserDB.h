@@ -80,8 +80,6 @@ public:
 	bool purchaseSkin(const std::string& username, const std::string& charName, const std::string& skinName, int price);
 	// 购买道具：积分校验+增加数量，返回成功/失败
 	bool purchaseItem(const std::string& username, const std::string& itemName, int price);
-	// 一次性初始化用户角色池/拥有数据
-	void initializeUserData();
 
 private:
 	UserDB() { load(); }
