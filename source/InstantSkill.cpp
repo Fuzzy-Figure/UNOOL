@@ -689,3 +689,46 @@ bool 勇进::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+// ==================== 技能：修正 ====================
+bool 修正::content(GameLogic& game, Player& carrier) {
+	//选一张手牌
+	auto idxOpt = carrier.chooseCard("选择一张手牌进行修正", unool::alwaysTrue, false);
+	if (!idxOpt) return false;
+	Card& card = carrier.getCardByIndex(*idxOpt);
+
+	//构建可选牌名：所有非万能牌名，排除已用过的
+	std::vector<Card::Name> availableNames;
+	for (int i = static_cast<int>(Card::Name::number_0); i <= static_cast<int>(Card::Name::action_draw2); ++i) {
+		Card::Name name = static_cast<Card::Name>(i);
+		if (!usedNames.contains(name))
+			availableNames.push_back(name);
+	}
+	if (availableNames.empty()) {
+		carrier.hint("所有牌名已用完，无法发动修正");
+		return false;
+	}
+
+	//声明牌名
+	auto nameOpt = carrier.chooseCardName("声明要改为的牌名", false, availableNames);
+	if (!nameOpt) return false;
+	Card::Name targetName = nameOpt.value();
+
+	//改牌
+	card.set(card.getColor(), targetName);
+	usedNames.insert(targetName);
+
+	//若改为数字牌，失去3%当前体力（向上取整）
+	if (card.isNumber()) {
+		std::size_t loss = unool::math::ceil(carrier.getHp() * 0.03);
+		carrier.damage(loss, std::nullopt);
+		std::println("<技能> {}修正将一张手牌改为数字牌，失去{}点体力", carrier.characterName(), loss);
+	}
+	else {
+		std::println("<技能> {}修正将一张手牌改为功能牌", carrier.characterName());
+	}
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+

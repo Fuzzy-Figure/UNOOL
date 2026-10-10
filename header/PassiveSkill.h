@@ -1446,21 +1446,6 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 修正 final : public PassiveSkillImpl<修正> {
-	mutable std::unordered_set<Card::Name> usedNames;
-public:
-	修正() : PassiveSkillImpl<修正>(
-		"修正",
-		"回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），\n"
-		"若你改为数字牌则失去3%当前体力（向上取整）。",
-		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
-};
-
 //剧变：限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，手牌数因此减少的角色摸两张牌
 class 剧变 final : public PassiveSkillImpl<剧变> {
 public:

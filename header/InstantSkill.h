@@ -327,3 +327,18 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+//修正：每回合限一次，出牌阶段，将一张手牌改为声明的非万能牌（每局每种牌名限一次）
+class 修正 final : public InstantSkillImpl<修正> {
+	mutable std::unordered_set<Card::Name> usedNames;
+public:
+	修正() : InstantSkillImpl<修正>(
+		"修正",
+		"每回合限{limit}次（剩余{remaining}次），出牌阶段，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），\n"
+		"若你改为数字牌则失去3%当前体力（向上取整）。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override { ActiveSkill::reset(); usedNames.clear(); }
+};
+
