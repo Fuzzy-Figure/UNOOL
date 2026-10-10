@@ -19,7 +19,7 @@ public:
 	};
 
 private:
-	enum class Mode { Login, Register, Shop } mode = Mode::Login;
+	enum class Mode { Login, Register, Lobby } mode = Mode::Login;
 	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, Done } status = Status::Idle;
 	enum class Focus { None, Username, Password } focus = Focus::Username;
 
@@ -33,11 +33,12 @@ private:
 	Result result;
 
 	// 固定布局矩形
-	sf::FloatRect shopBtn;      // 积分商城入口（用户名框上方）
 	sf::FloatRect usernameBox;
 	sf::FloatRect passwordBox;
 	sf::FloatRect loginBtn;
 	sf::FloatRect registerBtn;
+	sf::FloatRect startGameBtn; // 大厅：开始游戏按钮
+	sf::FloatRect lobbyShopBtn; // 大厅：商城按钮
 
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 

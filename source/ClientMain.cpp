@@ -240,29 +240,13 @@ int main() {
 	GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle));
 	GameRenderer renderer(rendererConfig);
 
-	// 登录循环：用户可从登录界面进入商城，从商城返回后回到登录界面
-	while (true) {
-		LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
-		auto session = login.run();
-		if (!session.ok) {
-			std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);
-			system("pause");
-			return 1;
-		}
-		// 商城入口：登录成功后用户点击了"积分商城"，进入 ShopScene
-		if (session.enterShop) {
-			std::println("{} 进入积分商城...", windowTitleWithBrackets);
-			ShopScene shop(renderer, clientNetwork, session.username);
-			shop.run();
-			// 商城退出后若连接已断开则退出
-			if (!clientNetwork.isConnected() || !renderer.windowIsOpen()) {
-				std::println(stderr, "{} 与服务器断开连接，退出", windowTitleWithBrackets);
-				system("pause");
-				return 1;
-			}
-			continue; // 回到登录界面
-		}
-		break;
+	// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
+	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
+	auto session = login.run();
+	if (!session.ok) {
+		std::println(stderr, "{} 登录未完成，退出", windowTitleWithBrackets);
+		system("pause");
+		return 1;
 	}
 
 	std::println("{} 已登录，等待对手登录并开始游戏...", windowTitleWithBrackets);
