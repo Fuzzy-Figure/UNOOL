@@ -172,6 +172,65 @@ void UserDB::load() {
 	}
 }
 
+namespace {
+// 自定义 JSON 序列化：ownedCharacters 的皮肤数组用紧凑单行格式
+void dumpJson(std::ostream& os, const nlohmann::json& j, int indent, bool compactArrays) {
+	auto pad = [&](int n) { for (int i = 0; i < n; ++i) os << "  "; };
+
+	if (j.is_object()) {
+		if (j.empty()) { os << "{}"; return; }
+		os << "{\n";
+		bool first = true;
+		for (auto it = j.begin(); it != j.end(); ++it) {
+			if (!first) os << ",\n";
+			first = false;
+			pad(indent + 1);
+			os << "\"" << it.key() << "\": ";
+			// 当 key 为 ownedCharacters 时，其值的数组子项用紧凑格式
+			bool compact = (it.key() == "ownedCharacters") ? true : compactArrays;
+			dumpJson(os, it.value(), indent + 1, compact);
+		}
+		os << "\n";
+		pad(indent);
+		os << "}";
+	}
+	else if (j.is_array()) {
+		if (j.empty()) { os << "[]"; return; }
+		if (compactArrays) {
+			// 紧凑单行：只对基本类型数组有效
+			os << "[ ";
+			bool first = true;
+			for (const auto& elem : j) {
+				if (!first) os << ", ";
+				first = false;
+				if (elem.is_string()) os << "\"" << elem.get<std::string>() << "\"";
+				else os << elem.dump();
+			}
+			os << " ]";
+		}
+		else {
+			os << "[\n";
+			bool first = true;
+			for (const auto& elem : j) {
+				if (!first) os << ",\n";
+				first = false;
+				pad(indent + 1);
+				dumpJson(os, elem, indent + 1, false);
+			}
+			os << "\n";
+			pad(indent);
+			os << "]";
+		}
+	}
+	else if (j.is_string()) {
+		os << "\"" << j.get<std::string>() << "\"";
+	}
+	else {
+		os << j.dump();
+	}
+}
+}
+
 void UserDB::save() const {
 	nlohmann::json j = users_;
 	std::ofstream file(DATA_FILE);
@@ -179,7 +238,7 @@ void UserDB::save() const {
 		std::println(stderr, "[UserDB] 无法写入 {}", DATA_FILE);
 		return;
 	}
-	file << j.dump(2);
+	dumpJson(file, j, 0, false);
 }
 
 std::vector<std::string> UserDB::getCharacterPool(const std::string& username) const {
