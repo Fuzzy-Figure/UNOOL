@@ -573,7 +573,7 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 		ShopItemInfo itemInfo;
 		itemInfo.name = "选将扩充卡";
 		itemInfo.count = UserDB::instance().getItemCount(username, "选将扩充卡");
-		itemInfo.price = (itemInfo.count < 5) ? (88 + 100 * itemInfo.count) : -1;
+		itemInfo.price = (itemInfo.count < 5) ? (88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2) : -1;
 		itemInfo.available = itemInfo.count < 5;
 		shopData.items.push_back(std::move(itemInfo));
 	}
@@ -700,7 +700,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 				errMsg = "已达购买上限";
 			}
 			else {
-				price = 88 + 100 * count;
+				price = 88 + 100 * count * (count + 1) / 2;
 			}
 		}
 		else if (req.name == "增分卡") {

@@ -134,21 +134,16 @@ void ShopScene::activateCurrentRow() {
 			else {
 				expandedHeroIdx = row.heroIdx;
 				rebuildRows();
-				// 展开后直接跳到 HeroEntry 行（下一个）
-				if (cursor + 1 < rows.size() && rows[cursor + 1].type == Row::Type::HeroEntry)
-					++cursor;
 			}
 		}
-		// HeroEntry/SkinEntry 仅选中，不直接购买
 	}
-	// 道具视图：ItemEntry 仅选中，不直接购买
 }
 
 bool ShopScene::currentRowBuyable() const {
 	if (rows.empty()) return false;
 	const auto& row = rows[cursor];
 	if (currentView == View::Hero) {
-		if (row.type == Row::Type::HeroEntry) {
+		if (row.type == Row::Type::HeroCollapsed) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			return !hero.unlocked && hero.price >= 0;
 		}
@@ -171,7 +166,7 @@ void ShopScene::tryBuyCurrentSelection() {
 	if (rows.empty()) return;
 	const auto& row = rows[cursor];
 	if (currentView == View::Hero) {
-		if (row.type == Row::Type::HeroEntry) {
+		if (row.type == Row::Type::HeroCollapsed) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			if (!hero.unlocked && hero.price >= 0) tryBuyCharacter(hero.name);
 			else setPurchaseMsg(hero.unlocked ? "已解锁" : "不可购买");
@@ -179,11 +174,13 @@ void ShopScene::tryBuyCurrentSelection() {
 		else if (row.type == Row::Type::SkinEntry) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			const auto& skin = hero.skins[row.skinIdx];
-			if (!skin.unlocked && skin.price >= 0) tryBuySkin(hero.name, skin.name);
-			else setPurchaseMsg(skin.unlocked ? "已解锁" : "不售卖");
-		}
-		else {
-			setPurchaseMsg("请选择英雄或皮肤");
+			if (hero.unlocked) {
+				if (!skin.unlocked && skin.price >= 0) tryBuySkin(hero.name, skin.name);
+				else setPurchaseMsg(skin.unlocked ? "已解锁" : "不售卖");
+			}
+			else {
+				setPurchaseMsg("请先购买角色");
+			}
 		}
 	}
 	else {
@@ -435,12 +432,8 @@ void ShopScene::rebuildRows() {
 		r.type = Row::Type::HeroCollapsed;
 		r.heroIdx = hi;
 		rows.push_back(r);
-		// 展开皮肤列表：首位英雄项 + 后续皮肤项
+		// 展开皮肤列表：仅显示皮肤项
 		if (hi == expandedHeroIdx) {
-			Row hr;
-			hr.type = Row::Type::HeroEntry;
-			hr.heroIdx = hi;
-			rows.push_back(hr);
 			for (std::size_t s = 0; s < shopData.characters[hi].skins.size(); ++s) {
 				Row sr;
 				sr.type = Row::Type::SkinEntry;
@@ -634,29 +627,6 @@ void ShopScene::renderHeroView() {
 				std::string priceStr = std::format("售价 {}", hero.price);
 				sf::Color pc = affordable(hero.price) ? sf::Color(120, 230, 140) : sf::Color(250, 120, 120);
 				textMgr.displayText(priceStr, { boxPos.x + listW - 170.f, y + 6.f }, { 20, 40 }, pc);
-			}
-		}
-		else if (row.type == Row::Type::HeroEntry) {
-			// 展开列表首项：英雄本身（购买入口）
-			const auto& hero = shopData.characters[row.heroIdx];
-			sf::Vector2f subPos = { listX + 40.f, y };
-			sf::Vector2f subSize = { listW - 40.f, rowH - 6.f };
-			drawRowBox(subPos, subSize, selected);
-			std::string line;
-			if (hero.unlocked) {
-				line = std::format("英雄 {} (已解锁)", hero.name);
-				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(120, 230, 140));
-			}
-			else if (hero.price < 0) {
-				line = std::format("英雄 {} (不可购买)", hero.name);
-				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(180, 180, 190));
-			}
-			else {
-				line = std::format("英雄 {} (未解锁)", hero.name);
-				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(235, 235, 245));
-				std::string priceStr = std::format("售价 {}", hero.price);
-				sf::Color pc = affordable(hero.price) ? sf::Color(120, 230, 140) : sf::Color(250, 120, 120);
-				textMgr.displayText(priceStr, { subPos.x + subSize.x - 160.f, y + 6.f }, { 18, 36 }, pc);
 			}
 		}
 		else if (row.type == Row::Type::SkinEntry) {
