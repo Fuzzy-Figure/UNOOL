@@ -1446,8 +1446,6 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//修正：回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），
-//若改为数字牌则失去3%当前体力（向上取整）
 class 修正 final : public PassiveSkillImpl<修正> {
 	mutable std::unordered_set<Card::Name> usedNames;
 public:
@@ -1503,6 +1501,7 @@ public:
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	//todo: void reset() override {}
 };
 
 //地雷_引爆：子技能，其他角色打出地雷颜色牌时受到1点伤害

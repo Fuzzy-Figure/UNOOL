@@ -434,7 +434,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 			for (const auto& e : cands) opts1.push_back(formatCharacterLabel(e));
 			const std::string title1 = hasSwapped
 				? std::format("选择你的第1个角色（{}选1）：", opts1.size())
-				: std::format("选择你的第1个角色（{}选1，按0消耗5积分换一批，仅一次）：", opts1.size());
+				: std::format("选择你的第2个角色（{}选1）：\n（按0消耗5积分换一批，仅一次）", opts1.size());
 			const std::size_t choice1 = player.ask(title1, opts1, false);
 			if (choice1 == 0) {
 				if (doSwap()) continue;
@@ -451,7 +451,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 		for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
 		const std::string title2 = hasSwapped
 			? std::format("选择你的第2个角色（{}选1）：", opts2.size())
-			: std::format("选择你的第2个角色（{}选1，按0消耗5积分换一批，仅一次）：", opts2.size());
+			: std::format("选择你的第2个角色（{}选1）：\n（按0消耗5积分换一批，仅一次）", opts2.size());
 		const std::size_t choice2 = player.ask(title2, opts2, false);
 		if (choice2 == 0) {
 			if (doSwap()) {
