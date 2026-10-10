@@ -123,7 +123,7 @@ void ShopScene::tryBuyItem(const std::string& itemName) {
 
 void ShopScene::activateCurrentRow() {
 	if (rows.empty()) return;
-	const auto row = rows[cursor];  // 值拷贝，避免 rebuildRows 后悬空引用
+	const Row row = rows[cursor];  // 值拷贝，避免 rebuildRows 后悬空引用
 	if (currentView == View::Hero) {
 		if (row.type == Row::Type::HeroCollapsed) {
 			// 展开或收起皮肤列表
