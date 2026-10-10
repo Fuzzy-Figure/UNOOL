@@ -61,6 +61,7 @@ private:
 	void renderItemView();
 	void renderSearchBar();
 	void renderBuyButton();
+	void renderDetailPanel();
 	// 事件处理
 	void handleEvent(const sf::Event& event);
 	void handleKeyPressed(const sf::Event::KeyPressed& key);

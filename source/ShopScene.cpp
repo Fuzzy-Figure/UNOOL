@@ -1,5 +1,6 @@
 #include "ShopScene.h"
 #include "GameRenderer.h"
+#include "Character.h"
 #include <algorithm>
 #include <format>
 #include <string>
@@ -365,8 +366,8 @@ void ShopScene::handleTextEntered(const sf::Event::TextEntered& te) {
 
 void ShopScene::handleMouseClick(const sf::Vector2f& pos) {
 	const auto& cfg = renderer.getConfig();
-	const float listX = static_cast<float>(cfg.windowSize.x) * 0.08f;
-	const float listW = static_cast<float>(cfg.windowSize.x) * 0.6f;
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float rowH = 56.f;
 	const float listStartY = 140.f;
 
@@ -498,6 +499,8 @@ void ShopScene::render() {
 	if (currentView == View::Hero) renderHeroView();
 	else renderItemView();
 
+	if (currentView == View::Hero) renderDetailPanel();
+
 	renderBuyButton();
 
 	// 消息提示（底部居中）
@@ -593,8 +596,8 @@ void ShopScene::renderHeroView() {
 		return;
 	}
 
-	const float listX = static_cast<float>(cfg.windowSize.x) * 0.08f;
-	const float listW = static_cast<float>(cfg.windowSize.x) * 0.6f;
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float rowH = 56.f;
 	const float startY = 140.f;
 
@@ -671,8 +674,8 @@ void ShopScene::renderItemView() {
 		return;
 	}
 
-	const float listX = static_cast<float>(cfg.windowSize.x) * 0.08f;
-	const float listW = static_cast<float>(cfg.windowSize.x) * 0.6f;
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float rowH = 56.f;
 	const float startY = 140.f;
 
@@ -704,8 +707,8 @@ void ShopScene::renderBuyButton() {
 	auto& textMgr = renderer.getTextManager();
 	const auto& cfg = renderer.getConfig();
 
-	const float listX = static_cast<float>(cfg.windowSize.x) * 0.08f;
-	const float listW = static_cast<float>(cfg.windowSize.x) * 0.6f;
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float btnW = 140.f;
 	const float btnH = 44.f;
 	const float btnX = listX + listW + 20.f;
@@ -724,4 +727,103 @@ void ShopScene::renderBuyButton() {
 	window.draw(btn);
 
 	textMgr.displayText("购买", { btnX + btnW / 2.f - 20.f, btnY + 4.f }, { 22, 44 }, textColor);
+}
+
+void ShopScene::renderDetailPanel() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const auto& cfg = renderer.getConfig();
+
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
+	const float panelX = listX + listW + 160.f;  // 跳过购买按钮
+	const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
+	const float panelY = 140.f;
+	const float panelH = static_cast<float>(cfg.windowSize.y) - panelY - 80.f;
+
+	// 背景框
+	sf::RectangleShape bg({ panelW, panelH });
+	bg.setPosition({ panelX, panelY });
+	bg.setFillColor(sf::Color(28, 30, 42));
+	bg.setOutlineThickness(2.f);
+	bg.setOutlineColor(sf::Color(80, 90, 120));
+	window.draw(bg);
+
+	if (rows.empty()) return;
+	const auto& row = rows[cursor];
+
+	// 确定角色名和皮肤名
+	std::string charName, skinName;
+	if (row.type == Row::Type::HeroCollapsed) {
+		charName = shopData.characters[row.heroIdx].name;
+		skinName = "默认";
+	}
+	else if (row.type == Row::Type::SkinEntry) {
+		charName = shopData.characters[row.heroIdx].name;
+		skinName = shopData.characters[row.heroIdx].skins[row.skinIdx].name;
+	}
+	else {
+		return;
+	}
+
+	// 显示皮肤图片
+	std::string imgPath = Character::getImagePath(charName, skinName);
+	const float imgW = std::min(panelW - 24.f, 200.f);
+	const float imgH = imgW * 1.4f;  // 竖向比例
+	renderer.displayImage(imgPath, { panelX + 12.f, panelY + 12.f }, { imgW, imgH });
+
+	// 显示角色名
+	float textX = panelX + imgW + 24.f;
+	float textY = panelY + 12.f;
+	textMgr.displayText(charName, { textX, textY }, { 20, 40 }, sf::Color(230, 230, 240));
+	textY += 44.f;
+	textMgr.displayText("皮肤：" + skinName, { textX, textY }, { 16, 32 }, sf::Color(200, 200, 210));
+	textY += 36.f;
+
+	// 生成技能描述
+	std::string skillsText;
+	auto infoIt = Character::infos.find(charName);
+	if (infoIt != Character::infos.end()) {
+		const auto& info = infoIt->second;
+		for (const auto& factory : info.passiveSkills) {
+			auto skill = factory();
+			skillsText += std::format("【{}】（被动）\n{}\n\n", skill->getName(), skill->getInfo());
+		}
+		for (const auto& factory : info.instantSkills) {
+			auto skill = factory();
+			skillsText += std::format("【{}】（主动）\n{}\n\n", skill->getName(), skill->getInfo());
+		}
+		for (const auto& factory : info.transformSkills) {
+			auto skill = factory();
+			skillsText += std::format("【{}】（变身）\n{}\n\n", skill->getName(), skill->getInfo());
+		}
+	}
+
+	// 技能描述（自动折行）
+	if (!skillsText.empty()) {
+		float descY = panelY + imgH + 24.f;
+		float descW = panelW - 32.f;
+		// 按 \n 分段，每段单独 wrapText
+		std::string segment;
+		for (char c : skillsText) {
+			if (c == '\n') {
+				if (!segment.empty()) {
+					std::string wrapped = textMgr.wrapText(segment, descW, { 16, 32 });
+					textMgr.displayText(wrapped, { panelX + 16.f, descY }, { 16, 32 }, sf::Color(220, 220, 230));
+					descY += textMgr.getLineSpacing(32) * (1 + std::ranges::count(wrapped, '\n'));
+					segment.clear();
+				}
+				else {
+					descY += textMgr.getLineSpacing(32) / 2;  // 空行间距小一些
+				}
+			}
+			else {
+				segment += c;
+			}
+		}
+		if (!segment.empty()) {
+			std::string wrapped = textMgr.wrapText(segment, descW, { 16, 32 });
+			textMgr.displayText(wrapped, { panelX + 16.f, descY }, { 16, 32 }, sf::Color(220, 220, 230));
+		}
+	}
 }
