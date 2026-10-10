@@ -195,6 +195,14 @@ void LoginScene::pollAccountPackets() {
 		if (!(packet >> msgType)) continue;
 		auto mt = static_cast<MessageType>(msgType);
 
+		// 心跳包：立即回复，防止服务器判定掉线
+		if (mt == MessageType::Heartbeat) {
+			sf::Packet hb;
+			hb << static_cast<int>(MessageType::Heartbeat);
+			net.send(hb);
+			continue;
+		}
+
 		if (mt == MessageType::ConnectionInfo) {
 			std::size_t pid;
 			if (packet >> pid) {
