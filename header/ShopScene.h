@@ -60,6 +60,7 @@ private:
 	void renderHeroView();
 	void renderItemView();
 	void renderSearchBar();
+	void renderBuyButton();
 	// 事件处理
 	void handleEvent(const sf::Event& event);
 	void handleKeyPressed(const sf::Event::KeyPressed& key);
@@ -69,8 +70,12 @@ private:
 	void tryBuyCharacter(const std::string& name);
 	void tryBuySkin(const std::string& charName, const std::string& skinName);
 	void tryBuyItem(const std::string& itemName);
-	// 对当前选中行执行 Enter 语义（展开/购买），供键盘与鼠标点击共用
+	// 对当前选中行执行 Enter 语义（仅展开/收起英雄，不购买）
 	void activateCurrentRow();
+	// 通过"购买"按钮/空格触发：购买当前选中项
+	void tryBuyCurrentSelection();
+	// 当前选中行是否可购买
+	bool currentRowBuyable() const;
 	// 重建扁平行表
 	void rebuildDisplayedIndices();
 	void rebuildRows();
