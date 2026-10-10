@@ -1,25 +1,25 @@
 {
-  "mode": "normal",
-  "characters": {
-    //"assign": [ "迪克", "博尔特" ],
-    "shielded": {
-      "characters": [ "电棍" ],
-      "groups": []
-    }
-  },
-  "rules": {
-    "banCount": 2,
-    "double": {
-      "candidateCount": 5,
-      "initHandCount": 10
-    },
-    "normal": {
-      "candidateCount": 10,
-      "initHandCount": 8
-    }
-  },
-  "network": {
-    "maxReconnectAttempts": 100,
-    "reconnectTimeoutSec": 600
-  }
+	"mode": "normal",
+	"characters": {
+		//"assign": [ "迪克", "博尔特" ],
+		"shielded": {
+			"characters": [ "电棍" ],
+			"groups": []
+		}
+	},
+	"rules": {
+		"banCount": 2,
+		"double": {
+			"candidateCount": 5,
+			"initHandCount": 10
+		},
+		"normal": {
+			"candidateCount": 5,
+			"initHandCount": 8
+		}
+	},
+	"network": {
+		"maxReconnectAttempts": 100,
+		"reconnectTimeoutSec": 600
+	}
 }

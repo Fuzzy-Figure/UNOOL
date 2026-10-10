@@ -126,10 +126,18 @@ void ShopScene::activateCurrentRow() {
 	if (currentView == View::Hero) {
 		if (row.type == Row::Type::HeroCollapsed) {
 			// 展开或收起皮肤列表
-			if (expandedHeroIdx == row.heroIdx) expandedHeroIdx = static_cast<std::size_t>(-1);
-			else expandedHeroIdx = row.heroIdx;
-			rebuildRows();
-			clampCursor();
+			if (expandedHeroIdx == row.heroIdx) {
+				expandedHeroIdx = static_cast<std::size_t>(-1);
+				rebuildRows();
+				clampCursor();
+			}
+			else {
+				expandedHeroIdx = row.heroIdx;
+				rebuildRows();
+				// 展开后直接跳到 HeroEntry 行（下一个）
+				if (cursor + 1 < rows.size() && rows[cursor + 1].type == Row::Type::HeroEntry)
+					++cursor;
+			}
 		}
 		// HeroEntry/SkinEntry 仅选中，不直接购买
 	}
@@ -238,12 +246,12 @@ void ShopScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 			}
 			return;
 		}
-		// 搜索模式下也允许上下导航与确认
-		if (sc == sf::Keyboard::Scancode::Up || sc == sf::Keyboard::Scancode::W) {
+		// 搜索模式下仅用方向键导航（W/A/S/D 留给文本输入）
+		if (sc == sf::Keyboard::Scancode::Up) {
 			if (cursor > 0) --cursor;
 			return;
 		}
-		if (sc == sf::Keyboard::Scancode::Down || sc == sf::Keyboard::Scancode::S) {
+		if (sc == sf::Keyboard::Scancode::Down) {
 			if (cursor + 1 < rows.size()) ++cursor;
 			return;
 		}
