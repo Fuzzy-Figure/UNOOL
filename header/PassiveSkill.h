@@ -1593,7 +1593,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//同心：锁定技，每打出两张同类型牌后随机弃置一张牌
+
 class 同心 final : public PassiveSkillImpl<同心> {
 private:
 	std::size_t numberCount = 0;
@@ -1602,7 +1602,7 @@ private:
 public:
 	同心() : PassiveSkillImpl<同心>(
 		"同心",
-		"锁定技，每打出两张同类型牌后随机弃置一张牌。\n"
+		"锁定技，每连续打出两张同类型牌后随机弃置一张牌。\n"
 		"当前：数字{numberCount}/2；功能{actionCount}/2；万能{wildCount}/2",
 		unlimited, true,
 		TriggerPlayer::self,

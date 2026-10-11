@@ -8,7 +8,7 @@
 		}
 	},
 	"rules": {
-		"banCount": 2,
+		"banCount": 1,
 		"double": {
 			"candidateCount": 5,
 			"initHandCount": 10

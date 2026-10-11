@@ -2699,23 +2699,22 @@ bool 冲撞::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 bool 同心::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//根据打出牌的类型增加对应计数
 	const Card::Type type = trigger.getCard().getType();
-	std::size_t* counter = nullptr;
 	switch (type) {
-		case Card::Type::number: counter = &numberCount; break;
-		case Card::Type::action: counter = &actionCount; break;
-		case Card::Type::wild:   counter = &wildCount;  break;
+		case Card::Type::number: ++numberCount; break;
+		case Card::Type::action: ++actionCount; break;
+		case Card::Type::wild:   ++wildCount;  break;
 		default:                 std::unreachable();
 	}
-	++(*counter);
 
 	//达到2张同类型时随机弃置一张牌并重置计数
-	if (*counter >= 2) {
-		*counter = 0;
+	if (numberCount >= 2 || actionCount >= 2 || wildCount >= 2) {
+		numberCount = actionCount = wildCount = 0;
+
 		const std::size_t handCount = carrier.getHand().count();
 		if (handCount == 0) return true;
 		const std::size_t idx = unool::random::randomSize_t(0, handCount - 1);
 		std::println("<技能> {}打出两张同类型牌，随机弃置：{}", carrier.characterName(),
-					 carrier.getHand().getCardByIndex(idx).toString());
+					 carrier.getHand().getCardByIndex(idx));
 		carrier.discardByIndex(idx);
 		game.broadcastState();
 	}

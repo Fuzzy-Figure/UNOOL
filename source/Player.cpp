@@ -393,13 +393,22 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 
 // === 初始化 ===
 std::string Player::chooseSkin(const std::string& charName) {
+	//只允许选择已拥有的皮肤
+	const auto& slots = game.getNetwork().getClientSlots();
+	const auto& owned = UserDB::instance().getOwnedSkins(slots[id].username, charName);
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
-	if (skins.size() > 1) {
-		std::vector<std::string> skinOpts;
-		for (const auto& s : skins) skinOpts.push_back(s);
+	//按 Character::getSkins 顺序过滤出已拥有的皮肤
+	std::vector<std::string> skinOpts;
+	for (const auto& s : skins) {
+		if (owned.contains(s)) skinOpts.push_back(s);
+	}
+	if (skinOpts.size() > 1) {
 		std::size_t skinChoice = ask("选择皮肤：", skinOpts, true);
-		skin = skins[skinChoice - 1];
+		skin = skinOpts[skinChoice - 1];
+	}
+	else if (skinOpts.size() == 1) {
+		skin = skinOpts[0];
 	}
 	return skin;
 }
