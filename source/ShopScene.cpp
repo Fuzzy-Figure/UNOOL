@@ -53,8 +53,7 @@ void ShopScene::handleNetwork() {
 					clampPage();
 					rebuildRows();
 					clampCursor();
-				}
-				catch (const std::exception&) {
+				} catch (const std::exception&) {
 					setPurchaseMsg("商城数据解析失败");
 				}
 			}
@@ -67,8 +66,7 @@ void ShopScene::handleNetwork() {
 				try {
 					nlohmann::json j = nlohmann::json::parse(jsonStr);
 					result = j.get<ShopPurchaseResult>();
-				}
-				catch (const std::exception&) {
+				} catch (const std::exception&) {
 					setPurchaseMsg("购买结果解析失败");
 					continue;
 				}
@@ -664,11 +662,17 @@ void ShopScene::renderHeroView() {
 		}
 	}
 
-	// 翻页指示
+	// 翻页指示（屏幕底部居中，避免被角色介绍面板遮挡）
 	std::size_t pages = totalPages();
 	if (pages > 0) {
 		std::string pageStr = std::format("第 {}/{} 页", pageIdx + 1, pages);
-		textMgr.displayTextInRight(pageStr, { 18, 36 }, sf::Color(180, 180, 200));
+		const sf::Vector2f measured = textMgr.measureText(pageStr, 36);
+		textMgr.displayText(
+			pageStr,
+			{ (static_cast<float>(cfg.windowSize.x) - measured.x) / 2.f,
+			  static_cast<float>(cfg.windowSize.y) - 100.f },
+			{ 18, 36 }, sf::Color(180, 180, 200)
+		);
 	}
 }
 
