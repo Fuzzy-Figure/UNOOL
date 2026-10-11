@@ -487,8 +487,8 @@ std::unique_ptr<Pile> Pile::standard() {
 	//黑牌
 	auto pal = std::make_unique<Card>(Card::Color::black, Card::Name::wild_pal);
 	auto draw4 = std::make_unique<Card>(Card::Color::black, Card::Name::wild_draw4);
-	standard->push_back(std::move(pal), 10);
-	standard->push_back(std::move(draw4), 8);
+	standard->push_back(std::move(pal), 9);
+	standard->push_back(std::move(draw4), 7);
 
 	//洗牌
 	standard->shuffle();
