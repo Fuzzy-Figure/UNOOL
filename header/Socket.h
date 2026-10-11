@@ -35,7 +35,8 @@ enum class MessageType {
 	Heartbeat,
 	ShopData,
 	ShopPurchase,
-	ShopResult
+	ShopResult,
+	ReadyToPlay
 };
 
 struct ClientInput {
@@ -70,6 +71,7 @@ private:
 	std::array<ClientSlot, unool::MAX_PLAYERS> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
+	std::array<bool, unool::MAX_PLAYERS> playerReady{};  //玩家点"开始游戏"后置 true
 	std::queue<sf::Packet> receivedPackets;
 	//槽位已满时收下的待登录 socket，用于识别重连意图后顶替旧连接
 	std::unique_ptr<sf::TcpSocket> pendingSocket;

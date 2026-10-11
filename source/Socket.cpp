@@ -44,6 +44,7 @@ void ServerNetwork::disconnect() {
 		listener.reset();
 	}
 	serverReady = false;
+	playerReady.fill(false);
 	std::println("[ServerNetwork] 已断开所有连接");
 }
 
@@ -56,6 +57,7 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 	}
 	clientSlots_[clientIndex].loggedIn = false;
 	clientSlots_[clientIndex].disconnected = true;
+	playerReady[clientIndex] = false;
 	// 保留 username，供重连时识别身份
 	//重置心跳计时，避免新连接顶替进来后因残留旧值被误判超时
 	lastRecvClocks[clientIndex].restart();
@@ -171,7 +173,8 @@ void ServerNetwork::handleClientPackets() {
 					}
 					else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
 							 msgType == static_cast<int>(MessageType::LoginRequest) ||
-							 msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
+							 msgType == static_cast<int>(MessageType::CheckUsernameRequest) ||
+							 msgType == static_cast<int>(MessageType::ReadyToPlay)) {
 						handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
 					}
 					else if (msgType == static_cast<int>(MessageType::ShopPurchase)) {
@@ -369,12 +372,8 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			lastRecvClocks[clientIdx].restart();
 
 			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
-			// 两玩家都登录后开局（重连顶替场景下 serverReady 已为 true，不重复发 GameStart）
-			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn && !serverReady) {
-				serverReady = true;
-				sendGameStart();
-				std::println("[ServerNetwork] 两个客户端都已登录，游戏开始");
-			}
+			//重连顶替场景下 serverReady 已为 true，不需要重复发 GameStart
+			//正常开局需等双方都点"开始游戏"后才启动
 		}
 	}
 	else if (type == MessageType::CheckUsernameRequest) {
@@ -383,6 +382,18 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		bool exists = UserDB::instance().exists(*username);
 		auto resp = AccountProtocol::makeCheckUsernameResponse(exists);
 		sendPacketToClient(clientIdx, resp);
+	}
+	else if (type == MessageType::ReadyToPlay) {
+		if (!clientSlots_[clientIdx].loggedIn) return;
+		playerReady[clientIdx] = true;
+		std::println("[ServerNetwork] 玩家{}已准备开始游戏", clientIdx);
+		//双方都点"开始游戏"后才开局
+		if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn
+			&& playerReady[0] && playerReady[1] && !serverReady) {
+			serverReady = true;
+			sendGameStart();
+			std::println("[ServerNetwork] 双方都已准备，游戏开始");
+		}
 	}
 }
 

@@ -121,6 +121,10 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 		if (startGameBtn.contains(pos)) {
 			result.enterShop = false;
 			status = Status::Done;
+			//通知服务器：已准备开始游戏
+			sf::Packet readyPkt;
+			readyPkt << static_cast<int>(MessageType::ReadyToPlay);
+			net.send(readyPkt);
 			return;
 		}
 		if (lobbyShopBtn.contains(pos)) {
