@@ -158,6 +158,7 @@ public:
 	// 发送商城购买请求（purchaseData 为 JSON 字符串）
 	bool sendShopPurchase(const std::string& purchaseData);
 	std::optional<sf::Packet> receivePacket();
+	std::optional<int> peekMessageType() const;
 
 	void setPlayerId(std::size_t id) { playerId = id; }
 	std::size_t getPlayerId() const { return playerId; }

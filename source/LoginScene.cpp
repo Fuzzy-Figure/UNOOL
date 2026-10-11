@@ -203,11 +203,25 @@ void LoginScene::sendCheckUsername() {
 }
 
 void LoginScene::pollAccountPackets() {
-	while (auto packetOpt = net.receivePacket()) {
+	while (true) {
+		auto peek = net.peekMessageType();
+		if (!peek) break;
+		auto mt = static_cast<MessageType>(*peek);
+
+		//非账号类型的包（GameState/Choice等游戏包）：不消费，留给 gamePhase 处理
+		if (mt != MessageType::Heartbeat
+			&& mt != MessageType::ConnectionInfo
+			&& mt != MessageType::CheckUsernameResponse
+			&& mt != MessageType::RegisterResponse
+			&& mt != MessageType::LoginResponse) {
+			break;
+		}
+
+		auto packetOpt = net.receivePacket();
+		if (!packetOpt) break;
 		sf::Packet packet = *packetOpt;
 		int msgType;
 		if (!(packet >> msgType)) continue;
-		auto mt = static_cast<MessageType>(msgType);
 
 		// 心跳包：立即回复，防止服务器判定掉线
 		if (mt == MessageType::Heartbeat) {
