@@ -43,7 +43,9 @@ private:
 
 	// 扁平行表（渲染与导航用）
 	struct Row {
-		enum class Type { HeroCollapsed, HeroEntry, SkinEntry, ItemEntry } type;
+		enum class Type {
+			HeroCollapsed, HeroEntry, SkinEntry, ItemEntry
+		} type = Type::HeroCollapsed;
 		std::size_t heroIdx = 0;   // 在 shopData.characters 中的下标
 		std::size_t skinIdx = 0;   // SkinEntry 时为 hero.skins 中的下标
 		std::size_t itemIdx = 0;   // ItemEntry 时为 shopData.items 中的下标
@@ -86,6 +88,8 @@ private:
 	void clampCursor();
 	void setPurchaseMsg(const std::string& msg);
 	bool affordable(int price) const;
+	// 状态→文字颜色：已解锁绿；未解锁可购买黄；未解锁积分不足红；不可购买灰
+	static sf::Color stateColor(bool unlocked, int price, bool canAfford);
 	// 渲染工具
 	void drawRowBox(const sf::Vector2f& pos, const sf::Vector2f& size, bool selected) const;
 };
