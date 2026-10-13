@@ -635,11 +635,11 @@ void ShopScene::renderHeroView() {
 			std::string line;
 			if (skin.unlocked) {
 				line = std::format("{} [{}] (已解锁)", skin.name, skin.quality);
-				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(120, 230, 140));
+				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color::Green);
 			}
 			else if (skin.price < 0) {
 				line = std::format("{} [{}] (不售卖)", skin.name, skin.quality);
-				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(180, 180, 190));
+				textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, sf::Color(128, 128, 128));
 			}
 			else {
 				line = std::format("{} [{}] (未解锁)", skin.name, skin.quality);
