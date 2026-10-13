@@ -362,8 +362,10 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# 忽略实验图片
-images\characters\实验
+
+
+# 忽略实验图片，用户数据，待做列表
+images/characters/实验
 
 userDatas.json
 
