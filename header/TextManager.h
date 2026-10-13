@@ -62,6 +62,10 @@ public:
 					 const sf::Vector2f& pos,
 					 const sf::Vector2f& size = { 20,40 },
 					 const sf::Color& color = sf::Color::Black);
+	void displayTextTopRightCorner(const std::string& text,
+								   const sf::Vector2f& pos,
+								   const sf::Vector2f& size = { 20,40 },
+								   const sf::Color& color = sf::Color::Black);
 	void displayTextInCenter(const std::string& text,
 							 const sf::Vector2f& size = { 20,40 },
 							 const sf::Color& color = sf::Color::Black);

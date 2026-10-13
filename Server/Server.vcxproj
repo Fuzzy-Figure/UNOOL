@@ -255,9 +255,7 @@
     <None Include="..\README.md" />
     <None Include="..\server_config.json" />
     <None Include="..\userDatas.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\todoList.txt" />
+    <None Include="todoList.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

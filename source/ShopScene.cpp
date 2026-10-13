@@ -526,10 +526,10 @@ void ShopScene::render() {
 			hint = "输入关键词筛选 | Backspace 删除 | ESC 退出搜索 | W/S 导航 | 空格 购买";
 		}
 		else if (currentView == View::Hero) {
-			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | 空格 购买 | F 搜索 | E 道具 | ESC 退出";
+			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | F 搜索 | E 道具 | ESC 退出";
 		}
 		else {
-			hint = "W/S 导航 | 空格 购买 | H 英雄 | ESC 退出";
+			hint = "W/S 导航 | H 英雄 | ESC 退出";
 		}
 		sf::Vector2f hintSize = { 16, 32 };
 		sf::Vector2f measured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
@@ -606,27 +606,24 @@ void ShopScene::renderHeroView() {
 		sf::Vector2f boxSize = { listW, rowH - 6.f };
 
 		if (row.type == Row::Type::HeroCollapsed) {
-			const auto& hero = shopData.characters[row.heroIdx];
+			const auto& character = shopData.characters[row.heroIdx];
 			drawRowBox(boxPos, boxSize, selected);
 			// 角色名 + 等级 + 解锁状态 + 售价
-			std::string levelStr = Character::to_string(hero.level);
-			std::string line = std::format("{}  {}档", hero.name, levelStr);
-			if (hero.unlocked) {
-				line += "  (已解锁)";
+			std::string line = std::format("{}（{}）", character.name, character.level);
+			if (character.unlocked) {
+				//已解锁
 				textMgr.displayText(line, { boxPos.x + 16.f, y + 6.f }, { 22, 44 }, sf::Color(235, 235, 245));
-				textMgr.displayText("√", { boxPos.x + listW - 50.f, y + 6.f }, { 22, 44 }, sf::Color(120, 230, 140));
+				textMgr.displayTextTopRightCorner("已解锁", { boxPos.x + listW - 50.f, y + 6.f }, { 22, 44 }, sf::Color(120, 230, 140));
 			}
-			else if (hero.price < 0) {
-				line += "  (不可购买)";
+			else if (character.price < 0) { //不可购买
 				textMgr.displayText(line, { boxPos.x + 16.f, y + 6.f }, { 22, 44 }, sf::Color(180, 180, 190));
-				textMgr.displayText("×", { boxPos.x + listW - 50.f, y + 6.f }, { 22, 44 }, sf::Color(180, 180, 190));
+				textMgr.displayTextTopRightCorner("不可购买", { boxPos.x + listW - 50.f, y + 6.f }, { 22, 44 }, sf::Color(180, 180, 190));
 			}
-			else {
-				line += "  (未解锁)";
+			else { //未解锁
 				textMgr.displayText(line, { boxPos.x + 16.f, y + 6.f }, { 22, 44 }, sf::Color(235, 235, 245));
-				std::string priceStr = std::format("售价 {}", hero.price);
-				sf::Color pc = affordable(hero.price) ? sf::Color(120, 230, 140) : sf::Color(250, 120, 120);
-				textMgr.displayText(priceStr, { boxPos.x + listW - 170.f, y + 6.f }, { 20, 40 }, pc);
+				std::string priceStr = std::format("售价 {}", character.price);
+				sf::Color pc = affordable(character.price) ? sf::Color(120, 230, 140) : sf::Color(250, 120, 120);
+				textMgr.displayTextTopRightCorner(priceStr, { boxPos.x + listW - 50.f, y + 6.f }, { 22, 42 }, pc);
 			}
 		}
 		else if (row.type == Row::Type::SkinEntry) {

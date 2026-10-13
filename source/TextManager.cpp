@@ -108,6 +108,16 @@ void TextManager::displayText(const std::string& text,
 	window.draw(sfText);
 }
 
+void TextManager::displayTextTopRightCorner(const std::string& text,
+											const sf::Vector2f& pos,
+											const sf::Vector2f& size,
+											const sf::Color& color) {
+	const sf::Vector2f newpos(
+		pos.x - measureText(text, static_cast<unsigned int>(size.y)).x, pos.y
+	);
+	displayText(text, newpos, size, color);
+}
+
 
 
 void TextManager::displayTextInCenter(const std::string& text,
