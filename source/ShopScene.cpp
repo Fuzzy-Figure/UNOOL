@@ -262,10 +262,6 @@ void ShopScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 			activateCurrentRow();
 			return;
 		}
-		if (sc == sf::Keyboard::Scancode::Space) {
-			tryBuyCurrentSelection();
-			return;
-		}
 		return; // 搜索模式下其它按键忽略（由 TextEntered 处理）
 	}
 
@@ -331,10 +327,6 @@ void ShopScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 	}
 	if (sc == sf::Keyboard::Scancode::Enter) {
 		activateCurrentRow();
-		return;
-	}
-	if (sc == sf::Keyboard::Scancode::Space) {
-		tryBuyCurrentSelection();
 		return;
 	}
 }
