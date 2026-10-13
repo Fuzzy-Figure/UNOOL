@@ -74,7 +74,7 @@ bool 曼巴::transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> 
 }
 
 std::string 曼巴::getPrompt() const {
-	return "将一张万能牌或【8】当作任意颜色的任意牌打出";
+	return "将一张【8】当作任意颜色的任意牌打出";
 }
 
 // ==================== 切斯特衍生技 ====================

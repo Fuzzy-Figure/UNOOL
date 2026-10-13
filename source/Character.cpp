@@ -208,13 +208,13 @@ std::string Character::skillsName() const {
 std::string Character::getSkillsText() const {
 	std::string result;
 	for (const auto& ps : passiveSkills) {
-		result += std::format("【{}】（被动技能）\n{}\n", ps->getName(), ps->getInfo());
+		result += std::format("【{}】（被动技）\n{}\n", ps->getName(), ps->getInfo());
 	}
 	for (const auto& as : instantSkills) {
-		result += std::format("【{}】（主动技能）\n{}\n", as->getName(), as->getInfo());
+		result += std::format("【{}】（即时技）\n{}\n", as->getName(), as->getInfo());
 	}
 	for (const auto& as : transformSkills) {
-		result += std::format("【{}】（主动技能）\n{}\n", as->getName(), as->getInfo());
+		result += std::format("【{}】（转换技）\n{}\n", as->getName(), as->getInfo());
 	}
 	return result;
 }
