@@ -2,8 +2,12 @@
 #include "AccountProtocol.h"
 #include "UserDB.h"
 #include "GameState.h"
+#include "ShopData.h"
 
 #include <thread>
+#include <algorithm>
+#include <array>
+#include <utility>
 
 ServerNetwork::~ServerNetwork() {
 	disconnect();
@@ -40,6 +44,7 @@ void ServerNetwork::disconnect() {
 		listener.reset();
 	}
 	serverReady = false;
+	playerReady.fill(false);
 	std::println("[ServerNetwork] 已断开所有连接");
 }
 
@@ -52,6 +57,7 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 	}
 	clientSlots_[clientIndex].loggedIn = false;
 	clientSlots_[clientIndex].disconnected = true;
+	playerReady[clientIndex] = false;
 	// 保留 username，供重连时识别身份
 	//重置心跳计时，避免新连接顶替进来后因残留旧值被误判超时
 	lastRecvClocks[clientIndex].restart();
@@ -167,8 +173,17 @@ void ServerNetwork::handleClientPackets() {
 					}
 					else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
 							 msgType == static_cast<int>(MessageType::LoginRequest) ||
-							 msgType == static_cast<int>(MessageType::CheckUsernameRequest)) {
+							 msgType == static_cast<int>(MessageType::CheckUsernameRequest) ||
+							 msgType == static_cast<int>(MessageType::ReadyToPlay)) {
 						handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
+					}
+					else if (msgType == static_cast<int>(MessageType::ShopPurchase)) {
+						//商城购买请求：内联处理，不入队
+						int discardedType;
+						std::string purchaseData;
+						if (packet >> discardedType >> purchaseData) {
+							handleShopPurchase(i, purchaseData);
+						}
 					}
 					else {
 						receivedPackets.push(packet);
@@ -357,12 +372,8 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 			lastRecvClocks[clientIdx].restart();
 
 			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
-			// 两玩家都登录后开局（重连顶替场景下 serverReady 已为 true，不重复发 GameStart）
-			if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn && !serverReady) {
-				serverReady = true;
-				sendGameStart();
-				std::println("[ServerNetwork] 两个客户端都已登录，游戏开始");
-			}
+			//重连顶替场景下 serverReady 已为 true，不需要重复发 GameStart
+			//正常开局需等双方都点"开始游戏"后才启动
 		}
 	}
 	else if (type == MessageType::CheckUsernameRequest) {
@@ -371,6 +382,18 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		bool exists = UserDB::instance().exists(*username);
 		auto resp = AccountProtocol::makeCheckUsernameResponse(exists);
 		sendPacketToClient(clientIdx, resp);
+	}
+	else if (type == MessageType::ReadyToPlay) {
+		if (!clientSlots_[clientIdx].loggedIn) return;
+		playerReady[clientIdx] = true;
+		std::println("[ServerNetwork] 玩家{}已准备开始游戏", clientIdx);
+		//双方都点"开始游戏"后才开局
+		if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn
+			&& playerReady[0] && playerReady[1] && !serverReady) {
+			serverReady = true;
+			sendGameStart();
+			std::println("[ServerNetwork] 双方都已准备，游戏开始");
+		}
 	}
 }
 
@@ -495,6 +518,239 @@ bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& pack
 		if (attempt < 2) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 	return false;
+}
+
+bool ServerNetwork::sendShopResult(std::size_t clientIndex, const std::string& resultJson) {
+	if (!isClientConnected(clientIndex)) return false;
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::ShopResult);
+	packet << resultJson;
+	return sendPacketToClient(clientIndex, packet);
+}
+
+bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& username) {
+	if (!isClientConnected(clientIndex)) return false;
+
+	// 从 UserDB 获取 UserInfo
+	const UserInfo& userInfo = UserDB::instance().getUserInfo(username);
+	// 是否集齐 ABCDF 所有角色（决定 S 档角色可购买性）
+	const bool allNonSCollected = UserDB::instance().hasAllNonSRank(username);
+
+	ShopData shopData;
+	shopData.points = userInfo.points;
+
+	// 遍历 Character::infos，跳过"白板"，为每个角色构建 ShopCharacterInfo
+	for (const auto& [name, info] : Character::infos) {
+		if (name == "白板") continue;
+
+		ShopCharacterInfo charInfo;
+		charInfo.name = name;
+		charInfo.level = info.level;
+		charInfo.unlocked = userInfo.ownedCharacters.contains(name);
+		charInfo.price = Character::getCharacterPrice(name);
+		// S 档角色：集齐 ABCDF 后售价 488，否则不可购买（-1）
+		if (info.level == Character::Level::S && allNonSCollected) {
+			charInfo.price = 488;
+		}
+
+		// 获取皮肤列表，跳过"默认"皮肤
+		auto skins = Character::getSkins(name);
+		for (const auto& skinName : skins) {
+			if (skinName == "默认") continue;
+
+			ShopSkinInfo skinInfo;
+			skinInfo.name = skinName;
+			// 检查皮肤是否已解锁（从 ownedCharacters[charName] 的皮肤集合中查找）
+			auto charIt = userInfo.ownedCharacters.find(name);
+			if (charIt != userInfo.ownedCharacters.end()) {
+				skinInfo.unlocked = charIt->second.contains(skinName);
+			}
+			skinInfo.price = Character::getSkinPrice(name, skinName);
+			skinInfo.quality = Character::to_string(Character::getSkinQuality(name, skinName));
+			charInfo.skins.push_back(std::move(skinInfo));
+		}
+
+		shopData.characters.push_back(std::move(charInfo));
+	}
+
+	// 按 Level F→S 排序（F=0, D=1, C=2, B=3, A=4, S=5）
+	std::ranges::sort(shopData.characters, [](const ShopCharacterInfo& a, const ShopCharacterInfo& b) {
+		return std::to_underlying(a.level) < std::to_underlying(b.level);
+	});
+
+	// 构建道具列表
+	// 选将扩充卡
+	{
+		ShopItemInfo itemInfo;
+		itemInfo.name = "选将扩充卡";
+		itemInfo.count = UserDB::instance().getItemCount(username, "选将扩充卡");
+		itemInfo.price = (itemInfo.count < 5) ? (88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2) : -1;
+		itemInfo.available = itemInfo.count < 5;
+		shopData.items.push_back(std::move(itemInfo));
+	}
+	// 增分卡
+	{
+		ShopItemInfo itemInfo;
+		itemInfo.name = "增分卡";
+		itemInfo.count = UserDB::instance().getItemCount(username, "增分卡");
+		itemInfo.price = 10;
+		itemInfo.available = true;
+		shopData.items.push_back(std::move(itemInfo));
+	}
+
+	// 序列化 ShopData 为 JSON 并通过 sf::Packet 发送
+	nlohmann::json j = shopData;
+	std::string jsonStr = j.dump();
+
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::ShopData);
+	packet << jsonStr;
+
+	std::println("[ServerNetwork] 发送商城数据给客户端{}（账号 {}）：积分{}，角色{}个，道具{}个",
+				 clientIndex, username, shopData.points, shopData.characters.size(), shopData.items.size());
+
+	return sendPacketToClient(clientIndex, packet);
+}
+
+void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData) {
+	if (!isClientConnected(clientIndex)) return;
+
+	const std::string& username = clientSlots_[clientIndex].username;
+
+	// 解析购买请求 JSON
+	ShopPurchaseRequest req;
+	try {
+		nlohmann::json j = nlohmann::json::parse(purchaseData);
+		req = j.get<ShopPurchaseRequest>();
+	}
+	catch (const std::exception& e) {
+		ShopPurchaseResult result;
+		result.ok = false;
+		result.msg = std::format("购买数据解析失败：{}", e.what());
+		result.points = UserDB::instance().getPoints(username);
+		nlohmann::json rj = result;
+		sendShopResult(clientIndex, rj.dump());
+		return;
+	}
+
+	// type="request"：客户端请求刷新商城数据，直接回送 ShopData
+	if (req.type == "request") {
+		sendShopData(clientIndex, username);
+		return;
+	}
+
+	// 根据类型调用 UserDB 的 purchase 方法（价格由服务端计算，不信任客户端）
+	bool ok = false;
+	std::string errMsg;
+	std::string sUnlockMsg;	// 集齐档位触发 S 档解锁的附加消息
+
+	if (req.type == "character") {
+		// 判断是否为 S 档角色
+		auto charIt = Character::infos.find(req.name);
+		const bool isSRank = (charIt != Character::infos.end()
+							 && charIt->second.level == Character::Level::S);
+
+		int price = -1;
+		if (isSRank) {
+			// S 档角色：需集齐 ABCDF 所有角色，售价 488
+			if (UserDB::instance().hasAllNonSRank(username)) {
+				price = 488;
+			} else {
+				errMsg = "需集齐 ABCDF 所有角色后才可购买 S 档角色";
+			}
+		} else {
+			price = Character::getCharacterPrice(req.name);
+		}
+
+		if (price >= 0 && errMsg.empty()) {
+			// 购买前记录各非 S 档集齐状态，用于判断本次购买是否新集齐某档
+			const std::array<std::pair<Character::Level, bool>, 5> beforeStates = {{
+				{Character::Level::F, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::F)},
+				{Character::Level::D, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::D)},
+				{Character::Level::C, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::C)},
+				{Character::Level::B, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::B)},
+				{Character::Level::A, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::A)},
+			}};
+
+			ok = UserDB::instance().purchaseCharacter(username, req.name, price);
+			if (!ok) {
+				errMsg = "积分不足或购买失败";
+			} else {
+				// 检查是否新集齐某档，触发 S 档随机解锁
+				bool newCollected = false;
+				for (const auto& [lv, before] : beforeStates) {
+					if (!before && UserDB::instance().hasAllCharactersOfLevel(username, lv)) {
+						newCollected = true;
+						break;
+					}
+				}
+				if (newCollected) {
+					if (auto unlocked = UserDB::instance().checkAndUnlockSRank(username)) {
+						sUnlockMsg = std::format("，集齐档位解锁 S 档角色：{}", *unlocked);
+					}
+				}
+			}
+		}
+	}
+	else if (req.type == "skin") {
+		int price = Character::getSkinPrice(req.charName, req.skinName);
+		if (price < 0) {
+			errMsg = "该皮肤不可购买";
+		}
+		else {
+			ok = UserDB::instance().purchaseSkin(username, req.charName, req.skinName, price);
+			if (!ok) errMsg = "积分不足或购买失败";
+		}
+	}
+	else if (req.type == "item") {
+		int price = 0;
+		int count = UserDB::instance().getItemCount(username, req.name);
+
+		if (req.name == "选将扩充卡") {
+			if (count >= 5) {
+				errMsg = "已达购买上限";
+			}
+			else {
+				price = 88 + 100 * count * (count + 1) / 2;
+			}
+		}
+		else if (req.name == "增分卡") {
+			price = 10;
+		}
+		else {
+			errMsg = "未知道具";
+		}
+
+		if (errMsg.empty()) {
+			ok = UserDB::instance().purchaseItem(username, req.name, price);
+			if (!ok) errMsg = "积分不足";
+		}
+	}
+	else {
+		errMsg = std::format("未知购买类型：{}", req.type);
+	}
+
+	// 构建购买结果并发送
+	ShopPurchaseResult result;
+	result.ok = ok;
+	result.msg = ok ? ("购买成功" + sUnlockMsg) : errMsg;
+	result.points = UserDB::instance().getPoints(username);
+
+	// 购买成功时同步更新 ClientSlot.points
+	if (ok) {
+		clientSlots_[clientIndex].points = result.points;
+	}
+
+	nlohmann::json rj = result;
+	sendShopResult(clientIndex, rj.dump());
+
+	std::println("[ServerNetwork] 客户端{}（账号 {}）购买 {}：{}（剩余积分 {}）",
+				 clientIndex, username, req.type, (ok ? "成功" : "失败"), result.points);
+
+	// 购买成功后自动刷新商城数据给该客户端
+	if (ok) {
+		sendShopData(clientIndex, username);
+	}
 }
 
 ClientNetwork::~ClientNetwork() {
@@ -627,6 +883,14 @@ bool ClientNetwork::send(sf::Packet& packet) {
 	return sendPacket(packet);
 }
 
+bool ClientNetwork::sendShopPurchase(const std::string& purchaseData) {
+	if (!socket) return false;
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::ShopPurchase);
+	packet << purchaseData;
+	return sendPacket(packet);
+}
+
 std::optional<sf::Packet> ClientNetwork::receivePacket() {
 	if (!socket) return std::nullopt;
 
@@ -636,6 +900,14 @@ std::optional<sf::Packet> ClientNetwork::receivePacket() {
 		return packet;
 	}
 	return std::nullopt;
+}
+
+std::optional<int> ClientNetwork::peekMessageType() const {
+	if (receivedPackets.empty()) return std::nullopt;
+	sf::Packet copy = receivedPackets.front();
+	int msgType;
+	if (!(copy >> msgType)) return std::nullopt;
+	return msgType;
 }
 
 bool ClientNetwork::sendPacket(sf::Packet& packet) {

@@ -367,5 +367,7 @@ images\characters\实验
 
 userDatas.json
 
+todoList.txt
+
 !dep/SFML/bin/
 !dep/SFML/bin/**

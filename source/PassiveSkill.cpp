@@ -2543,48 +2543,6 @@ bool 侵蚀::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
-// ==================== 技能：修正 ====================
-bool 修正::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	//选一张手牌
-	auto idxOpt = carrier.chooseCard("选择一张手牌进行修正", unool::alwaysTrue, false);
-	if (!idxOpt) return false;
-	Card& card = carrier.getCardByIndex(*idxOpt);
-
-	//构建可选牌名：所有非万能牌名，排除已用过的
-	std::vector<Card::Name> availableNames;
-	for (int i = static_cast<int>(Card::Name::number_0); i <= static_cast<int>(Card::Name::action_draw2); ++i) {
-		Card::Name name = static_cast<Card::Name>(i);
-		if (!usedNames.contains(name))
-			availableNames.push_back(name);
-	}
-	if (availableNames.empty()) {
-		carrier.hint("所有牌名已用完，无法发动修正");
-		return false;
-	}
-
-	//声明牌名
-	auto nameOpt = carrier.chooseCardName("声明要改为的牌名", false, availableNames);
-	if (!nameOpt) return false;
-	Card::Name targetName = nameOpt.value();
-
-	//改牌
-	card.set(card.getColor(), targetName);
-	usedNames.insert(targetName);
-
-	//若改为数字牌，失去3%当前体力（向上取整）
-	if (card.isNumber()) {
-		std::size_t loss = unool::math::ceil(carrier.getHp() * 0.03);
-		carrier.damage(loss, std::nullopt);
-		std::println("<技能> {}修正将一张手牌改为数字牌，失去{}点体力", carrier.characterName(), loss);
-	}
-	else {
-		std::println("<技能> {}修正将一张手牌改为功能牌", carrier.characterName());
-	}
-
-	game.broadcastState();
-	return true;
-}
-
 // ==================== 技能：剧变 ====================
 bool 剧变::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//跳过摸牌
@@ -2650,7 +2608,7 @@ bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 		std::println("<技能> {}发动通天，修正次数+1", carrier.characterName());
 	}
 	else {
-		carrier.addSkill(std::make_unique<修正>());
+		carrier.addSkill(修正::make());
 		carrier.findSkill<修正>()->get().setLimit(1);
 		std::println("<技能> {}发动通天，获得修正技能（1次）", carrier.characterName());
 	}
@@ -2741,23 +2699,22 @@ bool 冲撞::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 bool 同心::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//根据打出牌的类型增加对应计数
 	const Card::Type type = trigger.getCard().getType();
-	std::size_t* counter = nullptr;
 	switch (type) {
-		case Card::Type::number: counter = &numberCount; break;
-		case Card::Type::action: counter = &actionCount; break;
-		case Card::Type::wild:   counter = &wildCount;  break;
+		case Card::Type::number: ++numberCount; break;
+		case Card::Type::action: ++actionCount; break;
+		case Card::Type::wild:   ++wildCount;  break;
 		default:                 std::unreachable();
 	}
-	++(*counter);
 
 	//达到2张同类型时随机弃置一张牌并重置计数
-	if (*counter >= 2) {
-		*counter = 0;
+	if (numberCount >= 2 || actionCount >= 2 || wildCount >= 2) {
+		numberCount = actionCount = wildCount = 0;
+
 		const std::size_t handCount = carrier.getHand().count();
 		if (handCount == 0) return true;
 		const std::size_t idx = unool::random::randomSize_t(0, handCount - 1);
 		std::println("<技能> {}打出两张同类型牌，随机弃置：{}", carrier.characterName(),
-					 carrier.getHand().getCardByIndex(idx).toString());
+					 carrier.getHand().getCardByIndex(idx));
 		carrier.discardByIndex(idx);
 		game.broadcastState();
 	}

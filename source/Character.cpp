@@ -84,7 +84,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"黑鸦",        {"荒野乱斗",  Level::B, {被动<飞刃, 淬毒>, 即时<突袭>}, 100}},
 	{"弗兰肯",      {"荒野乱斗",  Level::B, {被动<重锤>,       即时<猛击>}, 500}},
 	{"瑟奇",        {"荒野乱斗",  Level::A, {被动<劲凉>,       即时<绝技>}, 135}},
-	{"天意爷",      {"新三国",    Level::S, {被动<侵蚀, 修正, 剧变>},       333}},
+	{"天意爷",      {"新三国",    Level::S, {被动<侵蚀, 剧变>, 即时<修正>},   333}},
 	{"新司马懿",    {"新三国",    Level::A, {被动<兵多, 通天>},             150}},
 	{"迪克",        {"荒野乱斗",  Level::C, {被动<地雷>},                  100}},
 	{"博尔特",      {"荒野乱斗",  Level::A, {被动<冲撞>, 即时<过载>},       200}},
@@ -332,6 +332,75 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n, c
 	std::ranges::sample(filteredChars, std::back_inserter(result), n, unool::random::rng);
 	std::ranges::shuffle(result, unool::random::rng);
 	return result;
+}
+
+// ---- 皮肤品质与售价 ----
+Character::SkinQuality Character::getSkinQuality(const std::string& charName, const std::string& skinName) {
+	if (skinName == "默认")	            return SkinQuality::normal;
+	if (skinName.ends_with("_精品"))    return SkinQuality::fine;
+	if (skinName.ends_with("_史诗"))    return SkinQuality::epic;
+	if (skinName.ends_with("_传说"))	    return SkinQuality::legend;
+	if (skinName.ends_with("_至尊"))	    return SkinQuality::supreme;
+	if (skinName.ends_with("_饮料限定"))	return SkinQuality::drink;
+	return SkinQuality::normal;
+}
+
+int Character::getSkinPriceByQuality(SkinQuality quality) {
+	switch (quality) {
+		case SkinQuality::normal:  return 8;
+		case SkinQuality::fine:    return 28;
+		case SkinQuality::epic:    return 48;
+		case SkinQuality::legend:  return 88;
+		case SkinQuality::supreme: return 188;
+		case SkinQuality::drink:   return -1;	//饮料限定不售卖
+		default:                   return -1;
+	}
+}
+
+int Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
+	return getSkinPriceByQuality(getSkinQuality(charName, skinName));
+}
+
+std::string Character::to_string(SkinQuality quality) {
+	switch (quality) {
+		case SkinQuality::normal:  return "普通";
+		case SkinQuality::fine:    return "精品";
+		case SkinQuality::epic:    return "史诗";
+		case SkinQuality::legend:  return "传说";
+		case SkinQuality::supreme: return "至尊";
+		case SkinQuality::drink:   return "饮料限定";
+		default:                   return "未知";
+	}
+}
+
+// ---- 角色售价 ----
+int Character::getCharacterPrice(const std::string& name) {
+	auto it = infos.find(name);
+	if (it == infos.end()) return -1;	//角色不存在
+	const Level lv = it->second.level;
+	switch (lv) {
+		case Level::F:
+			if (name == "棍母" || name == "夏搏" || name == "电棍")	return 488;
+			if (name == "幺幺" || name == "蒋介石")					return 288;
+			return 20;
+		case Level::D:
+			if (name == "Blueberrini Octopussini")	return 188;
+			return 40;
+		case Level::C:
+			if (name == "斯大林")						return 288;
+			if (name == "金日成" || name == "唐伯虎")		return 128;
+			return 88;
+		case Level::B:
+			if (name == "弗兰肯" || name == "黑鸦")		return 188;
+			if (name.starts_with("新"))					return 168;
+			return 148;
+		case Level::A:
+			return 228;
+		case Level::S:
+			return -1;	//不可直接购买
+		default:
+			return -1;
+	}
 }
 
 

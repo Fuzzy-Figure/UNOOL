@@ -1,6 +1,7 @@
 #include "LoginScene.h"
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
+#include "ShopScene.h"
 
 
 LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title)
@@ -26,6 +27,11 @@ void LoginScene::layoutBoxes() {
 	passwordBox = sf::FloatRect({ cx - boxW / 2, pwdY }, { boxW, boxH });
 	loginBtn = sf::FloatRect({ cx - totalBtnW / 2, btnY }, { btnW, btnH });
 	registerBtn = sf::FloatRect({ cx - totalBtnW / 2 + btnW + gap, btnY }, { btnW, btnH });
+
+	// 大厅按钮：开始游戏 + 商城
+	const float lobbyBtnY = static_cast<float>(cfg.windowSize.y) * 0.55f;
+	startGameBtn = sf::FloatRect({ cx - totalBtnW / 2, lobbyBtnY }, { btnW, btnH });
+	lobbyShopBtn = sf::FloatRect({ cx - totalBtnW / 2 + btnW + gap, lobbyBtnY }, { btnW, btnH });
 }
 
 LoginScene::Result LoginScene::run() {
@@ -68,6 +74,7 @@ void LoginScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 		renderer.closeWindow();
 		return;
 	}
+	if (mode == Mode::Lobby) return; // 大厅模式仅鼠标操作
 	if (status != Status::Idle) return; // 等待响应时不接受输入
 	if (sc == sf::Keyboard::Scancode::Backspace) {
 		if (focus == Focus::Username && !username.empty()) username.pop_back();
@@ -93,6 +100,7 @@ void LoginScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 }
 
 void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
+	if (mode == Mode::Lobby) return;
 	if (status != Status::Idle) return;
 	if (focus == Focus::None) return;
 	char32_t ch = te.unicode;
@@ -108,6 +116,29 @@ void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
 }
 
 void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
+	if (mode == Mode::Lobby) {
+		if (status != Status::Idle) return;
+		if (startGameBtn.contains(pos)) {
+			result.enterShop = false;
+			status = Status::Done;
+			//通知服务器：已准备开始游戏
+			sf::Packet readyPkt;
+			readyPkt << static_cast<int>(MessageType::ReadyToPlay);
+			net.send(readyPkt);
+			return;
+		}
+		if (lobbyShopBtn.contains(pos)) {
+			// 进入商城，退出后回到大厅
+			ShopScene shop(renderer, net, username);
+			shop.run();
+			if (!net.isConnected() || !renderer.windowIsOpen()) {
+				status = Status::Done;
+				result.ok = false;
+			}
+			return;
+		}
+		return;
+	}
 	if (status != Status::Idle) return;
 	if (usernameBox.contains(pos)) {
 		focus = Focus::Username;
@@ -176,11 +207,33 @@ void LoginScene::sendCheckUsername() {
 }
 
 void LoginScene::pollAccountPackets() {
-	while (auto packetOpt = net.receivePacket()) {
+	while (true) {
+		auto peek = net.peekMessageType();
+		if (!peek) break;
+		auto mt = static_cast<MessageType>(*peek);
+
+		//非账号类型的包（GameState/Choice等游戏包）：不消费，留给 gamePhase 处理
+		if (mt != MessageType::Heartbeat
+			&& mt != MessageType::ConnectionInfo
+			&& mt != MessageType::CheckUsernameResponse
+			&& mt != MessageType::RegisterResponse
+			&& mt != MessageType::LoginResponse) {
+			break;
+		}
+
+		auto packetOpt = net.receivePacket();
+		if (!packetOpt) break;
 		sf::Packet packet = *packetOpt;
 		int msgType;
 		if (!(packet >> msgType)) continue;
-		auto mt = static_cast<MessageType>(msgType);
+
+		// 心跳包：立即回复，防止服务器判定掉线
+		if (mt == MessageType::Heartbeat) {
+			sf::Packet hb;
+			hb << static_cast<int>(MessageType::Heartbeat);
+			net.send(hb);
+			continue;
+		}
 
 		if (mt == MessageType::ConnectionInfo) {
 			std::size_t pid;
@@ -229,7 +282,9 @@ void LoginScene::pollAccountPackets() {
 				result.wins = resp->wins;
 				result.losses = resp->losses;
 				result.ok = true;
-				status = Status::Done;
+				// 登录成功后切换到大厅模式
+				mode = Mode::Lobby;
+				status = Status::Idle;
 				message = "登录成功";
 				std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);
 			}
@@ -274,6 +329,30 @@ void LoginScene::render() {
 							labelSize);
 	};
 
+	const sf::Vector2u winSize = window.getSize();
+
+	if (mode == Mode::Lobby) {
+		// 大厅模式：右上角显示账号名和积分
+		std::string acctInfo = std::format("账号: {}  积分: {}", username, result.points);
+		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
+
+		// 两个按钮
+		drawButton(startGameBtn, "开始游戏");
+		drawButton(lobbyShopBtn, "商城");
+
+		// 操作提示
+		const std::string hint = "点击按钮选择 | Esc 退出";
+		const sf::Vector2f hintSize = { 18, 36 };
+		const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+		textMgr.displayText(hint,
+							{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
+							hintSize, sf::Color(120, 120, 120));
+
+		window.display();
+		return;
+	}
+
+	// 登录/注册模式
 	// 用户名行
 	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 });
 	drawBox(usernameBox, focus == Focus::Username);
@@ -297,7 +376,6 @@ void LoginScene::render() {
 	drawButton(registerBtn, "注册");
 
 	// 状态提示（按钮下方居中，避免与输入框重叠）
-	const sf::Vector2u winSize = window.getSize();
 	if (!message.empty()) {
 		const sf::Vector2f msgSize = { 25, 50 };
 		const sf::Vector2f msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));

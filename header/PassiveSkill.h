@@ -1446,23 +1446,6 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//修正：回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），
-//若改为数字牌则失去3%当前体力（向上取整）
-class 修正 final : public PassiveSkillImpl<修正> {
-	mutable std::unordered_set<Card::Name> usedNames;
-public:
-	修正() : PassiveSkillImpl<修正>(
-		"修正",
-		"回合开始时，你可以将一张手牌改为声明的非万能牌（每局游戏每种牌名限一次），\n"
-		"若你改为数字牌则失去3%当前体力（向上取整）。",
-		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_begin
-	) {}
-	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override { PassiveSkill::reset(); usedNames.clear(); }
-};
-
 //剧变：限定技，摸牌阶段，你可以改为令所有角色将全部手牌交给下家，手牌数因此减少的角色摸两张牌
 class 剧变 final : public PassiveSkillImpl<剧变> {
 public:
@@ -1503,6 +1486,7 @@ public:
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	//todo: void reset() override {}
 };
 
 //地雷_引爆：子技能，其他角色打出地雷颜色牌时受到1点伤害
@@ -1609,7 +1593,7 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//同心：锁定技，每打出两张同类型牌后随机弃置一张牌
+
 class 同心 final : public PassiveSkillImpl<同心> {
 private:
 	std::size_t numberCount = 0;
@@ -1618,7 +1602,7 @@ private:
 public:
 	同心() : PassiveSkillImpl<同心>(
 		"同心",
-		"锁定技，每打出两张同类型牌后随机弃置一张牌。\n"
+		"锁定技，每连续打出两张同类型牌后随机弃置一张牌。\n"
 		"当前：数字{numberCount}/2；功能{actionCount}/2；万能{wildCount}/2",
 		unlimited, true,
 		TriggerPlayer::self,

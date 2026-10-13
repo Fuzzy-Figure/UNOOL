@@ -15,10 +15,11 @@ public:
 		int wins = 0;
 		int losses = 0;
 		bool ok = false;
+		bool enterShop = false; // 登录成功后进入商城（而非直接开始游戏）
 	};
 
 private:
-	enum class Mode { Login, Register } mode = Mode::Login;
+	enum class Mode { Login, Register, Lobby } mode = Mode::Login;
 	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, Done } status = Status::Idle;
 	enum class Focus { None, Username, Password } focus = Focus::Username;
 
@@ -36,6 +37,8 @@ private:
 	sf::FloatRect passwordBox;
 	sf::FloatRect loginBtn;
 	sf::FloatRect registerBtn;
+	sf::FloatRect startGameBtn; // 大厅：开始游戏按钮
+	sf::FloatRect lobbyShopBtn; // 大厅：商城按钮
 
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 

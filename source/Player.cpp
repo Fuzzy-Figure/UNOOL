@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "GameLogic.h"
+#include "UserDB.h"
 #include <thread>
 
 std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
@@ -123,6 +124,19 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	//牌恢复效果并置入弃牌堆
 	card->recoverEffect();
 	Card& cardRef = game.putCardToDiscardPile(std::move(card), Card::DiscardReason::use, *this);
+
+	//饮料限定皮肤：打出万能牌时获得1积分（实时结算）
+	if (cardRef.isWild()) {
+		const auto& names = character->getNames();
+		const auto& skins = character->getSkins();
+		for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
+			if (Character::getSkinQuality(names[i], skins[i]) == Character::SkinQuality::drink) {
+				const auto& slots = game.getNetwork().getClientSlots();
+				UserDB::instance().addPoints(slots[id].username, 1);
+				break;
+			}
+		}
+	}
 
 	//更新客户端显示
 	game.broadcastState();
@@ -379,13 +393,22 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 
 // === 初始化 ===
 std::string Player::chooseSkin(const std::string& charName) {
+	//只允许选择已拥有的皮肤
+	const auto& slots = game.getNetwork().getClientSlots();
+	const auto& owned = UserDB::instance().getOwnedSkins(slots[id].username, charName);
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
-	if (skins.size() > 1) {
-		std::vector<std::string> skinOpts;
-		for (const auto& s : skins) skinOpts.push_back(s);
+	//按 Character::getSkins 顺序过滤出已拥有的皮肤
+	std::vector<std::string> skinOpts;
+	for (const auto& s : skins) {
+		if (owned.contains(s)) skinOpts.push_back(s);
+	}
+	if (skinOpts.size() > 1) {
 		std::size_t skinChoice = ask("选择皮肤：", skinOpts, true);
-		skin = skins[skinChoice - 1];
+		skin = skinOpts[skinChoice - 1];
+	}
+	else if (skinOpts.size() == 1) {
+		skin = skinOpts[0];
 	}
 	return skin;
 }

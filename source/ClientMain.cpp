@@ -1,8 +1,10 @@
 #include "GameRenderer.h"
 #include "LoginScene.h"
+#include "ShopScene.h"
 #include "Socket.h"
 #include "utils.h"
 #include "AccountProtocol.h"
+#include "ShopData.h"
 #include <Windows.h>
 #include <thread>
 #include <chrono>
@@ -167,6 +169,46 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					net.send(hb);
 					break;
 				}
+				case MessageType::ShopData: {
+					//商城数据（JSON 字符串载荷）：解析后供 ShopScene 使用
+					std::string jsonStr;
+					if (packet >> jsonStr) {
+						try {
+							nlohmann::json j = nlohmann::json::parse(jsonStr);
+							ShopData shopData = j.get<ShopData>();
+							std::println("{} 收到商城数据：积分{}，角色{}个，道具{}个",
+										 titleBrackets, shopData.points,
+										 shopData.characters.size(), shopData.items.size());
+							// TODO: ShopScene 将基于 shopData 渲染商城界面（Task 7）
+						}
+						catch (const std::exception& e) {
+							std::println(stderr, "{} 商城数据解析失败：{}", titleBrackets, e.what());
+						}
+					}
+					break;
+				}
+				case MessageType::ShopResult: {
+					//购买结果（JSON 字符串载荷）
+					std::string jsonStr;
+					if (packet >> jsonStr) {
+						try {
+							nlohmann::json j = nlohmann::json::parse(jsonStr);
+							ShopPurchaseResult result = j.get<ShopPurchaseResult>();
+							std::println("{} 购买结果：{}（{}），剩余积分 {}",
+										 titleBrackets,
+										 (result.ok ? "成功" : "失败"),
+										 result.msg, result.points);
+							// TODO: ShopScene 将基于 result 更新 UI 和积分显示（Task 7）
+						}
+						catch (const std::exception& e) {
+							std::println(stderr, "{} 购买结果解析失败：{}", titleBrackets, e.what());
+						}
+					}
+					break;
+				}
+				case MessageType::ShopPurchase:
+					//客户端不接收此类型（客户端→服务器的购买请求），忽略
+					break;
 				default:
 					break;
 			}
@@ -198,6 +240,7 @@ int main() {
 	GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle));
 	GameRenderer renderer(rendererConfig);
 
+	// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
 	LoginScene login(renderer, clientNetwork, windowTitleWithBrackets);
 	auto session = login.run();
 	if (!session.ok) {

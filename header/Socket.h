@@ -32,7 +32,11 @@ enum class MessageType {
 	LoginResponse,
 	CheckUsernameRequest,
 	CheckUsernameResponse,
-	Heartbeat
+	Heartbeat,
+	ShopData,
+	ShopPurchase,
+	ShopResult,
+	ReadyToPlay
 };
 
 struct ClientInput {
@@ -67,6 +71,7 @@ private:
 	std::array<ClientSlot, unool::MAX_PLAYERS> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
+	std::array<bool, unool::MAX_PLAYERS> playerReady{};  //玩家点"开始游戏"后置 true
 	std::queue<sf::Packet> receivedPackets;
 	//槽位已满时收下的待登录 socket，用于识别重连意图后顶替旧连接
 	std::unique_ptr<sf::TcpSocket> pendingSocket;
@@ -78,6 +83,8 @@ private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
 	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
+	// 发送购买结果给客户端（JSON 字符串载荷）
+	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson);
 	void removeClient(std::size_t clientIndex);
 	//update() 的拆分子任务
 	void handleNewConnections();
@@ -110,6 +117,11 @@ public:
 						  std::size_t totalPages = 1);
 	bool clearPlayerChoice(std::size_t clientIndex);
 	bool sendCharInfo(const CharInfo& info);
+
+	// 发送商城数据给指定客户端
+	bool sendShopData(std::size_t clientIndex, const std::string& username);
+	// 处理购买请求
+	void handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData);
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const;
@@ -145,7 +157,10 @@ public:
 
 	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
 	bool send(sf::Packet& packet);
+	// 发送商城购买请求（purchaseData 为 JSON 字符串）
+	bool sendShopPurchase(const std::string& purchaseData);
 	std::optional<sf::Packet> receivePacket();
+	std::optional<int> peekMessageType() const;
 
 	void setPlayerId(std::size_t id) { playerId = id; }
 	std::size_t getPlayerId() const { return playerId; }
