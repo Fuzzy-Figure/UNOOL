@@ -41,13 +41,19 @@ private:
 	};
 
 	static std::string formatCharacterLabel(const Character::Entry& entry);
+	//从角色池随机抽取 n 个候选：跳过 exclude 中的角色名与 infos 中不存在的名字
+	static std::vector<Character::Entry> pickEntriesFromPool(const std::vector<std::string>& pool,
+															  std::size_t n,
+															  const std::unordered_set<std::string>& exclude);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
 	std::optional<std::string> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
 	//双将模式选将：5选1再4选1，两轮 chooseSkin 后 makeCombined，期间每选完即 markCharInfoDirty+broadcast
 	//opponentNames：对方随机候选角色名集合，用于"换一批"时排除
+	//pool：本方用户角色池，"换一批"时从中抽取
 	void selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands,
-							   const std::unordered_set<std::string>& opponentNames);
+							   const std::unordered_set<std::string>& opponentNames,
+							   const std::vector<std::string>& pool);
 	//normal 模式：ban + selectCharacter
 	void initPlayersNormal(std::size_t firstSeatId, std::size_t secondSeatId);
 	//double 模式：无ban，按座次每家5选2，makeCombined

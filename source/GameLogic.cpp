@@ -271,27 +271,9 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 	//双方已抽取的角色名，用于避免重复
 	std::unordered_set<std::string> pickedNames;
 
-	//从角色池中随机抽取候选
-	auto pickFromPool = [](const std::vector<std::string>& pool, std::size_t n,
-						   const std::unordered_set<std::string>& exclude) {
-		std::vector<std::string> available;
-		for (const auto& name : pool) {
-			if (exclude.contains(name)) continue;
-			if (!Character::infos.contains(name)) continue;
-			available.push_back(name);
-		}
-		std::ranges::shuffle(available, unool::random::rng);
-		std::vector<Character::Entry> result;
-		result.reserve(n < available.size() ? n : available.size());
-		for (std::size_t i = 0; i < n && i < available.size(); ++i) {
-			result.push_back(*Character::infos.find(available[i]));
-		}
-		return result;
-	};
-
-	std::vector<Character::Entry> cands1 = pickFromPool(pool1, candCount1, pickedNames);
+	std::vector<Character::Entry> cands1 = pickEntriesFromPool(pool1, candCount1, pickedNames);
 	for (const auto& e : cands1) pickedNames.insert(e.first);
-	std::vector<Character::Entry> cands2 = pickFromPool(pool2, candCount2, pickedNames);
+	std::vector<Character::Entry> cands2 = pickEntriesFromPool(pool2, candCount2, pickedNames);
 	for (const auto& e : cands2) pickedNames.insert(e.first);
 
 	//角色池不足时直接抛异常
@@ -306,8 +288,8 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 	for (const auto& e : cands2) names2.insert(e.first);
 
 	//按座次每家连续选完2个再下一家
-	selectCharacterDouble(firstSeatId, cands1, names2);
-	selectCharacterDouble(secondSeatId, cands2, names1);
+	selectCharacterDouble(firstSeatId, cands1, names2, pool1);
+	selectCharacterDouble(secondSeatId, cands2, names1, pool2);
 
 	//增分卡使用环节：后手先选，先手随后选
 	askBonusCard(secondSeatId);
@@ -395,7 +377,8 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 }
 
 void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Character::Entry>& cands,
-									  const std::unordered_set<std::string>& opponentNames) {
+									  const std::unordered_set<std::string>& opponentNames,
+									  const std::vector<std::string>& pool) {
 	Player& player = *players[playerId];
 	const std::size_t candidateCount = cands.size();
 
@@ -404,19 +387,24 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 	for (const auto& e : cands) seenNames.insert(e.first);
 	bool hasSwapped = false;
 
-	//"换一批"处理：扣除5积分，生成全新候选（排除对方+本方历史），重置选角进度
+	//"换一批"处理：从本方将池生成全新候选（排除对方+本方历史），校验通过后再扣5积分
 	auto doSwap = [&]() -> bool {
 		if (hasSwapped) {
 			player.hint("每局限换一批一次");
+			return false;
+		}
+		std::unordered_set<std::string> exclude = opponentNames;
+		exclude.insert(seenNames.begin(), seenNames.end());
+		std::vector<Character::Entry> fresh = pickEntriesFromPool(pool, candidateCount, exclude);
+		if (fresh.size() < candidateCount) {
+			player.hint("将池可换角色不足，无法换一批");
 			return false;
 		}
 		if (!network.trySpendPoints(playerId, 5)) {
 			player.hint("积分不足，无法换一批");
 			return false;
 		}
-		std::unordered_set<std::string> exclude = opponentNames;
-		exclude.insert(seenNames.begin(), seenNames.end());
-		cands = Character::randomChooseCharacters(candidateCount, exclude);
+		cands = std::move(fresh);
 		for (const auto& e : cands) seenNames.insert(e.first);
 		hasSwapped = true;
 		player.hint("换一批成功！");
@@ -437,7 +425,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 				: std::format("选择你的第1个角色（{}选1）：\n（按0消耗5积分换一批，仅一次）", opts1.size());
 			const std::size_t choice1 = player.ask(title1, opts1, false);
 			if (choice1 == 0) {
-				if (doSwap()) continue;
+				doSwap();
 				continue;
 			}
 			char1 = cands[choice1 - 1].first;
@@ -446,20 +434,13 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 			round1Done = true;
 		}
 
-		//第二轮：M选1
+		//第二轮：M选1（已选过一个角色，不能再换一批）
 		std::vector<std::string> opts2;
 		for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
-		const std::string title2 = hasSwapped
-			? std::format("选择你的第2个角色（{}选1）：", opts2.size())
-			: std::format("选择你的第2个角色（{}选1）：\n（按0消耗5积分换一批，仅一次）", opts2.size());
+		const std::string title2 = std::format("选择你的第2个角色（{}选1）：", opts2.size());
 		const std::size_t choice2 = player.ask(title2, opts2, false);
 		if (choice2 == 0) {
-			if (doSwap()) {
-				//换一批后丢弃第一轮选择，重新从第一轮选起
-				round1Done = false;
-				char1.clear();
-				skin1.clear();
-			}
+			player.hint("已选角色，无法换一批");
 			continue;
 		}
 		const std::string char2 = cands[choice2 - 1].first;
@@ -470,6 +451,24 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 		broadcastState();
 		return;
 	}
+}
+
+std::vector<Character::Entry> GameLogic::pickEntriesFromPool(const std::vector<std::string>& pool,
+															  std::size_t n,
+															  const std::unordered_set<std::string>& exclude) {
+	std::vector<std::string> available;
+	for (const auto& name : pool) {
+		if (exclude.contains(name)) continue;
+		if (!Character::infos.contains(name)) continue;
+		available.push_back(name);
+	}
+	std::ranges::shuffle(available, unool::random::rng);
+	std::vector<Character::Entry> result;
+	result.reserve(n < available.size() ? n : available.size());
+	for (std::size_t i = 0; i < n && i < available.size(); ++i) {
+		result.push_back(*Character::infos.find(available[i]));
+	}
+	return result;
 }
 void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
