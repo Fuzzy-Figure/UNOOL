@@ -32,7 +32,7 @@ private:
 	// 界面状态
 	enum class View { Hero, Item } currentView = View::Hero;
 	enum class Mode { Browse, Search } mode = Mode::Browse;
-
+	
 	// 分页与导航
 	static constexpr std::size_t kPerPage = 10;
 	std::size_t pageIdx = 0;             // 当前页码

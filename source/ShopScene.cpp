@@ -271,18 +271,6 @@ void ShopScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 		exiting = true;
 		return;
 	}
-	if (sc == sf::Keyboard::Scancode::F) {
-		// 进入搜索模式（英雄视图下）
-		if (currentView == View::Hero) {
-			mode = Mode::Search;
-			searchKeyword.clear();
-			rebuildDisplayedIndices();
-			pageIdx = 0;
-			rebuildRows();
-			clampCursor();
-		}
-		return;
-	}
 	if (sc == sf::Keyboard::Scancode::E) {
 		currentView = View::Item;
 		pageIdx = 0;
@@ -367,6 +355,18 @@ void ShopScene::handleMouseClick(const sf::Vector2f& pos) {
 	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float rowH = 56.f;
 	const float listStartY = 140.f;
+
+	// 英雄视图下：点击搜索框进入搜索状态（保留现有关键词继续编辑）
+	if (currentView == View::Hero) {
+		const float barW = static_cast<float>(cfg.windowSize.x) * 0.5f;
+		const float barH = 42.f;
+		const float barX = (static_cast<float>(cfg.windowSize.x) - barW) / 2.f;
+		const float barY = 72.f;
+		if (pos.x >= barX && pos.x <= barX + barW && pos.y >= barY && pos.y <= barY + barH) {
+			mode = Mode::Search;
+			return;
+		}
+	}
 
 	// 先检查"购买"按钮
 	const float btnW = 160.f;
@@ -497,7 +497,8 @@ void ShopScene::render() {
 
 	renderTopBar();
 
-	if (mode == Mode::Search) renderSearchBar();
+	// 英雄视图下始终显示搜索框（点击进入搜索状态）
+	if (currentView == View::Hero) renderSearchBar();
 
 	if (currentView == View::Hero) renderHeroView();
 	else renderItemView();
@@ -532,7 +533,7 @@ void ShopScene::render() {
 			hint = "输入关键词筛选 | Backspace 删除 | ESC 退出搜索 | W/S 导航 | 空格 购买";
 		}
 		else if (currentView == View::Hero) {
-			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | F 搜索 | E 道具 | ESC 退出";
+			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | 点击搜索框搜索 | E 道具 | ESC 退出";
 		}
 		else {
 			hint = "W/S 导航 | H 英雄 | ESC 退出";
@@ -551,7 +552,7 @@ void ShopScene::renderTopBar() {
 	auto& textMgr = renderer.getTextManager();
 	const auto& cfg = renderer.getConfig();
 	// 左上角操作提示
-	std::string leftHint = "F搜索，E/H切换界面";
+	std::string leftHint = "E/H切换界面";
 	if (mode == Mode::Search) leftHint = "搜索模式（ESC 退出）";
 	textMgr.displayText(leftHint, { 20.f, 20.f }, { 18, 36 }, sf::Color(200, 200, 210));
 	// 右上角积分
@@ -567,6 +568,7 @@ void ShopScene::renderSearchBar() {
 	auto& window = renderer.getWindow();
 	auto& textMgr = renderer.getTextManager();
 	const auto& cfg = renderer.getConfig();
+	const bool active = (mode == Mode::Search);
 	const float barW = static_cast<float>(cfg.windowSize.x) * 0.5f;
 	const float barH = 42.f;
 	const float barX = (static_cast<float>(cfg.windowSize.x) - barW) / 2.f;
@@ -575,12 +577,18 @@ void ShopScene::renderSearchBar() {
 	bar.setPosition({ barX, barY });
 	bar.setFillColor(sf::Color(30, 34, 48));
 	bar.setOutlineThickness(2.f);
-	bar.setOutlineColor(sf::Color(140, 170, 230));
+	// 激活时高亮边框，非激活灰暗
+	bar.setOutlineColor(active ? sf::Color(140, 170, 230) : sf::Color(80, 90, 120));
 	window.draw(bar);
+	if (searchKeyword.empty() && !active) {
+		// 占位提示
+		textMgr.displayText("点击搜索...", { barX + 12.f, barY + 4.f }, { 20, 40 }, sf::Color(120, 124, 140));
+		return;
+	}
 	std::string label = "搜索: " + searchKeyword;
-	// 光标闪烁
+	// 光标闪烁（仅激活时）
 	static sf::Clock blink;
-	if (blink.getElapsedTime().asMilliseconds() % 1000 < 500) label += "_";
+	if (active && blink.getElapsedTime().asMilliseconds() % 1000 < 500) label += "_";
 	textMgr.displayText(label, { barX + 12.f, barY + 4.f }, { 20, 40 }, sf::Color(235, 235, 245));
 }
 
