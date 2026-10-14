@@ -278,6 +278,7 @@ void Player::ban(Player& source, Card& card) {
 void Player::seal(std::size_t duration) {
 	sealed = duration;
 	std::println("玩家{}({})被封印{}轮", id, characterName(), duration);
+	markCharInfoDirty();
 }
 
 
@@ -351,7 +352,10 @@ void Player::phaseEnd() {
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::phase_end, trigger);
 	}
 	//回合结束，封印剩余轮数-1
-	if (sealed > 0) --sealed;
+	if (sealed > 0) {
+		--sealed;
+		markCharInfoDirty();
+	}
 }
 
 bool Player::turn() {

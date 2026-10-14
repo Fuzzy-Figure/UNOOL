@@ -2700,9 +2700,9 @@ bool 同心::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	//根据打出牌的类型增加对应计数
 	const Card::Type type = trigger.getCard().getType();
 	switch (type) {
-		case Card::Type::number: ++numberCount; break;
-		case Card::Type::action: ++actionCount; break;
-		case Card::Type::wild:   ++wildCount;  break;
+		case Card::Type::number: ++numberCount, actionCount = wildCount = 0; break;
+		case Card::Type::action: ++actionCount, numberCount = wildCount = 0; break;
+		case Card::Type::wild:   ++wildCount, numberCount = actionCount = 0;  break;
 		default:                 std::unreachable();
 	}
 
