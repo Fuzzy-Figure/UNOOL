@@ -1636,7 +1636,18 @@ public:
 	std::optional<std::string> extraPlaceholders(const std::string& key) const;
 };
 
-
+class 镇魂_回合结束 final : public PassiveSkillImpl<镇魂_回合结束> {
+public:
+	镇魂_回合结束() : PassiveSkillImpl<镇魂_回合结束>(
+		"镇魂",
+		"",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
 class 镇魂 final : public PassiveSkillImpl<镇魂> {
 	friend class 镇魂_回合结束;
 private:
@@ -1655,15 +1666,3 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 镇魂_回合结束 final : public PassiveSkillImpl<镇魂_回合结束> {
-public:
-	镇魂_回合结束() : PassiveSkillImpl<镇魂_回合结束>(
-		"镇魂",
-		"",
-		unlimited, false,
-		TriggerPlayer::self,
-		TriggerTime::phase_end
-	) {}
-	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
-	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-};

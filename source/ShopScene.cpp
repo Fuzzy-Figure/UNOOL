@@ -569,7 +569,7 @@ void ShopScene::render() {
 		const auto& cfg = renderer.getConfig();
 		std::string hint;
 		if (mode == Mode::Search) {
-			hint = "输入关键词筛选 | Backspace 删除 | ESC 退出搜索 | W/S 导航 | 空格 购买";
+			hint = "输入关键词筛选 | Backspace 删除 | ESC 退出搜索";
 		}
 		else if (currentView == View::Hero) {
 			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | 点击搜索框搜索 | E 道具 | ESC 退出";
