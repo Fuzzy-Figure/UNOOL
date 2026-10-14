@@ -407,11 +407,7 @@ void ShopScene::handleMouseClick(const sf::Vector2f& pos) {
 	}
 
 	// 先检查"购买"按钮
-	const float btnW = 160.f;
-	const float btnH = 50.f;
-	const float btnX = listX + listW + 20.f;
-	const float btnY = listStartY;
-	if (pos.x >= btnX && pos.x <= btnX + btnW && pos.y >= btnY && pos.y <= btnY + btnH) {
+	if (buyButtonRect().contains(pos)) {
 		tryBuyCurrentSelection();
 		return;
 	}
@@ -752,31 +748,45 @@ void ShopScene::renderItemView() {
 	}
 }
 
+sf::FloatRect ShopScene::buyButtonRect() const {
+	const auto& cfg = renderer.getConfig();
+	constexpr float btnW = 140.f;
+	constexpr float btnH = 44.f;
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
+	if (currentView == View::Hero) {
+		//英雄视图：详情面板内右上角（面板 panelX=listX+listW+20, panelY=140, panelW=窗口宽-panelX-20）
+		const float panelX = listX + listW + 20.f;
+		const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
+		return { { panelX + panelW - btnW - 12.f, 140.f + 12.f }, { btnW, btnH } };
+	}
+	//道具视图：列表右侧原位
+	return { { listX + listW + 20.f, 140.f }, { btnW, btnH } };
+}
+
 void ShopScene::renderBuyButton() {
 	auto& window = renderer.getWindow();
 	auto& textMgr = renderer.getTextManager();
-	const auto& cfg = renderer.getConfig();
 
-	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
-	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
-	const float btnW = 140.f;
-	const float btnH = 44.f;
-	const float btnX = listX + listW + 20.f;
-	const float btnY = 140.f;
+	const sf::FloatRect rect = buyButtonRect();
 
 	bool buyable = currentRowBuyable();
 	sf::Color btnColor = buyable ? sf::Color(60, 120, 80) : sf::Color(50, 50, 58);
 	sf::Color btnOutline = buyable ? sf::Color(120, 230, 140) : sf::Color(80, 80, 90);
 	sf::Color textColor = buyable ? sf::Color(235, 245, 235) : sf::Color(120, 120, 130);
 
-	sf::RectangleShape btn({ btnW, btnH });
-	btn.setPosition({ btnX, btnY });
+	sf::RectangleShape btn(rect.size);
+	btn.setPosition(rect.position);
 	btn.setFillColor(btnColor);
 	btn.setOutlineThickness(2.f);
 	btn.setOutlineColor(btnOutline);
 	window.draw(btn);
 
-	textMgr.displayText("购买", { btnX + btnW / 2.f - 20.f, btnY + 4.f }, { 22, 44 }, textColor);
+	const sf::Vector2f textSize = textMgr.measureText("购买", 44.f);
+	textMgr.displayText("购买",
+		{ rect.position.x + (rect.size.x - textSize.x) / 2.f,
+		  rect.position.y + (rect.size.y - textSize.y) / 2.f },
+		{ 22, 44 }, textColor);
 }
 
 void ShopScene::renderDetailPanel() {
@@ -786,7 +796,7 @@ void ShopScene::renderDetailPanel() {
 
 	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
 	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
-	const float panelX = listX + listW + 160.f;  // 跳过购买按钮
+	const float panelX = listX + listW + 20.f;
 	const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
 	const float panelY = 140.f;
 	const float panelH = static_cast<float>(cfg.windowSize.y) - panelY - 80.f;

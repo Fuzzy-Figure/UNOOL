@@ -11,9 +11,7 @@ ImageManager::ImageManager(sf::RenderWindow& _window) :window(_window) {
 
 // 显示图片
 void ImageManager::displayImage(const std::string& path, const sf::Vector2f& pos, const sf::Vector2f& size) {
-	if (!window.isOpen()) {
-		throw std::runtime_error("[ImageManager] 窗口无效");
-	}
+	if (!window.isOpen()) exit(0);
 
 	const std::string absolutePath = UNOOL + path;
 	//缓存未命中

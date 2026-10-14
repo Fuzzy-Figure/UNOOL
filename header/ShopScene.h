@@ -71,6 +71,8 @@ private:
 	void renderSearchBar();
 	void renderBuyButton();
 	void renderDetailPanel();
+	// 购买按钮矩形（渲染与点击检测共用；英雄视图在详情面板右上角，道具视图在列表右侧）
+	sf::FloatRect buyButtonRect() const;
 	// 事件处理
 	void handleEvent(const sf::Event& event);
 	void handleKeyPressed(const sf::Event::KeyPressed& key);
