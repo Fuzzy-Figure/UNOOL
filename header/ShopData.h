@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <optional>
 #include <json.hpp>
 #include "Character.h"
 
@@ -19,7 +20,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(Character::Level, {
 struct ShopSkinInfo {
 	std::string name;           // 皮肤名
 	bool unlocked = false;      // 是否已解锁
-	int price = 0;              // 售价（-1=不可购买）
+	std::optional<Character::price_t> price;  // 售价（std::nullopt=不可购买）
 	std::string quality;        // 品质中文名
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopSkinInfo, name, unlocked, price, quality)
@@ -30,7 +31,7 @@ struct ShopCharacterInfo {
 	std::string name;               // 角色名
 	Character::Level level = Character::Level::F; // 等级
 	bool unlocked = false;          // 是否已解锁英雄
-	int price = 0;                  // 英雄售价（-1=不可购买如S档）
+	std::optional<Character::price_t> price;    // 英雄售价（std::nullopt=不可购买如S档）
 	std::vector<ShopSkinInfo> skins; // 皮肤列表（不含默认皮肤）
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopCharacterInfo, name, level, unlocked, price, skins)
@@ -40,7 +41,7 @@ struct ShopCharacterInfo {
 struct ShopItemInfo {
 	std::string name;           // 道具名
 	int count = 0;              // 当前数量
-	int price = 0;              // 当前售价
+	Character::price_t price = 0;  // 当前售价
 	bool available = true;      // 是否可购买
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopItemInfo, name, count, price, available)
@@ -48,7 +49,7 @@ struct ShopItemInfo {
 
 // 完整商城数据
 struct ShopData {
-	int points = 0;                          // 用户当前积分
+	int points = 0;                            // 用户当前积分
 	std::vector<ShopCharacterInfo> characters; // 角色列表（按F→S排序）
 	std::vector<ShopItemInfo> items;           // 道具列表
 

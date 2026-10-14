@@ -3,6 +3,8 @@
 #include <list>
 #include <vector>
 #include <memory>
+#include <optional>
+#include <cstddef>
 #include <unordered_map>
 #include <unordered_set>
 #include "Skill.h"
@@ -11,6 +13,9 @@ class Character {
 #pragma region 类型定义
 public:
 	using hp_t = int;
+	//价格类型：不可购买统一用 std::optional<price_t> 的 nullopt 表示
+	using price_t = std::size_t;
+
 	enum class Level { F, D, C, B, A, S };
 	//皮肤品质
 	enum class SkinQuality {
@@ -103,14 +108,14 @@ public:
 
 	// 获取皮肤品质（根据角色名和皮肤名）
 	static SkinQuality getSkinQuality(const std::string& charName, const std::string& skinName);
-	// 获取皮肤售价
-	static int getSkinPrice(const std::string& charName, const std::string& skinName);
-	// 获取皮肤品质售价
-	static int getSkinPriceByQuality(SkinQuality quality);
+	// 获取皮肤售价（不可购买返回 std::nullopt）
+	static std::optional<price_t> getSkinPrice(const std::string& charName, const std::string& skinName);
+	// 获取皮肤品质售价（不可购买返回 std::nullopt）
+	static std::optional<price_t> getSkinPriceByQuality(SkinQuality quality);
 	// 皮肤品质转中文字符串
 	static std::string to_string(SkinQuality quality);
-	// 获取角色售价（按等级和角色名）
-	static int getCharacterPrice(const std::string& name);
+	// 获取角色售价（按等级和角色名；不可购买/不存在返回 std::nullopt）
+	static std::optional<price_t> getCharacterPrice(const std::string& name);
 #pragma endregion
 
 #pragma region 技能管理

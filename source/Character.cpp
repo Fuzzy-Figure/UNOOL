@@ -345,19 +345,19 @@ Character::SkinQuality Character::getSkinQuality(const std::string& charName, co
 	return SkinQuality::normal;
 }
 
-int Character::getSkinPriceByQuality(SkinQuality quality) {
+std::optional<Character::price_t> Character::getSkinPriceByQuality(SkinQuality quality) {
 	switch (quality) {
 		case SkinQuality::normal:  return 8;
 		case SkinQuality::fine:    return 28;
 		case SkinQuality::epic:    return 48;
 		case SkinQuality::legend:  return 88;
 		case SkinQuality::supreme: return 188;
-		case SkinQuality::drink:   return -1;	//饮料限定不售卖
-		default:                   return -1;
+		case SkinQuality::drink:   return std::nullopt;	//饮料限定不售卖
+		default:                   return std::nullopt;
 	}
 }
 
-int Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
+std::optional<Character::price_t> Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
 	return getSkinPriceByQuality(getSkinQuality(charName, skinName));
 }
 
@@ -374,9 +374,9 @@ std::string Character::to_string(SkinQuality quality) {
 }
 
 // ---- 角色售价 ----
-int Character::getCharacterPrice(const std::string& name) {
+std::optional<Character::price_t> Character::getCharacterPrice(const std::string& name) {
 	auto it = infos.find(name);
-	if (it == infos.end()) return -1;	//角色不存在
+	if (it == infos.end()) return std::nullopt;	//角色不存在
 	const Level lv = it->second.level;
 	switch (lv) {
 		case Level::F:
@@ -397,9 +397,9 @@ int Character::getCharacterPrice(const std::string& name) {
 		case Level::A:
 			return 228;
 		case Level::S:
-			return -1;	//不可直接购买
+			return std::nullopt;	//不可直接购买
 		default:
-			return -1;
+			return std::nullopt;
 	}
 }
 

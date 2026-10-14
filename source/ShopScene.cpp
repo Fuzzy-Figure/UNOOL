@@ -189,18 +189,18 @@ bool ShopScene::currentRowBuyable() const {
 	if (currentView == View::Hero) {
 		if (row.type == Row::Type::HeroCollapsed) {
 			const auto& hero = shopData.characters[row.heroIdx];
-			return !hero.unlocked && hero.price >= 0;
+			return !hero.unlocked && hero.price.has_value();
 		}
 		if (row.type == Row::Type::SkinEntry) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			const auto& skin = hero.skins[row.skinIdx];
-			return !skin.unlocked && skin.price >= 0;
+			return !skin.unlocked && skin.price.has_value();
 		}
 	}
 	else {
 		if (row.type == Row::Type::ItemEntry) {
 			const auto& item = shopData.items[row.itemIdx];
-			return item.available && item.price >= 0;
+			return item.available;
 		}
 	}
 	return false;
@@ -212,14 +212,14 @@ void ShopScene::tryBuyCurrentSelection() {
 	if (currentView == View::Hero) {
 		if (row.type == Row::Type::HeroCollapsed) {
 			const auto& hero = shopData.characters[row.heroIdx];
-			if (!hero.unlocked && hero.price >= 0) tryBuyCharacter(hero.name);
+			if (!hero.unlocked && hero.price.has_value()) tryBuyCharacter(hero.name);
 			else setPurchaseMsg(hero.unlocked ? "已解锁" : "不可购买");
 		}
 		else if (row.type == Row::Type::SkinEntry) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			const auto& skin = hero.skins[row.skinIdx];
 			if (hero.unlocked) {
-				if (!skin.unlocked && skin.price >= 0) tryBuySkin(hero.name, skin.name);
+				if (!skin.unlocked && skin.price.has_value()) tryBuySkin(hero.name, skin.name);
 				else setPurchaseMsg(skin.unlocked ? "已解锁" : "不售卖");
 			}
 			else {
@@ -230,7 +230,7 @@ void ShopScene::tryBuyCurrentSelection() {
 	else {
 		if (row.type == Row::Type::ItemEntry) {
 			const auto& item = shopData.items[row.itemIdx];
-			if (item.available && item.price >= 0) tryBuyItem(item.name);
+			if (item.available) tryBuyItem(item.name);
 			else setPurchaseMsg("不可购买");
 		}
 	}
@@ -507,13 +507,14 @@ void ShopScene::setPurchaseMsg(const std::string& msg) {
 	msgActive = true;
 }
 
-bool ShopScene::affordable(int price) const {
-	return price >= 0 && shopData.points >= price;
+bool ShopScene::affordable(std::optional<Character::price_t> price) const {
+	return price.has_value() && shopData.points >= 0
+		&& static_cast<Character::price_t>(shopData.points) >= *price;
 }
 
-sf::Color ShopScene::stateColor(bool unlocked, int price, bool canAfford) {
+sf::Color ShopScene::stateColor(bool unlocked, std::optional<Character::price_t> price, bool canAfford) {
 	if (unlocked) return sf::Color::Green;
-	if (price < 0) return sf::Color(170, 170, 170);
+	if (!price.has_value()) return sf::Color(170, 170, 170);
 	return canAfford ? sf::Color::Yellow : sf::Color::Red;
 }
 
@@ -667,11 +668,11 @@ void ShopScene::renderHeroView() {
 			if (character.unlocked) {
 				status = "已解锁";
 			}
-			else if (character.price < 0) {
+			else if (!character.price.has_value()) {
 				status = "不可购买";
 			}
 			else {
-				status = std::format("售价 {}", character.price);
+				status = std::format("售价 {}", *character.price);
 			}
 			textMgr.displayText(line, { boxPos.x + 16.f, y + 6.f }, { 22, 44 }, stateCol);
 			textMgr.displayTextTopRightCorner(status, { boxPos.x + listW - 50.f, y + 6.f }, { 22, 44 }, stateCol);
@@ -688,11 +689,11 @@ void ShopScene::renderHeroView() {
 			if (skin.unlocked) {
 				status = "已解锁";
 			}
-			else if (skin.price < 0) {
+			else if (!skin.price.has_value()) {
 				status = "不售卖";
 			}
 			else {
-				status = std::format("售价 {}", skin.price);
+				status = std::format("售价 {}", *skin.price);
 			}
 			textMgr.displayText(skin.name, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, stateCol);
 			textMgr.displayText(status, { subPos.x + subSize.x - 160.f, y + 6.f }, { 18, 36 }, stateCol);

@@ -556,9 +556,9 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 		charInfo.level = info.level;
 		charInfo.unlocked = userInfo.ownedCharacters.contains(name);
 		charInfo.price = Character::getCharacterPrice(name);
-		// S 档角色：集齐 ABCDF 后售价 488，否则不可购买（-1）
+		// S 档角色：集齐 ABCDF 后售价 488，否则不可购买（nullopt）
 		if (info.level == Character::Level::S && allNonSCollected) {
-			charInfo.price = 488;
+			charInfo.price = static_cast<Character::price_t>(488);
 		}
 
 		// 获取皮肤列表，跳过"默认"皮肤
@@ -592,7 +592,7 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 		ShopItemInfo itemInfo;
 		itemInfo.name = "选将扩充卡";
 		itemInfo.count = UserDB::instance().getItemCount(username, "选将扩充卡");
-		itemInfo.price = (itemInfo.count < 5) ? (88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2) : -1;
+		itemInfo.price = (itemInfo.count < 5) ? static_cast<Character::price_t>(88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2) : Character::price_t{ 0 };
 		itemInfo.available = itemInfo.count < 5;
 		shopData.items.push_back(std::move(itemInfo));
 	}
@@ -686,7 +686,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 		const bool isSRank = (charIt != Character::infos.end()
 							 && charIt->second.level == Character::Level::S);
 
-		int price = -1;
+		std::optional<Character::price_t> price;
 		if (isSRank) {
 			// S 档角色：需集齐 ABCDF 所有角色，售价 488
 			if (UserDB::instance().hasAllNonSRank(username)) {
@@ -698,7 +698,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 			price = Character::getCharacterPrice(req.name);
 		}
 
-		if (price >= 0 && errMsg.empty()) {
+		if (price.has_value() && errMsg.empty()) {
 			// 购买前记录各非 S 档集齐状态，用于判断本次购买是否新集齐某档
 			const std::array<std::pair<Character::Level, bool>, 5> beforeStates = {{
 				{Character::Level::F, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::F)},
@@ -708,7 +708,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 				{Character::Level::A, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::A)},
 			}};
 
-			ok = UserDB::instance().purchaseCharacter(username, req.name, price);
+			ok = UserDB::instance().purchaseCharacter(username, req.name, static_cast<int>(*price));
 			if (!ok) {
 				errMsg = "积分不足或购买失败";
 			} else {
@@ -729,12 +729,12 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 		}
 	}
 	else if (req.type == "skin") {
-		int price = Character::getSkinPrice(req.charName, req.skinName);
-		if (price < 0) {
+		const std::optional<Character::price_t> price = Character::getSkinPrice(req.charName, req.skinName);
+		if (!price.has_value()) {
 			errMsg = "该皮肤不可购买";
 		}
 		else {
-			ok = UserDB::instance().purchaseSkin(username, req.charName, req.skinName, price);
+			ok = UserDB::instance().purchaseSkin(username, req.charName, req.skinName, static_cast<int>(*price));
 			if (!ok) errMsg = "积分不足或购买失败";
 		}
 	}
