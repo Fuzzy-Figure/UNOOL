@@ -1637,3 +1637,33 @@ public:
 };
 
 
+class 镇魂 final : public PassiveSkillImpl<镇魂> {
+	friend class 镇魂_回合结束;
+private:
+	std::size_t phaseCount = 0;
+public:
+	镇魂() : PassiveSkillImpl<镇魂>(
+		"镇魂",
+		"每回合限一次，回合开始或结束时，你可以选择一名角色，对其随机造成1-5点伤害，"
+		"然后若你手牌数不小于其，其弃置一张牌。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin,
+		镇魂_回合结束::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+class 镇魂_回合结束 final : public PassiveSkillImpl<镇魂_回合结束> {
+public:
+	镇魂_回合结束() : PassiveSkillImpl<镇魂_回合结束>(
+		"镇魂",
+		"",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};

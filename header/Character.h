@@ -119,6 +119,7 @@ public:
 #pragma endregion
 
 #pragma region 技能管理
+	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return passiveSkills; }
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return instantSkills; }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return transformSkills; }
 	template<SpecificSkill T>

@@ -321,9 +321,22 @@ public:
 		"勇进",
 		"每回合限一次，出牌阶段，你可以失去1点体力并摸一张牌，"
 		"若为非数字牌，弃置一张其他牌并回复2点体力。",
-		unlimited,1, 
+		unlimited,1,
 		TriggerTime::phase_use
 	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//净身：出牌阶段，若你手中有五种颜色的牌，你可以弃置一张牌并回复1点体力
+class 净身 final : public InstantSkillImpl<净身> {
+public:
+	净身() : InstantSkillImpl<净身>(
+		"净身",
+		"出牌阶段，若你手中有五种颜色的牌，你可以弃置一张牌并回复1点体力。",
+		unlimited, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
 	bool content(GameLogic& game, Player& carrier) override;
 };
 

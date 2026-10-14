@@ -689,6 +689,23 @@ bool 勇进::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
+// ==================== 技能：净身 ====================
+bool 净身::filter(const GameLogic& game, const Player& carrier) const {
+	//手牌需集齐五种颜色
+	for (const Card::Color color : Card::fiveColors) {
+		if (!carrier.getHand().include([color](const Card& c) { return c.is(color); })) return false;
+	}
+	return true;
+}
+
+bool 净身::content(GameLogic& game, Player& carrier) {
+	carrier.chooseToDiscard("【净身】弃置一张牌：", 1, true);
+	carrier.recover(1);
+	std::println("<技能> {}发动净身，弃置一张牌并回复1点体力", carrier.characterName());
+	game.broadcastState();
+	return true;
+}
+
 // ==================== 技能：修正 ====================
 bool 修正::content(GameLogic& game, Player& carrier) {
 	//选一张手牌

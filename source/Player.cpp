@@ -287,6 +287,8 @@ void Player::phaseBegin() {
 	//重置所有主动技的阶段内使用次数（每回合开始）
 	for (auto& s : getInstantSkills()) s->resetPhaseCount();
 	for (auto& s : getTransformSkills()) s->resetPhaseCount();
+	//重置被动技的阶段内使用次数（基类仅递归子技能；镇魂等自计数的被动技借此每回合清零）
+	for (auto& s : getPassiveSkills()) s->resetPhaseCount();
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;

@@ -128,6 +128,7 @@ public:
 	template<SpecificSkill T> T& getSkill() { return character->getSkill<T>(); }
 	template<SpecificSkill T> const T& getSkill() const { return character->getSkill<T>(); }
 	std::string getSkillsText() const { return character->getSkillsText(); }
+	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return character->getPassiveSkills(); }
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return character->getTransformSkills(); }
 	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }

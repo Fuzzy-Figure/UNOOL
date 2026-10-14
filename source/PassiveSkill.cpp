@@ -2750,3 +2750,40 @@ std::optional<std::string> 蝎刺::extraPlaceholders(const std::string& key) con
 	return std::nullopt;
 }
 
+// ==================== 技能：镇魂 ====================
+bool 镇魂::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return phaseCount < 1;
+}
+
+bool 镇魂::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto targetOpt = carrier.choosePlayer("【镇魂】选择一名角色：", true);
+	if (!targetOpt) return false;
+	Player& target = targetOpt->get();
+
+	//随机造成1-5点伤害
+	const std::size_t dmg = unool::random::randomSize_t(1, 5);
+	std::println("<技能> {}发动镇魂，对{}随机造成{}点伤害", carrier.characterName(),
+				 target.characterName(), dmg);
+	target.damage(dmg, carrier);
+
+	//若你手牌数不小于其，其弃置一张牌
+	if (carrier.handCount() >= target.handCount() && target.handCount() > 0) {
+		std::println("<技能> {}手牌数不小于{}，{}弃置一张牌", carrier.characterName(),
+					 target.characterName(), target.characterName());
+		target.chooseToDiscard("【镇魂】弃置一张牌：", 1, true);
+	}
+
+	++phaseCount;
+	game.broadcastState();
+	return true;
+}
+
+bool 镇魂_回合结束::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return carrier.getSkill<镇魂>().phaseCount < 1;
+}
+
+bool 镇魂_回合结束::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	return carrier.getSkill<镇魂>().content(game, carrier, trigger);
+}
+
+
