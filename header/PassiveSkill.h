@@ -1203,7 +1203,7 @@ class 尖刺 final : public PassiveSkillImpl<尖刺> {
 public:
 	尖刺() : PassiveSkillImpl<尖刺>(
 		"尖刺",
-		"锁定技，你受到伤害后，对一名其他角色造成等量伤害并回复1点体力。",
+		"锁定技，你受到伤害后，若体力>0，对一名其他角色造成等量伤害并回复1点体力。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::damage_end

@@ -2185,7 +2185,7 @@ bool 返现::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：尖刺 ====================
 bool 尖刺::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	return trigger.hasNumber();
+	return carrier.getHp() > 0;
 }
 
 bool 尖刺::content(GameLogic& game, Player& carrier, Trigger& trigger) {
