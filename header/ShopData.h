@@ -56,13 +56,39 @@ struct ShopData {
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopData, points, characters, items)
 };
 
+// 购买请求类型
+enum class ShopRequestType {
+	Request,    // 请求刷新商城数据
+	Character,  // 购买角色
+	Skin,       // 购买皮肤
+	Item        // 购买道具
+};
+
+// 让 nlohmann::json 支持 ShopRequestType 序列化（线上字符串格式与旧版一致）
+NLOHMANN_JSON_SERIALIZE_ENUM(ShopRequestType, {
+	{ShopRequestType::Request,   "request"},
+	{ShopRequestType::Character, "character"},
+	{ShopRequestType::Skin,      "skin"},
+	{ShopRequestType::Item,      "item"},
+})
+
+// 供日志/错误消息使用（enum class 不能直接被 std::format 格式化）
+inline std::string to_string(ShopRequestType type) {
+	switch (type) {
+		case ShopRequestType::Request:   return "request";
+		case ShopRequestType::Character: return "character";
+		case ShopRequestType::Skin:      return "skin";
+		case ShopRequestType::Item:      return "item";
+	}
+	return "unknown";
+}
+
 // 购买请求（客户端→服务器），通过 MessageType::ShopPurchase 发送
-// type 取值："request"(请求刷新商城数据) / "character" / "skin" / "item"
 struct ShopPurchaseRequest {
-	std::string type;        // 购买类型
-	std::string name;        // 角色名/道具名（type=character/item 时用）
-	std::string charName;    // 皮肤所属角色名（type=skin 时用）
-	std::string skinName;    // 皮肤名（type=skin 时用）
+	ShopRequestType type = ShopRequestType::Request;  // 请求类型
+	std::string name;        // 角色名/道具名（type=Character/Item 时用）
+	std::string charName;    // 皮肤所属角色名（type=Skin 时用）
+	std::string skinName;    // 皮肤名（type=Skin 时用）
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopPurchaseRequest, type, name, charName, skinName)
 };

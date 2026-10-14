@@ -669,8 +669,8 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 		return;
 	}
 
-	// type="request"：客户端请求刷新商城数据，直接回送 ShopData
-	if (req.type == "request") {
+	// type=Request：客户端请求刷新商城数据，直接回送 ShopData
+	if (req.type == ShopRequestType::Request) {
 		sendShopData(clientIndex, username);
 		return;
 	}
@@ -680,7 +680,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 	std::string errMsg;
 	std::string sUnlockMsg;	// 集齐档位触发 S 档解锁的附加消息
 
-	if (req.type == "character") {
+	if (req.type == ShopRequestType::Character) {
 		// 判断是否为 S 档角色
 		auto charIt = Character::infos.find(req.name);
 		const bool isSRank = (charIt != Character::infos.end()
@@ -728,7 +728,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 			}
 		}
 	}
-	else if (req.type == "skin") {
+	else if (req.type == ShopRequestType::Skin) {
 		const std::optional<Character::price_t> price = Character::getSkinPrice(req.charName, req.skinName);
 		if (!price.has_value()) {
 			errMsg = "该皮肤不可购买";
@@ -738,7 +738,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 			if (!ok) errMsg = "积分不足或购买失败";
 		}
 	}
-	else if (req.type == "item") {
+	else if (req.type == ShopRequestType::Item) {
 		int price = 0;
 		int count = UserDB::instance().getItemCount(username, req.name);
 
@@ -763,7 +763,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 		}
 	}
 	else {
-		errMsg = std::format("未知购买类型：{}", req.type);
+		errMsg = std::format("未知购买类型：{}", to_string(req.type));
 	}
 
 	// 构建购买结果并发送
@@ -781,7 +781,7 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 	sendShopResult(clientIndex, rj.dump());
 
 	std::println("[ServerNetwork] 客户端{}（账号 {}）购买 {}：{}（剩余积分 {}）",
-				 clientIndex, username, req.type, (ok ? "成功" : "失败"), result.points);
+				 clientIndex, username, to_string(req.type), (ok ? "成功" : "失败"), result.points);
 
 	// 购买成功后自动刷新商城数据给该客户端
 	if (ok) {

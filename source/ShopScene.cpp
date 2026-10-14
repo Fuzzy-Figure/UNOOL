@@ -32,7 +32,7 @@ void ShopScene::run() {
 
 void ShopScene::requestShopData() {
 	ShopPurchaseRequest req;
-	req.type = "request";
+	req.type = ShopRequestType::Request;
 	nlohmann::json j = req;
 	net.sendShopPurchase(j.dump());
 }
@@ -131,7 +131,7 @@ void ShopScene::handleNetwork() {
 
 void ShopScene::tryBuyCharacter(const std::string& name) {
 	ShopPurchaseRequest req;
-	req.type = "character";
+	req.type = ShopRequestType::Character;
 	req.name = name;
 	nlohmann::json j = req;
 	net.sendShopPurchase(j.dump());
@@ -140,7 +140,7 @@ void ShopScene::tryBuyCharacter(const std::string& name) {
 
 void ShopScene::tryBuySkin(const std::string& charName, const std::string& skinName) {
 	ShopPurchaseRequest req;
-	req.type = "skin";
+	req.type = ShopRequestType::Skin;
 	req.charName = charName;
 	req.skinName = skinName;
 	nlohmann::json j = req;
@@ -150,7 +150,7 @@ void ShopScene::tryBuySkin(const std::string& charName, const std::string& skinN
 
 void ShopScene::tryBuyItem(const std::string& itemName) {
 	ShopPurchaseRequest req;
-	req.type = "item";
+	req.type = ShopRequestType::Item;
 	req.name = itemName;
 	nlohmann::json j = req;
 	net.sendShopPurchase(j.dump());
