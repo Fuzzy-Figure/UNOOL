@@ -46,7 +46,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"金日成",   {"元首",   Level::C, {被动<朔日>}, 199}},
 	{"刘建龙",   {"网络",   Level::D, {即时<徒步>}, 250}},
 	{"拜登",     {"元首",   Level::A, {被动<健忘>}, 125}},
-	{"王耘浩",   {"实验",   Level::D, {被动<豪赌>}, 250}},
+	{"王耘浩",   {"实验",   Level::C, {被动<豪赌>}, 250}},
 	{"Bulbito Bandito Traktorito", {"山海经", Level::B, {被动<黑帮, 拖拉>}, 225}},
 	{"烟刻瑯",   {"实验",   Level::B, {被动<迷烟>}, 175}},
 	{"幺幺",     {"网络",   Level::F, {被动<水鬼>}, 88}},
