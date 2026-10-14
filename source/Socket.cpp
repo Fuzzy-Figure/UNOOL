@@ -185,6 +185,14 @@ void ServerNetwork::handleClientPackets() {
 							handleShopPurchase(i, purchaseData);
 						}
 					}
+					else if (msgType == static_cast<int>(MessageType::SkillInfoRequest)) {
+						//技能描述请求：内联处理，不入队
+						int discardedType;
+						std::string requestData;
+						if (packet >> discardedType >> requestData) {
+							handleSkillInfoRequest(i, requestData);
+						}
+					}
 					else {
 						receivedPackets.push(packet);
 					}
@@ -610,6 +618,34 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 				 clientIndex, username, shopData.points, shopData.characters.size(), shopData.items.size());
 
 	return sendPacketToClient(clientIndex, packet);
+}
+
+void ServerNetwork::handleSkillInfoRequest(std::size_t clientIndex, const std::string& requestData) {
+	if (!isClientConnected(clientIndex)) return;
+
+	SkillInfoRequestBody req;
+	try {
+		nlohmann::json j = nlohmann::json::parse(requestData);
+		req = j.get<SkillInfoRequestBody>();
+	}
+	catch (const std::exception&) {
+		return; // 解析失败直接忽略
+	}
+
+	// 逐角色生成技能描述文本（未定义的角色跳过）
+	SkillInfoResponseBody resp;
+	for (const auto& name : req.names) {
+		try {
+			resp.skills[name] = Character::make(name)->getSkillsText();
+		}
+		catch (const std::exception&) {}
+	}
+
+	nlohmann::json j = resp;
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::SkillInfoResponse);
+	packet << j.dump();
+	sendPacketToClient(clientIndex, packet);
 }
 
 void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData) {

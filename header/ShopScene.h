@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 #include "Socket.h"
 #include "ShopData.h"
 
@@ -54,7 +56,12 @@ private:
 
 	// 请求商城数据
 	void requestShopData();
-	// 处理网络包（ShopData / ShopResult）
+	// 请求角色技能描述（缓存缺失时调用；pendingSkills 防止重复请求）
+	void requestSkillInfo(const std::vector<std::string>& names);
+	// 技能描述缓存：进程级静态数据，商城退出后仍保留
+	static std::unordered_map<std::string, std::string> skillsCache;
+	std::unordered_set<std::string> pendingSkills;
+	// 处理网络包（ShopData / ShopResult / SkillInfoResponse）
 	void handleNetwork();
 	// 渲染
 	void render();

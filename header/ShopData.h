@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 #include <json.hpp>
 #include "Character.h"
 
@@ -72,4 +73,18 @@ struct ShopPurchaseResult {
 	int points = 0;          // 购买后剩余积分
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopPurchaseResult, ok, msg, points)
+};
+
+// 技能描述请求（客户端→服务器），通过 MessageType::SkillInfoRequest 发送
+struct SkillInfoRequestBody {
+	std::vector<std::string> names;  // 请求的角色名列表
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SkillInfoRequestBody, names)
+};
+
+// 技能描述响应（服务器→客户端），通过 MessageType::SkillInfoResponse 发送
+struct SkillInfoResponseBody {
+	std::map<std::string, std::string> skills;  // 角色名 → 技能描述文本
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SkillInfoResponseBody, skills)
 };

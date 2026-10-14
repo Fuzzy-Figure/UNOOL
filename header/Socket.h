@@ -36,7 +36,9 @@ enum class MessageType {
 	ShopData,
 	ShopPurchase,
 	ShopResult,
-	ReadyToPlay
+	ReadyToPlay,
+	SkillInfoRequest,
+	SkillInfoResponse
 };
 
 struct ClientInput {
@@ -122,6 +124,8 @@ public:
 	bool sendShopData(std::size_t clientIndex, const std::string& username);
 	// 处理购买请求
 	void handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData);
+	// 处理技能描述请求：按角色名生成技能文本并回送 SkillInfoResponse
+	void handleSkillInfoRequest(std::size_t clientIndex, const std::string& requestData);
 
 	bool isReady() const { return serverReady; }
 	std::size_t getClientCount() const;

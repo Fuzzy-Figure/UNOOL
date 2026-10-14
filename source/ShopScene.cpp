@@ -5,6 +5,9 @@
 #include <format>
 #include <string>
 
+// 技能描述缓存（静态成员定义）
+std::unordered_map<std::string, std::string> ShopScene::skillsCache;
+
 ShopScene::ShopScene(GameRenderer& r, ClientNetwork& n, const std::string& uname)
 	: renderer(r), net(n), username(uname) {
 	rebuildDisplayedIndices();
@@ -34,6 +37,21 @@ void ShopScene::requestShopData() {
 	net.sendShopPurchase(j.dump());
 }
 
+void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
+	SkillInfoRequestBody req;
+	for (const auto& name : names) {
+		if (pendingSkills.contains(name)) continue;
+		req.names.push_back(name);
+		pendingSkills.insert(name);
+	}
+	if (req.names.empty()) return;
+	nlohmann::json j = req;
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::SkillInfoRequest);
+	packet << j.dump();
+	net.send(packet);
+}
+
 void ShopScene::handleNetwork() {
 	while (auto packetOpt = net.receivePacket()) {
 		sf::Packet packet = *packetOpt;
@@ -53,9 +71,29 @@ void ShopScene::handleNetwork() {
 					clampPage();
 					rebuildRows();
 					clampCursor();
+					// 预取缓存缺失的角色技能描述（一次性批量请求）
+					std::vector<std::string> missing;
+					for (const auto& c : shopData.characters) {
+						if (!skillsCache.contains(c.name)) missing.push_back(c.name);
+					}
+					if (!missing.empty()) requestSkillInfo(missing);
 				} catch (const std::exception&) {
 					setPurchaseMsg("商城数据解析失败");
 				}
+			}
+			continue;
+		}
+		if (mt == MessageType::SkillInfoResponse) {
+			std::string jsonStr;
+			if (packet >> jsonStr) {
+				try {
+					nlohmann::json j = nlohmann::json::parse(jsonStr);
+					SkillInfoResponseBody resp = j.get<SkillInfoResponseBody>();
+					for (auto& [name, text] : resp.skills) {
+						skillsCache[name] = std::move(text);
+						pendingSkills.erase(name);
+					}
+				} catch (const std::exception&) {}
 			}
 			continue;
 		}
@@ -641,8 +679,8 @@ void ShopScene::renderHeroView() {
 		else if (row.type == Row::Type::SkinEntry) {
 			const auto& hero = shopData.characters[row.heroIdx];
 			const auto& skin = hero.skins[row.skinIdx];
-			sf::Vector2f subPos = { listX + 80.f, y };
-			sf::Vector2f subSize = { listW - 80.f, rowH - 6.f };
+			const sf::Vector2f subPos = { listX + 80.f, y };
+			const sf::Vector2f subSize = { listW - 80.f, rowH - 6.f };
 			drawRowBox(subPos, subSize, selected);
 			// 皮肤名 + 品质 + 解锁状态/售价（整行按状态着色）
 			const sf::Color stateCol = stateColor(skin.unlocked, skin.price, affordable(skin.price));
@@ -654,14 +692,10 @@ void ShopScene::renderHeroView() {
 				status = "不售卖";
 			}
 			else {
-				status = "未解锁";
+				status = std::format("售价 {}", skin.price);
 			}
-			const std::string line = std::format("{} [{}] ({})", skin.name, skin.quality, status);
-			textMgr.displayText(line, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, stateCol);
-			if (!skin.unlocked && skin.price >= 0) {
-				const std::string priceStr = std::format("售价 {}", skin.price);
-				textMgr.displayText(priceStr, { subPos.x + subSize.x - 160.f, y + 6.f }, { 18, 36 }, stateCol);
-			}
+			textMgr.displayText(skin.name, { subPos.x + 16.f, y + 6.f }, { 20, 40 }, stateCol);
+			textMgr.displayText(status, { subPos.x + subSize.x - 160.f, y + 6.f }, { 18, 36 }, stateCol);
 		}
 	}
 
@@ -795,22 +829,15 @@ void ShopScene::renderDetailPanel() {
 	textMgr.displayText("皮肤：" + skinName, { textX, textY }, { 16, 32 }, sf::Color(200, 200, 210));
 	textY += 36.f;
 
-	// 生成技能描述
+	// 技能描述：从服务器下发的缓存取，未命中则补发请求并显示加载中
 	std::string skillsText;
-	auto infoIt = Character::infos.find(charName);
-	if (infoIt != Character::infos.end()) {
-		const auto& info = infoIt->second;
-		for (const auto& factory : info.passiveSkills) {
-			auto skill = factory();
-			skillsText += std::format("【{}】（被动）\n{}\n\n", skill->getName(), skill->getInfo());
-		}
-		for (const auto& factory : info.instantSkills) {
-			auto skill = factory();
-			skillsText += std::format("【{}】（即时）\n{}\n\n", skill->getName(), skill->getInfo());
-		}
-		for (const auto& factory : info.transformSkills) {
-			auto skill = factory();
-			skillsText += std::format("【{}】（转换）\n{}\n\n", skill->getName(), skill->getInfo());
+	if (auto cacheIt = skillsCache.find(charName); cacheIt != skillsCache.end()) {
+		skillsText = cacheIt->second;
+	}
+	else {
+		skillsText = "技能描述加载中...";
+		if (!pendingSkills.contains(charName)) {
+			requestSkillInfo({ charName });
 		}
 	}
 
