@@ -782,7 +782,7 @@ void ShopScene::renderBuyButton() {
 	btn.setOutlineColor(btnOutline);
 	window.draw(btn);
 
-	const sf::Vector2f textSize = textMgr.measureText("购买", 44.f);
+	const sf::Vector2f textSize = textMgr.measureText("购买", 44);
 	textMgr.displayText("购买",
 		{ rect.position.x + (rect.size.x - textSize.x) / 2.f,
 		  rect.position.y + (rect.size.y - textSize.y) / 2.f },
