@@ -295,7 +295,7 @@ class 过载 final : public InstantSkillImpl<过载> {
 public:
 	过载() : InstantSkillImpl<过载>(
 		"过载",
-		"限定技，出牌阶段，你可以将\"速度\"标记设为10。",
+		"限定技，出牌阶段，你可以增加5个\"速度\"标记。",
 		1, 1,
 		TriggerTime::phase_use
 	) {}
