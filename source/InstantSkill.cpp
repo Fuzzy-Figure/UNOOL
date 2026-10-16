@@ -624,8 +624,10 @@ bool 绝技::content(GameLogic& game, Player& carrier) {
 
 // ==================== 技能：过载 ====================
 bool 过载::content(GameLogic& game, Player& carrier) {
-	carrier.clearMark("速度");
 	carrier.addMark("速度", 5);
+	if (carrier.getMarkCount("速度") > 10)
+		carrier.setMark("速度", 10);
+
 	std::println("<技能> {}发动过载，增加5个\"速度\"标记", carrier.characterName());
 	carrier.markCharInfoDirty();
 	game.broadcastState();
@@ -642,7 +644,7 @@ bool 炎烈::content(GameLogic& game, Player& carrier) {
 	carrier.gainCard(Card::make(cn1.first, cn1.second));
 	carrier.gainCard(Card::make(cn2.first, cn2.second));
 	std::println("<技能> {}发动炎烈，获得红色牌{}和{}", carrier.characterName(),
-		cn1.first == Card::Color::red ? "红" : "黄", cn2.first == Card::Color::red ? "红" : "黄");
+				 cn1.first == Card::Color::red ? "红" : "黄", cn2.first == Card::Color::red ? "红" : "黄");
 
 	//可以弃置其中一张（两张在手牌末尾）
 	const std::size_t idx1 = carrier.getHand().count() - 2;

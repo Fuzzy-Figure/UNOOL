@@ -115,6 +115,7 @@ public:
 	bool hasMark(const std::string& m) const { return character->hasMark(m); }
 	std::size_t getMarkCount(const std::string& m) const { return character->getMarkCount(m); }
 	void addMark(const std::string& m, std::size_t count = 1);
+	void setMark(const std::string& m, std::size_t count);
 	void removeMark(const std::string& m, std::size_t count = 1);
 	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
 	void clearMark(const std::string& m) { character->clearMark(m); markCharInfoDirty(); }

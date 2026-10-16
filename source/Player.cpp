@@ -189,6 +189,11 @@ void Player::addMark(const std::string& m, std::size_t count) {
 	}
 }
 
+void Player::setMark(const std::string& m, std::size_t count) {
+	character->setMark(m, count);
+	markCharInfoDirty();
+}
+
 void Player::removeMark(const std::string& m, std::size_t count) {
 	std::size_t actual = character->removeMark(m, count);
 	markCharInfoDirty();
