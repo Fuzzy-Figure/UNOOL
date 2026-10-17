@@ -766,8 +766,7 @@ class 清洗 final : public PassiveSkillImpl<清洗> {
 public:
 	清洗() : PassiveSkillImpl<清洗>(
 		"清洗",
-		"限定技，回合开始时，若你手牌仅有两种颜色，你可以弃置一种颜色的所有手牌。"
-		"若你因此弃置了蓝色牌，回复两倍弃牌数点体力。",
+		"限定技，回合开始时，若你手牌仅有两种颜色，你可以弃置一种颜色的所有手牌。",
 		1, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin

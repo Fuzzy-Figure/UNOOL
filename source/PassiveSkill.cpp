@@ -1337,12 +1337,6 @@ bool 清洗::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::size_t discardCount = indices.size();
 	std::println("<技能> {}发动清洗，弃置了{}张{}色牌",
 				 carrier.characterName(), discardCount, target);
-	//若弃置了蓝色牌，回复两倍弃牌数点体力
-	if (target == Card::Color::blue && discardCount > 0) {
-		std::size_t heal = 2 * discardCount;
-		carrier.recover(heal);
-		std::println("<技能> {}回复了{}点体力", carrier.characterName(), heal);
-	}
 
 	game.broadcastState();
 	return true;
