@@ -116,7 +116,7 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					std::size_t playerId;
 					if (packet >> playerId) {
 						net.setPlayerId(playerId);
-						std::println("{} 分配到玩家ID：{}", titleBrackets, playerId);
+						std::println("{} 分配到玩家：{}", titleBrackets, net.getUsername());
 					}
 					break;
 				}
@@ -146,8 +146,14 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					if (packet >> hasWinner) {
 						if (hasWinner) {
 							std::size_t winnerId;
-							packet >> winnerId;
-							std::println("{} 游戏结束，玩家{}获胜！", titleBrackets, winnerId);
+							std::string winnerName;
+							packet >> winnerId >> winnerName;
+							if (const std::string charName = renderer.getCharacterName(winnerId); !charName.empty()) {
+								std::println("{} 游戏结束，{}（{}）获胜！", titleBrackets, winnerName, charName);
+							}
+							else {
+								std::println("{} 游戏结束，{}获胜！", titleBrackets, winnerName);
+							}
 						}
 						else {
 							std::println("{} 游戏结束，无人获胜！", titleBrackets);

@@ -54,7 +54,7 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 			players[wId].get().getHp() == players[wId].get().getMaxHp(),
 			wQuality, lQuality, wBonusCard);
 
-		std::println("[Server] 游戏结束，玩家{}获胜！", wId);
+		std::println("[Server] 游戏结束，{}获胜！", players[wId].get().displayName());
 	}
 	else {
 		std::println("[Server] 游戏结束，无人获胜！");
@@ -124,7 +124,7 @@ int main() {
 				std::size_t choice = player.ask(
 					"是否继续下一场对战？", { "继续", "退出" }, true);
 				if (choice == 2) {
-					std::println("[Server] 玩家{}选择退出，游戏结束", i);
+					std::println("[Server] {}选择退出，游戏结束", player.displayName());
 					goto gameSessionEnd;
 				}
 			}

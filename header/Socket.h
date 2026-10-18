@@ -168,6 +168,7 @@ public:
 
 	void setPlayerId(std::size_t id) { playerId = id; }
 	std::size_t getPlayerId() const { return playerId; }
+	const std::string& getUsername() const { return username; }
 	bool isConnected() const { return socket != nullptr; }
 
 	void setCredentials(const std::string& u, const std::string& p) { username = u; password = p; }

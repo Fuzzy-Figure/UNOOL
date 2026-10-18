@@ -394,7 +394,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 	else if (type == MessageType::ReadyToPlay) {
 		if (!clientSlots_[clientIdx].loggedIn) return;
 		playerReady[clientIdx] = true;
-		std::println("[ServerNetwork] 玩家{}已准备开始游戏", clientIdx);
+		std::println("[ServerNetwork] {}已准备开始游戏", clientSlots_[clientIdx].username);
 		//双方都点"开始游戏"后才开局
 		if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn
 			&& playerReady[0] && playerReady[1] && !serverReady) {
@@ -457,7 +457,8 @@ bool ServerNetwork::sendGameEnd(std::optional<std::size_t> winnerId) {
 	sf::Packet packet;
 	const bool hasWinner = winnerId.has_value();
 	packet << static_cast<int>(MessageType::GameEnd) << hasWinner;
-	if (hasWinner) packet << winnerId.value();
+	//附带胜者账号名，供客户端日志显示
+	if (hasWinner) packet << winnerId.value() << clientSlots_[winnerId.value()].username;
 	return sendPacketToAll(packet);
 }
 

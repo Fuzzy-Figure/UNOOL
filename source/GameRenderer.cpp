@@ -59,6 +59,19 @@ std::size_t GameRenderer::getSelectedIndex(std::size_t playerId) const {
 	return 0;
 }
 
+std::string GameRenderer::getCharacterName(std::size_t playerId) const {
+	for (const auto& ps : currentState.players) {
+		if (ps.id != playerId) continue;
+		if (ps.characterNames.empty()) return "";
+		std::string name = ps.characterNames.front();
+		for (std::size_t i = 1; i < ps.characterNames.size(); ++i) {
+			name += "&" + ps.characterNames[i];
+		}
+		return name;
+	}
+	return "";
+}
+
 bool GameRenderer::isChoiceActive() const {
 	return choice.has_value();
 }

@@ -507,7 +507,7 @@ bool GameLogic::runTurn() {
 		trigger.player = *players[currentPlayerIndex];
 		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, trigger);
 	}
-	std::println("玩家{}的回合", getCurrentPlayerId());
+	std::println("{}的回合", currentPlayer().displayName());
 	bool gameEnded = currentPlayerTurn();
 
 	if (!gameEnded) {
@@ -524,7 +524,7 @@ void GameLogic::broadcastState() {
 		GameState state = packStateForPlayer(i);
 		bool ok = network.sendGameStateToClient(i, state);
 		if (!ok) {
-			std::println("[Warning] broadcastState发给玩家{}失败！", i);
+			std::println("[Warning] broadcastState发给{}失败！", getPlayerById(i).displayName());
 		}
 	}
 	flushCharInfo();
@@ -701,14 +701,14 @@ void GameLogic::checkRoundEnd() {
 		w.incrementWins();
 		l.incrementLosses();
 		const std::size_t actualDamageValue = l.damage(l.handValue(), w);
-		std::println("{}对{}造成{}点伤害（败者手牌价值 {} * 倍率 {}），{}剩余{}/{}", w.characterName(), l.characterName(), actualDamageValue, l.handValue(), w.getDamageMultiplier(), l.characterName(), l.getHp(), l.getMaxHp());
+		std::println("{}对{}造成{}点伤害（败者手牌价值 {} * 倍率 {}），{}剩余{}/{}", w.displayName(), l.displayName(), actualDamageValue, l.handValue(), w.getDamageMultiplier(), l.displayName(), l.getHp(), l.getMaxHp());
 	}
 	else {
 		// 兜底：双方都未空手或都已空手，维持原双方各扣自己手牌value的逻辑
 		for (auto& player : players) {
 			std::size_t damage = player->handValue();
 			player->damage(damage, std::nullopt);
-			std::println("玩家{}扣除{}点体力，剩余{}/{}", player->getId(), damage, player->getHp(), player->getMaxHp());
+			std::println("{}扣除{}点体力，剩余{}/{}", player->displayName(), damage, player->getHp(), player->getMaxHp());
 		}
 	}
 }
@@ -753,7 +753,7 @@ void GameLogic::resetGame() {
 	direction = Direction::increase;
 	broadcastState();
 	launchPassiveSkills(PassiveSkill::TriggerTime::game_begin, PassiveSkill::Trigger{});
-	std::println("[Server] 新一局开始！玩家{}先手", currentPlayerIndex);
+	std::println("[Server] 新一局开始！{}先手", players[currentPlayerIndex]->displayName());
 }
 
 bool GameLogic::isGameOver() const {

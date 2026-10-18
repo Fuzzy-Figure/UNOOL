@@ -82,6 +82,8 @@ public:
 		:id(_id), game(_game), character(std::move(_character)) {}
 	std::size_t getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
+	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}
+	std::string displayName() const;
 #pragma endregion
 
 #pragma region 角色属性 - 委托到 Character

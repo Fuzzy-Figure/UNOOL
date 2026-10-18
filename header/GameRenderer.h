@@ -74,6 +74,8 @@ public:
 	void movePointerLeft(std::size_t playerId);
 	void movePointerRight(std::size_t playerId);
 	std::size_t getSelectedIndex(std::size_t playerId) const;
+	//获取指定玩家的角色名（双将为 A&B）；无该玩家时返回空串
+	std::string getCharacterName(std::size_t playerId) const;
 	bool isChoiceActive() const;
 	bool hasChoiceOptions() const;
 	bool canSelectLocal() const; //本地玩家是否能选牌（自己是当前操作者且无选项拦截）

@@ -143,7 +143,7 @@ void PassiveSkill::launch(GameLogic& game, Player& carrier, Trigger& trigger) {
 		count -= 1;
 		return;
 	}
-	std::println("<技能> {}发动了{}！", carrier.characterName(), name);
+	std::println("<技能> {}发动了{}！", carrier.displayName(), name);
 }
 
 void PassiveSkill::reset() {
