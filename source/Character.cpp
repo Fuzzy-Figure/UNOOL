@@ -382,19 +382,20 @@ std::optional<Character::price_t> Character::getCharacterPrice(const std::string
 	const Level lv = it->second.level;
 	switch (lv) {
 		case Level::F:
-			if (name == "棍母" || name == "夏搏" || name == "电棍")	return 488;
-			if (name == "幺幺" || name == "蒋介石")					return 288;
+			if (name == "棍母" || name == "夏搏" || name == "电棍" || name == "汪精卫")
+				return 488;
+			if (name == "幺幺" || name == "蒋介石") return 288;
 			return 20;
 		case Level::D:
-			if (name == "Blueberrini Octopussini")	return 188;
+			if (name == "Blueberrini Octopussini") return 188;
 			return 40;
 		case Level::C:
-			if (name == "斯大林")						return 288;
-			if (name == "金日成" || name == "唐伯虎")		return 128;
+			if (name == "斯大林") return 288;
+			if (name == "金日成" || name == "唐伯虎")	 return 128;
 			return 88;
 		case Level::B:
-			if (name == "弗兰肯" || name == "黑鸦")		return 188;
-			if (name.starts_with("新"))					return 168;
+			if (name == "弗兰肯" || name == "黑鸦")	return 188;
+			if (name.starts_with("新"))				return 168;
 			return 148;
 		case Level::A:
 			return 228;
