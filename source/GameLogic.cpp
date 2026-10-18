@@ -116,11 +116,12 @@ Pile& GameLogic::getPile() { return *pile; }
 
 Pile& GameLogic::getDiscardPile() { return *discardPile; }
 const Pile& GameLogic::getDiscardPile() const { return *discardPile; }
+const Pile& GameLogic::getPile() const { return *pile; }
 
 GameLogic::GameLogic(ServerNetwork& _network)
 	:network(_network) {
-	pile = std::make_unique<Pile>();
-	discardPile = std::make_unique<Pile>();
+	pile = std::make_unique<Pile>(*this);
+	discardPile = std::make_unique<Pile>(*this);
 }
 
 GameLogic::~GameLogic() {}
@@ -719,7 +720,7 @@ void GameLogic::checkRoundEnd() {
 void GameLogic::resetGame() {
 	++gameCount;
 	// 重置牌堆
-	pile = Pile::standard();
+	pile = Pile::standard(*this);
 	discardPile->clear();
 
 	// 重置玩家

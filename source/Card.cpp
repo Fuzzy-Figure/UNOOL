@@ -1,4 +1,6 @@
 #include "Card.h"
+#include "GameLogic.h"
+#include "Skill.h"
 #include "utils.h"
 #include <SFML/Network.hpp>
 
@@ -457,8 +459,8 @@ Hand Hand::clone() const {
 // ==================== Pile 类 ====================
 
 // 工厂
-std::unique_ptr<Pile> Pile::standard() {
-	std::unique_ptr<Pile> standard = std::make_unique<Pile>();
+std::unique_ptr<Pile> Pile::standard(GameLogic& game) {
+	auto standard = std::make_unique<Pile>(game);
 
 	//非万能牌
 	for (const Card::Color color : Card::fourColors) {
@@ -517,12 +519,20 @@ std::unique_ptr<Pile> Pile::standard() {
 	return backCard;
 }
 void Pile::recycle(Pile& other) {
+	//触发回收弃牌堆开始
+	PassiveSkill::Trigger trigger;
+	if (!game.getPlayers().empty()) trigger.player = game.currentPlayer();
+	game.launchPassiveSkills(PassiveSkill::TriggerTime::recycle_discardPile_begin, trigger);
+
 	cards = std::move(other.cards);
 	//回收进牌堆，重置入弃牌堆的原因
 	for (auto& card : cards) {
 		card->setDiscardReason(Card::DiscardReason::none);
 	}
 	shuffle();
+
+	//触发回收弃牌堆结束
+	game.launchPassiveSkills(PassiveSkill::TriggerTime::recycle_discardPile_end, trigger);
 }
 void Pile::shuffle() {
 	std::ranges::shuffle(cards, unool::random::rng);

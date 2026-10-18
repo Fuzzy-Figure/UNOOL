@@ -131,6 +131,7 @@ public:
 		重铸          重铸牌的玩家        重铸的牌
 		封禁          被封禁的玩家      封禁玩家的牌    来源
 		决议          决议牌的玩家        决议的牌
+		回收弃牌堆    回合玩家
 		*/
 		never,
 		game_begin, game_end,
@@ -151,6 +152,7 @@ public:
 		judge_begin, judge_end,
 		decree_begin, decree_end,
 		card_discard_begin, card_discard_end,
+		recycle_discardPile_begin, recycle_discardPile_end,
 		add_mark, remove_mark,
 		round_begin, round_end
 	};

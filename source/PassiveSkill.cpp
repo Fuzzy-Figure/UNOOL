@@ -2780,4 +2780,19 @@ bool 镇魂_回合结束::content(GameLogic& game, Player& carrier, Trigger& tri
 	return carrier.getSkill<镇魂>().content(game, carrier, trigger);
 }
 
+// ==================== 技能：投日 ====================
+bool 投日::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	return !carrier.handEmpty();
+}
+
+bool 投日::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//X为此技能本场发动次数（count 已由 launch 在 content 前自增，首次发动为1）
+	const std::size_t X = getCount();
+	const std::size_t num = std::min(X, carrier.handCount());
+	std::println("<技能> {}发动投日，弃置{}张牌", carrier.displayName(), num);
+	carrier.chooseToDiscard(std::format("【投日】弃置{}张牌", num), num, true);
+	game.broadcastState();
+	return true;
+}
+
 

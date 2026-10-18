@@ -395,9 +395,13 @@ struct std::formatter<Hand> : std::formatter<std::string_view> {
 
 
 class Pile : public Cards {
+private:
+	GameLogic& game;
+
 public:
 #pragma region 工厂
-	static std::unique_ptr<Pile> standard();
+	static std::unique_ptr<Pile> standard(GameLogic& game);
+	explicit Pile(GameLogic& _game) : game(_game) {}
 #pragma endregion
 
 #pragma region 牌堆操作

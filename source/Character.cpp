@@ -94,6 +94,7 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"天蝎座",      {"希腊神话",  Level::D, {被动<蝎刺>}, 170}},
 	{"摩羯座",      {"希腊神话",  Level::D, {被动<镇魂>}, 230}},
 	{"处女座",      {"希腊神话",  Level::D, {即时<净身>}, 230}},
+	{"汪精卫",      {"元首",      Level::F, {被动<投日>, 即时<伪政>}, 155}},
 };
 
 // ==================== 构造 / 工厂 ====================
@@ -413,10 +414,9 @@ void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTrig
 									PassiveSkill::Trigger& trigger) {
 	//先收集要发动的技能引用，避免content中修改passiveSkills导致迭代器失效
 	std::vector<ref<PassiveSkill>> toLaunch;
-	for (const auto& ps : passiveSkills) {
-		if (ps->matchTrigger(currentTriggerTime, carrier, trigger))
-			toLaunch.push_back(*ps);
-		for (auto& sub : ps->subSkills | std::views::filter([](const std::unique_ptr<Skill>& sub) {
+	//收集一个技能的被动子技能（子技能与主技能的触发时机无关，独立匹配）
+	const auto collectSubSkills = [&](Skill& owner) {
+		for (auto& sub : owner.subSkills | std::views::filter([](const std::unique_ptr<Skill>& sub) {
 			return sub->isPassive();
 		}) | std::views::transform([](const std::unique_ptr<Skill>& sub) -> PassiveSkill& {
 			return sub->toPassive();
@@ -424,6 +424,18 @@ void Character::launchPassiveSkills(const PassiveSkill::TriggerTime& currentTrig
 			if (sub.matchTrigger(currentTriggerTime, carrier, trigger))
 				toLaunch.push_back(std::ref(sub));
 		}
+	};
+	for (const auto& ps : passiveSkills) {
+		if (ps->matchTrigger(currentTriggerTime, carrier, trigger))
+			toLaunch.push_back(*ps);
+		collectSubSkills(*ps);
+	}
+	//即时技/转换技自身不参与被动触发，但其被动子技能参与
+	for (const auto& is : instantSkills) {
+		collectSubSkills(*is);
+	}
+	for (const auto& ts : transformSkills) {
+		collectSubSkills(*ts);
 	}
 	//遍历指针列表发动；即使某个技能在content中销毁自身，也不影响后续技能
 	for (PassiveSkill& skill : toLaunch) {

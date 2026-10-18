@@ -354,3 +354,41 @@ public:
 	void reset() override { ActiveSkill::reset(); usedNames.clear(); }
 };
 
+//伪政_计数：隐藏子技能，统计进入弃牌堆的牌数，每十张令伪政本局可用次数+1
+class 伪政_计数 final : public PassiveSkillImpl<伪政_计数> {
+	std::size_t totalDiscarded = 0;
+public:
+	伪政_计数() : PassiveSkillImpl<伪政_计数>(
+		"伪政_计数", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::card_discard_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { Skill::reset(); totalDiscarded = 0; }
+};
+
+//伪政：每局限一次（每十张牌进弃牌堆+1），出牌阶段，展示牌堆顶和牌堆底各{view}张牌，可获得其中一张，弃置其余的牌
+//每因此获得十张牌，牌堆两侧观看牌数各增加一张（至多各三张）
+class 伪政 final : public InstantSkillImpl<伪政> {
+	std::size_t viewCount = 1;    //每侧观看牌数（至多3）
+	std::size_t gainedTotal = 0;  //因伪政累计获得的牌数
+public:
+	伪政() : InstantSkillImpl<伪政>(
+		"伪政",
+		"每局游戏限{limit}次，出牌阶段，展示牌堆顶和牌堆底各{view}张牌，可以获得其中一张，弃置其余的牌。\n"
+		"每有十张牌进入弃牌堆，此技能本局可用次数+1。\n"
+		"每因此获得十张牌，牌堆两侧观看牌数各增加一张（至多各三张）。",
+		1, unlimited,
+		TriggerTime::phase_use,
+		伪政_计数::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override { ActiveSkill::reset(); viewCount = 1; gainedTotal = 0; }
+	std::optional<std::string> extraPlaceholders(const std::string& key) const override {
+		if (key == "view") return std::to_string(viewCount);
+		return std::nullopt;
+	}
+};
+

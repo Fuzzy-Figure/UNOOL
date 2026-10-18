@@ -112,6 +112,7 @@ public:
 
 #pragma region 成员查询与修改
 	Pile& getPile();
+	const Pile& getPile() const;
 	Pile& getDiscardPile();
 	const Pile& getDiscardPile() const;
 	Player& getPlayerById(const std::size_t id);

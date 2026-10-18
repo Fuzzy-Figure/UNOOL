@@ -1665,3 +1665,17 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+//投日：回收弃牌堆后，可弃置X张牌（X为此技能本场发动次数）
+class 投日 final : public PassiveSkillImpl<投日> {
+public:
+	投日() : PassiveSkillImpl<投日>(
+		"投日",
+		"回收弃牌堆后，你可以弃置X张牌（X为此技能本场发动次数）。",
+		unlimited, false,
+		TriggerPlayer::anybody,
+		TriggerTime::recycle_discardPile_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
