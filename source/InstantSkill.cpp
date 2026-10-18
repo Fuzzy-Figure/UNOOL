@@ -99,7 +99,7 @@ bool 摘罩::content(GameLogic& game, Player& carrier) {
 }
 
 void 摘罩::reset() {
-	Skill::reset();
+	ActiveSkill::reset();
 	record.clear();
 }
 

@@ -420,8 +420,8 @@ bool 假酒::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 void 假酒::reset() {
+	PassiveSkill::reset();
 	number = action = wild = false;
-	limit = unlimited;
 }
 
 // ==================== 技能：窃观 ====================
@@ -1237,6 +1237,7 @@ bool 爆缸::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 void 爆缸::reset() {
+	PassiveSkill::reset();
 	setForced(false);
 }
 

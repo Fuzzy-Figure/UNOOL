@@ -365,7 +365,7 @@ public:
 		TriggerTime::card_discard_end
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override { Skill::reset(); totalDiscarded = 0; }
+	void reset() override { PassiveSkill::reset(); totalDiscarded = 0; }
 };
 
 //伪政：每局限一次（每十张牌进弃牌堆+1），出牌阶段，展示牌堆顶和牌堆底各{view}张牌，可获得其中一张，弃置其余的牌
