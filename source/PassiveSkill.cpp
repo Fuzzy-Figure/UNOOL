@@ -513,9 +513,16 @@ std::map<Card::Name, std::size_t> 炼兵::buildPairs(const Player& carrier) cons
 }
 bool 炼兵::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
 	if (carrier.handCount() < 2) return false;
+	//手中【+2】<=四张
+	std::size_t draw2Count = 0;
+	for (const auto& c : carrier.getHand()) {
+		if (c->is(Card::Name::action_draw2)) ++draw2Count;
+	}
+	if (draw2Count > 4) return false;
+
 	auto cnt = buildPairs(carrier);
 	for (const auto& kv : cnt) {
-		if (kv.second >= 2 && usedNames.find(kv.first) == usedNames.end()) {
+		if (kv.second >= 2 && !usedNames.contains(kv.first)) {
 			return true;
 		}
 	}
@@ -526,7 +533,7 @@ bool 炼兵::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::vector<Card::Name> validPairs;
 	std::vector<std::string> opts;
 	for (const auto& kv : cnt) {
-		if (kv.second >= 2 && usedNames.find(kv.first) == usedNames.end()) {
+		if (kv.second >= 2 && !usedNames.contains(kv.first)) {
 			validPairs.push_back(kv.first);
 			opts.push_back(std::format("{}({}张)", kv.first, kv.second));
 		}
@@ -567,7 +574,7 @@ bool 好火::filter(const GameLogic& game, const Player& carrier, const Trigger&
 	Player& player = trigger.getPlayer();
 	if (player == carrier) return false;
 	if (player.getHp() <= carrier.getHp()) return false;
-	if (usedPlayerIds.find(player.getId()) != usedPlayerIds.end()) return false;
+	if (usedPlayerIds.contains(player.getId())) return false;
 	if (carrier.handCount() == 0) return false;
 	return true;
 }

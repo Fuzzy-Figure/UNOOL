@@ -377,7 +377,7 @@ class 炼兵 final : public PassiveSkillImpl<炼兵> {
 public:
 	炼兵() : PassiveSkillImpl<炼兵>(
 		"炼兵",
-		"每种牌名限一次，回合开始时，你可以弃置2张同名牌，从游戏外获得一张随机颜色的【+2】。",
+		"每种牌名限一次，回合开始时，若你手中【+2】数量≤4，你可以弃置2张同名牌，从游戏外获得一张随机颜色的【+2】。",
 		unlimited, false,
 		TriggerPlayer::self,
 		TriggerTime::phase_begin
