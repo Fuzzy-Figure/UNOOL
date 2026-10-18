@@ -551,6 +551,8 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.players[i].hp = pl->getHp();
 		state.players[i].maxHp = pl->getMaxHp();
 		state.players[i].marks = pl->getMarks();
+		state.players[i].wins = pl->getWins();
+		state.players[i].losses = pl->getLosses();
 
 		if (pl->getId() == playerId) {
 			for (const auto& card : pl->getHand()) {
@@ -574,6 +576,7 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 	}
 
 	state.operatingPlayerId = operatingPlayerId;
+	state.gameCount = gameCount;
 
 	return state;
 }

@@ -100,6 +100,7 @@ void GameRenderer::display() {
 	renderDiscardPile();
 	renderChoice();
 	renderInfoBox();
+	renderGameInfo();
 	window->display();
 }
 
@@ -310,6 +311,20 @@ void GameRenderer::renderInfoBox() {
 	displayText(infoBoxCache.text, { boxPos.x + sidePad, boxPos.y + topPad }, textSize);
 }
 
+void GameRenderer::renderGameInfo() {
+	//一场未开始（未摸初始手牌）时不显示
+	if (currentState.players.empty() || currentState.gameCount == 0) return;
+	//本地玩家的局胜负
+	std::size_t wins = 0, losses = 0;
+	for (const auto& ps : currentState.players) {
+		if (ps.id == localPlayerId) { wins = ps.wins; losses = ps.losses; break; }
+	}
+	displayTextInUpRight(std::format(
+		"第{}局\n胜{}局，负{}局",
+		currentState.gameCount, wins, losses
+	));
+}
+
 void GameRenderer::displayText(const std::string& text,
 							   const sf::Vector2f& pos,
 							   const sf::Vector2f& size,
@@ -333,6 +348,13 @@ void GameRenderer::displayTextInUpRight(const std::string& text,
 										const sf::Vector2f& size,
 										const sf::Color& color) {
 	textMgr.displayTextInUpRight(text, size, color);
+}
+
+void GameRenderer::displayTextTopRightCorner(const std::string& text,
+											 const sf::Vector2f& pos,
+											 const sf::Vector2f& size,
+											 const sf::Color& color) {
+	textMgr.displayTextTopRightCorner(text, pos, size, color);
 }
 
 void GameRenderer::displayTextInLeft(const std::string& text,

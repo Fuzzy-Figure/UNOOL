@@ -64,6 +64,8 @@ private:
 	void renderDiscardPile();
 	void renderChoice();
 	void renderInfoBox();
+	//右上角：第X局 + 本地玩家局胜负
+	void renderGameInfo();
 
 public:
 	GameRenderer(const Config& _config);
@@ -98,6 +100,11 @@ public:
 	void displayTextInUpRight(const std::string& text,
 							  const sf::Vector2f& size = { 20,40 },
 							  const sf::Color& color = sf::Color::Black);
+	//以 pos.x 为右边缘锚点、pos.y 为顶部显示文字（可指定 y 实现多行右对齐）
+	void displayTextTopRightCorner(const std::string& text,
+								   const sf::Vector2f& pos,
+								   const sf::Vector2f& size = { 20,40 },
+								   const sf::Color& color = sf::Color::Black);
 	void displayTextInLeft(const std::string& text,
 						   const sf::Vector2f& size = { 20,40 },
 						   const sf::Color& color = sf::Color::Black);

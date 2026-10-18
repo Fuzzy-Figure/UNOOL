@@ -9,6 +9,8 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 		hp = other.hp;
 		maxHp = other.maxHp;
 		marks = other.marks;
+		wins = other.wins;
+		losses = other.losses;
 		hand = other.hand.clone();
 	}
 	return *this;
@@ -38,6 +40,8 @@ sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
 		packet >> m >> c;
 		state.marks[m] = c;
 	}
+	//局胜负
+	packet >> state.wins >> state.losses;
 	return packet;
 }
 
@@ -54,6 +58,8 @@ sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
 	//标记
 	packet << state.marks.size();
 	for (const auto& [m, c] : state.marks) packet << m << c;
+	//局胜负
+	packet << state.wins << state.losses;
 	return packet;
 }
 
@@ -102,6 +108,8 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& state) {
 		state.operatingPlayerId = std::nullopt;
 	}
 
+	packet >> state.gameCount;
+
 	return packet;
 }
 
@@ -130,6 +138,8 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& state) {
 	if (state.operatingPlayerId.has_value()) {
 		packet << state.operatingPlayerId.value();
 	}
+
+	packet << state.gameCount;
 
 	return packet;
 }

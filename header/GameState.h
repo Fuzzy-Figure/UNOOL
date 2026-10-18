@@ -13,11 +13,15 @@ struct PlayerState {
 	Character::hp_t hp = 0;
 	Character::hp_t maxHp = 0;
 	std::unordered_map<std::string, std::size_t> marks;
+	//本场内的局胜负计数
+	std::size_t wins = 0;
+	std::size_t losses = 0;
 
 	PlayerState() = default;
 	PlayerState(const PlayerState& other)
 		: id(other.id), characterNames(other.characterNames), skins(other.skins),
-		  hp(other.hp), maxHp(other.maxHp), marks(other.marks) {
+		  hp(other.hp), maxHp(other.maxHp), marks(other.marks),
+		  wins(other.wins), losses(other.losses) {
 		for (std::size_t i = 0; i < other.hand.count(); ++i) {
 			hand.push_back(Card::make(other.hand[i]));
 		}
@@ -40,6 +44,7 @@ struct GameState {
 	std::vector<Card> discardPile;
 	std::vector<std::size_t> seatOrder;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家，nullopt=无人操作
+	std::size_t gameCount = 0; //本场内当前是第几局（摸初始手牌时+1）
 
 	friend sf::Packet& operator>>(sf::Packet& packet, GameState& state);
 	friend sf::Packet& operator<<(sf::Packet& packet, const GameState& state);
