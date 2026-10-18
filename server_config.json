@@ -1,7 +1,7 @@
 {
-	"mode": "double",
+	"mode": "normal",
 	"characters": {
-		//"assign": [ "迪克", "博尔特" ],
+		//"assign": [ "白板", "白板" ],
 		"shielded": {
 			"characters": [ "电棍" ],
 			"groups": []
