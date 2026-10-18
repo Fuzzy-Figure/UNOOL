@@ -35,7 +35,7 @@ static Character::SkinQuality bestSkinQuality(const Player& p) {
 static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
 	serverNetwork.sendGameEnd(winnerId);
-	gameLogic.clearMatchCount();
+	gameLogic.clearGameCount();
 
 	if (winnerId.has_value()) {
 		std::size_t wId = winnerId.value();

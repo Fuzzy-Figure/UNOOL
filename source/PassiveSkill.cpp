@@ -998,7 +998,7 @@ bool 豪赌::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：黑帮 ====================
 bool 黑帮::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	std::size_t X = game.getMatchCount();
+	std::size_t X = game.getGameCount();
 	for (std::size_t i = 0; i < X; ++i) {
 		carrier.gainCard(Card::make(Card::Color::black,
 									unool::random::randomGet(Card::wildCards)));
@@ -1010,7 +1010,7 @@ bool 黑帮::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 // ==================== 技能：有活 ====================
 bool 有活::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	std::size_t X = game.getMatchCount();
+	std::size_t X = game.getGameCount();
 
 	carrier.draw(2, DrawReason::skill);
 	std::println("<技能> {}发动有活，摸了2张牌", carrier.displayName());

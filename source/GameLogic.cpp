@@ -714,7 +714,7 @@ void GameLogic::checkRoundEnd() {
 }
 
 void GameLogic::resetGame() {
-	++matchCount;
+	++gameCount;
 	// 重置牌堆
 	pile = Pile::standard();
 	discardPile->clear();

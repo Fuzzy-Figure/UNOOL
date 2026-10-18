@@ -25,7 +25,7 @@ private:
 	Card::Name currentName = Card::Name::no;
 	Direction direction = Direction::increase;
 	ServerNetwork& network;
-	std::size_t matchCount = 0;
+	std::size_t gameCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
 	std::array<bool, unool::MAX_PLAYERS> bonusCardUsed{};
@@ -79,8 +79,8 @@ public:
 	bool runTurn();
 	void broadcastState();
 	void flushCharInfo();
-	std::size_t getMatchCount() const { return matchCount; }
-	void clearMatchCount() { matchCount = 0; }
+	std::size_t getGameCount() const { return gameCount; }
+	void clearGameCount() { gameCount = 0; }
 	//设置/清除当前正在操作的玩家，并广播状态
 	void setOperatingPlayer(std::size_t playerId);
 	void clearOperatingPlayer();

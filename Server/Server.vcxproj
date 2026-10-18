@@ -257,6 +257,9 @@
     <None Include="..\userDatas.json" />
     <None Include="todoList.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="rules.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

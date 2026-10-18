@@ -131,4 +131,7 @@
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="rules.txt" />
+  </ItemGroup>
 </Project>
