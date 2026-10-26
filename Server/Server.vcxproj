@@ -258,7 +258,7 @@
     <None Include="todoList.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="rules.txt" />
+    <Text Include="rules.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

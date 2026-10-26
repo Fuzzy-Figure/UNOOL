@@ -132,6 +132,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="rules.txt" />
+    <Text Include="rules.md" />
   </ItemGroup>
 </Project>
