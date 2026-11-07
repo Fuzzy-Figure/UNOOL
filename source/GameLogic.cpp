@@ -252,6 +252,8 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	//增分卡使用环节：后手先选，先手随后选
 	askBonusCard(secondSeatId);
 	askBonusCard(firstSeatId);
+	askTotem(secondSeatId);
+	askTotem(firstSeatId);
 }
 
 void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
@@ -295,6 +297,8 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 	//增分卡使用环节：后手先选，先手随后选
 	askBonusCard(secondSeatId);
 	askBonusCard(firstSeatId);
+	askTotem(secondSeatId);
+	askTotem(firstSeatId);
 }
 
 void GameLogic::askBonusCard(std::size_t playerId) {
@@ -306,6 +310,22 @@ void GameLogic::askBonusCard(std::size_t playerId) {
 		UserDB::instance().useItem(username, "增分卡");
 		bonusCardUsed[playerId] = true;
 		players[playerId]->hint("已使用增分卡，胜利时积分翻倍！");
+	}
+}
+
+void GameLogic::askTotem(std::size_t playerId) {
+	const auto& slots = network.getClientSlots();
+	const std::string& username = slots[playerId].username;
+	//可重复使用任意张：持有多少张就可以用多少张
+	while (UserDB::instance().getItemCount(username, "不死图腾") > 0) {
+		std::size_t choice = players[playerId]->ask(
+			std::format("是否使用不死图腾？（本场受到致命伤害时至少保留1点体力，当前持有{}张）",
+						UserDB::instance().getItemCount(username, "不死图腾")),
+			{ "使用", "不使用" }, false);
+		if (choice != 1) break;
+		UserDB::instance().useItem(username, "不死图腾");
+		players[playerId]->addTotemCount(1);
+		players[playerId]->hint(std::format("已使用不死图腾（本场持有{}张）", players[playerId]->getTotemCount()));
 	}
 }
 
@@ -551,6 +571,7 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.players[i].skins = pl->getSkins();
 		state.players[i].hp = pl->getHp();
 		state.players[i].maxHp = pl->getMaxHp();
+		state.players[i].shield = pl->getShield();
 		state.players[i].marks = pl->getMarks();
 		state.players[i].wins = pl->getWins();
 		state.players[i].losses = pl->getLosses();
@@ -732,13 +753,15 @@ void GameLogic::resetGame() {
 		// 初始手牌：double 模式用 doubleInitHandCount，normal 用 initHandCount
 		const std::string mode = unool::getServerConfig().value("mode", "normal");
 		const std::string handKey = (mode == "double") ? "double" : "normal";
-		player->draw(unool::getServerConfig()["rules"][handKey]["initHandCount"]);
+		player->draw(unool::getServerConfig()["rules"][handKey]["initHandCount"], DrawReason::init);
 		// 重置技能使用次数
 		player->resetSkills();
 		//取消封禁
 		player->unban();
 		// 重置伤害倍率
 		player->setDamageMultiplier(1);
+		// 重置炸弹卡使用次数、护盾与吸血（每局重置）
+		player->resetRoundState();
 		// 清空标记
 		player->clearAllMarks();
 	}

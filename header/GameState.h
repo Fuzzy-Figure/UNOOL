@@ -12,6 +12,7 @@ struct PlayerState {
 	std::vector<std::string> skins;
 	Character::hp_t hp = 0;
 	Character::hp_t maxHp = 0;
+	std::size_t shield = 0;  //护盾值（显示为“体力：(+护盾)/最大体力”）
 	std::unordered_map<std::string, std::size_t> marks;
 	//本场内的局胜负计数
 	std::size_t wins = 0;
@@ -20,7 +21,7 @@ struct PlayerState {
 	PlayerState() = default;
 	PlayerState(const PlayerState& other)
 		: id(other.id), characterNames(other.characterNames), skins(other.skins),
-		  hp(other.hp), maxHp(other.maxHp), marks(other.marks),
+		  hp(other.hp), maxHp(other.maxHp), shield(other.shield), marks(other.marks),
 		  wins(other.wins), losses(other.losses) {
 		for (std::size_t i = 0; i < other.hand.count(); ++i) {
 			hand.push_back(Card::make(other.hand[i]));

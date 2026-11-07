@@ -135,8 +135,10 @@ void GameRenderer::renderPlayers() {
 			//座位号
 			std::size_t seat = currentState.seatOrder[playerState.id];
 			std::string seatText = (seat == 0) ? "一号位" : "二号位";
-			//体力
-			std::string hpText = std::format("体力：{}/{}", playerState.hp, playerState.maxHp);
+			//体力（有护盾时显示为 体力：200(+30)/200）
+			std::string hpText = (playerState.shield > 0)
+				? std::format("体力：{}(+{})/{}", playerState.hp, playerState.shield, playerState.maxHp)
+				: std::format("体力：{}/{}", playerState.hp, playerState.maxHp);
 			//显示
 			sf::Vector2f pos;
 			if (playerState.id == 0) {

@@ -392,3 +392,218 @@ public:
 	}
 };
 
+//改革_摸牌替代：隐藏子技能，其他角色于摸牌阶段外摸牌时，可将此次摸牌改为令其失去2X%最大体力（向上取整）
+class 改革_摸牌替代 final : public PassiveSkillImpl<改革_摸牌替代> {
+public:
+	改革_摸牌替代() : PassiveSkillImpl<改革_摸牌替代>(
+		"改革_摸牌替代", "",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//改革：每回合限一次，出牌阶段，可以失去10点体力令一名角色摸1张牌；
+//其他角色于摸牌阶段外摸牌时，可以将此次摸牌改为令其失去2X%最大体力（向上取整）
+class 改革 final : public InstantSkillImpl<改革> {
+public:
+	改革() : InstantSkillImpl<改革>(
+		"改革",
+		"每回合限一次，出牌阶段，你可以失去10点体力，令一名角色摸1张牌；\n"
+		"其他角色于摸牌阶段外摸牌时，你可以将此次摸牌改为令其失去2X%最大体力（向上取整，X为摸牌数）。",
+		unlimited, 1,
+		TriggerTime::phase_use,
+		改革_摸牌替代::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//飞手_整轮：隐藏子技能，每轮开始时记录上一轮是否发动过飞手
+class 飞手_整轮 final : public PassiveSkillImpl<飞手_整轮> {
+public:
+	飞手_整轮() : PassiveSkillImpl<飞手_整轮>(
+		"飞手_整轮", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//飞手：每回合限一次，出牌阶段，若上轮未发动过，可获得上/下家随机一张牌（其至少保留一张），然后交还一张
+class 飞手 final : public InstantSkillImpl<飞手> {
+	friend class 飞手_整轮;
+	bool usedThisRound = false;  //本轮是否发动过
+	bool usedLastRound = false;  //上一整轮是否发动过
+public:
+	飞手() : InstantSkillImpl<飞手>(
+		"飞手",
+		"每回合限一次，出牌阶段，若你上轮未发动过此技能，\n"
+		"你可以获得上/下家随机一张牌（其至少保留一张牌），然后交还一张。",
+		unlimited, 1,
+		TriggerTime::phase_use,
+		飞手_整轮::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+
+//筑丛_摸牌：隐藏子技能，摸牌至摸到绿色牌，返回摸到的所有牌
+class 筑丛_摸牌 final : public PassiveSkillImpl<筑丛_摸牌> {
+public:
+	筑丛_摸牌() : PassiveSkillImpl<筑丛_摸牌>(
+		"筑丛_摸牌", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::never
+	) {}
+	std::vector<ref<Card>> drawUntilGreen(GameLogic& game, Player& carrier);
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override { return true; }
+};
+
+//筑丛_累计：隐藏子技能，统计筑丛发动后打出的非绿色牌数，满十张令筑丛视为未发动过
+class 筑丛_累计 final : public PassiveSkillImpl<筑丛_累计> {
+public:
+	筑丛_累计() : PassiveSkillImpl<筑丛_累计>(
+		"筑丛_累计", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//筑丛：限定技，出牌阶段，摸牌至摸到绿色牌并回复X点体力；每累计打出十张非绿色牌后视为未发动过
+class 筑丛 final : public InstantSkillImpl<筑丛> {
+	friend class 筑丛_累计;
+	bool accumulating = false;     //发动后是否正在累计非绿色牌
+	std::size_t nonGreenCount = 0; //当前已打出非绿色牌数
+public:
+	筑丛() : InstantSkillImpl<筑丛>(
+		"筑丛",
+		"限定技，出牌阶段，你可以摸牌至摸到绿色牌，然后回复X点体力（X为摸牌数）。\n"
+		"你每累计打出十张非绿色牌后，此技能视为未发动过。\n"
+		"当前已打出非绿色牌数：{nongreen}",
+		1, unlimited,
+		TriggerTime::phase_use,
+		筑丛_摸牌::make(),
+		筑丛_累计::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+	bool isAccumulating() const { return accumulating; }
+	void setAccumulating(bool v) { accumulating = v; }
+	std::size_t getNonGreenCount() const { return nonGreenCount; }
+	void setNonGreenCount(std::size_t v) { nonGreenCount = v; }
+	std::optional<std::string> extraPlaceholders(const std::string& key) const override;
+};
+
+//星矢：每回合限一次，出牌阶段，失去5点体力并重铸一种颜色的所有牌；
+//若未因此获得同色牌，本局伤害倍率+0.1并获得10%吸血（至多50%）
+class 星矢 final : public InstantSkillImpl<星矢> {
+public:
+	星矢() : InstantSkillImpl<星矢>(
+		"星矢",
+		"每回合限一次，出牌阶段，你可以失去5点体力并重铸一种颜色的所有牌；\n"
+		"若未因此获得同色牌，你本局造成伤害倍率+0.1并获得10%吸血（至多50%）。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//坠机：限定技，出牌阶段，展示自己与一名其他角色指定牌名的牌并依次结算
+class 坠机 final : public InstantSkillImpl<坠机> {
+public:
+	坠机() : InstantSkillImpl<坠机>(
+		"坠机",
+		"限定技，出牌阶段，你可以展示自己与一名其他角色指定牌名的牌，然后依次结算：\n"
+		"若其未因此展示牌，其随机获得一张数字牌且此技能视为未发动过；\n"
+		"若你未展示牌，你弃置所有手牌并摸八张牌；\n"
+		"若均展示了牌，你可令一名角色获得这两张牌。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//成金：觉醒技（隐藏子技能），回合结束时若本回合发动过炼石，可弃置本回合获得的所有黄色牌
+class 成金 final : public PassiveSkillImpl<成金> {
+public:
+	成金() : PassiveSkillImpl<成金>(
+		"成金", "",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//奔突：每回合限一次，出牌阶段，令一名其他角色摸一张牌并展示，然后随机弃置一张牌
+class 奔突 final : public InstantSkillImpl<奔突> {
+public:
+	奔突() : InstantSkillImpl<奔突>(
+		"奔突",
+		"每回合限一次，出牌阶段，选择一名其他角色，令其摸一张牌并展示，然后其随机弃置一张牌。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//炼石：限定技，出牌阶段，重铸任意张手牌，然后扣减等同于弃置牌总分值的体力
+class 炼石 final : public InstantSkillImpl<炼石> {
+	friend class 成金;
+	bool usedThisTurn = false;
+	std::vector<Card*> yellowGained;  //本回合炼石重铸时获得的黄色牌
+public:
+	炼石() : InstantSkillImpl<炼石>(
+		"炼石",
+		"限定技，出牌阶段，你可以重铸任意张手牌（不能通过重铸所有手牌获得胜利），\n"
+		"然后你扣减等同于弃置牌总分值的体力。",
+		1, unlimited,
+		TriggerTime::phase_use,
+		成金::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+
+//无礼_计数：隐藏子技能，每打出一种新类型的牌令无礼本局可用次数+1
+class 无礼_计数 final : public PassiveSkillImpl<无礼_计数> {
+public:
+	无礼_计数() : PassiveSkillImpl<无礼_计数>(
+		"无礼_计数", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//无礼：每局限{limit}次（每打出一种新类型的牌+1次），弃置一名角色半数手牌（向下取整），
+//然后观看牌堆顶等量张牌并交给其
+class 无礼 final : public InstantSkillImpl<无礼> {
+	friend class 无礼_计数;
+	std::unordered_set<Card::Type> usedTypes;  //已打出过的牌类型
+public:
+	无礼() : InstantSkillImpl<无礼>(
+		"无礼",
+		"每局游戏限{limit}次（剩余{remaining}次），出牌阶段，你可以弃置一名角色半数手牌（向下取整），\n"
+		"然后观看牌堆顶等量张牌并交给其。\n"
+		"你每打出一种新类型的牌，此技能本局可用次数+1。",
+		0, unlimited,
+		TriggerTime::phase_use,
+		无礼_计数::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+

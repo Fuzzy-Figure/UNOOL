@@ -31,6 +31,13 @@ private:
 	bool banned = false;
 	std::size_t sealed = 0;  //封印剩余轮数，0表示未封印
 	bool hasUsed = false;
+	bool unrestrictedPlay = false;  //出牌不受限制：忽略当前牌的颜色/牌名限制
+	bool cancelDrawRequested = false;  //本次摸牌是否已被技能取消（由技能置位，摸牌时消费）
+	std::size_t totemCount = 0;  //本场已使用的不死图腾数量（每个抵挡一次致命伤害）
+	std::size_t bombUsed = 0;  //本局已使用的炸弹卡次数
+	std::size_t shield = 0;  //护盾（本局内有效）
+	std::size_t lifesteal = 0;  //吸血率（百分比，本局内有效）
+	bool noWinByEmptyHand = false;  //本回合内手牌为空也不判负（如炼石重铸光所有牌）
 	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
 #pragma endregion
 
@@ -100,10 +107,26 @@ public:
 	Character::hp_t getHp() const { return character->getHp(); }
 	Character::hp_t getMaxHp() const { return character->getMaxHp(); }
 	std::size_t damage(std::size_t damage, opt_ref<Player> source);
+	//失去体力：不经过伤害结算（不触发伤害相关技能、不被护盾抵消、不受倍率影响）
+	std::size_t loseHp(std::size_t num);
 	void recover(std::size_t num);
 	bool isDead() const { return character->isDead(); }
-	std::size_t getDamageMultiplier() const { return character->getDamageMultiplier(); }
-	void setDamageMultiplier(std::size_t m) { character->setDamageMultiplier(m); }
+	double getDamageMultiplier() const { return character->getDamageMultiplier(); }
+	void setDamageMultiplier(double m) { character->setDamageMultiplier(m); }
+	void addDamageMultiplier(double delta) { character->addDamageMultiplier(delta); }
+	//护盾：优先抵消伤害，仅在本局内有效
+	std::size_t getShield() const { return shield; }
+	void setShield(std::size_t v) { shield = v; }
+	void addShield(std::size_t v) { shield += v; }
+	//吸血：造成伤害后按百分比回复体力（仅在本局内有效）
+	std::size_t getLifesteal() const { return lifesteal; }
+	void setLifesteal(std::size_t v) { lifesteal = v; }
+	void addLifesteal(std::size_t v) { lifesteal = (lifesteal + v > 50) ? 50 : lifesteal + v; }
+	//每局开始时重置：炸弹卡次数、护盾、吸血
+	void resetRoundState() { bombUsed = 0; shield = 0; lifesteal = 0; }
+	//禁止因手牌为空而获胜（本回合有效，下一回合自动解除）
+	bool getNoWinByEmptyHand() const { return noWinByEmptyHand; }
+	void setNoWinByEmptyHand(bool v) { noWinByEmptyHand = v; }
 #pragma endregion
 
 #pragma region 胜负 - 委托到 Character
@@ -130,7 +153,15 @@ public:
 	template<SpecificSkill T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
 	template<SpecificSkill T> T& getSkill() { return character->getSkill<T>(); }
 	template<SpecificSkill T> const T& getSkill() const { return character->getSkill<T>(); }
-	std::string getSkillsText() const { return character->getSkillsText(); }
+	std::string getSkillsText() const {
+		std::string text = character->getSkillsText();
+		//被封印时，在技能描述第一行名字右侧标记（✡）
+		if (!text.empty() && isSealed()) {
+			const std::size_t pos = text.find('\n');
+			text.insert(pos == std::string::npos ? text.size() : pos, "（✡）");
+		}
+		return text;
+	}
 	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return character->getPassiveSkills(); }
 	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return character->getInstantSkills(); }
 	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return character->getTransformSkills(); }
@@ -192,9 +223,24 @@ public:
 	void ban(Player& source, Card& card);
 	void ban() { banned = true; }
 	void unban() { banned = false; }
+	//是否处于被封禁状态（该角色本回合会被跳过）
+	bool isBanned() const { return banned; }
 	void seal(std::size_t duration);
 	bool isSealed() const { return sealed > 0; }
 	std::size_t getSealed() const { return sealed; }
+	//出牌不受限制：忽略当前牌的颜色/牌名限制，可打出任意牌
+	bool isUnrestrictedPlay() const { return unrestrictedPlay; }
+	void setUnrestrictedPlay(const bool v) { unrestrictedPlay = v; }
+	//取消本次摸牌（在draw_begin时机调用，摸牌时生效并自动复位）
+	void cancelNextDraw() { cancelDrawRequested = true; }
+	//不死图腾：本场持有数量
+	void addTotemCount(std::size_t n = 1) { totemCount += n; }
+	std::size_t getTotemCount() const { return totemCount; }
+	//炸弹卡：本局使用次数
+	std::size_t getBombUsed() const { return bombUsed; }
+	void resetBombUsage() { bombUsed = 0; }
+	//尝试使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
+	bool tryUseBombCard();
 	void markCharInfoDirty() const { charInfoDirty = true; }
 	bool isCharInfoDirty() const { return charInfoDirty; }
 	void clearCharInfoDirty() { charInfoDirty = false; }

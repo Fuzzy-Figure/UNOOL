@@ -57,7 +57,7 @@ private:
 	std::list<std::unique_ptr<TransformSkill>> transformSkills;
 	hp_t hp = 0;
 	hp_t maxHp = 0;
-	std::size_t damageMultiplier = 1;
+	double damageMultiplier = 1.0;  //伤害倍率（1.0 = 原始伤害）
 	std::size_t wins = 0;
 	std::size_t losses = 0;
 	std::unordered_map<std::string, std::size_t> marks;
@@ -174,8 +174,9 @@ public:
 #pragma endregion
 
 #pragma region 伤害倍率
-	std::size_t getDamageMultiplier() const { return damageMultiplier; }
-	void setDamageMultiplier(std::size_t m) { damageMultiplier = m; }
+	double getDamageMultiplier() const { return damageMultiplier; }
+	void setDamageMultiplier(double m) { damageMultiplier = m; }
+	void addDamageMultiplier(double delta) { damageMultiplier += delta; }
 	std::size_t getWins() const { return wins; }
 	std::size_t getLosses() const { return losses; }
 	void incrementWins() { ++wins; }

@@ -1679,3 +1679,155 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+//熬鹰_计数：隐藏子技能，回合开始时统计已执行的回合数（被封禁跳过的回合不计入）
+class 熬鹰_计数 final : public PassiveSkillImpl<熬鹰_计数> {
+public:
+	熬鹰_计数() : PassiveSkillImpl<熬鹰_计数>(
+		"熬鹰_计数", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//熬鹰_解除限制：隐藏子技能，觉醒后第二个出牌阶段解除出牌限制
+class 熬鹰_解除限制 final : public PassiveSkillImpl<熬鹰_解除限制> {
+public:
+	熬鹰_解除限制() : PassiveSkillImpl<熬鹰_解除限制>(
+		"熬鹰_解除限制", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_use2_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//熬鹰：觉醒技，累计执行20个回合后从游戏外获得一张【+4】，并解锁第二个出牌阶段的出牌限制
+class 熬鹰 final : public PassiveSkillImpl<熬鹰> {
+	friend class 熬鹰_计数;
+	friend class 熬鹰_解除限制;
+	std::size_t turnCount = 0;  //已执行的回合数（被封禁跳过的回合不计入）
+	bool awakened = false;      //是否已觉醒
+public:
+	熬鹰() : PassiveSkillImpl<熬鹰>(
+		"熬鹰",
+		"觉醒技，若你已累计执行过20个回合（被封禁跳过的回合不计入），\n"
+		"你从游戏外获得一张【+4】，然后第二个出牌阶段打出牌不受限制。\n"
+		"当前已执行回合数：{turns}",
+		1, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		熬鹰_计数::make(),
+		熬鹰_解除限制::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	bool isAwakened() const { return awakened; }
+	void reset() override;
+	std::optional<std::string> extraPlaceholders(const std::string& key) const override;
+};
+
+//连杀：锁定技，每连续三回合打出牌后，从游戏外随机获得一张万能牌（被封禁或未出牌的回合中断连续）
+class 连杀 final : public PassiveSkillImpl<连杀> {
+private:
+	std::size_t consecutive = 0;  //当前连续打出牌的回合数
+public:
+	连杀() : PassiveSkillImpl<连杀>(
+		"连杀",
+		"锁定技，你每连续三回合打出牌后，从游戏外随机获得一张万能牌。\n"
+		"当前连续打出牌回合数：{turns}",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override;
+	std::optional<std::string> extraPlaceholders(const std::string& key) const override;
+};
+
+//分身_获取：隐藏子技能，打出万能牌时获得一个「分身」标记
+class 分身_获取 final : public PassiveSkillImpl<分身_获取> {
+public:
+	分身_获取() : PassiveSkillImpl<分身_获取>(
+		"分身_获取", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//分身_发动：隐藏子技能，打出牌后可移去一个「分身」，打出一张同名牌（无需符合跟牌规则）
+class 分身_发动 final : public PassiveSkillImpl<分身_发动> {
+public:
+	分身_发动() : PassiveSkillImpl<分身_发动>(
+		"分身_发动", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//分身：游戏开始时或打出万能牌时获得「分身」；打出牌后可用「分身」打出一张同名牌
+class 分身 final : public PassiveSkillImpl<分身> {
+public:
+	分身() : PassiveSkillImpl<分身>(
+		"分身",
+		"游戏开始时或你打出万能牌时，你可以获得一个「分身」。\n"
+		"你打出牌后，若你手中有同牌名的牌，你可以移去一个「分身」，选择打出其中一张同名牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin,
+		分身_获取::make(),
+		分身_发动::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//宣战：锁定技，回合结束时调整数字牌点数，若手中【5】≥4可转化为【+4】打出
+class 宣战 final : public PassiveSkillImpl<宣战> {
+public:
+	宣战() : PassiveSkillImpl<宣战>(
+		"宣战",
+		"锁定技，回合结束时，你手中点数>5的数字牌点数-1，点数<5的数字牌点数+1（若本回合未出过牌改为-2/+2）；\n"
+		"然后若你手中【5】的数量≥4，你可将这些牌当作一张【+4】打出。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//赔款：你封禁其他角色后，若其没有【+2】，其随机获得一张【+2】
+class 赔款 final : public PassiveSkillImpl<赔款> {
+public:
+	赔款() : PassiveSkillImpl<赔款>(
+		"赔款",
+		"你封禁其他角色后，若其手中没有【+2】，其随机获得一张【+2】。",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::ban_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//坚甲：锁定技，每打出一张牌后获得1点护甲（上限50点）
+class 坚甲 final : public PassiveSkillImpl<坚甲> {
+public:
+	坚甲() : PassiveSkillImpl<坚甲>(
+		"坚甲",
+		"锁定技，你每打出一张牌后获得1点护甲（上限50点）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+

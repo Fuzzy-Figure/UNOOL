@@ -32,6 +32,12 @@ void LoginScene::layoutBoxes() {
 	const float lobbyBtnY = static_cast<float>(cfg.windowSize.y) * 0.55f;
 	startGameBtn = sf::FloatRect({ cx - totalBtnW / 2, lobbyBtnY }, { btnW, btnH });
 	lobbyShopBtn = sf::FloatRect({ cx - totalBtnW / 2 + btnW + gap, lobbyBtnY }, { btnW, btnH });
+
+	// 签到按钮：位于两个按钮上方，水平居中
+	const float checkinW = totalBtnW;
+	const float checkinH = 64.f;
+	const float checkinY = lobbyBtnY - checkinH - 30.f;
+	checkinBtn = sf::FloatRect({ cx - checkinW / 2, checkinY }, { checkinW, checkinH });
 }
 
 LoginScene::Result LoginScene::run() {
@@ -117,7 +123,16 @@ void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
 
 void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 	if (mode == Mode::Lobby) {
+		// 签到结果弹窗：点击任意位置关闭
+		if (checkinPopup) {
+			checkinPopup = false;
+			return;
+		}
 		if (status != Status::Idle) return;
+		if (checkinBtn.contains(pos)) {
+			sendCheckinRequest();
+			return;
+		}
 		if (startGameBtn.contains(pos)) {
 			result.enterShop = false;
 			status = Status::Done;
@@ -206,6 +221,16 @@ void LoginScene::sendCheckUsername() {
 	message = "检查用户名...";
 }
 
+void LoginScene::sendCheckinRequest() {
+	sf::Packet req;
+	req << static_cast<int>(MessageType::CheckinRequest);
+	if (!net.send(req)) {
+		message = "发送失败，请重试";
+		return;
+	}
+	status = Status::WaitingCheckin;
+}
+
 void LoginScene::pollAccountPackets() {
 	while (true) {
 		auto peek = net.peekMessageType();
@@ -217,7 +242,8 @@ void LoginScene::pollAccountPackets() {
 			&& mt != MessageType::ConnectionInfo
 			&& mt != MessageType::CheckUsernameResponse
 			&& mt != MessageType::RegisterResponse
-			&& mt != MessageType::LoginResponse) {
+			&& mt != MessageType::LoginResponse
+			&& mt != MessageType::CheckinResponse) {
 			break;
 		}
 
@@ -294,7 +320,114 @@ void LoginScene::pollAccountPackets() {
 			}
 			continue;
 		}
+
+		// 签到结果：弹出结果框，同步最新积分
+		if (mt == MessageType::CheckinResponse && status == Status::WaitingCheckin) {
+			std::string msg;
+			bool ok = false;
+			int points = 0;
+			packet >> msg >> ok >> points;
+			checkinMsg = msg;
+			checkinPopup = true;
+			result.points = points;
+			status = Status::Idle;
+			continue;
+		}
 	}
+}
+
+void LoginScene::drawCheckinPopup() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const sf::Vector2u winSize = window.getSize();
+
+	// 先把文案拆成行，便于按行数动态计算弹窗高度
+	std::vector<std::string> lines;
+	{
+		std::string line;
+		for (std::size_t i = 0; i <= checkinMsg.size(); ++i) {
+			if (i == checkinMsg.size() || checkinMsg[i] == '\n') {
+				if (!line.empty()) lines.push_back(line);
+				line.clear();
+				if (i == checkinMsg.size()) break;
+				continue;
+			}
+			line.push_back(checkinMsg[i]);
+		}
+	}
+	if (lines.empty()) lines.emplace_back(checkinMsg);
+
+	// 行数多时压缩字号与行距，保证不溢出屏幕
+	float fontH = 44.f;
+	float lineStep = 50.f;
+	if (lines.size() > 14) {
+		fontH = 24.f;
+		lineStep = 28.f;
+	}
+	else if (lines.size() > 8) {
+		fontH = 32.f;
+		lineStep = 36.f;
+	}
+
+	// 半透明遮罩
+	sf::RectangleShape mask({ static_cast<float>(winSize.x), static_cast<float>(winSize.y) });
+	mask.setFillColor(sf::Color(0, 0, 0, 130));
+	window.draw(mask);
+
+	// 弹窗面板
+	const float w = 760.f;
+	const float maxH = static_cast<float>(winSize.y) - 80.f;
+	const float contentH = static_cast<float>(lines.size()) * lineStep;
+	const float h = std::min(maxH, 120.f + contentH + 70.f);
+	const float x = (static_cast<float>(winSize.x) - w) / 2.f;
+	const float y = (static_cast<float>(winSize.y) - h) / 2.f;
+
+	sf::RectangleShape shadow({ w, h });
+	shadow.setPosition({ x + 6.f, y + 8.f });
+	shadow.setFillColor(sf::Color(0, 0, 0, 90));
+	window.draw(shadow);
+
+	sf::RectangleShape panel({ w, h });
+	panel.setPosition({ x, y });
+	panel.setFillColor(sf::Color(252, 250, 242));
+	panel.setOutlineThickness(4.f);
+	panel.setOutlineColor(sf::Color(198, 148, 42));
+	window.draw(panel);
+
+	// 顶部装饰条
+	sf::RectangleShape bar({ w, 10.f });
+	bar.setPosition({ x, y });
+	bar.setFillColor(sf::Color(255, 200, 90));
+	window.draw(bar);
+
+	// 标题
+	const std::string title = "签到结果";
+	const sf::Vector2f titleSize = { 30, 60 };
+	const sf::Vector2f titleMeasured = textMgr.measureText(title, static_cast<unsigned int>(titleSize.y));
+	textMgr.displayText(title,
+						{ x + (w - titleMeasured.x) / 2.f, y + 26.f },
+						titleSize, sf::Color(180, 120, 20));
+
+	// 正文（按行居中显示，超出面板时按行截断）
+	const sf::Vector2f lineSize = { 22, fontH };
+	float lineY = y + 96.f;
+	const float textBottom = y + h - 60.f;
+	for (const std::string& line : lines) {
+		if (lineY + fontH > textBottom) break;
+		const sf::Vector2f measured = textMgr.measureText(line, static_cast<unsigned int>(lineSize.y));
+		textMgr.displayText(line,
+							{ x + (w - measured.x) / 2.f, lineY },
+							lineSize, sf::Color(60, 60, 60));
+		lineY += lineStep;
+	}
+
+	// 关闭提示
+	const std::string hint = "点击任意位置关闭";
+	const sf::Vector2f hintSize = { 18, 36 };
+	const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+	textMgr.displayText(hint,
+						{ x + (w - hintMeasured.x) / 2.f, y + h - 52.f },
+						hintSize, sf::Color(140, 140, 140));
 }
 
 void LoginScene::render() {
@@ -336,6 +469,35 @@ void LoginScene::render() {
 		std::string acctInfo = std::format("账号: {}  积分: {}", username, result.points);
 		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
 
+		// 签到按钮（金色系，突出显示）
+		{
+			sf::RectangleShape shadow({ checkinBtn.size.x, checkinBtn.size.y });
+			shadow.setPosition({ checkinBtn.position.x + 3.f, checkinBtn.position.y + 5.f });
+			shadow.setFillColor(sf::Color(0, 0, 0, 55));
+			window.draw(shadow);
+
+			sf::RectangleShape shape({ checkinBtn.size.x, checkinBtn.size.y });
+			shape.setPosition({ checkinBtn.position.x, checkinBtn.position.y });
+			shape.setFillColor(sf::Color(255, 224, 140));
+			shape.setOutlineThickness(3.f);
+			shape.setOutlineColor(sf::Color(198, 148, 42));
+			window.draw(shape);
+
+			// 顶部高光
+			sf::RectangleShape gloss({ checkinBtn.size.x, 8.f });
+			gloss.setPosition({ checkinBtn.position.x, checkinBtn.position.y });
+			gloss.setFillColor(sf::Color(255, 255, 255, 130));
+			window.draw(gloss);
+
+			const std::string label = (status == Status::WaitingCheckin) ? "签到中..." : "每日签到";
+			const sf::Vector2f labelSize = { 28, 56 };
+			const sf::Vector2f labelMeasured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
+			textMgr.displayText(label,
+								{ checkinBtn.position.x + (checkinBtn.size.x - labelMeasured.x) / 2.f,
+								  checkinBtn.position.y + (checkinBtn.size.y - labelMeasured.y) / 2.f },
+								labelSize, sf::Color(110, 72, 12));
+		}
+
 		// 两个按钮
 		drawButton(startGameBtn, "开始游戏");
 		drawButton(lobbyShopBtn, "商城");
@@ -347,6 +509,8 @@ void LoginScene::render() {
 		textMgr.displayText(hint,
 							{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
 							hintSize, sf::Color(120, 120, 120));
+
+		if (checkinPopup) drawCheckinPopup();
 
 		window.display();
 		return;
