@@ -1,8 +1,8 @@
 {
 	"fonts": "C:/Windows/Fonts/msyh.ttc",
 	"server": {
-		"ip": "127.0.0.1", //"120.226.44.187",
-		"port": 8888       //14341
+		"ip": "120.226.44.187",
+		"port": 14341
 	},
 	"size": {
 		"window": {
