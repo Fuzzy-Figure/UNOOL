@@ -20,7 +20,7 @@ public:
 
 private:
 	enum class Mode { Login, Register, Lobby } mode = Mode::Login;
-	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, Done } status = Status::Idle;
+	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, WaitingCheckin, Done } status = Status::Idle;
 	enum class Focus { None, Username, Password } focus = Focus::Username;
 
 	GameRenderer& renderer;
@@ -39,6 +39,11 @@ private:
 	sf::FloatRect registerBtn;
 	sf::FloatRect startGameBtn; // 大厅：开始游戏按钮
 	sf::FloatRect lobbyShopBtn; // 大厅：商城按钮
+	sf::FloatRect checkinBtn; // 大厅：签到按钮（位于上述两按钮上方居中）
+
+	// 签到结果弹窗
+	bool checkinPopup = false;
+	std::string checkinMsg;
 
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 
@@ -55,5 +60,7 @@ private:
 	void sendLoginRequest();
 	void sendRegisterRequest();
 	void sendCheckUsername();
+	void sendCheckinRequest();
+	void drawCheckinPopup();
 	void render();
 };

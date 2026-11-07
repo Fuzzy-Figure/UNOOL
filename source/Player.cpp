@@ -11,8 +11,10 @@ std::string Player::displayName() const {
 }
 
 std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
+	//伤害倍率（支持小数，如 +0.1）
 	if (source.has_value()) {
-		damageValue *= source.value().get().getDamageMultiplier();
+		const double multiplier = source.value().get().getDamageMultiplier();
+		damageValue = static_cast<std::size_t>(static_cast<double>(damageValue) * multiplier);
 	}
 	{
 		PassiveSkill::Trigger trigger;
@@ -21,7 +23,40 @@ std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
 		trigger.number = damageValue;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_begin, trigger);
 	}
+
+	//护盾优先抵消伤害
+	const std::size_t shieldBefore = shield;
+	if (shield > 0 && damageValue > 0) {
+		const std::size_t absorbed = (damageValue < shield) ? damageValue : shield;
+		shield -= absorbed;
+		damageValue -= absorbed;
+		std::println("<护盾> {}的护盾抵消{}点伤害（剩余护盾{}）", displayName(), absorbed, shield);
+	}
+
+	const std::size_t hpBefore = getHp();
 	const std::size_t actualDamageValue = character->damage(damageValue);
+	const std::size_t hpLoss = hpBefore - getHp();
+
+	//不死图腾：受到致命伤害时消耗一个，至少保留1点体力
+	if (getHp() <= 0 && totemCount > 0) {
+		totemCount -= 1;
+		character->setHp(1);
+		std::println("<道具> {}的不死图腾生效，保留1点体力（剩余{}个）", displayName(), totemCount);
+		hint(std::format("不死图腾生效！保留1点体力（剩余{}个）", totemCount));
+	}
+
+	//吸血：对其他角色造成伤害后，按实际扣除体力值回复（护盾抵消部分不计）
+	if (source.has_value() && source.value().get() != *this) {
+		Player& attacker = source.value();
+		if (attacker.getLifesteal() > 0 && hpLoss > 0) {
+			const std::size_t healed = attacker.getLifesteal() * hpLoss / 100;
+			if (healed > 0) {
+				attacker.recover(healed);
+				std::println("<吸血> {}吸血回复{}点体力（吸血率{}%）", attacker.displayName(), healed, attacker.getLifesteal());
+			}
+		}
+	}
+
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
@@ -29,7 +64,38 @@ std::size_t Player::damage(std::size_t damageValue, opt_ref<Player> source) {
 		trigger.number = damageValue;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::damage_end, trigger);
 	}
+	if (shield != shieldBefore) markCharInfoDirty();
 	return actualDamageValue;
+}
+
+std::size_t Player::loseHp(std::size_t num) {
+	const std::size_t hpBefore = getHp();
+	const std::size_t actual = character->damage(num);
+	std::println("<体力> {}失去{}点体力（{}→{}）", displayName(), actual, hpBefore, getHp());
+	game.broadcastState();
+	return actual;
+}
+
+bool Player::tryUseBombCard() {
+	const std::string& username = game.getNetwork().getClientSlots()[id].username;
+	if (username.empty()) return false;
+	if (UserDB::instance().getItemCount(username, "炸弹卡") <= 0) return false;
+	if (bombUsed >= 2) {
+		hint("炸弹卡本局已使用2次");
+		return false;
+	}
+
+	auto targetOpt = chooseOtherPlayer("【炸弹卡】选择一名其他角色，对其造成5点伤害", false);
+	if (!targetOpt) return false;
+
+	UserDB::instance().useItem(username, "炸弹卡");
+	++bombUsed;
+	Player& target = targetOpt.value();
+	target.damage(5, *this);
+	std::println("<道具> {}对{}使用炸弹卡，造成5点伤害（本局第{}次）",
+				 displayName(), target.displayName(), bombUsed);
+	hint(std::format("炸弹卡生效，对{}造成5点伤害", target.displayName()));
+	return true;
 }
 
 void Player::recover(std::size_t num) {
@@ -58,6 +124,13 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		trigger.number = number;
 		trigger.drawReason = reason;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_begin, trigger);
+	}
+
+	//摸牌已被技能取消（如【改革】改为失去体力）
+	if (cancelDrawRequested) {
+		cancelDrawRequested = false;
+		std::println("<技能> {}的摸牌被取消", displayName());
+		return {};
 	}
 
 	std::vector<ref<Card>> drawnCards;
@@ -256,6 +329,8 @@ std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 
 
 bool Player::canUse(const Card& card) {
+	//出牌不受限制：任意牌均可打出
+	if (unrestrictedPlay) return true;
 	if (game.getCurrentColor() == Card::Color::no) return true;
 	if (card.is(game.getCurrentColor())
 		|| card.is(game.getCurrentName())
@@ -302,6 +377,8 @@ void Player::phaseBegin() {
 	for (auto& s : getTransformSkills()) s->resetPhaseCount();
 	//重置被动技的阶段内使用次数（基类仅递归子技能；镇魂等自计数的被动技借此每回合清零）
 	for (auto& s : getPassiveSkills()) s->resetPhaseCount();
+	//出牌无限制状态仅在当前回合的第二个出牌阶段生效，每回合开始时重置
+	unrestrictedPlay = false;
 	{
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
@@ -372,6 +449,7 @@ void Player::phaseEnd() {
 
 bool Player::turn() {
 	hasUsed = false;
+	noWinByEmptyHand = false;
 	phaseBegin();
 	game.broadcastState();
 	bool used = false;
@@ -383,26 +461,26 @@ bool Player::turn() {
 	}
 
 	if (game.isGameOver()) return handEmpty();
-	if (handEmpty()) return true;
+	if (handEmpty() && !noWinByEmptyHand) return true;
 
 	used = phaseUse1();
 	if (game.isGameOver()) return handEmpty();
-	if (handEmpty()) return true;
+	if (handEmpty() && !noWinByEmptyHand) return true;
 
 	if (!used) {
 		phaseDraw();
 		if (game.isGameOver()) return handEmpty();
-		if (handEmpty()) return true;
+		if (handEmpty() && !noWinByEmptyHand) return true;
 		game.broadcastState();
 		phaseUse2();
 		if (game.isGameOver()) return handEmpty();
-		if (handEmpty()) return true;
+		if (handEmpty() && !noWinByEmptyHand) return true;
 	}
 
 PhaseEnd:
 	phaseEnd();
 	game.broadcastState();
-	return handEmpty();
+	return handEmpty() && !noWinByEmptyHand;
 }
 
 // === 导航 ===
@@ -492,6 +570,17 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		if (phase != ActiveSkill::TriggerTime::never
 			&& handleDigitKey(input, instantRefs, transformRefs, activeMode))
 			continue;
+
+		//B：使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
+		if (phase != ActiveSkill::TriggerTime::never
+			&& input == sf::Keyboard::Scancode::B) {
+			if (tryUseBombCard()) {
+				game.setOperatingPlayer(id);
+				network.sendPlayerChoice(id, title, {}, forced);
+				game.broadcastState();
+			}
+			continue;
+		}
 
 		switch (input) {
 			case sf::Keyboard::Scancode::Space:

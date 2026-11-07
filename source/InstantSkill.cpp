@@ -829,3 +829,479 @@ bool 伪政_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	return true;
 }
 
+
+// ==================== 技能：改革 ====================
+bool 改革::content(GameLogic& game, Player& carrier) {
+	//先选目标，取消则不失去体力
+	auto targetOpt = carrier.choosePlayer("【改革】选择一名角色摸1张牌", false);
+	if (!targetOpt) return false;
+	Player& target = *targetOpt;
+
+	//失去10点体力
+	carrier.damage(10, std::nullopt);
+	std::println("<技能> {}发动改革，失去10点体力", carrier.displayName());
+
+	//令目标摸一张牌
+	target.draw(1, DrawReason::skill);
+	std::println("<技能> {}发动改革，令{}摸1张牌", carrier.displayName(), target.displayName());
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：改革_摸牌替代 ====================
+bool 改革_摸牌替代::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	//仅在其他角色摸牌阶段外摸牌时触发（摸牌阶段与开局初始手牌除外）
+	if (!trigger.hasDrawReason()) return false;
+	if (trigger.getDrawReason() == DrawReason::phase_draw) return false;
+	if (trigger.getDrawReason() == DrawReason::init) return false;
+	if (!trigger.hasNumber() || trigger.getNumber() == 0) return false;
+	return trigger.getPlayer().getId() != carrier.getId();
+}
+
+bool 改革_摸牌替代::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	const std::size_t drawCount = trigger.getNumber();
+	//X为摸牌数，失去2X%最大体力（向上取整）
+	const std::size_t loss = unool::math::ceil(static_cast<double>(drawCount) * target.getMaxHp() * 0.02);
+
+	const std::size_t choice = carrier.ask(
+		std::format("【改革】是否将{}的{}张摸牌改为失去{}点体力？", target.characterName(), drawCount, loss),
+		{ "发动", "不发动" }, false);
+	if (choice != 1) return false;
+
+	//获取摸牌数并取消摸牌
+	trigger.getNumber() = 0;
+	target.cancelNextDraw();
+	target.damage(loss, std::nullopt);
+
+	std::println("<技能> {}发动改革，将{}的{}张摸牌改为失去{}点体力",
+				 carrier.displayName(), target.displayName(), drawCount, loss);
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：飞手 ====================
+bool 飞手_整轮::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<飞手>();
+	if (!opt.has_value()) return false;
+	飞手& skill = opt.value().get();
+	skill.usedLastRound = skill.usedThisRound;
+	skill.usedThisRound = false;
+	return true;
+}
+
+bool 飞手::filter(const GameLogic& game, const Player& carrier) const {
+	if (usedLastRound) return false;
+	//上/下家至少有一家可以保留一张牌
+	return carrier.prev().handCount() >= 2 || carrier.next().handCount() >= 2;
+}
+
+bool 飞手::content(GameLogic& game, Player& carrier) {
+	//选择上家/下家
+	std::vector<std::string> options;
+	std::vector<Player*> candidates;
+	Player& prevPlayer = carrier.prev();
+	Player& nextPlayer = carrier.next();
+	if (prevPlayer.handCount() >= 2) {
+		options.push_back(std::format("上家：{}（{}张牌）", prevPlayer.characterName(), prevPlayer.handCount()));
+		candidates.push_back(&prevPlayer);
+	}
+	if (nextPlayer.handCount() >= 2) {
+		options.push_back(std::format("下家：{}（{}张牌）", nextPlayer.characterName(), nextPlayer.handCount()));
+		candidates.push_back(&nextPlayer);
+	}
+	if (candidates.empty()) {
+		carrier.hint("上家与下家都没有可获得的牌（至少保留一张）");
+		return false;
+	}
+
+	const std::size_t choice = carrier.ask("【飞手】选择获得谁的一张牌", options, false);
+	if (choice == 0) return false;
+	Player& target = *candidates[choice - 1];
+
+	//随机获得一张，然后交还一张
+	const std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
+	carrier.gainCard(target.takeCardByIndex(idx));
+	game.broadcastState();
+
+	carrier.chooseToGive(std::format("【飞手】交还一张牌给{}", target.characterName()), target, true);
+
+	usedThisRound = true;
+	std::println("<技能> {}发动飞手，获得{}的一张牌并交还一张", carrier.displayName(), target.displayName());
+	game.broadcastState();
+	return true;
+}
+
+void 飞手::reset() {
+	ActiveSkill::reset();
+	usedThisRound = false;
+	usedLastRound = false;
+}
+
+
+// ==================== 技能：筑丛 ====================
+std::vector<ref<Card>> 筑丛_摸牌::drawUntilGreen(GameLogic& game, Player& carrier) {
+	std::vector<ref<Card>> result;
+	while (true) {
+		auto drawn = carrier.draw(1, DrawReason::skill);
+		if (drawn.empty()) break;  //牌堆耗尽或摸牌被技能取消
+		result.insert(result.end(), drawn.begin(), drawn.end());
+		if (drawn.back().get().is(Card::Color::green)) break;
+	}
+	return result;
+}
+
+bool 筑丛_累计::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	auto opt = carrier.findSkill<筑丛>();
+	return opt.has_value() && opt.value().get().isAccumulating();
+}
+
+bool 筑丛_累计::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<筑丛>();
+	if (!opt.has_value()) return false;
+	筑丛& skill = opt.value().get();
+
+	//绿色牌不计入累计
+	if (trigger.getCard().is(Card::Color::green)) return true;
+
+	skill.setNonGreenCount(skill.getNonGreenCount() + 1);
+	if (skill.getNonGreenCount() >= 10) {
+		skill.setNonGreenCount(0);
+		skill.setAccumulating(false);
+		skill.resetCount();  //视为未发动过，技能恢复可用
+		std::println("<技能> {}累计打出十张非绿色牌，筑丛视为未发动过", carrier.displayName());
+		carrier.hint("【筑丛】已累计十张非绿色牌，技能恢复可用");
+	}
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+bool 筑丛::content(GameLogic& game, Player& carrier) {
+	auto subOpt = carrier.findSkill<筑丛_摸牌>();
+	if (!subOpt.has_value()) return false;
+
+	//摸牌至摸到绿色牌，回复X点体力
+	auto drawn = subOpt.value().get().drawUntilGreen(game, carrier);
+	const std::size_t X = drawn.size();
+	carrier.recover(X);
+
+	accumulating = true;
+	nonGreenCount = 0;
+
+	std::println("<技能> {}发动筑丛，摸了{}张牌并回复{}点体力", carrier.displayName(), X, X);
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+void 筑丛::reset() {
+	ActiveSkill::reset();
+	accumulating = false;
+	nonGreenCount = 0;
+}
+
+std::optional<std::string> 筑丛::extraPlaceholders(const std::string& key) const {
+	if (key == "nongreen") return std::to_string(nonGreenCount);
+	return std::nullopt;
+}
+
+
+// ==================== 技能：星矢 ====================
+bool 星矢::filter(const GameLogic& game, const Player& carrier) const {
+	return !carrier.handEmpty();
+}
+
+bool 星矢::content(GameLogic& game, Player& carrier) {
+	//可重铸的颜色：手牌中实际存在的颜色（含黑色）
+	std::vector<Card::Color> colors;
+	for (const Card::Color c : Card::fiveColors) {
+		if (carrier.handInclude([c](const Card& card) { return card.is(c); })) {
+			colors.push_back(c);
+		}
+	}
+	if (colors.empty()) {
+		carrier.hint("你手中没有可重铸的牌");
+		return false;
+	}
+
+	auto colorOpt = carrier.chooseCardColor("【星矢】选择一种颜色，重铸该颜色的所有牌", false, colors);
+	if (!colorOpt.has_value()) return false;
+	const Card::Color color = colorOpt.value();
+
+	//失去5点体力
+	carrier.loseHp(5);
+
+	//收集该颜色所有牌的索引（按下标降序重铸，避免下标错位）
+	std::vector<std::size_t> indices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getCardByIndex(i).is(color)) indices.push_back(i);
+	}
+
+	bool gainedSameColor = false;
+	for (auto it = indices.rbegin(); it != indices.rend(); ++it) {
+		const std::size_t before = carrier.handCount();
+		carrier.recastByIndex(*it);
+		//成功摸牌后，新牌位于手牌末尾
+		if (carrier.handCount() >= before && !carrier.handEmpty()
+			&& carrier.getHand().back().is(color)) {
+			gainedSameColor = true;
+		}
+	}
+
+	if (!gainedSameColor) {
+		carrier.addDamageMultiplier(0.1);
+		carrier.addLifesteal(10);
+		std::println("<技能> {}发动星矢，未获得同色牌，伤害倍率+0.1，吸血+10%（当前{}%）",
+					 carrier.displayName(), carrier.getLifesteal());
+		carrier.hint(std::format("【星矢】未获得同色牌：伤害倍率+0.1，吸血+10%（当前{}%）",
+								 carrier.getLifesteal()));
+	}
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：坠机 ====================
+bool 坠机::content(GameLogic& game, Player& carrier) {
+	Player& other = carrier.next();
+
+	//任选牌名（从0到+4）
+	std::vector<Card::Name> names;
+	names.append_range(Card::allCards);
+
+	auto nameOpt = carrier.chooseCardName("【坠机】选择一种牌名", false, names);
+	if (!nameOpt.has_value()) return false;
+	const Card::Name name = nameOpt.value();
+
+	//自己展示（没有则跳过）
+	std::optional<std::size_t> selfIdx;
+	if (carrier.handInclude([name](const Card& c) { return c.getName() == name; })) {
+		selfIdx = carrier.chooseCard("【坠机】展示一张指定牌名的牌",
+			[name](const Card& c) { return c.getName() == name; }, true);
+		if (selfIdx.has_value()) carrier.showCard(carrier.getCardByIndex(*selfIdx));
+	}
+
+	//自动展示对面一张同名牌（没有则跳过）
+	std::optional<std::size_t> tgtIdx;
+	for (std::size_t i = 0; i < other.handCount(); ++i) {
+		if (other.getCardByIndex(i).getName() == name) { tgtIdx = i; break; }
+	}
+	if (tgtIdx.has_value()) other.showCard(other.getCardByIndex(*tgtIdx));
+
+	const bool selfShowed = selfIdx.has_value();
+	const bool tgtShowed = tgtIdx.has_value();
+
+	if (!tgtShowed) {
+		//对面未展示：其随机获得一张数字牌，技能视为未发动过
+		other.gainCard(std::make_unique<Card>(Card::randomCard(&Card::isNumber)));
+		resetCount();
+		std::println("<技能> {}发动坠机，{}未展示牌，获得一张数字牌，技能视为未发动",
+					 carrier.displayName(), other.displayName());
+	}
+	else if (!selfShowed) {
+		//自己未展示：弃置所有手牌并摸八张牌
+		while (!carrier.handEmpty())
+			carrier.putCardToDiscardPileByIndex(0, Card::DiscardReason::discard);
+		carrier.draw(8, DrawReason::skill);
+		std::println("<技能> {}发动坠机，自己未展示牌，弃置所有手牌并摸8张", carrier.displayName());
+	}
+	else {
+		//均展示：可令一名角色获得这两张牌
+		const std::size_t choice = carrier.ask("【坠机】是否令一名角色获得这两张牌？", { "是", "否" }, false);
+		if (choice == 1) {
+			auto pOpt = carrier.choosePlayer("【坠机】选择获得这两张牌的角色", false);
+			if (pOpt.has_value()) {
+				Player& p = pOpt.value().get();
+				//先拿对面的牌，再拿自己的，避免自己的下标变化
+				auto tgtCard = other.takeCardByIndex(*tgtIdx);
+				auto selfCard = carrier.takeCardByIndex(*selfIdx);
+				p.gainCard(std::move(tgtCard));
+				p.gainCard(std::move(selfCard));
+				std::println("<技能> {}令{}获得两张牌", carrier.displayName(), p.displayName());
+			}
+		}
+	}
+
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：奔突 ====================
+bool 奔突::content(GameLogic& game, Player& carrier) {
+	auto tgtOpt = carrier.chooseOtherPlayer("【奔突】选择一名其他角色", false);
+	if (!tgtOpt.has_value()) return false;
+	Player& target = tgtOpt.value().get();
+
+	//摸一张牌并展示
+	auto drawn = target.draw(1, DrawReason::skill);
+	if (!drawn.empty()) {
+		target.showCard(drawn.back().get());
+	}
+
+	//随机弃置一张牌
+	if (target.handEmpty()) {
+		game.broadcastState();
+		return true;
+	}
+	const std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
+	target.putCardToDiscardPileByIndex(idx, Card::DiscardReason::discard);
+	std::println("<技能> {}发动奔突，{}摸一张并随机弃置一张牌",
+				 carrier.displayName(), target.displayName());
+
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：炼石 ====================
+bool 炼石::content(GameLogic& game, Player& carrier) {
+	//多次选一张，取消或选完所有手牌后结束选择
+	std::vector<std::size_t> selected;
+	while (selected.size() < carrier.handCount()) {
+		auto idxOpt = carrier.chooseCard(
+			"【炼石】选择一张要重铸的手牌（取消结束选择）",
+			[&](const Card& c) {
+				for (const std::size_t s : selected)
+					if (&carrier.getCardByIndex(s) == &c) return false;
+				return true;
+			}, false);
+		if (!idxOpt.has_value()) break;
+		selected.push_back(*idxOpt);
+	}
+	if (selected.empty()) {
+		carrier.hint("未选择任何牌");
+		return false;
+	}
+
+	yellowGained.clear();
+	usedThisTurn = true;
+
+	//降序重铸，统计弃置牌总分值，并记录重铸获得的黄色牌
+	std::size_t totalValue = 0;
+	for (auto it = selected.rbegin(); it != selected.rend(); ++it) {
+		Card& discarded = carrier.getCardByIndex(*it);
+		totalValue += discarded.value();
+		carrier.recastByIndex(*it);
+		if (!carrier.handEmpty() && carrier.getHand().back().is(Card::Color::yellow)) {
+			yellowGained.push_back(&carrier.getHand().back());
+		}
+	}
+
+	//重铸光所有手牌时，禁止因手牌为空获胜
+	if (carrier.handEmpty()) carrier.setNoWinByEmptyHand(true);
+
+	//扣减等同于弃置牌总分值的体力
+	carrier.loseHp(totalValue);
+	std::println("<技能> {}发动炼石，重铸{}张牌，扣减{}点体力",
+				 carrier.displayName(), selected.size(), totalValue);
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+void 炼石::reset() {
+	ActiveSkill::reset();
+	usedThisTurn = false;
+	yellowGained.clear();
+}
+
+
+// ==================== 技能：成金 ====================
+bool 成金::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	auto opt = carrier.findSkill<炼石>();
+	return opt.has_value() && opt.value().get().usedThisTurn;
+}
+
+bool 成金::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<炼石>();
+	if (!opt.has_value()) return false;
+	炼石& skill = opt.value().get();
+
+	//弃置本回合获得的所有黄色牌（仍在手牌中的）
+	std::size_t discarded = 0;
+	for (Card* cp : skill.yellowGained) {
+		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+			if (&carrier.getCardByIndex(i) == cp) {
+				carrier.putCardToDiscardPileByIndex(i, Card::DiscardReason::discard);
+				++discarded;
+				break;
+			}
+		}
+	}
+
+	std::println("<技能> {}发动成金，弃置本回合获得的{}张黄色牌", carrier.displayName(), discarded);
+	//重置炼石本回合状态
+	skill.usedThisTurn = false;
+	skill.yellowGained.clear();
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：无礼 ====================
+bool 无礼_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<无礼>();
+	if (!opt.has_value()) return false;
+	无礼& skill = opt.value().get();
+
+	const Card::Type type = trigger.getCard().getType();
+	if (!skill.usedTypes.contains(type)) {
+		skill.usedTypes.insert(type);
+		skill.increaseLimit(1);
+		std::println("<技能> {}打出了新类型的牌，无礼可用次数+1", carrier.displayName());
+		carrier.hint(std::format("【无礼】可用次数+1（当前剩余{}次）",
+								 skill.getLimit().value() - skill.getCount()));
+		carrier.markCharInfoDirty();
+	}
+	return true;
+}
+
+bool 无礼::filter(const GameLogic& game, const Player& carrier) const {
+	//至少有一名角色手牌≥2才能弃置半数
+	return carrier.handCount() >= 2 || carrier.next().handCount() >= 2;
+}
+
+bool 无礼::content(GameLogic& game, Player& carrier) {
+	auto tgtOpt = carrier.choosePlayer("【无礼】选择一名角色，弃置其半数手牌", false);
+	if (!tgtOpt.has_value()) return false;
+	Player& target = tgtOpt.value().get();
+
+	const std::size_t half = target.handCount() / 2;
+	if (half == 0) {
+		carrier.hint("该角色手牌不足两张");
+		return false;
+	}
+
+	//随机弃置半数手牌（向下取整）
+	for (std::size_t i = 0; i < half; ++i) {
+		const std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
+		target.putCardToDiscardPileByIndex(idx, Card::DiscardReason::discard);
+	}
+
+	//观看牌堆顶等量张牌并交给其
+	auto drawn = target.draw(half, DrawReason::skill);
+	for (auto& cardRef : drawn) target.showCard(cardRef.get());
+
+	std::println("<技能> {}发动无礼，弃置{}半数（{}张）手牌并交给其{}张牌",
+				 carrier.displayName(), target.displayName(), half, drawn.size());
+
+	game.broadcastState();
+	return true;
+}
+
+void 无礼::reset() {
+	ActiveSkill::reset();
+	usedTypes.clear();
+}
+

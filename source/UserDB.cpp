@@ -1,8 +1,11 @@
 #include "UserDB.h"
 #include "utils.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <ctime>
 #include <fstream>
+#include <functional>
 
 
 namespace {
@@ -375,4 +378,192 @@ bool UserDB::purchaseItem(const std::string& username, const std::string& itemNa
 	save();
 	std::println("[UserDB] 玩家{}购买道具{}（当前{}）", username, itemName, it->second.items[itemName]);
 	return true;
+}
+
+
+namespace {
+	//返回相对当前北京时间（UTC+8）偏移 offsetDays 天的日期字符串 yyyy-mm-dd
+	std::string beijingDate(const int offsetDays = 0) {
+		using namespace std::chrono;
+		const auto shifted = system_clock::now() + hours(8) + hours(24LL * offsetDays);
+		const std::time_t stamp = system_clock::to_time_t(shifted);
+		std::tm tm{};
+#ifdef _WIN32
+		gmtime_s(&tm, &stamp);
+#else
+		gmtime_r(&stamp, &tm);
+#endif
+		return std::format("{:04}-{:02}-{:02}", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+	}
+}
+
+CheckinResult UserDB::checkin(const std::string& username) {
+	CheckinResult result;
+	auto it = users_.find(username);
+	if (it == users_.end()) {
+		result.msg = "用户不存在";
+		return result;
+	}
+	UserInfo& info = it->second;
+
+	const std::string today = beijingDate();
+	const std::string yesterday = beijingDate(-1);
+	//测试账号 1 和 2 不受每日一次限制，可无限签到
+	const bool unlimitedCheckin = (username == "1" || username == "2");
+	if (!unlimitedCheckin && info.lastCheckinDate == today) {
+		result.msg = "今天已签到！";
+		result.points = info.points;
+		return result;
+	}
+
+	//连续签到额外概率次数：昨天签过到才累加，最多七次
+	const bool continued = info.lastCheckinDate == yesterday;
+	const int bonusTimes = continued ? std::min(info.checkinStreak + 1, 7) : 0;
+
+	//当日“双抽”奖项的衰减统计按日重置
+	if (info.checkinPrize3Date != today) {
+		info.checkinPrize3Date = today;
+		info.checkinPrize3Today = 0;
+	}
+
+	//奖池基础概率（%）与每次累计的修正值（%）
+	static constexpr std::array<double, 9> baseWeight{ 33.1, 17.9, 12.0, 10.2, 9.2, 7.1, 5.5, 3.5, 1.5 };
+	static constexpr std::array<double, 9> weightDelta{ -0.8, -0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1, 0.1 };
+
+	auto currentWeights = [&]() {
+		std::array<double, 9> w = baseWeight;
+		for (std::size_t i = 0; i < w.size(); ++i) w[i] += weightDelta[i] * bonusTimes;
+		//“双抽”项：当日每触发一次本项概率-1.5%
+		w[2] -= 1.5 * info.checkinPrize3Today;
+		return w;
+	};
+
+	//抽取一项奖品，返回奖品描述（“双抽”项会递归再抽两次，可再次抽到本项）
+	std::function<std::vector<std::string>(int)> drawPrize;
+	drawPrize = [&](const int depth) -> std::vector<std::string> {
+		std::array<double, 9> w = currentWeights();
+		//极端递归保护：最多约32件奖品，超过深度后“双抽”项不再触发
+		if (depth >= 5) w[2] = 0.0;
+		double total = 0.0;
+		for (const double x : w) total += std::max(0.0, x);
+
+		double roll = static_cast<double>(unool::random::randomInt(0, 9999)) / 100.0;
+		if (total > 0.0) roll = roll * total / 100.0;
+		double acc = 0.0;
+		std::size_t idx = 0;
+		for (std::size_t i = 0; i < w.size(); ++i) {
+			acc += std::max(0.0, w[i]);
+			idx = i;
+			if (roll < acc) break;
+		}
+
+		switch (idx) {
+		case 0:  //5积分
+			info.points += 5;
+			return { "5积分" };
+		case 1: {  //一张加分卡/不死图腾，或两张炸弹卡
+			const std::size_t pick = unool::random::randomSize_t(1, 3);
+			if (pick == 1) {
+				info.items["增分卡"] += 1;
+				return { "增分卡×1" };
+			}
+			if (pick == 2) {
+				info.items["不死图腾"] += 1;
+				return { "不死图腾×1" };
+			}
+			info.items["炸弹卡"] += 2;
+			return { "炸弹卡×2" };
+		}
+		case 2: {  //本次改为从奖池随机抽取两项（仅当天逐次衰减；再次命中本项则继续翻倍）
+			info.checkinPrize3Today += 1;
+			auto first = drawPrize(depth + 1);
+			auto second = drawPrize(depth + 1);
+			first.insert(first.end(), second.begin(), second.end());
+			return first;
+		}
+		case 3:  //20积分
+			info.points += 20;
+			return { "20积分" };
+		case 4: {  //随机未拥有的价格100以下的任意英雄
+			std::vector<std::string> candidates;
+			for (const auto& [name, data] : Character::infos) {
+				if (name == "白板" || info.ownedCharacters.contains(name)) continue;
+				auto price = Character::getCharacterPrice(name);
+				if (!price.has_value() || price.value() >= 100) continue;
+				candidates.push_back(name);
+			}
+			if (candidates.empty()) {
+				info.points += 5;
+				return { "5积分（已无可用英雄）" };
+			}
+			const std::string chosen = unool::random::randomGet(candidates);
+			info.ownedCharacters[chosen] = { "默认" };
+			return { std::format("英雄【{}】", chosen) };
+		}
+		case 5:    //随机未拥有的普通或精品品质皮肤
+		case 7: {  //随机未拥有的任意非至尊品质皮肤
+			std::vector<std::pair<std::string, std::string>> candidates;
+			for (const auto& [name, data] : Character::infos) {
+				if (name == "白板") continue;
+				for (const std::string& skin : Character::getSkins(name)) {
+					if (skin == "默认") continue;
+					const Character::SkinQuality quality = Character::getSkinQuality(name, skin);
+					if (idx == 5 && !(quality == Character::SkinQuality::normal || quality == Character::SkinQuality::fine)) continue;
+					if (idx == 7 && quality == Character::SkinQuality::supreme) continue;
+					const auto ownedIt = info.ownedCharacters.find(name);
+					if (ownedIt != info.ownedCharacters.end() && ownedIt->second.contains(skin)) continue;
+					candidates.emplace_back(name, skin);
+				}
+			}
+			if (candidates.empty()) {
+				info.points += 5;
+				return { "5积分（已无可用皮肤）" };
+			}
+			const auto chosen = unool::random::randomGet(candidates);
+			info.ownedCharacters[chosen.first].insert(chosen.second);
+			return { std::format("{}的皮肤【{}】", chosen.first, chosen.second) };
+		}
+		case 6: {  //随机未拥有的非S任意英雄
+			std::vector<std::string> candidates;
+			for (const auto& [name, data] : Character::infos) {
+				if (name == "白板" || info.ownedCharacters.contains(name)) continue;
+				if (data.level == Character::Level::S) continue;
+				candidates.push_back(name);
+			}
+			if (candidates.empty()) {
+				info.points += 5;
+				return { "5积分（已无可用英雄）" };
+			}
+			const std::string chosen = unool::random::randomGet(candidates);
+			info.ownedCharacters[chosen] = { "默认" };
+			return { std::format("英雄【{}】", chosen) };
+		}
+		case 8:  //500积分
+			info.points += 500;
+			return { "500积分" };
+		default:
+			info.points += 5;
+			return { "5积分" };
+		}
+	};
+
+	auto rewards = drawPrize(0);
+
+	//记录签到信息
+	info.lastCheckinDate = today;
+	info.checkinStreak = continued ? info.checkinStreak + 1 : 1;
+	if (info.points < 0) info.points = 0;
+	save();
+
+	//每件奖品单独一行：xxx用户获得了【xxx】！
+	std::string msg = "签到成功！";
+	for (const std::string& reward : rewards) {
+		msg += std::format("\n{}用户获得了【{}】！", username, reward);
+	}
+
+	result.ok = true;
+	result.msg = msg;
+	result.points = info.points;
+	std::println("[UserDB] {}", result.msg);
+	return result;
 }

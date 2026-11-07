@@ -1,25 +1,25 @@
 {
-	"mode": "double",
-	"characters": {
-		//"assign": [ "白板", "白板" ],
-		"shielded": {
-			"characters": [ "电棍" ],
-			"groups": []
-		}
-	},
-	"rules": {
-		"banCount": 1,
-		"double": {
-			"candidateCount": 5,
-			"initHandCount": 10
-		},
-		"normal": {
-			"candidateCount": 5,
-			"initHandCount": 8
-		}
-	},
-	"network": {
-		"maxReconnectAttempts": 100,
-		"reconnectTimeoutSec": 600
-	}
+  "mode": "double",
+  "characters": {
+    //"assign": [ "白板", "白板" ],
+    "shielded": {
+      "characters": [],
+      "groups": [ "实验" ]
+    }
+  },
+  "rules": {
+    "banCount": 1,
+    "double": {
+      "candidateCount": 5,
+      "initHandCount": 10
+    },
+    "normal": {
+      "candidateCount": 5,
+      "initHandCount": 8
+    }
+  },
+  "network": {
+    "maxReconnectAttempts": 100,
+    "reconnectTimeoutSec": 600
+  }
 }
