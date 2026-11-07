@@ -13,6 +13,7 @@ class GameLogic;
 
 enum class DrawReason {
 	unknown,
+	init,        //开局初始手牌
 	phase_draw,
 	skill
 };

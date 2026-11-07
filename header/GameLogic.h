@@ -60,6 +60,8 @@ private:
 	void initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId);
 	//增分卡使用询问：有增分卡则询问是否使用，使用则消耗一张并记录状态
 	void askBonusCard(std::size_t playerId);
+	//不死图腾使用询问：持有则可逐张使用，使用后本场受致命伤害时保命
+	void askTotem(std::size_t playerId);
 #pragma endregion
 
 public:

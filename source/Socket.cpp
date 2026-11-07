@@ -193,6 +193,10 @@ void ServerNetwork::handleClientPackets() {
 							handleSkillInfoRequest(i, requestData);
 						}
 					}
+					else if (msgType == static_cast<int>(MessageType::CheckinRequest)) {
+						//每日签到请求：内联处理，不入队
+						handleCheckin(i);
+					}
 					else {
 						receivedPackets.push(packet);
 					}
@@ -607,6 +611,26 @@ bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& use
 		shopData.items.push_back(std::move(itemInfo));
 	}
 
+	// 不死图腾
+	{
+		ShopItemInfo itemInfo;
+		itemInfo.name = "不死图腾";
+		itemInfo.count = UserDB::instance().getItemCount(username, "不死图腾");
+		itemInfo.price = 10;
+		itemInfo.available = true;
+		shopData.items.push_back(std::move(itemInfo));
+	}
+
+	// 炸弹卡
+	{
+		ShopItemInfo itemInfo;
+		itemInfo.name = "炸弹卡";
+		itemInfo.count = UserDB::instance().getItemCount(username, "炸弹卡");
+		itemInfo.price = 5;
+		itemInfo.available = true;
+		shopData.items.push_back(std::move(itemInfo));
+	}
+
 	// 序列化 ShopData 为 JSON 并通过 sf::Packet 发送
 	nlohmann::json j = shopData;
 	std::string jsonStr = j.dump();
@@ -647,6 +671,27 @@ void ServerNetwork::handleSkillInfoRequest(std::size_t clientIndex, const std::s
 	packet << static_cast<int>(MessageType::SkillInfoResponse);
 	packet << j.dump();
 	sendPacketToClient(clientIndex, packet);
+}
+
+void ServerNetwork::handleCheckin(std::size_t clientIndex) {
+	if (!isClientConnected(clientIndex)) return;
+
+	const std::string& username = clientSlots_[clientIndex].username;
+	if (username.empty()) return;
+
+	const CheckinResult result = UserDB::instance().checkin(username);
+
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::CheckinResponse);
+	packet << result.msg;
+	packet << result.ok;
+	packet << result.points;
+	sendPacketToClient(clientIndex, packet);
+
+	//同步积分
+	clientSlots_[clientIndex].points = result.points;
+	std::println("[ServerNetwork] 客户端{}（账号 {}）签到：{}（当前积分 {}）",
+				 clientIndex, username, (result.ok ? "成功" : "已签到"), result.points);
 }
 
 void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData) {
@@ -753,6 +798,12 @@ void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::strin
 		}
 		else if (req.name == "增分卡") {
 			price = 10;
+		}
+		else if (req.name == "不死图腾") {
+			price = 10;
+		}
+		else if (req.name == "炸弹卡") {
+			price = 5;
 		}
 		else {
 			errMsg = "未知道具";

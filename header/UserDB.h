@@ -15,8 +15,23 @@ struct UserInfo {
 	int losses = 0;
 	std::map<std::string, std::set<std::string>> ownedCharacters;
 	std::map<std::string, int> items;
+	// 签到系统（日期均为北京时间 yyyy-mm-dd）
+	std::string lastCheckinDate;
+	int checkinStreak = 0;             // 连续签到天数（截至最近一次签到）
+	std::string checkinPrize3Date;     // 当日“双抽”奖项统计所属日期
+	int checkinPrize3Today = 0;        // 当日“双抽”奖项已触发次数（用于当日概率衰减）
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, password, points, wins, losses, ownedCharacters, items)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, password, points, wins, losses,
+												 ownedCharacters, items,
+												 lastCheckinDate, checkinStreak,
+												 checkinPrize3Date, checkinPrize3Today)
+};
+
+// 签到结果
+struct CheckinResult {
+	bool ok = false;        // 本次是否签到成功
+	std::string msg;        // 面向上层展示的完整文案
+	int points = 0;         // 签到后积分
 };
 
 class UserDB {
@@ -80,6 +95,8 @@ public:
 	bool purchaseSkin(const std::string& username, const std::string& charName, const std::string& skinName, int price);
 	// 购买道具：积分校验+增加数量，返回成功/失败
 	bool purchaseItem(const std::string& username, const std::string& itemName, int price);
+	// 每日签到（北京时间，每天一次）：按奖池抽取奖品并落盘
+	CheckinResult checkin(const std::string& username);
 
 private:
 	UserDB() { load(); }

@@ -8,6 +8,7 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 		skins = other.skins;
 		hp = other.hp;
 		maxHp = other.maxHp;
+		shield = other.shield;
 		marks = other.marks;
 		wins = other.wins;
 		losses = other.losses;
@@ -17,7 +18,7 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 }
 
 sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
-	packet >> state.id >> state.hp >> state.maxHp;
+	packet >> state.id >> state.hp >> state.maxHp >> state.shield;
 	//角色名数组：先读 size 再逐个 string
 	std::size_t nameCount;
 	packet >> nameCount;
@@ -46,7 +47,7 @@ sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
 }
 
 sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
-	packet << state.id << state.hp << state.maxHp;
+	packet << state.id << state.hp << state.maxHp << state.shield;
 	//角色名数组：先写 size 再逐个 string
 	packet << state.characterNames.size();
 	for (const std::string& n : state.characterNames) packet << n;

@@ -2804,3 +2804,255 @@ bool 投日::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 }
 
 
+// ==================== 技能：熬鹰 ====================
+
+//熬鹰_计数：回合开始时累计已执行的回合数
+bool 熬鹰_计数::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	//被封禁的回合会被跳过，不计入累计回合数
+	if (carrier.isBanned()) return false;
+	auto opt = carrier.findSkill<熬鹰>();
+	if (!opt.has_value()) return false;
+	//已觉醒后不再计数
+	return !opt.value().get().isAwakened();
+}
+
+bool 熬鹰_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<熬鹰>();
+	if (!opt.has_value()) return false;
+	++opt.value().get().turnCount;
+	//刷新角色信息中的回合数显示
+	carrier.markCharInfoDirty();
+	return true;
+}
+
+//熬鹰_解除限制：觉醒后，第二个出牌阶段解除出牌限制
+bool 熬鹰_解除限制::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	auto opt = carrier.findSkill<熬鹰>();
+	if (!opt.has_value()) return false;
+	return opt.value().get().isAwakened();
+}
+
+bool 熬鹰_解除限制::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.setUnrestrictedPlay(true);
+	std::println("<技能> {}已觉醒【熬鹰】，第二个出牌阶段出牌不受限制", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+//熬鹰：第20个回合结束时觉醒，从游戏外获得一张【+4】
+bool 熬鹰::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	if (awakened) return false;
+	return turnCount >= 20;
+}
+
+bool 熬鹰::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	awakened = true;
+	//从游戏外获得一张【+4】
+	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_draw4));
+	std::println("<技能> {}觉醒，发动熬鹰，从游戏外获得一张【+4】，第二个出牌阶段出牌不受限制",
+				 carrier.displayName());
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+void 熬鹰::reset() {
+	PassiveSkill::reset();
+	turnCount = 0;
+	awakened = false;
+}
+
+std::optional<std::string> 熬鹰::extraPlaceholders(const std::string& key) const {
+	if (key == "turns") return std::to_string(turnCount);
+	return std::nullopt;
+}
+
+
+// ==================== 技能：连杀 ====================
+bool 连杀::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//本回合未打出牌（含被封禁而跳过的回合）：连续回合数归零
+	if (!carrier.getHasUsed()) {
+		if (consecutive == 0) return true;
+		consecutive = 0;
+		std::println("<技能> {}本回合未打出牌，连杀连续回合数归零", carrier.displayName());
+		carrier.markCharInfoDirty();
+		game.broadcastState();
+		return true;
+	}
+	++consecutive;
+	std::println("<技能> {}连杀，当前连续打出牌回合数：{}", carrier.displayName(), consecutive);
+	carrier.markCharInfoDirty();
+	//每连续三回合打出牌，从游戏外随机获得一张万能牌
+	if (consecutive >= 3) {
+		consecutive = 0;
+		Card::ColorName cn = Card::randomCard([](const Card& c) { return c.isWild(); });
+		const std::string cardName{ Card::to_string(std::get<1>(cn)) };
+		carrier.gainCard(Card::make(cn));
+		std::println("<技能> {}发动连杀，从游戏外随机获得一张【{}】", carrier.displayName(), cardName);
+	}
+	game.broadcastState();
+	return true;
+}
+
+void 连杀::reset() {
+	PassiveSkill::reset();
+	consecutive = 0;
+}
+
+std::optional<std::string> 连杀::extraPlaceholders(const std::string& key) const {
+	if (key == "turns") return std::to_string(consecutive);
+	return std::nullopt;
+}
+
+
+// ==================== 技能：分身 ====================
+bool 分身_获取::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	//打出万能牌时获得「分身」
+	return trigger.getCard().isWild();
+}
+
+bool 分身_获取::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.addMark("分身");
+	std::println("<技能> {}打出万能牌，获得一个「分身」（当前{}个）",
+				 carrier.displayName(), carrier.getMarkCount("分身"));
+	game.broadcastState();
+	return true;
+}
+
+bool 分身_发动::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	if (!carrier.hasMark("分身")) return false;
+	//手牌中存在与刚打出的牌同牌名的牌
+	const Card::Name name = trigger.getCard().getName();
+	return carrier.handInclude([name](const Card& c) { return c.getName() == name; });
+}
+
+bool 分身_发动::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	const Card::Name name = trigger.getCard().getName();
+
+	//收集同名牌的索引
+	std::vector<std::size_t> indices;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getCardByIndex(i).getName() == name) indices.push_back(i);
+	}
+	if (indices.empty()) return false;
+
+	const std::size_t choice = carrier.ask(
+		std::format("【分身】是否移去一个「分身」，打出一张【{}】？", name),
+		{ "发动", "不发动" }, false);
+	if (choice != 1) return false;
+
+	//多张同名牌时自选打出其中一张
+	std::size_t chosen = indices.front();
+	if (indices.size() > 1) {
+		auto idxOpt = carrier.chooseCard(
+			std::format("【分身】选择打出一张【{}】", name),
+			[name](const Card& c) { return c.getName() == name; }, false);
+		if (!idxOpt.has_value()) return false;
+		chosen = idxOpt.value();
+	}
+
+	carrier.removeMark("分身", 1);
+	std::println("<技能> {}移去一个「分身」，打出同名牌【{}】", carrier.displayName(), name);
+	//无需符合跟牌规则
+	carrier.useCardByIndex(chosen);
+	return true;
+}
+
+bool 分身::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	carrier.addMark("分身");
+	std::println("<技能> {}游戏开始时获得一个「分身」", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：宣战 ====================
+bool 宣战::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	const bool played = carrier.getHasUsed();
+	const int delta = played ? 1 : 2;
+	const int num0 = static_cast<int>(Card::Name::number_0);
+
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		Card& c = carrier.getCardByIndex(i);
+		if (!c.isNumber()) continue;
+		const int point = static_cast<int>(c.getName()) - num0;
+		if (point > 5) {
+			int np = point - delta;
+			if (np < 0) np = 0;
+			c.set(c.getColor(), static_cast<Card::Name>(num0 + np));
+		}
+		else if (point < 5) {
+			int np = point + delta;
+			if (np > 9) np = 9;
+			c.set(c.getColor(), static_cast<Card::Name>(num0 + np));
+		}
+	}
+
+	//统计手中【5】的数量
+	std::size_t fiveCount = 0;
+	for (std::size_t i = 0; i < carrier.handCount(); ++i)
+		if (carrier.getCardByIndex(i).is(Card::Name::number_5)) ++fiveCount;
+
+	if (fiveCount >= 4) {
+		const std::size_t choice = carrier.ask(
+			std::format("【宣战】你手中有{}张【5】，是否全部转化为一张【+4】打出？", fiveCount),
+			{ "发动", "不发动" }, false);
+		if (choice == 1) {
+			//找到第一张【5】改为【+4】
+			std::size_t firstIdx = std::string::npos;
+			for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+				if (carrier.getCardByIndex(i).is(Card::Name::number_5)) { firstIdx = i; break; }
+			}
+			if (firstIdx != std::string::npos) {
+				carrier.getCardByIndex(firstIdx).set(Card::Color::black, Card::Name::wild_draw4);
+				//销毁其余的【5】（直接移出游戏，不置入弃牌堆，降序删除避免下标错位）
+				std::vector<std::size_t> rest;
+				for (std::size_t i = firstIdx + 1; i < carrier.handCount(); ++i)
+					if (carrier.getCardByIndex(i).is(Card::Name::number_5)) rest.push_back(i);
+				for (auto it = rest.rbegin(); it != rest.rend(); ++it)
+					carrier.takeCardByIndex(*it);
+
+				std::println("<技能> {}发动宣战，将{}张【5】转化为【+4】打出", carrier.displayName(), fiveCount);
+				carrier.useCardByIndex(firstIdx);
+			}
+		}
+	}
+
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：赔款 ====================
+bool 赔款::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	//仅当自己为封禁来源时触发
+	return trigger.hasSource() && &trigger.getSource() == &carrier;
+}
+
+bool 赔款::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	//若目标手中没有【+2】，随机获得一张四种颜色的【+2】
+	if (!target.handInclude([](const Card& c) { return c.is(Card::Name::action_draw2); })) {
+		target.gainCard(std::make_unique<Card>(
+			unool::random::randomGet(Card::fourColors), Card::Name::action_draw2));
+		std::println("<技能> {}发动赔款，{}没有【+2】，获得一张随机色【+2】",
+					 carrier.displayName(), target.displayName());
+	}
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 技能：坚甲 ====================
+bool 坚甲::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	//每打出一张牌后获得1点护甲，上限50点
+	const std::size_t cur = carrier.getShield();
+	if (cur < 50) {
+		carrier.setShield(cur + 1);
+		carrier.markCharInfoDirty();
+	}
+	return true;
+}
+
+
