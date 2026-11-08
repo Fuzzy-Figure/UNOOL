@@ -127,11 +127,11 @@
     <None Include="..\..\README.md">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="todoList.txt">
+    <None Include="..\..\docs\todoList.txt">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="rules.md" />
+    <Text Include="..\..\docs\rules.md" />
   </ItemGroup>
 </Project>

@@ -19,17 +19,25 @@
 | 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/Card.h`、`header/Character.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
-| 构建 | Visual Studio 2026（`.slnx` + 3 个 `.vcxproj`），**仅 x64** |
+| 构建 | Visual Studio 2026（`.slnx` + 6 个 `.vcxproj`：3 个可执行工程 + 3 个静态库工程），**仅 x64** |
 | 平台 | Windows 10/11 |
 
 ## 目录结构
 
 ```
-UNOOL.slnx              解决方案：Server / Client1 / Client2
-header/                 头文件
-source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口）
+UNOOL.slnx              解决方案：Server / Client1 / Client2 + Domain / Application / Adapters
+UNOOL.slnLaunch.user    启动项目配置
+Projects/               6 个 VS 工程目录
+  Server/               Server.vcxproj（服务端）
+  Client1/ Client2/     Client1.vcxproj / Client2.vcxproj（同一份 ClientMain.cpp，仅 ProjectGuid 不同）
+  Domain/               UNOOL.Domain.vcxproj（纯标准库领域层，独立 pch）
+  Application/          UNOOL.Application.vcxproj（端口与服务定位，独立 pch）
+  Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
+header/                 头文件；domain/ application/ adapters/ 为分层新增目录
+source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口，后者也是装配根）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
+docs/                   设计文档与待办清单（见「文档」一节）
 client_config.json      客户端配置（字体、服务端 IP、各元素显示尺寸）
 server_config.json      服务端配置（模式、候选数、手牌数、禁用角色）
 userDatas.json          运行时生成的账号数据（密码明文，已 gitignore）
@@ -37,29 +45,41 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 核心模块：`GameLogic`（回合/座次/牌堆/技能触发）、`Player`（出牌摸牌与交互）、`Card`（牌堆与手牌容器）、`Skill` 系（技能框架）、`GameRenderer` / `ImageManager` / `TextManager`（客户端渲染）、`Socket`（网络封装）、`UserDB`（账号持久化）。
 
+分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
+
+## 文档
+
+| 文件 | 内容 |
+|---|---|
+| `docs/rules.md` | 场 / 局 / 轮 / 回合 / 阶段的完整规则、牌堆构成与万能牌结算 |
+| `docs/todoList.txt` | 待做项清单（已 gitignore，仅本地留存） |
+| `docs/UNOOL_六边形分层重构方案_确认版.md` | 六边形分层重构的确认决策、调整原因与影响、逐轮修改范围、验证结果与遗留风险 |
+
 ## 构建与运行
 
 ### 构建
 
 1. 用 Visual Studio 2026 打开 `UNOOL.slnx`
-2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 三个项目均已使用 `$(SolutionDir)dep\SFML\include`、`$(SolutionDir)dep\SFML\lib`、`$(SolutionDir)dep\nlohmann`、`$(SolutionDir)header` 相对路径，开箱即用
+2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 6 个工程均以 `$(SolutionDir)`（解决方案根）为基准使用 `dep\SFML\include`、`dep\SFML\lib`、`dep\nlohmann`、`header` 相对路径，工程虽位于 `Projects/` 下仍开箱即用
 3. 生成解决方案（Ctrl+Shift+B）
 
 > **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdc++20`，而代码使用了 C\++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C\++20 下会编译失败。
 
 ### 运行前必做：补 DLL
 
-在 `UNOOL\dep\SFML\bin` 里有 SFML3 的 .dll 文件，把它们放入与 .exe 同级目录下
+在 `dep\SFML\bin` 里有 SFML3 的 .dll 文件，把它们放入与 .exe 同级目录下（默认 `x64/Debug/` 或 `x64/Release/`）。
 
 ### 启动
 
-三个项目：`Server`（服务端）、`Client1` / `Client2`（同一份 `ClientMain.cpp` 的两份拷贝，仅 ProjectGuid 不同，用于本地双开测试）。
+三个可执行工程：`Server`（服务端）、`Client1` / `Client2`（同一份 `ClientMain.cpp` 的两份拷贝，仅 ProjectGuid 不同，用于本地双开测试）；`Domain` / `Application` / `Adapters` 为静态库工程，由 exe 引用。
 
 1. 先启动 `Server`，监听 **8888** 端口（硬编码于 `ServerMain.cpp`，非配置）
-2. 再启动两个 Client，在 `client_config.json` 中填好服务端 IP
+2. 再启动两个 Client，在 `client_config.json` 中填好服务端 IP / 端口
 3. 两端都登录后自动进入 Ban/Pick 与游戏循环
 
-> **工作目录敏感**：配置读取 `../client_config.json`、`../server_config.json`，账号数据写 `../userDatas.json`，图片资源根为 `current_path().parent_path()`。请在 `x64/Debug/` 或 `x64/Release/` 下启动，否则直接抛异常。
+> 仓库里的 `client_config.json` 指向作者的公网地址与 **14341** 端口，与服务端监听的 8888 不同，这是通过内网穿透做端口映射的有意配置；本机直连时把 `server.port` 改成 8888 即可。
+
+> **路径定位不再依赖工作目录**：`exeDir()` 取 exe 自身所在目录；`locate()` 从该目录最多上溯 8 级查找配置 json；`resourceRoot()` 上溯查找含 `images/` 或配置 json 的目录作为资源根（找不到时只落在 exe 目录以便诊断，绝不回退 `current_path()`）。因此 VS「启动」、双击 exe、从任意 CWD 命令行启动的结果一致；把 json / `images/` 复制到 exe 同目录时会优先使用同目录那份。`userDatas.json` 的读写共用资源根下的同一绝对路径，不会再在 `x64/` 下另建空库。
 
 ## 配置
 
@@ -68,7 +88,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 | 字段 | 说明 |
 |---|---|
 | `fonts` | 字体文件路径 |
-| `server.ip` / `server.port` | 客户端连接的服务端地址（服务端端口恒为 8888） |
+| `server.ip` / `server.port` | 客户端连接的服务端地址；服务端监听端口恒为 8888，两者经内网穿透映射时可不同 |
 | `size.window` / `card` / `pointer` / `character` | 窗口、卡牌、选择指针、角色立绘的显示尺寸 |
 
 `server_config.json`
@@ -118,7 +138,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 - **只能选 x64**：Win32 配置为 C++20，编译不过
 - **服务端全程单线程且阻塞**：没有任何线程 / 锁 / 原子量，`ask()` / `chooseCard()` 会同步阻塞等待某个客户端输入。同时只能服务一桌；客户端断线后重连等待默认 600 秒，期间整个服务端无法推进
-- **账号安全**：密码明文存 `userDatas.json`、明文 `!=` 比较，并在网络上明文传输，无哈希 / 无盐 / 无 TLS；存档为直接覆盖写，写入中断会损坏全库（该文件已在 `.gitignore` 中，但仍会随程序目录留存）
+- **账号安全**：密码明文存 `userDatas.json`、明文 `!=` 比较，并在网络上明文传输，无哈希 / 无盐 / 无 TLS；存档为直接覆盖写，写入中断会损坏全库（该文件已在 `.gitignore` 中，默认写在资源根即仓库根，不随 exe 目录走）
 - `client_config.json` 中硬编码了作者的公网服务器 IP
 - 非阻塞 socket 上 `send` 返回 `Partial` 时重发整个 Packet，可能破坏协议流
 - **子技能强耦合父技能**：子技能通过 `carrier.getSkill<父技能>()` 访问父技能状态，若父技能被任何「失去技能」效果移除，子技能仍会触发并抛 `std::runtime_error("没有找到技能")`

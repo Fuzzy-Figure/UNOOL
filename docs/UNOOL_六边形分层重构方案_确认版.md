@@ -338,3 +338,47 @@
 打开 `UNOOL.slnx` 后 6 个工程均能加载；`Debug|x64` / `Release|x64` 重新生成通过；启动配置仍能同时启动 Server + Client1 + Client2；双击 exe 时配置 / 玩家数据 / 图片定位与第 11 节一致。
 
 **仍未完成（最高优先级）**：双配置编译与运行时回归（本机 `MSBuild.exe` 拦截未解除）。
+
+## 13. 文档归拢 docs/ 与 README 订正（2026-11-08）
+
+### 13.1 范围与结果
+
+按用户「归拢 docs/ 并更新 README」执行，只动文档及其引用，不碰源码、工程配置语义与资源。
+
+| 原位置 | 新位置 | 方式 |
+|---|---|---|
+| `UNOOL_六边形分层重构方案_确认版.md`（根） | `docs/UNOOL_六边形分层重构方案_确认版.md` | `git mv`，git 记为 `R` |
+| `Projects/Server/rules.md` | `docs/rules.md` | `git mv`，git 记为 `R` |
+| `Projects/Server/todoList.txt` | `docs/todoList.txt` | 普通移动；该文件被 `.gitignore:372` 忽略、未跟踪。规则不含斜杠，移入 `docs/` 后仍生效（已验证） |
+
+保持原位：`README.md`（仓库首页文档，且被 `Server.vcxproj` / `.filters` 以 `..\..\README.md` 引用，移动只会扩大改动面）、`.trae/specs/**`（工具生成）、`.workbuddy/memory/**`（工作区记忆）、`Projects/*/x64/**`（构建产物）、`.slnx` / `.slnLaunch.user` / `header/` / `source/` / `dep/` / `images/` / 3 个 json。`.gitignore` 未改。
+
+### 13.2 必须同步修改的工程引用
+
+`Projects/Server/Server.vcxproj` 与 `Server.vcxproj.filters` 各 2 处（共 4 处）：`<None Include="todoList.txt">` → `..\..\docs\todoList.txt`；`<Text Include="rules.md" />` → `..\..\docs\rules.md`。二者相对 `Projects/Server/` 需上溯两级到解决方案根。`README.md` 引用保持 `..\..\README.md` 不变；其余 5 个工程未引用文档，零改动。
+
+### 13.3 README 订正（只改过时描述）
+
+| 位置 | 改动 |
+|---|---|
+| 技术栈 | `3 个 .vcxproj` → `6 个 .vcxproj：3 个可执行工程 + 3 个静态库工程`（已核实 6 份 `ConfigurationType`） |
+| 目录结构 | 补 `Projects/`（6 个工程目录）、`UNOOL.slnLaunch.user`、`docs/`、`header/` 下 `domain/` `application/` `adapters/` |
+| 核心模块 | 补充分层说明：依赖方向 `Adapters → Application → Domain`、端口清单、`ServerMain.cpp` 为装配根、`GameLogic` 去 `ServerNetwork&`、协议字节未变 |
+| 新增「文档」小节 | 索引 `docs/` 三个文件 |
+| 构建 | 6 个工程均以 `$(SolutionDir)` 为基准，移入 `Projects/` 后仍开箱即用；DLL 目标明确为 `x64/Debug|Release` |
+| 启动 | 说明 8888（服务端硬编码）与 `client_config.json` 的 14341（内网穿透映射）并存是有意配置，本机直连改 `server.port` 即可；「三个项目」改为「三个可执行工程」 |
+| 运行前置 | 删除已失效的「工作目录敏感 / `../xxx.json` / `current_path().parent_path()`」整段，改为 `exeDir()` / `locate()` / `resourceRoot()` 的实际定位规则与任意 CWD 一致的行为（对应第 11 节） |
+| 配置 / 已知限制 | `server.port` 说明、`userDatas.json` 默认落点（资源根即仓库根）同步订正 |
+
+未改动：玩法、操作、扩展、License、已知限制中除账号落点外的全部条目；README 保持 LF 换行。
+
+### 13.4 验证结果（静态只读，全部通过）
+
+- 6 个 `.vcxproj` + 3 个 `.filters` **XML 全部可解析**；**298 个文件类 Include 条目 0 缺失**（33 个 `.filters` 虚拟筛选器节点已排除，不作为文件路径校验）。
+- BOM 状态保持：3 个 `.filters` 有 BOM、6 个 `.vcxproj` 无 BOM；编码与换行未变。
+- `docs/` 三份文件均存在，三处原位置均已清空；`git status` 显示 2 个 `R` + 3 个 `M`（README、Server 工程文件），无其他改动。
+- README 中已无「工作目录敏感 / `../client_config.json` / `3 个 .vcxproj` / `current_path().parent_path()`」等过时描述；`.gitignore:372` 对 `docs/todoList.txt` 仍生效。
+
+### 13.5 遗留风险
+
+本轮只移动文档与改文档引用，**不涉及任何编译单元、包含目录、链接项或运行时路径**，因此第 11 / 12 节的运行时行为不受影响。第 12.4 节记录的两个遗留项仍未解除：`Projects/*/x64` 中间产物需在 VS 里 Rebuild 或手动删除后重建；`Debug|x64` / `Release|x64` 编译与运行时回归在本机仍因 `MSBuild.exe` 被拦截而未执行。
