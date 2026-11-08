@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <cmath>
 #include <fstream>
@@ -65,19 +66,17 @@ namespace unool {
 	}
 
 	namespace random {
-		std::mt19937 rng(std::random_device{}());
+		// 真正的 mt19937 已移入 LegacyServicesAdapter；这里只留无状态的端口门面，
+		// 使 shuffle / sample / distribution 的所有既有调用点保持源码不变。
+		RandomEngine rng;
 		int randomInt(const int begin, const int end) {
-			std::uniform_int_distribution<int> dist(begin, end);
-			return dist(rng);
+			return unool::application::services().random.intIn(begin, end);
 		}
 		std::size_t randomSize_t(const std::size_t begin, const std::size_t end) {
-			std::uniform_int_distribution<std::size_t> dist(begin, end);
-			return dist(rng);
+			return unool::application::services().random.sizeIn(begin, end);
 		}
 		bool probability(const double p) {
-			if (p < 0 || p > 1) throw std::invalid_argument("参数p必须介于0和1之间");
-			std::bernoulli_distribution dist(p);
-			return dist(rng);
+			return unool::application::services().random.probability(p);
 		}
 	}
 
@@ -91,6 +90,31 @@ namespace unool {
 		std::size_t pow(const std::size_t a, const std::size_t b) {
 			return static_cast<std::size_t>(std::pow(a, b));
 		}
+	}
+}
+
+// 默认服务定位：三个 exe 工程原本都编译本文件，因此定义放这里不会新增
+// 编译单元或链接依赖。静态工具（Character）与全局随机门面（utils）在
+// 未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
+namespace unool::application {
+	namespace detail {
+		DomainServices*& installedSlot() {
+			static DomainServices* slot = nullptr;
+			return slot;
+		}
+		DomainServices& legacyBundle() {
+			static adapters::LegacyServicesAdapter adapter;
+			static DomainServices bundle{ adapter, adapter, adapter, adapter, adapter };
+			return bundle;
+		}
+	}
+
+	DomainServices& services() {
+		if (DomainServices* installed = detail::installedSlot()) return *installed;
+		return detail::legacyBundle();
+	}
+	void installServices(DomainServices& s) {
+		detail::installedSlot() = &s;
 	}
 }
 

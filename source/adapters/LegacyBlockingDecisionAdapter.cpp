@@ -7,8 +7,9 @@
 
 namespace unool::adapters {
 
-	LegacyBlockingDecisionAdapter::LegacyBlockingDecisionAdapter(ServerNetwork& network)
-		: network_(network) {}
+	LegacyBlockingDecisionAdapter::LegacyBlockingDecisionAdapter(ServerNetwork& network,
+																 application::IConfigProvider& config)
+		: network_(network), config_(config) {}
 
 	// === IDecisionPort ===
 
@@ -46,7 +47,7 @@ namespace unool::adapters {
 	}
 
 	int LegacyBlockingDecisionAdapter::reconnectTimeoutSec() const {
-		return unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
+		return config_.reconnectTimeoutSec();
 	}
 
 	// === IServerView ===

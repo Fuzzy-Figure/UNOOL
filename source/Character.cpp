@@ -2,7 +2,8 @@
 #include "PassiveSkill.h"
 #include "InstantSkill.h"
 #include "TransformSkill.h"
-#include <filesystem>
+#include "utils.h"
+#include "application/Services.h"
 #include <algorithm>
 #include <stdexcept>
 #include <format>
@@ -274,38 +275,14 @@ std::string Character::getImagePath(const std::string& name, const std::string& 
 		throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name));
 	}
 	const std::string& group = it->second.group;
-	return std::format("images/characters/{}/{}/{}.jpg", group, name, skin);
+	return unool::application::services().assets.imagePath(group, name, skin);
 }
 std::vector<std::string> Character::getSkins(const std::string& name) {
-	namespace fs = std::filesystem;
 	auto it = infos.find(name);
 	if (it == infos.end()) {
 		throw std::invalid_argument(std::format("角色 <{}> 未在 Character::infos 中定义", name));
 	}
-	const std::string& group = it->second.group;
-	const fs::path dir = fs::path("../images/characters") / unool::string::to_utf16(group) / unool::string::to_utf16(name);
-	if (!fs::exists(dir) || !fs::is_directory(dir)) {
-		std::println(stderr, "角色 <{}> 的皮肤目录不存在", name);
-		return {};
-	}
-	std::vector<std::string> skins;
-	for (const auto& entry : fs::directory_iterator(dir)) {
-		if (entry.is_regular_file() && entry.path().extension() == ".jpg") {
-			skins.push_back(unool::string::to_utf8(entry.path().stem().wstring()));
-		}
-	}
-	if (skins.empty()) {
-		std::println(stderr, "角色 <{}> 的皮肤目录下无 .jpg 文件", name);
-		return {};
-	}
-	//排序，"默认"置首
-	std::ranges::sort(skins,
-					  [](const std::string& name1, const std::string& name2) {
-		if (name1 == "默认") return true;
-		if (name2 == "默认") return false;
-		return name1 < name2;
-	});
-	return skins;
+	return unool::application::services().assets.skinsOf(it->second.group, name);
 }
 
 std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
@@ -316,11 +293,11 @@ std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n) {
 std::vector<Character::Entry> Character::randomChooseCharacters(std::size_t n, const std::unordered_set<std::string>& exclude) {
 	//加载被屏蔽的角色和分组
 	const std::unordered_set<std::string> shieldedCharacters = [] {
-		std::vector chars = unool::getServerConfig()["characters"]["shielded"]["characters"].get<std::vector<std::string>>();
+		std::vector chars = unool::application::services().config.shieldedCharacters();
 		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
 	}();
 	const std::unordered_set<std::string> shieldedGroups = [] {
-		std::vector chars = unool::getServerConfig()["characters"]["shielded"]["groups"].get<std::vector<std::string>>();
+		std::vector chars = unool::application::services().config.shieldedGroups();
 		return std::unordered_set<std::string>{ chars.begin(), chars.end() };
 	}();
 

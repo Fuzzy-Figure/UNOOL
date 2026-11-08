@@ -1,8 +1,9 @@
-# UNOOL 六边形分层重构方案 · 确认版（第一步）
+# UNOOL 六边形分层重构方案 · 确认版（第一步 + 第二步续作）
 
 > 原方案：`C:\Users\Admin\Desktop\UNOOL_六边形分层重构方案.md`
-> 确认日期：2026-11-08。本文件是原方案的**确认修订版与本次执行记录**。
-> 未在下文中列为"调整/排除"的原方案条款保持不变；阶段 2–6 **本次未执行**，仅作为后续路线。
+> 确认日期：2026-11-08。本文件是原方案的**确认修订版与执行记录**。
+> 第 1–8 节为第一步（`3e93956`）；第 9 节为第二步续作「补齐已点名残留耦合」。
+> 未在下文中列为"调整/排除"的原方案条款保持不变；阶段 5–6 仍未执行，仅作为后续路线。
 
 ## 1. 确认决策
 
@@ -104,4 +105,82 @@
 
 ## 8. 后续阶段
 
-原方案阶段 2–4 的路线与验收保持不变，但在开工前需先补：录制/回放设施（若恢复逐字节验收）、`IUserRepository`/`IConfigProvider`/`IClock`/`IRandom`/`IAssetCatalog` 的注入路径、以及 `GameSnapshot` 与 `GameState` 的映射规则。阶段 5/6 按 Q3 另期排期。
+原方案阶段 2–4 的路线与验收保持不变，但在开工前需先补：录制/回放设施（若恢复逐字节验收）、以及 `GameSnapshot` 与 `GameState` 的映射规则。五个出站端口的注入路径已在第 9 节落地。阶段 5/6 按 Q3 另期排期。
+
+---
+
+## 9. 第二步续作：补齐已点名残留耦合
+
+### 9.1 范围确认（本轮两项选择）
+
+| 问题 | 结论 |
+|---|---|
+| 本轮「继续重构」按哪一级范围执行 | **补齐已点名残留耦合**：沿用第一步端口/适配器约定，处理 `GameLogic.cpp` / `Player.cpp` / `Character.cpp` / `ServerMain.cpp` / `utils` 中方案已点名的 `getServerConfig`、`UserDB::instance()`、`random::rng`、`sf::Clock`、图片目录扫描；并消除 `Player.h/.cpp` 的 `sf::Keyboard::Scancode` |
+| 「接口不变」口径 | **仅线上协议与对外行为**：允许按第一步已确认方式新增端口、调整 `GameLogic` / `Player` 内部构造签名；公开方法、`MessageType`、`sf::Packet` 序列化、JSON 配置、端口 `8888` / `14341` 一律不变 |
+
+**本轮明确未动**（与 Q3 / 本轮口径一致）：`Socket.cpp` 业务处理（其 28 处 `UserDB::instance()` 属于 Socket 业务层，不在方案点名范围内）、客户端 Scene、`Client1/Client2` 工程与源码、`Protocol` 工程、任何线上字节、`MessageType` 拆分、长度帧/Partial、子技能异常、安全修复、商城 TODO、删除 `Client2`/Win32。
+
+### 9.2 新增端口与领域类型（7 个头文件，纯标准库）
+
+| 文件 | 内容 |
+|---|---|
+| `header/application/IConfigProvider.h` | `mode` / `candidateCount(rulesKey)` / `initHandCount(rulesKey)` / `banCount` / `shieldedCharacters` / `shieldedGroups` / `assignedCharacters` / `reconnectTimeoutSec` / `reload`，逐项对应原 `server_config.json` 读取表达式 |
+| `header/application/IUserRepository.h` | `getCharacterPool` / `getOwnedCharacters` / `getOwnedSkins` / `getItemCount` / `useItem` / `addPoints` / `addMatchResult`；`Character::Level`、皮肤品质以底层整数透传，端口不认识领域枚举 |
+| `header/application/IRandom.h` | `next` / `intIn` / `sizeIn` / `probability` / `seed` |
+| `header/application/IClock.h` | `now()` → `std::chrono::steady_clock::time_point` |
+| `header/application/IAssetCatalog.h` | `skinsOf(group,name)` / `imagePath(group,name,skin)` |
+| `header/application/Services.h` | `DomainServices{config,users,random,clock,assets}` 聚合 + `services()` / `installServices()` 默认服务定位 |
+| `header/domain/Keys.h` | `enum class Key : std::uint32_t`，31 项数值与 SFML 3.1 `sf::Keyboard::Scan` 逐字对应 |
+
+### 9.3 关键调整（原因 / 影响）
+
+| # | 调整 | 原因 | 影响 |
+|---|---|---|---|
+| B1 | `LegacyServicesAdapter` 用 **header-only 内联类** 实现全部 5 个端口；`services()` / `installServices()` 的**非内联定义放在 `source/utils.cpp`** | `Character::getSkins/getImagePath/randomChooseCharacters` 是静态工具，且 Client1/Client2 也编译 `Character.cpp`/`utils.cpp`；若定义在新 `.cpp`，客户端要么改工程、要么新增链接依赖 | 三个 exe 原本都编译 `utils.cpp`，**零新增 .cpp、零客户端工程改动、零新链接依赖** |
+| B2 | 保留全局 `unool::random::rng` 名字，类型由 `std::mt19937` 改为无状态 `RandomEngine` 门面（满足 `uniform_random_bit_generator`，`operator()` 转发 `IRandom::next()`） | `Card.cpp` / `GameLogic.cpp` / `Character.cpp` / `InstantSkill.cpp` / `PassiveSkill.cpp` 等 9 处 `std::ranges::shuffle/sample` 直接以 `rng` 作 URBG；`IRandom` 不是 URBG | 这些调用点**一行未改**，仍共用同一条引擎状态，随机序列逐字等价；真正 `mt19937` 移入适配器 |
+| B3 | `GameLogic` / `Player` 构造注入 `DomainServices&`；`Character` 静态工具与 `utils` 全局随机门面用 `services()` 默认定位 | 与第一步「兼容门面」同源：静态工具无法构造注入 | `ServerMain` 用 `installServices(domainServices)` 让两类入口指向**同一组实例**；客户端不装配时自动回落到逐字等价的遗留实现 |
+| B4 | `LegacyBlockingDecisionAdapter` 增加 `IConfigProvider&` 构造参数，`reconnectTimeoutSec()` 改为端口读取 | 避免适配器直读 `server_config.json`，且避免 Adapters 静态库反向依赖 `utils.obj` | 构造签名 +1 参数，仅 `ServerMain.cpp` 一处调用点 |
+| B5 | `sf::Clock` 三处改为 `IClock::now()` + `std::chrono::duration` 差值 | 消除领域层 SFML 时钟依赖 | 秒级用 `duration<double>.count()`、毫秒级用 `duration_cast<milliseconds>`，与原 `asSeconds()` / `asMilliseconds()` 判定一致；16ms/100ms 睡眠与日志文本不变 |
+| B6 | `sf::Keyboard::Scancode` → `unool::domain::Key`，`Player.h` 去掉 SFML 头 | 消除领域层 SFML 键码依赖 | `ClientInput.key` 的 `std::uint32_t` 原样透传，31 项键码已程序化比对 SFML 枚举全部一致；`Socket.h/.cpp` 的 `ClientInput` 与序列化**未动** |
+
+### 9.4 修改范围
+
+**新增 8 个文件**：9.2 的 7 个头文件 + `header/adapters/LegacyServicesAdapter.h`。
+
+**修改 14 个已跟踪文件**：
+
+- `header/utils.h` / `source/utils.cpp`：`RandomEngine` 门面、`services()`/`installServices()` 定义、`getServerConfig()`/`reloadServerConfig()` 保留为适配器用的遗留实现
+- `header/GameLogic.h` / `source/GameLogic.cpp`：注入 `DomainServices&`，配置与用户数据读取改走 `services.config` / `services.users`，3 处 `make_unique<Player>` 传入 `services`
+- `header/Player.h` / `source/Player.cpp`：注入 `DomainServices&`、键码领域化、3 处时钟端口化、`UserDB` 调用改走 `services.users`
+- `source/Character.cpp`：图片目录扫描与路径拼装、屏蔽角色/分组读取移到端口
+- `source/ServerMain.cpp`：装配 `LegacyServicesAdapter` + `DomainServices`、`installServices`、构造函数、`initCharacters` / `handleGameOver` / `gameLoop` 参数化、`addMatchResult` 整数转换
+- `header/adapters/LegacyBlockingDecisionAdapter.h` / `source/adapters/LegacyBlockingDecisionAdapter.cpp`：注入 `IConfigProvider&`
+- `Domain/` / `Application/` / `Adapters/` / `Server/` 四个 `.vcxproj`：补 `ClInclude` 条目（仅 IDE 可见性，不改编译单元、不改 PCH、不共享 PCH）
+
+**未改动**：`Client1/Client1.vcxproj`、`Client2/Client2.vcxproj`、`UNOOL.slnx`、`header/pch.h`、三份 `pch.*.h/.cpp`、`Socket.h/.cpp`（含其 28 处 `UserDB::instance()`）、`GameState.*`、`AccountProtocol.*`、`UserDB.*`、`Card.*`、`Skill.*`、`PassiveSkill.*`、`InstantSkill.*`、`TransformSkill.*`、`Effect.*`、所有客户端 Scene/Renderer、两个 JSON 配置、图片资源。
+
+### 9.5 验证结果（静态只读核对，全部通过）
+
+- 6 个 `.vcxproj` XML 可解析，所有 `ClInclude` / `ClCompile` 引用路径存在（0 缺失）。
+- 5 个端口共 **24 个纯虚函数**，`LegacyServicesAdapter` **24 个 `override`** 一一对应、签名与 const 一致。
+- `Keys.h` 31 项数值与 `dep/SFML/include/SFML/Window/Keyboard.hpp` 的 `Scan` 枚举**逐项程序化比对一致**；`Player.h/.cpp` 使用的 31 个键码全部有定义。
+- 构造签名：`GameLogic` 仅 `ServerMain.cpp` 一处 `(adapter, adapter, domainServices)`；3 处 `make_unique<Player>` 全部传入 `services`；`installServices` 仅 `ServerMain.cpp` 调用，`services()` / `installServices()` 各只有 1 处定义。
+- 耦合收敛：领域层 `getServerConfig()` / `UserDB::instance()` / `sf::Clock` / `Scancode` / `<filesystem>` 命中数为 **0**；遗留直连只剩 `LegacyServicesAdapter.h`（适配器层）、`utils.cpp`（遗留实现本身）与 `Socket.cpp`（本轮明确排除）。
+- 协议未触碰：`git diff` 对 `Socket.h/.cpp`、`GameState.h/.cpp`、`AccountProtocol.h/.cpp`、`server_config.json`、`client_config.json` 均为**空**；`MessageType`、端口 `8888`/`14341`、PCH 文件、Client2 工程均无改动。
+- 客户端零改动：`Client1/Client2` 两个 `.vcxproj` 与全部客户端源码 git 状态干净。
+
+**未完成（与第一步相同，仍是最高优先级风险）**：`Debug|x64` / `Release|x64` 双配置编译与运行时回归未执行。本机 `MSBuild.exe` 此前两次被环境安全策略拦截；本轮另有 Python 校验命令被同一策略拦截，已改用原生 XML 解析与文本检索完成等价静态核对，**未尝试绕过构建工具的拦截**。命令与人工回归清单见第 7 节。
+
+### 9.6 需要验证的受影响功能与边界情况
+
+| 类别 | 具体项 |
+|---|---|
+| 配置 | `mode=normal/double`、`candidateCount`（含选将扩充卡加成）、`initHandCount`、`banCount`、`characters.shielded.characters/groups`、`characters.assign` 指定角色（2 个 / 4 个）、每局前 `reload` 后配置生效 |
+| 键码 | 数字键 1–9 与小键盘 1–9/0、`0` 取消、`B` 炸弹卡、`Space` 整理手牌、`Up/W` 确认、`Down/S` 取消（非 forced）、`Left/A` 与 `Right/D` 翻页、未知键回落 `Key::Unknown` |
+| 时钟 | `ask` 超时（60 秒 ban 询问等 `milliseconds` 路径）、出牌阶段掉线 600 秒重连上限、`waitForReconnect` 重连成功后重发页面与广播 |
+| 随机 | 座次 `determineSeatOrder`、候选池洗牌、`randomChooseCharacters` 的 `sample`+`shuffle`、牌堆洗牌、`randomInt/randomSize_t/probability/randomGet` 全链路；客户端与服务端各自只有一条引擎状态 |
+| 用户数据 | 角色池 / 已拥有角色 / 已拥有皮肤、增分卡 / 不死图腾 / 选将扩充卡 / 炸弹卡消耗、饮料限定皮肤打万能牌 +1 分、游戏结束 `addMatchResult` 的等级与皮肤品质整数往返 |
+| 资产 | `getSkins` 目录不存在 / 无 `.jpg` / 「默认」置首排序、`getImagePath` 与 `getImagePaths` 路径、组合角色双图 |
+| 客户端 | Client1/Client2 未装配也能启动：`Character::getSkins/getImagePath/randomChooseCharacters` 与 `RandomEngine` 走默认遗留实现，链接无新依赖 |
+| 协议 | `ClientInput` scancode 线上数值、`MessageType`、`GameState`/`CharInfo` 包内容、端口 8888 / 14341 全部不变 |
+| 边界 | `probability` 参数越界仍抛 `参数p必须介于0和1之间`；`randomGet` 空容器 / n 超量异常文案；`getImagePath` 未定义角色异常；皮肤目录宽字符 UTF-8/UTF-16 往返（中文角色名与皮肤名） |

@@ -99,6 +99,7 @@
   <ItemGroup>
     <ClInclude Include="pch.domain.h" />
     <ClInclude Include="..\header\domain\Types.h" />
+    <ClInclude Include="..\header\domain\Keys.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.domain.cpp">

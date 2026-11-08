@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "application/IDecisionPort.h"
 #include "application/IServerView.h"
+#include "application/Services.h"
 
 class GameLogic {
 private:
@@ -28,6 +29,9 @@ private:
 	// GameLogic 不再持有 ServerNetwork&（技能签名仍以 GameLogic& 为门面，零改动）。
 	unool::application::IServerView&  view;
 	unool::application::IDecisionPort& decision;
+	// 出站端口聚合：配置 / 用户数据 / 随机源 / 时钟 / 资产目录统一注入，
+	// 领域层不再直读 server_config.json、UserDB 单例与具体随机引擎。
+	unool::application::DomainServices& services;
 	std::size_t gameCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
@@ -71,7 +75,8 @@ public:
 	std::size_t getFirstPlayerId() const { return getSeatPlayerId(0); }
 #pragma region 构造与析构
 	GameLogic(unool::application::IServerView& _view,
-			  unool::application::IDecisionPort& _decision);
+			  unool::application::IDecisionPort& _decision,
+			  unool::application::DomainServices& _services);
 	~GameLogic();
 #pragma endregion
 

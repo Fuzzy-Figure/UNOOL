@@ -7,11 +7,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <SFML/Window/Keyboard.hpp>
+#include "domain/Keys.h"
 #include "Character.h"
 #include "Card.h"
 #include "utils.h"
 #include "application/IDecisionPort.h"
+#include "application/Services.h"
 
 class GameLogic;
 class GameRenderer;
@@ -23,6 +24,8 @@ private:
 	GameLogic& game;
 	// 决策通道：所有收发包/连接判定/配置读取都经此端口，Player 不再认识 ServerNetwork。
 	unool::application::IDecisionPort& decision;
+	// 出站端口聚合：用户数据 / 时钟 / 随机源统一注入，Player 不再认识 UserDB 与 sf::Clock。
+	unool::application::DomainServices& services;
 #pragma endregion
 
 #pragma region 成员变量 - 角色与手牌
@@ -45,14 +48,14 @@ private:
 #pragma endregion
 
 #pragma region 成员变量 - 输入
-	sf::Keyboard::Scancode currentInput = sf::Keyboard::Scancode::Unknown;
+	unool::domain::Key currentInput = unool::domain::Key::Unknown;
 #pragma endregion
 
 #pragma region 私有方法 - 输入
-	void setInput(sf::Keyboard::Scancode input) { currentInput = input; }
-	sf::Keyboard::Scancode getInput() const { return currentInput; }
+	void setInput(unool::domain::Key input) { currentInput = input; }
+	unool::domain::Key getInput() const { return currentInput; }
 	//数字键扫描码转 0-9，非数字键返回 nullopt
-	static std::optional<std::size_t> digitFromScancode(sf::Keyboard::Scancode input);
+	static std::optional<std::size_t> digitFromScancode(unool::domain::Key input);
 #pragma endregion
 
 #pragma region 私有方法 - 技能选择辅助
@@ -62,7 +65,7 @@ private:
 								std::vector<ref<InstantSkill>>& instantRefs,
 								std::vector<ref<TransformSkill>>& transformRefs);
 	//处理数字键1-9：即时技发动 / 转换技切换；返回true表示已处理（continue）
-	bool handleDigitKey(sf::Keyboard::Scancode input,
+	bool handleDigitKey(unool::domain::Key input,
 						const std::vector<ref<InstantSkill>>& instantRefs,
 						const std::vector<ref<TransformSkill>>& transformRefs,
 						opt_ref<TransformSkill>& activeMode);
@@ -75,11 +78,11 @@ private:
 	//玩家掉线时最多等 reconnectTimeoutSec 秒重连，返回是否重连成功；重连成功后由 caller 负责广播状态与重发页面
 	bool waitForReconnect();
 	//处理翻页键：命中时更新 currentPage + 清空 errorMsg 并返回 true，否则返回 false
-	bool handlePagingKey(sf::Keyboard::Scancode input, bool usePaging,
+	bool handlePagingKey(unool::domain::Key input, bool usePaging,
 						  std::size_t& currentPage, std::size_t totalPages,
 						  std::string& errorMsg);
 	//解析数字键为最终选择（1-based，0=取消），非法时设置 errorMsg 并返回 nullopt
-	std::optional<std::size_t> resolveChoice(sf::Keyboard::Scancode input,
+	std::optional<std::size_t> resolveChoice(unool::domain::Key input,
 											 const std::vector<std::string>& options,
 											 bool forced, bool usePaging,
 											 std::size_t currentPage,
@@ -90,8 +93,10 @@ public:
 #pragma region 构造与身份
 	Player(const std::size_t _id, GameLogic& _game,
 		   unool::application::IDecisionPort& _decision,
+		   unool::application::DomainServices& _services,
 		   std::unique_ptr<Character> _character)
-		:id(_id), game(_game), decision(_decision), character(std::move(_character)) {}
+		:id(_id), game(_game), decision(_decision), services(_services),
+		 character(std::move(_character)) {}
 	std::size_t getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
 	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}

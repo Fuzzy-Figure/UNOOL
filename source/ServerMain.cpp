@@ -1,22 +1,32 @@
 #include "GameLogic.h"
 #include "Socket.h"
 #include "utils.h"
-#include "UserDB.h"
+#include "application/Services.h"
 #include "adapters/LegacyBlockingDecisionAdapter.h"
+#include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>
+#include <vector>
 
 // 根据 server_config.json 初始化角色（指定或随机）
-static void initCharacters(GameLogic& gameLogic) {
-	if (unool::getServerConfig().contains("characters") && unool::getServerConfig()["characters"].contains("assign")) {
-		auto chars = unool::getServerConfig()["characters"]["assign"].get<std::vector<std::string>>();
+static void initCharacters(GameLogic& gameLogic,
+						   unool::application::IConfigProvider& config) {
+	if (auto chars = config.assignedCharacters(); chars.has_value()) {
 		//角色数量由 GameLogic::initPlayers(vector) 按 mode 校验
-		gameLogic.initPlayers(chars);
+		gameLogic.initPlayers(*chars);
 	}
 	else {
 		gameLogic.initPlayers();
 	}
+}
+
+// 端口只用标准库类型：角色档位以底层整数透传，由适配器还原为 Character::Level
+static std::vector<int> toLevelInts(const std::vector<Character::Level>& levels) {
+	std::vector<int> result;
+	result.reserve(levels.size());
+	for (const auto lv : levels) result.push_back(static_cast<int>(lv));
+	return result;
 }
 
 // 获取玩家穿戴皮肤中最高品质（饮料限定视为普通，因为其效果在万能牌时实时结算）
@@ -33,7 +43,8 @@ static Character::SkinQuality bestSkinQuality(const Player& p) {
 }
 
 // 处理游戏结束：发送 GameEnd 包、按角色等级加分、打印日志
-static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
+static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic,
+						   unool::application::IUserRepository& users) {
 	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
 	serverNetwork.sendGameEnd(winnerId);
 	gameLogic.clearGameCount();
@@ -48,12 +59,12 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 		const Character::SkinQuality wQuality = bestSkinQuality(players[wId].get());
 		const Character::SkinQuality lQuality = bestSkinQuality(players[lId].get());
 		const bool wBonusCard = gameLogic.hasUsedBonusCard(wId);
-		UserDB::instance().addMatchResult(
+		users.addMatchResult(
 			slots[wId].username, slots[lId].username,
-			players[wId].get().getLevels(),
-			players[lId].get().getLevels(),
+			toLevelInts(players[wId].get().getLevels()),
+			toLevelInts(players[lId].get().getLevels()),
 			players[wId].get().getHp() == players[wId].get().getMaxHp(),
-			wQuality, lQuality, wBonusCard);
+			static_cast<int>(wQuality), static_cast<int>(lQuality), wBonusCard);
 
 		std::println("[Server] 游戏结束，{}获胜！", players[wId].get().displayName());
 	}
@@ -63,13 +74,14 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 }
 
 // 游戏主循环
-static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
+static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic,
+					 unool::application::IUserRepository& users) {
 	while (!gameLogic.isGameOver()) {
 		bool roundEnded = gameLogic.runTurn();
 
 		// 回合结束后立即检查游戏是否结束（技能杀人等情况）
 		if (gameLogic.isGameOver()) {
-			handleGameOver(serverNetwork, gameLogic);
+			handleGameOver(serverNetwork, gameLogic, users);
 			break;
 		}
 
@@ -81,7 +93,7 @@ static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic) {
 		gameLogic.broadcastState();
 
 		if (gameLogic.isGameOver()) {
-			handleGameOver(serverNetwork, gameLogic);
+			handleGameOver(serverNetwork, gameLogic, users);
 			break;
 		}
 		// 开始新一局
@@ -104,9 +116,16 @@ int main() {
 	}
 
 	// Composition Root：唯一出现「谁实现谁」的地方。
-	// 同一个遗留适配器实现 IDecisionPort 与 IServerView，注入棋局后由端口转发。
-	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork);
-	GameLogic gameLogic(adapter, adapter);
+	// 五个出站端口由同一个遗留适配器实现；注入棋局后由端口转发。
+	// installServices 让无法构造注入的静态工具（Character）与全局随机门面
+	// 也指向同一组实例；客户端不装配时自动退回逐字等价的默认遗留实现。
+	unool::adapters::LegacyServicesAdapter legacyServices;
+	unool::application::DomainServices domainServices{
+		legacyServices, legacyServices, legacyServices, legacyServices, legacyServices };
+	unool::application::installServices(domainServices);
+
+	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork, legacyServices);
+	GameLogic gameLogic(adapter, adapter, domainServices);
 	adapter.attach(gameLogic);
 
 	std::println("[Server] 等待客户端连接...");
@@ -118,10 +137,10 @@ int main() {
 	try {
 		while (true) {
 			std::println("[Server] 游戏开始！");
-			unool::reloadServerConfig();
-			initCharacters(gameLogic);
+			domainServices.config.reload();
+			initCharacters(gameLogic, domainServices.config);
 			gameLogic.broadcastState();
-			gameLoop(serverNetwork, gameLogic);
+			gameLoop(serverNetwork, gameLogic, domainServices.users);
 
 			// 询问双方是否继续
 			for (std::size_t i = 0; i < 2; ++i) {

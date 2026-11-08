@@ -1,6 +1,7 @@
 #pragma once
 #include "application/IDecisionPort.h"
 #include "application/IServerView.h"
+#include "application/IConfigProvider.h"
 
 class ServerNetwork;
 class GameLogic;
@@ -16,7 +17,8 @@ namespace unool::adapters {
 		: public application::IDecisionPort
 		, public application::IServerView {
 	public:
-		explicit LegacyBlockingDecisionAdapter(ServerNetwork& network);
+		explicit LegacyBlockingDecisionAdapter(ServerNetwork& network,
+											   application::IConfigProvider& config);
 
 		void attach(GameLogic& game) { game_ = &game; }
 
@@ -37,6 +39,8 @@ namespace unool::adapters {
 
 	private:
 		ServerNetwork& network_;
+		// 重连超时属配置读取，统一经 IConfigProvider，避免适配器直读 server_config.json。
+		application::IConfigProvider& config_;
 		GameLogic*     game_ = nullptr;
 	};
 }

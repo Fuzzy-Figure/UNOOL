@@ -1,7 +1,5 @@
 #include "Player.h"
 #include "GameLogic.h"
-#include "UserDB.h"
-#include <SFML/System/Clock.hpp>
 #include <thread>
 
 std::string Player::displayName() const {
@@ -80,7 +78,7 @@ std::size_t Player::loseHp(std::size_t num) {
 bool Player::tryUseBombCard() {
 	const std::string username = game.usernameOf(id);
 	if (username.empty()) return false;
-	if (UserDB::instance().getItemCount(username, "炸弹卡") <= 0) return false;
+	if (services.users.getItemCount(username, "炸弹卡") <= 0) return false;
 	if (bombUsed >= 2) {
 		hint("炸弹卡本局已使用2次");
 		return false;
@@ -89,7 +87,7 @@ bool Player::tryUseBombCard() {
 	auto targetOpt = chooseOtherPlayer("【炸弹卡】选择一名其他角色，对其造成5点伤害", false);
 	if (!targetOpt) return false;
 
-	UserDB::instance().useItem(username, "炸弹卡");
+	services.users.useItem(username, "炸弹卡");
 	++bombUsed;
 	Player& target = targetOpt.value();
 	target.damage(5, *this);
@@ -212,7 +210,7 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 		const auto& skins = character->getSkins();
 		for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
 			if (Character::getSkinQuality(names[i], skins[i]) == Character::SkinQuality::drink) {
-				UserDB::instance().addPoints(game.usernameOf(id), 1);
+				services.users.addPoints(game.usernameOf(id), 1);
 				break;
 			}
 		}
@@ -490,7 +488,7 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 // === 初始化 ===
 std::string Player::chooseSkin(const std::string& charName) {
 	//只允许选择已拥有的皮肤
-	const auto owned = UserDB::instance().getOwnedSkins(game.usernameOf(id), charName);
+	const auto owned = services.users.getOwnedSkins(game.usernameOf(id), charName);
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
 	//按 Character::getSkins 顺序过滤出已拥有的皮肤
@@ -530,10 +528,10 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		if (!decision.isConnected(id)) {
 			// 玩家掉线，等待重连
 			const auto timeoutSec = decision.reconnectTimeoutSec();
-			sf::Clock clock;
+			const auto clockStart = services.clock.now();
 			bool reconnected = false;
 			std::println("[Player] {} 掉线，等待重连（最多 {} 秒）", displayName(), timeoutSec);
-			while (clock.getElapsedTime().asSeconds() < timeoutSec) {
+			while (std::chrono::duration<double>(services.clock.now() - clockStart).count() < timeoutSec) {
 				decision.poll();
 				if (decision.isLoggedIn(id)) {
 					reconnected = true;
@@ -560,7 +558,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		const auto clientInput = inputOpt.value();
 		if (clientInput.player != id) continue;
 
-		sf::Keyboard::Scancode input = static_cast<sf::Keyboard::Scancode>(clientInput.key);
+		unool::domain::Key input = static_cast<unool::domain::Key>(clientInput.key);
 		setInput(input);
 		hand->setSelectedIndex(clientInput.selectedIndex);  //统一同步选中索引
 
@@ -571,7 +569,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 
 		//B：使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
 		if (phase != ActiveSkill::TriggerTime::never
-			&& input == sf::Keyboard::Scancode::B) {
+			&& input == unool::domain::Key::B) {
 			if (tryUseBombCard()) {
 				game.setOperatingPlayer(id);
 				decision.showChoice(id, { title, {}, forced });
@@ -581,19 +579,19 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		}
 
 		switch (input) {
-			case sf::Keyboard::Scancode::Space:
+			case unool::domain::Key::Space:
 				sortHand();
 				game.broadcastState();
 				break;
-			case sf::Keyboard::Scancode::Up:
-			case sf::Keyboard::Scancode::W:
+			case unool::domain::Key::Up:
+			case unool::domain::Key::W:
 				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
 					decision.clearChoice(id);
 					return result.value();
 				}
 				break;
-			case sf::Keyboard::Scancode::Down:
-			case sf::Keyboard::Scancode::S:
+			case unool::domain::Key::Down:
+			case unool::domain::Key::S:
 				if (!forced) {
 					decision.clearChoice(id);
 					return std::nullopt;
@@ -619,7 +617,7 @@ void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 	}
 }
 
-bool Player::handleDigitKey(sf::Keyboard::Scancode input,
+bool Player::handleDigitKey(unool::domain::Key input,
 							const std::vector<ref<InstantSkill>>& instantRefs,
 							const std::vector<ref<TransformSkill>>& transformRefs,
 							opt_ref<TransformSkill>& activeMode) {
@@ -914,11 +912,12 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 	sendPage();
 
-	sf::Clock clock;
+	const auto clockStart = services.clock.now();
 	while (true) {
 		//1. 超时检测
 		if (timeoutMs.has_value()
-			&& clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
+			&& std::chrono::duration_cast<std::chrono::milliseconds>(
+				services.clock.now() - clockStart) >= timeoutMs.value()) {
 			decision.clearChoice(id);
 			std::println("{}超时未选择", displayName());
 			return 0;
@@ -948,7 +947,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		if (clientInput.player != id) {
 			continue;
 		}
-		sf::Keyboard::Scancode input = static_cast<sf::Keyboard::Scancode>(clientInput.key);
+		unool::domain::Key input = static_cast<unool::domain::Key>(clientInput.key);
 		setInput(input);
 
 		//4. 翻页键
@@ -977,9 +976,9 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 bool Player::waitForReconnect() {
 	const auto timeoutSec = decision.reconnectTimeoutSec();
-	sf::Clock dcClock;
+	const auto clockStart = services.clock.now();
 	std::println("[Player] {} 掉线，等待重连（最多 {} 秒）", displayName(), timeoutSec);
-	while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
+	while (std::chrono::duration<double>(services.clock.now() - clockStart).count() < timeoutSec) {
 		decision.poll();
 		if (decision.isLoggedIn(id)) {
 			return true;
@@ -989,15 +988,15 @@ bool Player::waitForReconnect() {
 	return false;
 }
 
-bool Player::handlePagingKey(sf::Keyboard::Scancode input, bool usePaging,
+bool Player::handlePagingKey(unool::domain::Key input, bool usePaging,
 							 std::size_t& currentPage, std::size_t totalPages,
 							 std::string& errorMsg) {
 	if (!usePaging) return false;
-	if (!(input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::Right
-		  || input == sf::Keyboard::Scancode::A || input == sf::Keyboard::Scancode::D)) {
+	if (!(input == unool::domain::Key::Left || input == unool::domain::Key::Right
+		  || input == unool::domain::Key::A || input == unool::domain::Key::D)) {
 		return false;
 	}
-	if (input == sf::Keyboard::Scancode::Left || input == sf::Keyboard::Scancode::A) {
+	if (input == unool::domain::Key::Left || input == unool::domain::Key::A) {
 		if (currentPage > 0) --currentPage;
 	}
 	else {
@@ -1007,7 +1006,7 @@ bool Player::handlePagingKey(sf::Keyboard::Scancode input, bool usePaging,
 	return true;
 }
 
-std::optional<std::size_t> Player::resolveChoice(sf::Keyboard::Scancode input,
+std::optional<std::size_t> Player::resolveChoice(unool::domain::Key input,
 												 const std::vector<std::string>& options,
 												 bool forced, bool usePaging,
 												 std::size_t currentPage,
@@ -1053,18 +1052,18 @@ std::optional<std::size_t> Player::resolveChoice(sf::Keyboard::Scancode input,
 	return choice;
 }
 
-std::optional<std::size_t> Player::digitFromScancode(sf::Keyboard::Scancode input) {
+std::optional<std::size_t> Player::digitFromScancode(unool::domain::Key input) {
 	switch (input) {
-		case sf::Keyboard::Scancode::Num0: case sf::Keyboard::Scancode::Numpad0: return 0;
-		case sf::Keyboard::Scancode::Num1: case sf::Keyboard::Scancode::Numpad1: return 1;
-		case sf::Keyboard::Scancode::Num2: case sf::Keyboard::Scancode::Numpad2: return 2;
-		case sf::Keyboard::Scancode::Num3: case sf::Keyboard::Scancode::Numpad3: return 3;
-		case sf::Keyboard::Scancode::Num4: case sf::Keyboard::Scancode::Numpad4: return 4;
-		case sf::Keyboard::Scancode::Num5: case sf::Keyboard::Scancode::Numpad5: return 5;
-		case sf::Keyboard::Scancode::Num6: case sf::Keyboard::Scancode::Numpad6: return 6;
-		case sf::Keyboard::Scancode::Num7: case sf::Keyboard::Scancode::Numpad7: return 7;
-		case sf::Keyboard::Scancode::Num8: case sf::Keyboard::Scancode::Numpad8: return 8;
-		case sf::Keyboard::Scancode::Num9: case sf::Keyboard::Scancode::Numpad9: return 9;
+		case unool::domain::Key::Num0: case unool::domain::Key::Numpad0: return 0;
+		case unool::domain::Key::Num1: case unool::domain::Key::Numpad1: return 1;
+		case unool::domain::Key::Num2: case unool::domain::Key::Numpad2: return 2;
+		case unool::domain::Key::Num3: case unool::domain::Key::Numpad3: return 3;
+		case unool::domain::Key::Num4: case unool::domain::Key::Numpad4: return 4;
+		case unool::domain::Key::Num5: case unool::domain::Key::Numpad5: return 5;
+		case unool::domain::Key::Num6: case unool::domain::Key::Numpad6: return 6;
+		case unool::domain::Key::Num7: case unool::domain::Key::Numpad7: return 7;
+		case unool::domain::Key::Num8: case unool::domain::Key::Numpad8: return 8;
+		case unool::domain::Key::Num9: case unool::domain::Key::Numpad9: return 9;
 		default: return std::nullopt;
 	}
 }

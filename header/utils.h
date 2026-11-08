@@ -14,6 +14,7 @@
 #include <vector>
 #include <format>
 #include <print>
+#include "application/Services.h"
 
 
 template<typename T>
@@ -44,7 +45,20 @@ namespace unool {
 	}
 
 	namespace random {
-		extern std::mt19937 rng;
+		// 随机引擎门面：仍满足 uniform_random_bit_generator，
+		// 但每次取数都转发给出站端口 IRandom。
+		// 这样 std::ranges::shuffle / sample / 各种 distribution 的调用点
+		// 一行都不用改，且仍与重构前共用同一条引擎状态（随机序列逐字等价）。
+		class RandomEngine {
+		public:
+			using result_type = std::mt19937::result_type;
+			static constexpr result_type min() { return std::mt19937::min(); }
+			static constexpr result_type max() { return std::mt19937::max(); }
+			result_type operator()() {
+				return unool::application::services().random.next();
+			}
+		};
+		extern RandomEngine rng;
 		int randomInt(const int begin, const int end);
 		std::size_t randomSize_t(const std::size_t begin, const std::size_t end);
 		bool probability(const double p);
