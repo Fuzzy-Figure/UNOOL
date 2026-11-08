@@ -622,9 +622,9 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - `attach()` / `game_` 仅存在于 `NetworkServerView` 与组合根的一处调用；严格正则扫描项目自有裸指针声明 **0**；`git diff --check` 干净；新 `.cpp` 的引号 include 全部可解析；协议 / 配置 / 客户端源码 `git diff --name-only` 为空。
 - BOM 保持（3 个 filters 有 / 6 个 vcxproj 无）；`git diff` 仅 3 处语义改动块，无整文件换行污染（`core.autocrlf=true`，工作区 CRLF 与仓库 LF 由 Git 规范化）。
 
-### 18.5 需要用户本地验证的部分
+### 18.5 用户本地验证（已闭环）
 
-本批改动了组合根装配、适配器实现归属与 `Adapters` 库的编译单元，**第 16 / 17.5 节的编译验收不覆盖本批**。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+用户 2026-11-08 确认本批本地编译通过（「编译通过，继续」）。本批改动了组合根装配、适配器实现归属与 `Adapters` 库的编译单元，第 16 / 17.5 节的验收不覆盖本批，故由用户重新生成并验证；助手侧 `MSBuild.exe` 拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，以下清单保留为后续参考：
 
 1. 编译链接：`NetworkServerView.cpp` 经 `pch.adapters.h` 能否拿到 `std::println` / `std::format`；Server 能否从静态库解析 `NetworkServerView` 的构造与 vtable；
 2. 状态广播与角色信息：开局 / 每回合结束的 `broadcastState()`、`CharInfo` 脏标记刷新（`onState` 末尾仍调 `onCharInfo`）；
@@ -641,4 +641,62 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做 |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 18.5）；② W3 会给 Client1/2 **首次**引入 `ProjectReference`，是后续批次的最大改动点；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-08 确认本批编译通过（见 18.5）；② W3 会给 Client1/2 **首次**引入 `ProjectReference`，是后续批次的最大改动点；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 19. 阶段 2 第三批：UNOOL.Protocol 工程（2026-11-08，用户「编译通过，继续」→ 选「工程归属版」）
+
+### 19.1 状态闭环与范围决策
+
+用户确认第二批（W4，已提交 `18e3962`）本地编译通过并要求继续。助手只读核对 W3 的实际边界后集中列出三种抽取深度，用户选择 **选项 1「工程归属版」**：只改工程文件、零函数体改动。这比第 18 节记录的已获准 W3 口径（「从现有 `.cpp` 删除对应函数体」）更保守，构成本批口径变更；`Card.cpp` 尾部序列化函数不归位，留阶段 3 领域净化时连领域逻辑一起处理。本批不含 W5、`sfml-window.lib` 精简、`MessageType` 拆分。
+
+### 19.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `Projects/Protocol/UNOOL.Protocol.vcxproj` | 静态库工程，GUID `...0004`，4 个配置（x64 `stdcpp23` + `/utf-8 /MP`，Win32 `stdcpp20`），包含目录含 `$(ProjectDir)` + `dep\nlohmann` + `dep\SFML\include` + `header`；编译 `source/GameState.cpp` 与 `source/AccountProtocol.cpp` |
+| 新增 `Projects/Protocol/pch.protocol.h/.cpp` | 独立 PCH，内容按 `pch.server.h` 逐字保留（Network / System / Window/Keyboard + 全标准头 + `json.hpp`），不含 Graphics；`adl_serializer<std::optional<T>>` 特化与共享 PCH 逐字一致 |
+| `Server.vcxproj` / `Client1.vcxproj` / `Client2.vcxproj` | 各删 2 条 `ClCompile`（`GameState.cpp`、`AccountProtocol.cpp`，含 PCH Use/FI 子元素），各补 1 条指向 `..\Protocol\UNOOL.Protocol.vcxproj` 的 `ProjectReference` |
+| 3 份 `.vcxproj.filters` | 各删 2 条 `ClCompile` 筛选器条目，保持与 vcxproj 集合一致 |
+| `UNOOL.slnx` | 加 1 行 Protocol 工程（7 个工程，GUID 唯一） |
+| `README.md` | 5 处订正：6→7 个 `.vcxproj`、3→4 个静态库、目录树补 `Protocol/`、构建步骤工程数、启动段静态库清单；分层段补一段 Protocol 定位说明 |
+
+`source/GameState.cpp`、`source/AccountProtocol.cpp` 及所有协议 / 领域源码 **一个字节未改**；3 个 exe 的 `AdditionalDependencies`、`UNOOL.slnLaunch.user`、配置文件、端口 8888 / 14341、`MessageType`、`Socket.*`、`Card.cpp` 全部未动。
+
+### 19.3 例外与特殊情况说明
+
+- **反向链接依赖（特殊情况）**：`GameState.cpp` 的 6 个序列化函数引用 `Card` / `Hand` 的 `operator<< / >>` 与 `Card::make()`，而这些定义仍在 `source/Card.cpp`（由 3 个 exe 编译）。因此 `UNOOL.Protocol.lib` 会引用 exe 对象文件中的领域符号，不是纯粹的单向依赖。MSVC 链接器可解析（exe 的 `.obj` 均为直接输入、符号已注册，库按需拉入后再解析这些符号），Server 经 `Adapters` 引用静态库的既有路径已验证过同类机制，但**这仍需用户本地编译 / 链接确认**。
+- **PCH 独立性**：按 Q8，Protocol 有自己的 `pch.protocol.h/.cpp` 与独立 `.pch` 产物，不与 `header/pch.h` / `pch.server.h` / `pch.adapters.h` 共享。文件内容复制自 `pch.server.h`（Server 已成功编译过这两个 `.cpp`），因此声明可见性一致。
+- **`Card.cpp` 未归位**：它是 538 行领域逻辑 + 49 行序列化的混合文件，选项 1 明确排除；`GameState.cpp` 里的 `PlayerState::operator=`（领域赋值）也随之留在 Protocol 库，属工程归属版的既有取舍。
+- Q3 排除项继续有效：`MessageType` 未拆分、长度帧 / Partial 未修、端口未统一、config 注释与子技能 / 安全修复未做。
+- 本批未引入裸指针，未新增初始化风格不一致的代码。
+
+### 19.4 验证结果（助手侧静态只读）
+
+- **10 个** `.vcxproj` / `.filters` XML 全部可解析；**292 个文件类 Include 0 缺失**（294 − 3 exe 各 2 − 3 filters 各 2 + 新工程 4 `ClInclude` + 3 `ClCompile` + 3 `ProjectReference` = 292；37 个宏 / 虚拟筛选器节点已排除）。
+- `vcxproj` 与 `filters` 集合完全一致：Server `ClInclude` 19/19、`ClCompile` 14/14；Client1 / Client2 各 `ClInclude` 21/21、`ClCompile` 19/19。
+- `GameState.cpp` / `AccountProtocol.cpp` 的 `ClCompile` **只存在于** `UNOOL.Protocol.vcxproj`，3 个 exe 各 1 条 Protocol `ProjectReference`；`UNOOL.slnx` 7 工程、7 个唯一 GUID、路径全部存在。
+- PCH 特化 532 字符在 `header/pch.h`、`pch.server.h`、`pch.protocol.h` **三者逐字相同**；Protocol 的 `pch.protocol.cpp` 为 `Create`、两个 `.cpp` 为 `Use` + `/FI pch.protocol.h`。
+- 协议 / 核心源码 `git diff --name-only` 为空；3 个 exe 链接项无 diff；严格正则扫描裸指针声明 0；`git diff --check` 干净；README 无过时「6 个 / 3 个静态库」表述。
+- BOM 保持（3 filters 有 / 7 个 vcxproj 无），换行保持（Server / Client 系 CRLF，静态库工程与文档 LF）。
+
+### 19.5 需要用户本地验证的部分
+
+本批首次给 Client1/2 引入 `ProjectReference`，并改变了两个编译单元的 PCH 与归属，**第 16 / 17.5 / 18.5 节的验收均不覆盖本批**。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. 编译链接：`pch.protocol.cpp` 生成独立 PCH、两个 `.cpp` 经 `/FI pch.protocol.h` 编译；3 个 exe 能否从 `UNOOL.Protocol.lib` 解析 `GameState` / `CharInfo` / `PlayerState` 的序列化符号与 `AccountProtocol::*` 9 个函数，且 `Card::make` / `Card` operator 的反向引用无 LNK2019；
+2. 协议行为：登录 / 注册 / 查重 / 签到 / 商城（账号 packet 构造与解析）、状态广播与 CharInfo 刷新（DTO 序列化）；
+3. Client1 / Client2 双开全流程（两者首次链接静态库）；
+4. Debug 与 Release 两个配置的 `-d` / 非 `-d` SFML 库组合。
+
+助手侧 `MSBuild.exe` 拦截未解除、从未绕过。
+
+### 19.6 剩余阶段与风险
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | W1（5 个出站适配器）、W2（Server 精简 PCH）、W4（`NetworkServerView`）、W3 的**工程归属版**均已完成。仍剩：`Card.cpp` 4 个序列化函数的完整物理归位（选项 2）、W5（`AccountService` / `ShopService`）、`sfml-window.lib` 能否去掉 |
+| 3 | 未做（Domain / Application 仍为 PCH 占位，领域源码平铺且 `Card.cpp` 带 `<SFML/Network.hpp>`，其余共享 `.cpp` 仍被 3 个 exe 各编译一遍） |
+| 4 | 未做 |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 19.5），其中静态库反向引用 exe 符号是最需要链接验证的一点；② `Card.cpp` 混合文件未归位，Protocol 库尚不拥有全部序列化代码；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

@@ -179,11 +179,6 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\..\source\AccountProtocol.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
     <ClCompile Include="..\..\source\Character.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
@@ -205,11 +200,6 @@
       <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\GameLogic.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\GameState.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -268,6 +258,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Adapters\UNOOL.Adapters.vcxproj">
       <Project>{a1000000-0000-4000-8000-000000000003}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Protocol\UNOOL.Protocol.vcxproj">
+      <Project>{a1000000-0000-4000-8000-000000000004}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

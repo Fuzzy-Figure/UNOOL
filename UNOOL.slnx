@@ -9,4 +9,5 @@
   <Project Path="Projects/Domain/UNOOL.Domain.vcxproj" Id="a1000000-0000-4000-8000-000000000001" />
   <Project Path="Projects/Application/UNOOL.Application.vcxproj" Id="a1000000-0000-4000-8000-000000000002" />
   <Project Path="Projects/Adapters/UNOOL.Adapters.vcxproj" Id="a1000000-0000-4000-8000-000000000003" />
+  <Project Path="Projects/Protocol/UNOOL.Protocol.vcxproj" Id="a1000000-0000-4000-8000-000000000004" />
 </Solution>

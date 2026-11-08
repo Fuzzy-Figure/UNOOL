@@ -24,9 +24,6 @@
     <ClCompile Include="..\..\source\GameRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\GameState.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\ImageManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -52,9 +49,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\UserDB.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\AccountProtocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\TransformSkill.cpp">

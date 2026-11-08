@@ -83,9 +83,6 @@
     <ClCompile Include="..\..\source\GameLogic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\GameState.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\Skill.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -102,9 +99,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\UserDB.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\AccountProtocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\PassiveSkill.cpp">

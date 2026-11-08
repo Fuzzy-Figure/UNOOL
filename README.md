@@ -19,20 +19,21 @@
 | 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/Card.h`、`header/Character.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
-| 构建 | Visual Studio 2026（`.slnx` + 6 个 `.vcxproj`：3 个可执行工程 + 3 个静态库工程），**仅 x64** |
+| 构建 | Visual Studio 2026（`.slnx` + 7 个 `.vcxproj`：3 个可执行工程 + 4 个静态库工程），**仅 x64** |
 | 平台 | Windows 10/11 |
 
 ## 目录结构
 
 ```
-UNOOL.slnx              解决方案：Server / Client1 / Client2 + Domain / Application / Adapters
+UNOOL.slnx              解决方案：Server / Client1 / Client2 + Domain / Application / Adapters / Protocol
 UNOOL.slnLaunch.user    启动项目配置
-Projects/               6 个 VS 工程目录
+Projects/               7 个 VS 工程目录
   Server/               Server.vcxproj（服务端）
   Client1/ Client2/     Client1.vcxproj / Client2.vcxproj（同一份 ClientMain.cpp，仅 ProjectGuid 不同）
   Domain/               UNOOL.Domain.vcxproj（纯标准库领域层，独立 pch）
   Application/          UNOOL.Application.vcxproj（端口与服务定位，独立 pch）
   Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
+  Protocol/             UNOOL.Protocol.vcxproj（协议与 DTO 序列化，独立 pch）
 header/                 头文件；domain/ application/ adapters/ 为分层新增目录
 source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口，后者也是装配根）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
@@ -47,6 +48,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
 
+`Protocol` 静态库持有 `GameState.cpp` / `AccountProtocol.cpp` 两个协议与 DTO 编译单元（含 10 个 `sf::Packet` 序列化函数与 9 个账号协议函数），由 3 个 exe 共同链接，避免同一份代码各编译一遍；它使用独立的 `pch.protocol.h`。`MessageType` 枚举与网络收发仍留在 `Socket.*`，未拆分。
+
 ## 文档
 
 | 文件 | 内容 |
@@ -60,7 +63,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 ### 构建
 
 1. 用 Visual Studio 2026 打开 `UNOOL.slnx`
-2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 6 个工程均以 `$(SolutionDir)`（解决方案根）为基准使用 `dep\SFML\include`、`dep\SFML\lib`、`dep\nlohmann`、`header` 相对路径，工程虽位于 `Projects/` 下仍开箱即用
+2. **选 x64 平台**（Debug|x64 或 Release|x64）—— 7 个工程均以 `$(SolutionDir)`（解决方案根）为基准使用 `dep\SFML\include`、`dep\SFML\lib`、`dep\nlohmann`、`header` 相对路径，工程虽位于 `Projects/` 下仍开箱即用
 3. 生成解决方案（Ctrl+Shift+B）
 
 > **不要选 Win32**：该平台配置的 `LanguageStandard` 为 `stdc++20`，而代码使用了 C\++23 的 `std::views::enumerate`（`GameLogic.cpp`、`GameRenderer.cpp`、`PassiveSkill.cpp` 等），在 C\++20 下会编译失败。
@@ -71,7 +74,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 ### 启动
 
-三个可执行工程：`Server`（服务端）、`Client1` / `Client2`（同一份 `ClientMain.cpp` 的两份拷贝，仅 ProjectGuid 不同，用于本地双开测试）；`Domain` / `Application` / `Adapters` 为静态库工程，由 exe 引用。
+三个可执行工程：`Server`（服务端）、`Client1` / `Client2`（同一份 `ClientMain.cpp` 的两份拷贝，仅 ProjectGuid 不同，用于本地双开测试）；`Domain` / `Application` / `Adapters` / `Protocol` 为静态库工程，由 exe 引用。
 
 1. 先启动 `Server`，监听 **8888** 端口（硬编码于 `ServerMain.cpp`，非配置）
 2. 再启动两个 Client，在 `client_config.json` 中填好服务端 IP / 端口
