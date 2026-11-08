@@ -100,6 +100,11 @@
     <ClInclude Include="pch.adapters.h" />
     <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
     <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\adapters\JsonConfigProvider.h" />
+    <ClInclude Include="..\..\header\adapters\JsonUserRepository.h" />
+    <ClInclude Include="..\..\header\adapters\Mt19937Random.h" />
+    <ClInclude Include="..\..\header\adapters\SfmlClock.h" />
+    <ClInclude Include="..\..\header\adapters\FilesystemAssetCatalog.h" />
     <ClInclude Include="..\..\header\application\IDecisionPort.h" />
     <ClInclude Include="..\..\header\application\IServerView.h" />
     <ClInclude Include="..\..\header\application\IConfigProvider.h" />

@@ -122,7 +122,7 @@ namespace unool {
 	}
 
 	namespace random {
-		// 真正的 mt19937 已移入 LegacyServicesAdapter；这里只留无状态的端口门面，
+		// 真正的 mt19937 已移入适配器的 Mt19937Random；这里只留无状态的端口门面，
 		// 使 shuffle / sample / distribution 的所有既有调用点保持源码不变。
 		RandomEngine rng;
 		int randomInt(const int begin, const int end) {
@@ -159,9 +159,9 @@ namespace unool::application {
 			return slot;
 		}
 		DomainServices& legacyBundle() {
+			// 默认组合门面：五个独立适配器各一份，random 与随机门面共用同一实例。
 			static adapters::LegacyServicesAdapter adapter;
-			static DomainServices bundle{ adapter, adapter, adapter, adapter, adapter };
-			return bundle;
+			return adapter.bundle;
 		}
 	}
 

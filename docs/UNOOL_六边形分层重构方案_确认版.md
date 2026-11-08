@@ -486,6 +486,8 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 
 ### 16.3 仍未完成的是架构阶段，不是验收缺口
 
+> **状态注记（2026-11-08）**：本节表格记录的是第 16 节成文时的状态。用户随后确认「按阶段 2 开工 / 都按推荐」，阶段 2 的**第一批**（W1 拆独立出站适配器 + W2 Server 精简 PCH / 去图形音频链接）已在第 17 节落地；表中「阶段 2」一行的部分描述已过时，最终状态以第 17.6 节为准。阶段 3 / 4 / 5 / 6 仍未做。
+
 以下各项不属于验证问题，而是确认版 Q1 / A1 / A8 与 §3「留后续」明确划在本次范围之外的原方案阶段 2–4：
 
 | 阶段 | 未做内容 |
@@ -505,3 +507,77 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 
 - 若要达到原方案「可以停」的状态：按阶段 2 → 3 → 4 顺序推进，每阶段保持可编译与协议字节不变。
 - 若只要求端口边界可用：当前状态即可停止，代价是 Domain / Application 为占位、领域仍带 SFML、共享逻辑重复编译。
+
+## 17. 阶段 2 第一批：独立出站适配器与 Server 独立 PCH（2026-11-08，用户确认「都按推荐」）
+
+用户先要求「按阶段 2 开工」，助手只读评估后列出 C1–C6 六个约束、W1–W5 五个工作项与 Q1–Q6 六个口径；用户回复「都按推荐」，即：做 **W1 + W2**，暂缓 W3（`UNOOL.Protocol` 工程 / `PacketCodec`）、W4（`NetworkServerView`）、W5（`AccountService` / `ShopService`）；Q3 排除项继续有效、A6「不物理移动现有文件」继续有效、新适配器全部 header-only、`ServerMain` 装配改为 5 个对象 + 一个聚合、Server 用独立精简 PCH、验收沿用「助手静态验证 + 用户本地编译回归」。
+
+### 17.1 W1：五个出站端口各自独立
+
+| 新文件（`header/adapters/`） | 实现端口 | override 数 |
+|---|---|---|
+| `JsonConfigProvider.h` | `IConfigProvider` | 9 |
+| `JsonUserRepository.h` | `IUserRepository` | 7 |
+| `Mt19937Random.h` | `IRandom` | 5 |
+| `SfmlClock.h` | `IClock` | 1 |
+| `FilesystemAssetCatalog.h` | `IAssetCatalog` | 2 |
+
+合计 **24 个 `override`**，与 5 个端口的 **24 个纯虚函数**一一对应，签名与 `const` 一致。所有方法体都是原 `LegacyServicesAdapter` 内对应表达式的逐字平移，未改默认值、缺键异常、每局 `reload` 时机与皮肤目录扫描逻辑。
+
+- `header/adapters/LegacyServicesAdapter.h` **保留文件**，改为「默认组合门面」：不再继承任何端口，只持有 5 个独立适配器实例 + 一个 `application::DomainServices bundle{...}`。保留原类名可避免删除文件、改动工程条目，且 `utils.cpp` 的默认门面语义不变。
+- `source/utils.cpp`：`legacyBundle()` 由 `static DomainServices bundle{ adapter × 5 }` 改为返回 `adapter.bundle`；随机门面注释同步。
+- `source/ServerMain.cpp`：组合根改为显式构造 `JsonConfigProvider` / `JsonUserRepository` / `Mt19937Random` / `SfmlClock` / `FilesystemAssetCatalog` 五个对象 + `DomainServices` 聚合，`installServices()` 不变；`LegacyBlockingDecisionAdapter` 的第二参数改传 `configService`（该形参本就是 `IConfigProvider&`）。
+- `Projects/Adapters/UNOOL.Adapters.vcxproj`：新增 5 条 `ClInclude`，让新头文件归 Adapters 工程管理（沿用第 15 节口径：Server 只列自己直接 include 的头）。
+
+**C5 随机引擎硬约束已落实**：`RandomEngine::operator()` 恒经 `services().random.next()`；Server 侧 `installServices` 指向含唯一 `Mt19937Random randomService` 的聚合，未装配客户端侧 `legacyBundle()` 指向默认组合里唯一的 `Mt19937Random`。两条路径都只有一份 `std::mt19937`，`random_device` 调用次数与构造时机不变，随机序列与重构前逐字等价。
+
+### 17.2 W2：Server 独立精简 PCH 与链接项
+
+| 改动 | 内容 |
+|---|---|
+| 新增 `Projects/Server/pch.server.h` | 独立 PCH，与 `header/pch.h` 不共享 `.pch` 产物；保留 Network / System / Window(Keyboard) / `json.hpp`，**去掉 `<SFML/Graphics.hpp>`**；`adl_serializer<std::optional<T>>` 特化与共享 PCH 逐字一致；显式补齐原 Graphics 头间接带入的标准库头 |
+| 新增 `Projects/Server/pch.server.cpp` | `/Yc` 生成单元 |
+| `Server.vcxproj` | `ClInclude` 的 `..\..\header\pch.h` → `pch.server.h`；`ClCompile` 的 `..\..\source\pch.cpp` → `pch.server.cpp`；16 个 `PrecompiledHeaderFile` 与 15 个 `ForcedIncludeFiles` 全部改指 `pch.server.h`；4 个配置补 `$(ProjectDir)` 到 `AdditionalIncludeDirectories` |
+| `Server.vcxproj.filters` | 两条 PCH 条目同步 |
+| Debug / Release x64 链接项 | 去掉 `sfml-graphics[-d]` / `sfml-audio[-d]`，保留 window / system / network |
+
+`header/pch.h` 与 `source/pch.cpp` **未改**，Client1 / Client2 继续用共享 PCH；两个客户端工程文件零改动。
+
+### 17.3 例外与偏差说明
+
+- **`SfmlClock` 命名**：沿用原方案 §3.2 的端口命名，但实现与重构前逐字一致为 `std::chrono::steady_clock::now()`，**不依赖 SFML**。不擅自改名以免偏离已确认的推荐项，此处仅作事实说明。
+- **`sfml-window.lib` 保留**：Q5 明确「先保留，等编译结果再决定能否进一步去掉」。`sf::Keyboard::Scancode` 是 `Socket.h` 线上 `ClientInput.key` 的字节依赖，属 Window 模块；能否去掉必须由用户本地编译 / 链接验证，静态判断不能断言。
+- **`UNOOL.Protocol` 工程 / `PacketCodec` 未建**（W3）：会改 3 个 exe 的 include 与包含目录，与 A6 冲突，暂缓。
+- **`IServerView` 未从 `LegacyBlockingDecisionAdapter` 拆出**（W4）：涉及 `attach(GameLogic&)` 与组合根重装配，暂缓；`IDecisionPort` / `IServerView` 仍由同一对象实现。
+- **`Socket.cpp` 账号 / 商城业务未搬进用例服务**（W5）：文件体量大、风险最高，暂缓。
+- **本轮无协议、配置、端口、Win32 改动**：`Socket.h/.cpp`、`GameState.*`、`AccountProtocol.*`、`Card.cpp`、`Character.*`、`UserDB.*`、3 个 json、端口 8888 / 14341 全部未触碰。
+- `README.md` 未动：其中「6 个 `.vcxproj` = 3 可执行 + 3 静态库」「以 `$(SolutionDir)` 为基准」等描述仍成立，无过时表述需要订正。
+
+### 17.4 验证结果（助手侧静态只读）
+
+- 9 个 `.vcxproj` / `.filters` XML 全部可解析；**290 个文件类 Include 引用 0 缺失**（第 15 节的 285 + Adapters 新增 5；33 个 `.filters` 虚拟筛选器节点已排除）；BOM 与换行状态保持（3 个 filters 带 BOM、6 个 vcxproj 无 BOM；Server 系 CRLF，Application / Adapters / Domain 系 LF），4 个被改写源码文件 HEAD 与工作区换行一致（均 LF）。
+- Server 的 `vcxproj` 与 `.filters`：`ClInclude` 18/18、`ClCompile` 16/16，**集合完全一致**。
+- Server 头文件传递闭包 33 个文件：出现的 `sf::` 符号仅 `Clock` / `Keyboard` / `Packet` / `SocketSelector` / `TcpListener` / `TcpSocket`，**图形符号 0 行**，全部被新 PCH 的 Network + System + Window(Keyboard) 覆盖；闭包内所有引号 include 均可解析。
+- 24 个 `override` 对 24 个纯虚函数；`LegacyServicesAdapter` 的 `override` 数为 0；`adl_serializer` 特化逐字一致（532 字符）。
+- 项目自有裸指针声明仍为 **0**；`git diff --name-only` 确认协议 / 配置 / 客户端源码均未改。
+
+### 17.5 需要用户本地验证的部分
+
+按 Q6 沿用降级验收，助手侧未调用 `MSBuild.exe`（拦截未解除、未绕过）。本轮改动了组合根装配、5 个适配器与 Server 的 PCH / 链接配置，**第 16 节的验收闭环不覆盖本轮**，请在 VS 里重新生成 `Debug|x64` 与 `Release|x64` 后重点回归：
+
+1. 编译链接是否通过（尤其去掉 `sfml-graphics` 后有无未解析符号；`/FI pch.server.h` 能否经 `$(ProjectDir)` 找到）；
+2. 随机相关：BP 候选 / Ban-Pick、洗牌与发牌、随机技能、结算加成序列是否与上一版一致；
+3. 配置与存档：`server_config.json` 每局 `reload`、`userDatas.json` 读写落点、签到与商城、皮肤目录扫描；
+4. 超时 / 600 秒重连（时钟端口）、角色皮肤图片路径（资产端口）；
+5. Client1 / Client2 双开与登录 / 出牌全流程（它们仍走默认 `LegacyServicesAdapter` 组合）。
+
+### 17.6 剩余阶段与风险
+
+| 阶段 | 本轮后状态 |
+|---|---|
+| 2 · 服务端适配器替换 | **部分完成**：5 个出站适配器已拆、Server 精简 PCH 已建、graphics / audio 已去链接。`UNOOL.Protocol` / `PacketCodec` / DTO 归位、`NetworkServerView` 拆分、`AccountService` / `ShopService`、`sfml-window.lib` 能否去掉仍待做 |
+| 3 · 领域净化 | 未做（Domain / Application 仍为 PCH 占位，领域源码平铺且 `Card.cpp` / `GameState.cpp` 带 `<SFML/Network.hpp>`，共享 `.cpp` 被 3 个 exe 各编译一遍） |
+| 4 · 客户端装配 | 未做 |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本轮编译与运行时回归未执行，PCH / 链接改动只能靠用户本地验证；② 若 `sfml-window.lib` 去掉导致链接失败，按 Q5 保留现状即可；③ W3 会触及协议序列化与 3 个 exe 的 include 路径，建议在本轮编译通过后再开工；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

@@ -116,15 +116,21 @@ int main() {
 	}
 
 	// Composition Root：唯一出现「谁实现谁」的地方。
-	// 五个出站端口由同一个遗留适配器实现；注入棋局后由端口转发。
-	// installServices 让无法构造注入的静态工具（Character）与全局随机门面
-	// 也指向同一组实例；客户端不装配时自动退回逐字等价的默认遗留实现。
-	unool::adapters::LegacyServicesAdapter legacyServices;
+	// 五个出站端口各由独立适配器实现（由 LegacyServicesAdapter.h 统一引入）；
+	// 注入棋局后由端口转发。installServices 让无法构造注入的静态工具（Character）
+	// 与全局随机门面也指向同一组实例；客户端不装配时自动退回逐字等价的默认组合。
+	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
+	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
+	unool::adapters::JsonConfigProvider configService;
+	unool::adapters::JsonUserRepository userRepository;
+	unool::adapters::Mt19937Random randomService;
+	unool::adapters::SfmlClock clockService;
+	unool::adapters::FilesystemAssetCatalog assetCatalog;
 	unool::application::DomainServices domainServices{
-		legacyServices, legacyServices, legacyServices, legacyServices, legacyServices };
+		configService, userRepository, randomService, clockService, assetCatalog };
 	unool::application::installServices(domainServices);
 
-	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork, legacyServices);
+	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork, configService);
 	GameLogic gameLogic(adapter, adapter, domainServices);
 	adapter.attach(gameLogic);
 

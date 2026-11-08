@@ -57,7 +57,7 @@
     <ClInclude Include="..\..\header\Character.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\pch.h">
+    <ClInclude Include="pch.server.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\ShopData.h">
@@ -116,7 +116,7 @@
     <ClCompile Include="..\..\source\Character.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\pch.cpp">
+    <ClCompile Include="pch.server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
