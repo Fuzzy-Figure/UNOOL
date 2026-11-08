@@ -300,3 +300,41 @@
 | 配置 | 每局前 `reloadServerConfig()` 仍重读同一份配置；`//` 注释照常支持 |
 
 **仍未完成（最高优先级）**：`Debug|x64` / `Release|x64` 编译与运行时回归。本机 `MSBuild.exe` 被环境安全策略拦截，本轮未再尝试调用或绕过；命令见第 7 节。
+
+## 12. 目录结构调整：六个工程目录归入 Projects/（2026-11-08）
+
+### 12.1 范围与结果
+
+按用户要求，把 6 个工程目录整体移入 `UNOOL/Projects/`：`Server`、`Client1`、`Client2`、`Domain`、`Application`、`Adapters`。git 全部识别为 `R`（rename），16 个被跟踪文件历史保留。其余根目录条目（`header/`、`source/`、`dep/`、`images/`、`x64/`、3 个 json、`.slnx`、README、本文件）**一律未动**。
+
+### 12.2 必须同步修改的引用（否则解决方案无法加载 / 编译）
+
+| 位置 | 改动 |
+|---|---|
+| `UNOOL.slnx` | 6 条 `<Project Path>` 加 `Projects/` 前缀 |
+| `UNOOL.slnLaunch.user` | 3 条启动项目 Path 加 `Projects\\` 前缀 |
+| 6 个 `.vcxproj` + 3 个 `.filters` | 共 **284 处**指向根目录的 `..\header\` / `..\source\` / `..\README.md` / `..\.gitignore` / `..\server_config.json` / `..\client_config.json` / `..\userDatas.json` → `..\..\...`（因为工程目录多了一层） |
+| 4 处 `ProjectReference` | **保持不变** `..\Adapters\...` / `..\Application\...` / `..\Domain\...`：6 个工程目录仍互为兄弟，`..\` 恰好指向 `Projects/` 内 |
+
+保持不动且已复核：`AdditionalIncludeDirectories` 全部用 `$(SolutionDir)`（指向解决方案根，移动不影响）；`PrecompiledHeaderFile` 是纯文件名，PCH 头随各自工程目录一起移动；工程无显式 `OutDir` / `IntDir`，默认仍输出到 `$(SolutionDir)x64/<Configuration>`。因此 **exe 位置不变**，第 11 节 `resourceRoot()` 上溯 2 级仍命中资源根，运行时行为不受影响。
+
+### 12.3 验证结果（静态只读，全部通过）
+
+- 9 个工程文件 XML 全部可解析，**298 个 ClInclude / ClCompile / None / ProjectReference 条目 0 缺失**；BOM 状态保持（3 个 `.filters` 有 BOM，其余无），编码与换行未改变。
+- 精确检查：真正未转换的单层根目录引用 **0**；4 处兄弟工程引用仍为单层 `..\`。
+- `.slnx` 6 条、`.slnLaunch.user` 3 条路径全部命中；`dep/`、`header/`、`source/`、`images/`、3 份 PCH 头、根目录 `x64/Debug/*.exe` 全部存在。
+- `.gitignore` 的 `x64/` 规则对 `Projects/*/x64/` 仍生效（`git check-ignore -v` 已验证）。
+
+### 12.4 ⚠️ 需用户本地处理：构建中间产物须重新生成
+
+批量改写脚本的文件过滤未生效，遍历到了 `Projects/*/x64/` 下的构建产物，把 `.obj` / `.pch` / `.pdb` / `.idb` 等**二进制当 UTF-8 文本重写，这些中间产物已损坏**。它们被 `.gitignore` 忽略、可由一次编译完整重建，不属于源码或用户数据；被跟踪的源文件经 git 核对无额外改动。
+
+尝试清理时被环境的批量删除安全策略拦截（`SAFE_DELETE_BULK_CONFIRM_REQUIRED`，阈值 50 文件），本轮**未换途径重试、未绕过**。目前除 `Projects/Adapters/x64` 外，其余 5 个 `Projects/*/x64` 与 3 个嵌套同名目录仍在磁盘上（合计约 3.6 GB）。
+
+**请在 VS 里执行「重新生成解决方案」（Rebuild，不是「生成」）强制覆盖全部中间产物，或在资源管理器中手动删除 `Projects/*/x64` 后再生成。** 根目录 `x64/Debug|Release/*.exe` 是最终产物，未被触碰，仍可运行。
+
+### 12.5 需验证项
+
+打开 `UNOOL.slnx` 后 6 个工程均能加载；`Debug|x64` / `Release|x64` 重新生成通过；启动配置仍能同时启动 Server + Client1 + Client2；双击 exe 时配置 / 玩家数据 / 图片定位与第 11 节一致。
+
+**仍未完成（最高优先级）**：双配置编译与运行时回归（本机 `MSBuild.exe` 拦截未解除）。

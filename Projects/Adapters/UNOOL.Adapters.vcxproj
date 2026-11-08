@@ -98,26 +98,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.adapters.h" />
-    <ClInclude Include="..\header\adapters\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\header\adapters\LegacyServicesAdapter.h" />
-    <ClInclude Include="..\header\application\ICommands.h" />
-    <ClInclude Include="..\header\application\IDecisionPort.h" />
-    <ClInclude Include="..\header\application\IServerView.h" />
-    <ClInclude Include="..\header\application\IConfigProvider.h" />
-    <ClInclude Include="..\header\application\IUserRepository.h" />
-    <ClInclude Include="..\header\application\IRandom.h" />
-    <ClInclude Include="..\header\application\IClock.h" />
-    <ClInclude Include="..\header\application\IAssetCatalog.h" />
-    <ClInclude Include="..\header\application\Services.h" />
-    <ClInclude Include="..\header\domain\Types.h" />
-    <ClInclude Include="..\header\domain\Keys.h" />
+    <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\application\ICommands.h" />
+    <ClInclude Include="..\..\header\application\IDecisionPort.h" />
+    <ClInclude Include="..\..\header\application\IServerView.h" />
+    <ClInclude Include="..\..\header\application\IConfigProvider.h" />
+    <ClInclude Include="..\..\header\application\IUserRepository.h" />
+    <ClInclude Include="..\..\header\application\IRandom.h" />
+    <ClInclude Include="..\..\header\application\IClock.h" />
+    <ClInclude Include="..\..\header\application\IAssetCatalog.h" />
+    <ClInclude Include="..\..\header\application\Services.h" />
+    <ClInclude Include="..\..\header\domain\Types.h" />
+    <ClInclude Include="..\..\header\domain\Keys.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.adapters.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\source\adapters\LegacyBlockingDecisionAdapter.cpp">
+    <ClCompile Include="..\..\source\adapters\LegacyBlockingDecisionAdapter.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

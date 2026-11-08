@@ -152,122 +152,122 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\header\pch.h" />
-    <ClInclude Include="..\header\AccountProtocol.h" />
-    <ClInclude Include="..\header\Character.h" />
-    <ClInclude Include="..\header\InstantSkill.h" />
-    <ClInclude Include="..\header\Card.h" />
-    <ClInclude Include="..\header\Effect.h" />
-    <ClInclude Include="..\header\GameLogic.h" />
-    <ClInclude Include="..\header\GameState.h" />
-    <ClInclude Include="..\header\Player.h" />
-    <ClInclude Include="..\header\PassiveSkill.h" />
-    <ClInclude Include="..\header\Skill.h" />
-    <ClInclude Include="..\header\Socket.h" />
-    <ClInclude Include="..\header\ShopData.h" />
-    <ClInclude Include="..\header\TransformSkill.h" />
-    <ClInclude Include="..\header\UserDB.h" />
-    <ClInclude Include="..\header\utils.h" />
-    <ClInclude Include="..\header\domain\Types.h" />
-    <ClInclude Include="..\header\application\ICommands.h" />
-    <ClInclude Include="..\header\application\IDecisionPort.h" />
-    <ClInclude Include="..\header\application\IServerView.h" />
-    <ClInclude Include="..\header\application\IConfigProvider.h" />
-    <ClInclude Include="..\header\application\IUserRepository.h" />
-    <ClInclude Include="..\header\application\IRandom.h" />
-    <ClInclude Include="..\header\application\IClock.h" />
-    <ClInclude Include="..\header\application\IAssetCatalog.h" />
-    <ClInclude Include="..\header\application\Services.h" />
-    <ClInclude Include="..\header\domain\Keys.h" />
-    <ClInclude Include="..\header\adapters\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\header\adapters\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\pch.h" />
+    <ClInclude Include="..\..\header\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\Character.h" />
+    <ClInclude Include="..\..\header\InstantSkill.h" />
+    <ClInclude Include="..\..\header\Card.h" />
+    <ClInclude Include="..\..\header\Effect.h" />
+    <ClInclude Include="..\..\header\GameLogic.h" />
+    <ClInclude Include="..\..\header\GameState.h" />
+    <ClInclude Include="..\..\header\Player.h" />
+    <ClInclude Include="..\..\header\PassiveSkill.h" />
+    <ClInclude Include="..\..\header\Skill.h" />
+    <ClInclude Include="..\..\header\Socket.h" />
+    <ClInclude Include="..\..\header\ShopData.h" />
+    <ClInclude Include="..\..\header\TransformSkill.h" />
+    <ClInclude Include="..\..\header\UserDB.h" />
+    <ClInclude Include="..\..\header\utils.h" />
+    <ClInclude Include="..\..\header\domain\Types.h" />
+    <ClInclude Include="..\..\header\application\ICommands.h" />
+    <ClInclude Include="..\..\header\application\IDecisionPort.h" />
+    <ClInclude Include="..\..\header\application\IServerView.h" />
+    <ClInclude Include="..\..\header\application\IConfigProvider.h" />
+    <ClInclude Include="..\..\header\application\IUserRepository.h" />
+    <ClInclude Include="..\..\header\application\IRandom.h" />
+    <ClInclude Include="..\..\header\application\IClock.h" />
+    <ClInclude Include="..\..\header\application\IAssetCatalog.h" />
+    <ClInclude Include="..\..\header\application\Services.h" />
+    <ClInclude Include="..\..\header\domain\Keys.h" />
+    <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\pch.cpp">
+    <ClCompile Include="..\..\source\pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\source\AccountProtocol.cpp">
+    <ClCompile Include="..\..\source\AccountProtocol.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Character.cpp">
+    <ClCompile Include="..\..\source\Character.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\InstantSkill.cpp">
+    <ClCompile Include="..\..\source\InstantSkill.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Card.cpp">
+    <ClCompile Include="..\..\source\Card.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Effect.cpp">
+    <ClCompile Include="..\..\source\Effect.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\GameLogic.cpp">
+    <ClCompile Include="..\..\source\GameLogic.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\GameState.cpp">
+    <ClCompile Include="..\..\source\GameState.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Player.cpp">
+    <ClCompile Include="..\..\source\Player.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\PassiveSkill.cpp">
+    <ClCompile Include="..\..\source\PassiveSkill.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\ServerMain.cpp">
+    <ClCompile Include="..\..\source\ServerMain.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Skill.cpp">
+    <ClCompile Include="..\..\source\Skill.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\Socket.cpp">
+    <ClCompile Include="..\..\source\Socket.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\TransformSkill.cpp">
+    <ClCompile Include="..\..\source\TransformSkill.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\UserDB.cpp">
+    <ClCompile Include="..\..\source\UserDB.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\source\utils.cpp">
+    <ClCompile Include="..\..\source\utils.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\.gitignore" />
-    <None Include="..\README.md" />
-    <None Include="..\server_config.json" />
-    <None Include="..\userDatas.json" />
+    <None Include="..\..\.gitignore" />
+    <None Include="..\..\README.md" />
+    <None Include="..\..\server_config.json" />
+    <None Include="..\..\userDatas.json" />
     <None Include="todoList.txt" />
   </ItemGroup>
   <ItemGroup>
