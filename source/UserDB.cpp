@@ -9,7 +9,20 @@
 
 
 namespace {
-	constexpr const char* DATA_FILE = "../userDatas.json";
+	// 用户数据文件（绝对路径）：优先资源根目录下已有的那份，避免误命中
+	// 旧逻辑可能遗留在 x64/ 下的空库；若被显式放在更近位置则退而用上溯查找；
+	// 首次运行落在资源根目录。load 与 save 共用同一路径，因此既不依赖进程
+	// 工作目录，也不会另建一份看似「玩家数据丢失」的空数据库。
+	const std::string& dataFile() {
+		static const std::string path = []() -> std::string {
+			const auto underRoot = unool::paths::resourceRoot() / "userDatas.json";
+			if (std::filesystem::is_regular_file(underRoot)) return underRoot.string();
+			const auto found = unool::paths::locate("userDatas.json");
+			if (!found.empty()) return found.string();
+			return underRoot.string();
+		}();
+		return path;
+	}
 }
 
 UserDB& UserDB::instance() {
@@ -158,9 +171,9 @@ bool UserDB::trySpendPoints(const std::string& username, int amount) {
 }
 
 void UserDB::load() {
-	std::ifstream file(DATA_FILE);
+	std::ifstream file(dataFile());
 	if (!file.is_open()) {
-		std::println("[UserDB] {} 不存在，初始化空数据库", DATA_FILE);
+		std::println("[UserDB] {} 不存在，初始化空数据库", dataFile());
 		users_.clear();
 		save();
 		return;
@@ -170,7 +183,7 @@ void UserDB::load() {
 		j = nlohmann::json::parse(file, nullptr, true, true);
 		users_ = j.get<std::unordered_map<std::string, UserInfo>>();
 	} catch (const std::exception& e) {
-		std::println(stderr, "[UserDB] 解析 {} 失败: {}", DATA_FILE, e.what());
+		std::println(stderr, "[UserDB] 解析 {} 失败: {}", dataFile(), e.what());
 		throw;
 	}
 }
@@ -236,9 +249,9 @@ void dumpJson(std::ostream& os, const nlohmann::json& j, int indent, bool compac
 
 void UserDB::save() const {
 	nlohmann::json j = users_;
-	std::ofstream file(DATA_FILE);
+	std::ofstream file(dataFile());
 	if (!file.is_open()) {
-		std::println(stderr, "[UserDB] 无法写入 {}", DATA_FILE);
+		std::println(stderr, "[UserDB] 无法写入 {}", dataFile());
 		return;
 	}
 	dumpJson(file, j, 0, false);

@@ -5,7 +5,9 @@
 
 
 ImageManager::ImageManager(sf::RenderWindow& _window) :window(_window) {
-	UNOOL = std::format("{}/", std::filesystem::current_path().parent_path().string());
+	// 资源根目录改由 exe 自身位置推导，不再取 current_path().parent_path()：
+	// VS「启动」时两者恰好相同，双击 exe 时后者会指向 x64/，导致所有贴图缺失。
+	UNOOL = std::format("{}/", unool::paths::resourceRoot().string());
 	std::println("UNOOL路径：{}", UNOOL);
 }
 

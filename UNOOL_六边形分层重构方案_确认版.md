@@ -163,7 +163,7 @@
 
 - 6 个 `.vcxproj` XML 可解析，所有 `ClInclude` / `ClCompile` 引用路径存在（0 缺失）。
 - 5 个端口共 **24 个纯虚函数**，`LegacyServicesAdapter` **24 个 `override`** 一一对应、签名与 const 一致。
-- `Keys.h` 31 项数值与 `dep/SFML/include/SFML/Window/Keyboard.hpp` 的 `Scan` 枚举**逐项程序化比对一致**；`Player.h/.cpp` 使用的 31 个键码全部有定义。
+- `Keys.h` 31 项数值与 `dep/SFML/include/SFML/Window/Keyboard.hpp` 的 `Scan` 枚举**逐项程序化比对一致**；`Player.h/.cpp` 使用的 31 个键码全部有定义。**（本条自第 10 节起作废：第三步 C 方案已把 `Keys.h` 改为自增语义枚举，不再复制 SFML 数值，等价性改由映射覆盖率检查保证。）**
 - 构造签名：`GameLogic` 仅 `ServerMain.cpp` 一处 `(adapter, adapter, domainServices)`；3 处 `make_unique<Player>` 全部传入 `services`；`installServices` 仅 `ServerMain.cpp` 调用，`services()` / `installServices()` 各只有 1 处定义。
 - 耦合收敛：领域层 `getServerConfig()` / `UserDB::instance()` / `sf::Clock` / `Scancode` / `<filesystem>` 命中数为 **0**；遗留直连只剩 `LegacyServicesAdapter.h`（适配器层）、`utils.cpp`（遗留实现本身）与 `Socket.cpp`（本轮明确排除）。
 - 协议未触碰：`git diff` 对 `Socket.h/.cpp`、`GameState.h/.cpp`、`AccountProtocol.h/.cpp`、`server_config.json`、`client_config.json` 均为**空**；`MessageType`、端口 `8888`/`14341`、PCH 文件、Client2 工程均无改动。
@@ -184,3 +184,119 @@
 | 客户端 | Client1/Client2 未装配也能启动：`Character::getSkins/getImagePath/randomChooseCharacters` 与 `RandomEngine` 走默认遗留实现，链接无新依赖 |
 | 协议 | `ClientInput` scancode 线上数值、`MessageType`、`GameState`/`CharInfo` 包内容、端口 8888 / 14341 全部不变 |
 | 边界 | `probability` 参数越界仍抛 `参数p必须介于0和1之间`；`randomGet` 空容器 / n 超量异常文案；`getImagePath` 未定义角色异常；皮肤目录宽字符 UTF-8/UTF-16 往返（中文角色名与皮肤名） |
+
+---
+
+## 10. 第三步：键码映射内聚到适配器（C 方案，2026-11-08 确认）
+
+### 10.1 触发与确认
+
+第二步把 `Player.h/.cpp` 的 `sf::Keyboard::Scancode` 换成 `header/domain/Keys.h` 时，采用的是「复制 SFML `Scan` 数值」：端口以 `std::uint32_t` 原样透传线上扫描码，领域侧 `static_cast<Key>` 后按数值比较。这消除了**头文件依赖**，但**数值契约仍隐式绑定 SFML** —— 升级 SFML 若调整 `Scan` 编号，`Keys.h` 会静默失配，编译不报错而按键判定出错。
+
+用户就此质询后给出三个方向，确认执行 **C：真正解耦**：
+
+- 领域枚举改为语义自增序号，不再携带任何 SFML 数值；
+- `DecisionInput.key` 由 `std::uint32_t` 改为 `domain::Key`；
+- `sf::Keyboard::Scancode -> domain::Key` 的映射收进适配器单点函数 `toDomainKey()`；
+- 线上字节不变，传输层仍收发 SFML 扫描码数值。
+
+### 10.2 修改范围（4 个文件，无新增/删除文件）
+
+| 文件 | 变更 |
+|---|---|
+| `header/domain/Keys.h` | 31 项改为纯自增语义枚举；`A` 保持 0，`Unknown` 移到末位作无效哨兵 |
+| `header/application/IDecisionPort.h` | 引入 `domain/Keys.h`；`DecisionInput.key` 改为 `domain::Key` |
+| `source/adapters/LegacyBlockingDecisionAdapter.cpp` | 匿名命名空间新增 `toDomainKey()`（30 个 case + `default -> Unknown`）；`takeInput()` 改用它；显式包含 `<SFML/Window/Keyboard.hpp>` |
+| `source/Player.cpp` | 2 处 `static_cast<Key>(clientInput.key)` 改为直接使用 `clientInput.key` |
+
+**未改动**：`Socket.h/.cpp`（线上包仍 `static_cast<int>(key)` / `static_cast<sf::Keyboard::Scancode>(keyCode)`）、`GameState.*`、`AccountProtocol.*`、`MessageType`、端口 `8888`/`14341`、所有客户端源码与工程、6 个 `.vcxproj`、三份 PCH、两个 JSON 配置、`ICommands.h`、`Player.h`、`LegacyBlockingDecisionAdapter.h`。本轮无新增或删除文件，故工程文件无需调整。
+
+**工作区既有改动（非本轮）**：`source/PassiveSkill.cpp:3013` 的 `(void)carrier.takeCardByIndex(*it);` 在本轮开始前已存在，本轮未触碰；用户已将其与本轮 4 个文件一并提交。
+
+**提交**：本轮代码改动已提交为 `3b6c347 将按键输入转换隔离至适配器层`（第二步成果为 `6dd64ce`）。
+
+### 10.3 等价性证明与关键调整
+
+**旧链路**：`int keyCode` → `static_cast<sf::Keyboard::Scancode>` → `static_cast<uint32_t>` → `DecisionInput.key(uint32)` → `static_cast<Key>`，其中旧 `Key::X` 的数值等于 SFML `Scan::X` 的数值。
+
+**新链路**：收包两步完全不变 → `toDomainKey(Scancode)` → `DecisionInput.key(Key)` → 领域直接使用。
+
+`input->key` 的值就是 `keyCode`；`toDomainKey` 的 30 个 case 恰好是旧 `Key` 定义过的 30 个 SFML 值，且每个 case 同名映射 `Sc::X -> K::X`。因此任一输入要么得到与旧链路相同的 `K::X`，要么落 `default -> Key::Unknown`（旧链路同样不匹配任何判定）。已程序化打印 30 个 case 的 SFML 数值（`A=0, B=1, D=3, S=18, W=22, Num1=26 … Num0=35, Space=40, Right=86 … Up=89, Numpad1=98 … Numpad0=107`），与旧 `Keys.h` 的 30 个显式数值逐项相同。
+
+**唯一内部差异**：`Key::Unknown` 由 `0xFFFFFFFFu` 变为自增末位 30。它仅作无效哨兵，不参与线上字节、不参与任何 case 匹配；`DecisionInput{}` 默认 `key` 仍为 `Key::A`(0)，与重构前 `key=0`（SFML `Scan::A`）一致。无外部行为影响。
+
+**收益与代价**：SFML 版本变化只影响 `toDomainKey()` 一个函数，隐式数值耦合变成显式、可静态校验的映射表；代价是新增一处需与 `Keys.h` 同步维护的 switch，已由 10.4 的覆盖率检查约束。
+
+### 10.4 验证结果（静态只读，全部通过）
+
+- 6 个 `.vcxproj` XML 可解析，条目路径 0 缺失；`LegacyBlockingDecisionAdapter.cpp` 仍由 `Adapters` 静态库编译 1 处，`toDomainKey` 随之进入库；`Server.vcxproj` 通过 `ProjectReference` 链接 `Adapters`，`Client1/Client2.vcxproj` 无任何 `ProjectReference`，不受影响。
+- `Keys.h` 枚举 31 项；`toDomainKey` 30 个 case：**未被映射的领域键 0、多余键 0、case 重复 0、返回键重复 0、同名映射不一致 0、SFML 枚举名不存在 0**。
+- `Player.h/.cpp` 使用 31 个键码，未定义 0；`static_cast<...Key>` 残留 0。
+- 领域/端口头的 `#include` 全为标准库或 `domain/*`、`application/*`，引入 SFML / json / UserDB / Socket / Windows 头 0 处；`Player.h/.cpp` 非注释行 `sf::` 残留 0。
+- 协议未触碰：`git diff` 对 `Socket.h/.cpp`、`GameState.h/.cpp`、`AccountProtocol.h/.cpp`、`server_config.json`、`client_config.json` 均为空。
+
+**仍未完成（最高优先级）**：`Debug|x64` / `Release|x64` 编译与运行时回归。本机 `MSBuild.exe` 此前被环境安全策略拦截，本轮未再尝试调用或绕过；命令见第 7 节。
+
+### 10.5 需要验证的受影响功能与边界情况
+
+| 类别 | 具体项 |
+|---|---|
+| 键码主链 | 数字键 1–9 与小键盘 1–9/0、`0` 取消、`B` 炸弹卡、`Space` 整理手牌、`Up/W` 确认、`Down/S` 取消（非 forced）、`Left/A` 与 `Right/D` 翻页 |
+| 未映射键 | `Escape` / `Backspace` / `Tab` / `Enter` / `E` / `H` / `C` 等所有未列出的 SFML 键 → `Key::Unknown`，应表现为「无操作」，与重构前一致 |
+| 边界数值 | 线上包中非标准 `keyCode`（负数、越界值）经 `static_cast<Scancode>` 后落 `default`，不应误触发任何判定 |
+| 默认构造 | `DecisionInput{}` 的 `key` 仍等价于 `Key::A`；聚合初始化 3 字段全给的调用点行为不变 |
+| 协议 | `ClientInput` 包内容、`MessageType`、`GameState` / `CharInfo`、端口 8888 / 14341 不变；Client1/Client2 发送侧仍用 `sf::Keyboard::Scancode` |
+| 链接 | `toDomainKey` 位于 `Adapters` 静态库，Server 链接可用；Client1/Client2 既不编译该 `.cpp` 也不链接 `Adapters`，无新链接依赖 |
+
+## 11. 资源定位修复：脱离进程工作目录（2026-11-08，用户确认「全部修」）
+
+### 11.1 触发与范围
+
+配置定位修复后，用户明确选择「全部修」，把同样依赖工作目录的其余资源一并纳入。本轮只修**路径来源**，不改资源内容、协议字节、工程文件与配置内容。
+
+| 残留点 | 旧行为 | 后果 |
+|---|---|---|
+| `source/UserDB.cpp` 的 `DATA_FILE = "../userDatas.json"` | 相对 CWD | 双击后 `load()` 判为不存在并 `save()` 到 `x64/userDatas.json`，玩家数据看似丢失 |
+| `source/ImageManager.cpp` 的 `UNOOL = current_path().parent_path()` | 相对 CWD 的父目录 | 双击后前缀指向 `UNOOL/x64/`，`Card.cpp` / `GameRenderer.cpp` / `ShopScene.cpp` / `Character::getImagePath` 的全部贴图缺失 |
+| `header/adapters/LegacyServicesAdapter.h` 的 `skinsOf()` 中 `../images/characters` | 相对 CWD | 皮肤目录扫描失败，签到 / 商城皮肤候选集为空 |
+
+`TextManager.cpp` 的 `config["fonts"]` 是绝对路径 `C:/Windows/Fonts/msyh.ttc`，不受工作目录影响，本轮未改。
+
+### 11.2 关键调整（原因 / 影响）
+
+- **C1**：`unool::paths` 新增 `resourceRoot()`，从 `exeDir()` 起最多上溯 8 级，命中第一个含 `images/` 或 `server_config.json` / `client_config.json` 的目录；未命中回退 `exeDir()`，**绝不回退 `current_path()`**。与既有 `locate()` 同为「近处优先」，部署时把资源放 exe 同目录即可覆盖默认布局。
+- **C2**：`ImageManager::UNOOL` 改由 `resourceRoot()` 推导。一处改动覆盖全部图片路径字面量（`Card.cpp` 的 60+ 条、`GameRenderer.cpp` 的标记 / 指针图、`ShopScene.cpp` 的皮肤图、角色图）；这些相对字符串保持原样，因此纹理缓存键与 `Character::getImagePath` 返回值的形态不变。
+- **C3**：`skinsOf()` 改为 `resourceRoot()/images/characters/...`，与图片前缀同源；服务端 `Character::getSkins()` 同样受益。
+- **C4**：`UserDB` 的 `DATA_FILE` 常量改为 `dataFile()`：**资源根目录优先**，其次 `locate()` 上溯，首次运行落在 `resourceRoot()`。原因是避免误命中旧逻辑可能遗留在 `x64/` 下的空库。`load()` 与 `save()` 共用同一绝对路径；日志中的路径由 `../userDatas.json` 变为绝对路径（仅诊断文本，非对外接口）。
+
+### 11.3 修改范围（5 个文件）
+
+| 文件 | 变更 |
+|---|---|
+| `header/utils.h` | 新增 `paths::resourceRoot()` 声明 |
+| `source/utils.cpp` | 新增 `resourceRoot()` 实现，沿用 `exeDir()` / `error_code` 风格 |
+| `source/UserDB.cpp` | `DATA_FILE` → `dataFile()`；`load` / `save` / 3 处日志共 5 处调用点 |
+| `source/ImageManager.cpp` | `UNOOL` 赋值来源 1 行 |
+| `header/adapters/LegacyServicesAdapter.h` | `skinsOf()` 目录起点 1 行 |
+
+一行未动：`Socket.h/.cpp`、`GameState.*`、`AccountProtocol.*`、`MessageType`、端口 8888 / 14341、两个 JSON 配置内容、6 个 `.vcxproj`、三份 PCH、`Card.cpp` / `GameRenderer.cpp` / `ShopScene.cpp` 的路径字面量、`Character.cpp`、`TextManager.cpp`。因无新增文件，工程文件无需调整。
+
+### 11.4 验证结果（静态只读，全部通过）
+
+- 路径模拟：6 个 exe（Debug/Release × Server/Client1/Client2）从 exe 目录上溯 **2 级**命中资源根；`server_config.json` / `client_config.json` / `userDatas.json` / `images/cards/back.jpg` / `images/characters/元首` 全部命中。
+- 等价性：VS「启动」时旧 `current_path().parent_path()` 与 `resourceRoot()` 对 Server / Client1 / Client2 三者完全一致，行为不变；双击时旧前缀指向 `x64/` 且图片缺失、旧 `../userDatas.json` 不存在，与用户现象一致。
+- 磁盘核对：`x64/` 各层均无旧逻辑遗留的 `userDatas.json` / 配置副本 / `images` 副本；根目录 `userDatas.json` 4456 字节、4 个账号完好；`dataFile()` 的三种场景（正常 / 有旧空库 / 首次运行）均指向根目录那份。
+- 6 个 `.vcxproj` XML 有效、条目路径 0 缺失；`ifstream` / `ofstream` 各 1 处共用 `dataFile()`；可执行代码里 `current_path()` 与 `"../` 残留 0；协议与配置内容 `git diff` 为空。
+
+### 11.5 需验证的受影响功能与边界情况
+
+| 类别 | 具体项 |
+|---|---|
+| 启动方式 | VS「启动」、双击 `x64/Debug` 与 `x64/Release` 下三个 exe、从任意 CWD 命令行启动，结果一致 |
+| 玩家数据 | 注册 / 登录 / 签到 / 商城购买 / 游戏结束加分后写回根目录同一份 `userDatas.json`；不再出现 `x64/userDatas.json` |
+| 贴图 | 卡牌正反面、角色图（组合角色多张）、皮肤预览、幽灵标记、指针图、`images/default.jpg` 回退 |
+| 皮肤目录 | 中文 group / name 的 UTF-8↔UTF-16 往返；目录缺失 / 无 jpg / 「默认」置首 |
+| 部署边界 | 把 json / images 复制到 exe 同目录时优先用同目录那份；资源完全缺失时回退 `exeDir()` 并给出可诊断的失败，不静默写错位置 |
+| 配置 | 每局前 `reloadServerConfig()` 仍重读同一份配置；`//` 注释照常支持 |
+
+**仍未完成（最高优先级）**：`Debug|x64` / `Release|x64` 编译与运行时回归。本机 `MSBuild.exe` 被环境安全策略拦截，本轮未再尝试调用或绕过；命令见第 7 节。

@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <iterator>
 #include <optional>
@@ -26,6 +27,18 @@ using opt_ref = std::optional<ref<T>>;
 namespace unool {
 	constexpr std::size_t MAX_PLAYERS = 2;
 
+	namespace paths {
+		// 当前可执行文件所在目录（绝对路径）。不依赖进程工作目录，
+		// 因此从资源管理器双击 exe 或从任意目录启动都得到同一结果。
+		const std::filesystem::path& exeDir();
+		// 以 exe 所在目录为起点逐级向上查找 fileName，返回第一个存在的绝对路径；
+		// 找不到返回空路径。近处优先：部署时把资源放在 exe 同目录即可覆盖默认布局。
+		std::filesystem::path locate(const std::string& fileName);
+		// 资源根目录（绝对路径）：从 exe 目录起向上找第一个含 images/ 或配置文件的目录。
+		// 用作图片路径前缀，以及首次创建 userDatas.json 等数据文件的落点。
+		// 找不到时回退到 exeDir()，结果始终与进程工作目录无关。
+		const std::filesystem::path& resourceRoot();
+	}
 
 	//服务器专用配置：读取 server_config.json 并缓存；reload 可强制重读
 	nlohmann::json& getServerConfig();

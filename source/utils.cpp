@@ -2,46 +2,102 @@
 #include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <cmath>
+#include <filesystem>
+#include <format>
 #include <fstream>
 #include <json.hpp>
+#include <system_error>
 
 namespace unool {
-	nlohmann::json& getServerConfig() {
-		static nlohmann::json config = [] {
-			std::ifstream configFile("../server_config.json");
-			if (!configFile.is_open()) {
-				throw std::runtime_error("无法打开配置文件 server_config.json");
+
+	namespace paths {
+		namespace fs = std::filesystem;
+
+		const fs::path& exeDir() {
+			static const fs::path dir = []() -> fs::path {
+				std::vector<wchar_t> buffer(MAX_PATH);
+				for (;;) {
+					const DWORD len = ::GetModuleFileNameW(nullptr, buffer.data(),
+														   static_cast<DWORD>(buffer.size()));
+					if (len == 0) {
+						throw std::runtime_error("无法获取当前可执行文件路径");
+					}
+					// 返回值等于缓冲区长度说明可能被截断，扩容后重试。
+					if (len < buffer.size()) {
+						return fs::path(std::wstring(buffer.data(), len)).parent_path();
+					}
+					buffer.resize(buffer.size() * 2);
+				}
+			}();
+			return dir;
+		}
+
+		fs::path locate(const std::string& fileName) {
+			fs::path dir = exeDir();
+			for (int level = 0; level < 8; ++level) {
+				std::error_code ec;
+				const fs::path candidate = dir / fileName;
+				if (fs::is_regular_file(candidate, ec)) return candidate;
+				const fs::path parent = dir.parent_path();
+				if (parent.empty() || parent == dir) break;  //已到盘符根
+				dir = parent;
 			}
+			return {};
+		}
+
+		const fs::path& resourceRoot() {
+			static const fs::path root = []() -> fs::path {
+				fs::path dir = exeDir();
+				for (int level = 0; level < 8; ++level) {
+					std::error_code ec;
+					const bool hasImages = fs::is_directory(dir / "images", ec);
+					const bool hasConfig =
+						fs::is_regular_file(dir / "server_config.json", ec)
+						|| fs::is_regular_file(dir / "client_config.json", ec);
+					if (hasImages || hasConfig) return dir;
+					const fs::path parent = dir.parent_path();
+					if (parent.empty() || parent == dir) break;  //已到盘符根
+					dir = parent;
+				}
+				// 资源缺失时也绝不回退到 current_path()，只落在 exe 目录，
+				// 让后续的文件打开失败可诊断，而不是静默读写错误位置。
+				return exeDir();
+			}();
+			return root;
+		}
+	}
+
+	namespace {
+		nlohmann::json readConfig(const std::string& fileName) {
+			const std::filesystem::path exe = paths::exeDir();
+			const std::filesystem::path path = paths::locate(fileName);
+			std::ifstream configFile(path);
+			if (!configFile.is_open()) {
+				throw std::runtime_error(std::format(
+					"无法打开配置文件 {}（已从可执行文件目录 {} 向上查找）",
+					fileName, exe.string()));
+			}
+			// ignore_comments=true：server_config.json 中的 // 注释是受支持的既有格式。
 			return nlohmann::json::parse(configFile, nullptr, true, true);
-		}();
+		}
+	}
+
+	nlohmann::json& getServerConfig() {
+		static nlohmann::json config = readConfig("server_config.json");
 		return config;
 	}
 
 	void reloadServerConfig() {
-		std::ifstream configFile("../server_config.json");
-		if (!configFile.is_open()) {
-			throw std::runtime_error("无法打开配置文件 server_config.json");
-		}
-		getServerConfig() = nlohmann::json::parse(configFile, nullptr, true, true);
+		getServerConfig() = readConfig("server_config.json");
 	}
 
 	nlohmann::json& getClientConfig() {
-		static nlohmann::json config = [] {
-			std::ifstream configFile("../client_config.json");
-			if (!configFile.is_open()) {
-				throw std::runtime_error("无法打开配置文件 client_config.json");
-			}
-			return nlohmann::json::parse(configFile, nullptr, true, true);
-		}();
+		static nlohmann::json config = readConfig("client_config.json");
 		return config;
 	}
 
 	void reloadClientConfig() {
-		std::ifstream configFile("../client_config.json");
-		if (!configFile.is_open()) {
-			throw std::runtime_error("无法打开配置文件 client_config.json");
-		}
-		getClientConfig() = nlohmann::json::parse(configFile, nullptr, true, true);
+		getClientConfig() = readConfig("client_config.json");
 	}
 
 	namespace string {
