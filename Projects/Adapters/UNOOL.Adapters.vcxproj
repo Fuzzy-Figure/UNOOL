@@ -99,6 +99,7 @@
   <ItemGroup>
     <ClInclude Include="pch.adapters.h" />
     <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\adapters\NetworkServerView.h" />
     <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
     <ClInclude Include="..\..\header\adapters\JsonConfigProvider.h" />
     <ClInclude Include="..\..\header\adapters\JsonUserRepository.h" />
@@ -121,6 +122,11 @@
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="..\..\source\adapters\LegacyBlockingDecisionAdapter.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\adapters\NetworkServerView.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

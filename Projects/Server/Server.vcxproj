@@ -171,6 +171,7 @@
     <ClInclude Include="..\..\header\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
     <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\adapters\NetworkServerView.h" />
     <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
   </ItemGroup>
   <ItemGroup>

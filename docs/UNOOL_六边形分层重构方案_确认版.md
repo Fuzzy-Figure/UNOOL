@@ -561,9 +561,11 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - 24 个 `override` 对 24 个纯虚函数；`LegacyServicesAdapter` 的 `override` 数为 0；`adl_serializer` 特化逐字一致（532 字符）。
 - 项目自有裸指针声明仍为 **0**；`git diff --name-only` 确认协议 / 配置 / 客户端源码均未改。
 
-### 17.5 需要用户本地验证的部分
+### 17.5 用户本地验证（2026-11-08 已闭环）
 
-按 Q6 沿用降级验收，助手侧未调用 `MSBuild.exe`（拦截未解除、未绕过）。本轮改动了组合根装配、5 个适配器与 Server 的 PCH / 链接配置，**第 16 节的验收闭环不覆盖本轮**，请在 VS 里重新生成 `Debug|x64` 与 `Release|x64` 后重点回归：
+**状态更新（用户「编译通过」，2026-11-08）**：本批 W1 + W2 已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `f4c8e8d`、工作区干净。本节原「本轮编译与运行时回归未执行」与第 17.6 节风险 ① 就此解除；助手侧 `MSBuild.exe` 拦截未解除、从未绕过。用户未细化是否双配置全覆盖及运行时回归的具体路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
+
+按 Q6 沿用降级验收：本轮改动了组合根装配、5 个适配器与 Server 的 PCH / 链接配置，**第 16 节的验收闭环不覆盖本轮**，重点回归路径为：
 
 1. 编译链接是否通过（尤其去掉 `sfml-graphics` 后有无未解析符号；`/FI pch.server.h` 能否经 `$(ProjectDir)` 找到）；
 2. 随机相关：BP 候选 / Ban-Pick、洗牌与发牌、随机技能、结算加成序列是否与上一版一致；
@@ -580,4 +582,63 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 · 客户端装配 | 未做 |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本轮编译与运行时回归未执行，PCH / 链接改动只能靠用户本地验证；② 若 `sfml-window.lib` 去掉导致链接失败，按 Q5 保留现状即可；③ W3 会触及协议序列化与 3 个 exe 的 include 路径，建议在本轮编译通过后再开工；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-08 确认本批编译通过（见 17.5）；② `sfml-window.lib` 仍按 Q5 保留，去掉它需单独编译 / 链接验证；③ W3 会触及协议序列化与 3 个 exe 的编译单元 / 链接，**本批编译通过后已具备开工前提**，但需先确认是否解除 A6「不物理移动现有文件」；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 18. 阶段 2 第二批：NetworkServerView 拆分（2026-11-08，用户「编译通过，继续」→ 选「W4 优先」）
+
+用户确认阶段 2 第一批（`f4c8e8d`）本地编译通过并要求继续。助手只读核对阶段 2 剩余 W3 / W4 / W5 与 W3 的 A6 冲突后集中列出选项，用户选择 **W4 优先**，并确认「若涉及 W3，允许改 3 个 exe 的编译单元与链接」——该口径本批**不启用**，仅作为下一批的已获准前提。
+
+### 18.1 状态闭环
+
+第 17.5 节改为「用户本地验证（已闭环）」、第 17.6 节风险 ① 标记解除，回归任务 #6 完成。更早章节里按时间顺序记录的「编译未执行」表述保留为当时事实，最终状态以第 16 / 17.5 / 18 节为准。
+
+### 18.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `header/adapters/NetworkServerView.h` | `IServerView` 的独立实现类：持有 `ServerNetwork&` 与 `opt_ref<GameLogic> game_{}`，`attach(GameLogic&)` 延迟绑定 |
+| 新增 `source/adapters/NetworkServerView.cpp` | 从原适配器平移 `onState()` / `onCharInfo()` / `usernameOf()` / `spendPoints()` 四个方法体，**逐字等价** |
+| `header/adapters/LegacyBlockingDecisionAdapter.h` | 去掉 `IServerView` 继承、4 个方法、`attach()`、`game_` 成员，以及不再需要的 `IServerView.h` / `utils.h` 与 `GameLogic` 前向声明；只实现 `IDecisionPort` |
+| `source/adapters/LegacyBlockingDecisionAdapter.cpp` | 删除 `=== IServerView ===` 段（70 行）与仅供该段使用的 `GameLogic.h` / `GameState.h` / `Player.h` / `utils.h`；`toDomainKey()` 与 7 个决策端口方法原样保留 |
+| `source/ServerMain.cpp` | 组合根改为两个对象分别注入：`NetworkServerView serverView(serverNetwork)`、`LegacyBlockingDecisionAdapter decisionAdapter(serverNetwork, configService)`、`GameLogic gameLogic(serverView, decisionAdapter, domainServices)`、`serverView.attach(gameLogic)`；补 include 并订正注释 |
+| `UNOOL.Adapters.vcxproj` | 新增 1 条 `ClInclude` + 1 条 `ClCompile`（`Use` PCH / `ForcedIncludeFiles` 与既有单元一致） |
+| `Server.vcxproj` / `Server.vcxproj.filters` | 各补 1 条 `ClInclude`（按第 15 节口径：Server 只列自己直接 include 的头） |
+
+`UNOOL.slnx` 不变（仍 6 个工程）；**未新建 `UNOOL.Protocol` 工程**；3 个 exe 的 `ClCompile`、`AdditionalDependencies`、`ProjectReference`、包含目录一律未动。新 `.cpp` 沿用既有路径——由 `Adapters` 静态库编译、Server 通过原有 `ProjectReference` 链接，Client1/2 完全不受影响。
+
+### 18.3 例外与偏差说明
+
+- **W3 / W5 未做**：`UNOOL.Protocol` / `PacketCodec` / DTO 归位、`AccountService` / `ShopService` 仍待办。用户已确认 W3 可解除 A6，但本批按「W4 优先」不启用。
+- **`sfml-window.lib` 继续保留**（Q5）；`SfmlClock` 名不副实的历史说明见 17.3。
+- **协议、配置、端口、客户端源码未改**：`Socket.*`、`GameState.*`、`AccountProtocol.*`、`Card.cpp`、`Character.*`、`UserDB.*`、3 个 json、8888 / 14341、`MessageType`、长度帧 / Partial 全部未触碰。
+- `README.md` 未动：工程数量、PCH 与目录描述仍成立。
+- 本批未引入裸指针：`game_` 沿用 `opt_ref<GameLogic>`，新增成员用 `{}` 初始化。
+
+### 18.4 验证结果（助手侧静态只读）
+
+- 9 个 `.vcxproj` / `.filters` XML 可解析；**294 个文件类 Include 0 缺失**（290 + Server 1 + filters 1 + Adapters 2；33 个虚拟筛选器节点已排除）；Server 的 `vcxproj` / `filters`：`ClInclude` 19/19、`ClCompile` 16/16，**集合完全一致**。
+- **平移逐字等价**：HEAD 版 `LegacyBlockingDecisionAdapter.cpp` 的 `=== IServerView ===` 段（65 行，仅替换类名）与新 `NetworkServerView.cpp` 同名段 `diff` 无差异。
+- `IServerView` 4 个纯虚 ↔ `NetworkServerView` 4 个 `override`；`IDecisionPort` 7 个纯虚 ↔ `LegacyBlockingDecisionAdapter` 7 个 `override`，合计 **11 ↔ 11**。
+- `attach()` / `game_` 仅存在于 `NetworkServerView` 与组合根的一处调用；严格正则扫描项目自有裸指针声明 **0**；`git diff --check` 干净；新 `.cpp` 的引号 include 全部可解析；协议 / 配置 / 客户端源码 `git diff --name-only` 为空。
+- BOM 保持（3 个 filters 有 / 6 个 vcxproj 无）；`git diff` 仅 3 处语义改动块，无整文件换行污染（`core.autocrlf=true`，工作区 CRLF 与仓库 LF 由 Git 规范化）。
+
+### 18.5 需要用户本地验证的部分
+
+本批改动了组合根装配、适配器实现归属与 `Adapters` 库的编译单元，**第 16 / 17.5 节的编译验收不覆盖本批**。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. 编译链接：`NetworkServerView.cpp` 经 `pch.adapters.h` 能否拿到 `std::println` / `std::format`；Server 能否从静态库解析 `NetworkServerView` 的构造与 vtable；
+2. 状态广播与角色信息：开局 / 每回合结束的 `broadcastState()`、`CharInfo` 脏标记刷新（`onState` 末尾仍调 `onCharInfo`）；
+3. 会话用户名与积分消费：登录、商城 5 分扣减（`usernameOf` / `spendPoints`）；
+4. 决策通道：选项分页、超时、600 秒重连、数字键技能（确认两个端口对象互不干扰）；
+5. Client1 / Client2 双开全流程（默认组合未变）。
+
+### 18.6 剩余阶段与风险
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | **再推进一项**：5 个出站适配器、Server 精简 PCH、`NetworkServerView` 拆分已完成。仍剩 W3（`UNOOL.Protocol` / 序列化归位，A6 已获准解除）、W5（`AccountService` / `ShopService`）、`sfml-window.lib` 能否去掉 |
+| 3 | 未做（Domain / Application 仍为 PCH 占位，领域源码平铺且 `Card.cpp` / `GameState.cpp` 带 `<SFML/Network.hpp>`，共享 `.cpp` 被 3 个 exe 各编译一遍） |
+| 4 | 未做 |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 18.5）；② W3 会给 Client1/2 **首次**引入 `ProjectReference`，是后续批次的最大改动点；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

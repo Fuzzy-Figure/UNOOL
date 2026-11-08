@@ -4,6 +4,7 @@
 #include "application/Services.h"
 #include "adapters/LegacyBlockingDecisionAdapter.h"
 #include "adapters/LegacyServicesAdapter.h"
+#include "adapters/NetworkServerView.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>
@@ -116,8 +117,10 @@ int main() {
 	}
 
 	// Composition Root：唯一出现「谁实现谁」的地方。
-	// 五个出站端口各由独立适配器实现（由 LegacyServicesAdapter.h 统一引入）；
-	// 注入棋局后由端口转发。installServices 让无法构造注入的静态工具（Character）
+	// 五个出站服务端口各由独立适配器实现（由 LegacyServicesAdapter.h 统一引入）；
+	// IServerView 由 NetworkServerView 实现、IDecisionPort 由
+	// LegacyBlockingDecisionAdapter 实现，两者分别注入棋局。
+	// installServices 让无法构造注入的静态工具（Character）
 	// 与全局随机门面也指向同一组实例；客户端不装配时自动退回逐字等价的默认组合。
 	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
 	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
@@ -130,9 +133,10 @@ int main() {
 		configService, userRepository, randomService, clockService, assetCatalog };
 	unool::application::installServices(domainServices);
 
-	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork, configService);
-	GameLogic gameLogic(adapter, adapter, domainServices);
-	adapter.attach(gameLogic);
+	unool::adapters::NetworkServerView serverView(serverNetwork);
+	unool::adapters::LegacyBlockingDecisionAdapter decisionAdapter(serverNetwork, configService);
+	GameLogic gameLogic(serverView, decisionAdapter, domainServices);
+	serverView.attach(gameLogic);
 
 	std::println("[Server] 等待客户端连接...");
 	while (!serverNetwork.isReady()) {
