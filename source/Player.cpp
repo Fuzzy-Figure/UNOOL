@@ -558,7 +558,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 		const auto clientInput = inputOpt.value();
 		if (clientInput.player != id) continue;
 
-		unool::domain::Key input = static_cast<unool::domain::Key>(clientInput.key);
+		unool::domain::Key input = clientInput.key;
 		setInput(input);
 		hand->setSelectedIndex(clientInput.selectedIndex);  //统一同步选中索引
 
@@ -947,7 +947,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		if (clientInput.player != id) {
 			continue;
 		}
-		unool::domain::Key input = static_cast<unool::domain::Key>(clientInput.key);
+		unool::domain::Key input = clientInput.key;
 		setInput(input);
 
 		//4. 翻页键

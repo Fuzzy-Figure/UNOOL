@@ -3010,7 +3010,7 @@ bool 宣战::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 				for (std::size_t i = firstIdx + 1; i < carrier.handCount(); ++i)
 					if (carrier.getCardByIndex(i).is(Card::Name::number_5)) rest.push_back(i);
 				for (auto it = rest.rbegin(); it != rest.rend(); ++it)
-					carrier.takeCardByIndex(*it);
+					(void)carrier.takeCardByIndex(*it);
 
 				std::println("<技能> {}发动宣战，将{}张【5】转化为【+4】打出", carrier.displayName(), fiveCount);
 				carrier.useCardByIndex(firstIdx);

@@ -3,41 +3,22 @@
 
 namespace unool::domain {
 
-	// 领域键码：数值与 SFML 3.1 sf::Keyboard::Scan 逐字对应
-	// （取自 dep/SFML/include/SFML/Window/Keyboard.hpp 的 Scan 枚举）。
-	// 端口透传的是 ClientInput.key 的原始数值，因此所有按键判定、
-	// 数字键解析与线上包字节都不变；领域层不再需要任何 SFML 头。
+	// 领域键码：只表达「哪个键」，不携带任何第三方库的数值。
+	//
+	// SFML 扫描码 -> 领域键码的翻译集中在适配器 toDomainKey()，
+	// 因此升级 SFML 时只需维护那一个函数；端口层与领域层都不认识 SFML，
+	// 也不会因为第三方库调整枚举编号而静默失配。
+	//
+	// 这里的数值只是领域内部自增序号，与线上 ClientInput.key 的字节完全无关：
+	// 传输层仍旧收发 sf::Keyboard::Scancode 的数值，线上包内容不变。
+	// A 保持为 0，使 DecisionInput{} 的默认构造语义与重构前 key = 0 一致。
 	enum class Key : std::uint32_t {
-		Unknown = 0xFFFFFFFFu,
-		A = 0,
-		B = 1,
-		D = 3,
-		S = 18,
-		W = 22,
-		Num1 = 26,
-		Num2 = 27,
-		Num3 = 28,
-		Num4 = 29,
-		Num5 = 30,
-		Num6 = 31,
-		Num7 = 32,
-		Num8 = 33,
-		Num9 = 34,
-		Num0 = 35,
-		Space = 40,
-		Right = 86,
-		Left = 87,
-		Down = 88,
-		Up = 89,
-		Numpad1 = 98,
-		Numpad2 = 99,
-		Numpad3 = 100,
-		Numpad4 = 101,
-		Numpad5 = 102,
-		Numpad6 = 103,
-		Numpad7 = 104,
-		Numpad8 = 105,
-		Numpad9 = 106,
-		Numpad0 = 107
+		A, B, D, S, W,
+		Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9, Num0,
+		Space,
+		Right, Left, Down, Up,
+		Numpad1, Numpad2, Numpad3, Numpad4, Numpad5,
+		Numpad6, Numpad7, Numpad8, Numpad9, Numpad0,
+		Unknown
 	};
 }

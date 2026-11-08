@@ -5,16 +5,18 @@
 #include <string>
 #include <vector>
 #include "domain/Types.h"
+#include "domain/Keys.h"
 
 namespace unool::application {
 
 	using domain::player_id;
 
-	// 一次客户端输入。key 原样透传底层扫描码数值（线上 ClientInput.key 的字节不变），
-	// 键码语义仍由领域侧解释，本阶段不改动任何输入判定逻辑。
+	// 一次客户端输入。key 是适配器已翻译好的领域键码，
+	// 端口与领域层不再接触底层扫描码数值；线上 ClientInput.key 的字节
+	// 仍由传输层按 sf::Keyboard::Scancode 数值收发，保持不变。
 	struct DecisionInput {
 		player_id     player{};
-		std::uint32_t key{};
+		domain::Key   key{};
 		std::size_t   selectedIndex{};
 	};
 
