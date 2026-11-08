@@ -154,8 +154,8 @@ namespace unool {
 // 未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
 namespace unool::application {
 	namespace detail {
-		DomainServices*& installedSlot() {
-			static DomainServices* slot = nullptr;
+		opt_ref<DomainServices>& installedSlot() {
+			static opt_ref<DomainServices> slot{};
 			return slot;
 		}
 		DomainServices& legacyBundle() {
@@ -166,11 +166,12 @@ namespace unool::application {
 	}
 
 	DomainServices& services() {
-		if (DomainServices* installed = detail::installedSlot()) return *installed;
+		auto& installed{detail::installedSlot()};
+		if (installed.has_value()) return installed->get();
 		return detail::legacyBundle();
 	}
 	void installServices(DomainServices& s) {
-		detail::installedSlot() = &s;
+		detail::installedSlot() = std::ref(s);
 	}
 }
 

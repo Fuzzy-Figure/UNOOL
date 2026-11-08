@@ -1208,9 +1208,9 @@ bool 水鬼::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	std::vector<std::size_t> blueIndices;
 	for (const auto& c : trigger.getCards()) {
 		if (c.get().getColor() != Card::Color::blue) continue;
-		const Card* ptr = &c.get();
+		const Card& card{c.get()};
 		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
-			if (&carrier.getCardByIndex(i) == ptr) {
+			if (&carrier.getCardByIndex(i) == &card) {
 				blueIndices.push_back(i);
 				break;
 			}

@@ -903,16 +903,16 @@ bool 飞手::filter(const GameLogic& game, const Player& carrier) const {
 bool 飞手::content(GameLogic& game, Player& carrier) {
 	//选择上家/下家
 	std::vector<std::string> options;
-	std::vector<Player*> candidates;
+	std::vector<ref<Player>> candidates{};
 	Player& prevPlayer = carrier.prev();
 	Player& nextPlayer = carrier.next();
 	if (prevPlayer.handCount() >= 2) {
 		options.push_back(std::format("上家：{}（{}张牌）", prevPlayer.characterName(), prevPlayer.handCount()));
-		candidates.push_back(&prevPlayer);
+		candidates.push_back(std::ref(prevPlayer));
 	}
 	if (nextPlayer.handCount() >= 2) {
 		options.push_back(std::format("下家：{}（{}张牌）", nextPlayer.characterName(), nextPlayer.handCount()));
-		candidates.push_back(&nextPlayer);
+		candidates.push_back(std::ref(nextPlayer));
 	}
 	if (candidates.empty()) {
 		carrier.hint("上家与下家都没有可获得的牌（至少保留一张）");
@@ -921,7 +921,7 @@ bool 飞手::content(GameLogic& game, Player& carrier) {
 
 	const std::size_t choice = carrier.ask("【飞手】选择获得谁的一张牌", options, false);
 	if (choice == 0) return false;
-	Player& target = *candidates[choice - 1];
+	Player& target{candidates[choice - 1].get()};
 
 	//随机获得一张，然后交还一张
 	const std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
@@ -1191,7 +1191,7 @@ bool 炼石::content(GameLogic& game, Player& carrier) {
 		totalValue += discarded.value();
 		carrier.recastByIndex(*it);
 		if (!carrier.handEmpty() && carrier.getHand().back().is(Card::Color::yellow)) {
-			yellowGained.push_back(&carrier.getHand().back());
+			yellowGained.push_back(std::ref(carrier.getHand().back()));
 		}
 	}
 
@@ -1228,9 +1228,9 @@ bool 成金::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 	//弃置本回合获得的所有黄色牌（仍在手牌中的）
 	std::size_t discarded = 0;
-	for (Card* cp : skill.yellowGained) {
+	for (const ref<Card>& cp : skill.yellowGained) {
 		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
-			if (&carrier.getCardByIndex(i) == cp) {
+			if (&carrier.getCardByIndex(i) == &cp.get()) {
 				carrier.putCardToDiscardPileByIndex(i, Card::DiscardReason::discard);
 				++discarded;
 				break;

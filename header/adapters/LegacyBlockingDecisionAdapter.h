@@ -2,6 +2,7 @@
 #include "application/IDecisionPort.h"
 #include "application/IServerView.h"
 #include "application/IConfigProvider.h"
+#include "utils.h"
 
 class ServerNetwork;
 class GameLogic;
@@ -20,7 +21,7 @@ namespace unool::adapters {
 		explicit LegacyBlockingDecisionAdapter(ServerNetwork& network,
 											   application::IConfigProvider& config);
 
-		void attach(GameLogic& game) { game_ = &game; }
+		void attach(GameLogic& game) { game_ = std::ref(game); }
 
 		// IDecisionPort
 		void poll() override;
@@ -41,6 +42,7 @@ namespace unool::adapters {
 		ServerNetwork& network_;
 		// 重连超时属配置读取，统一经 IConfigProvider，避免适配器直读 server_config.json。
 		application::IConfigProvider& config_;
-		GameLogic*     game_ = nullptr;
+		// GameLogic 在 adapter 之后才构造，只能延迟绑定；用可空引用包装器表达观察语义。
+		opt_ref<GameLogic> game_{};
 	};
 }

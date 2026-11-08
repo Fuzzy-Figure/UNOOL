@@ -29,7 +29,7 @@ private:
 #pragma endregion
 
 #pragma region 成员变量 - 角色与手牌
-	std::unique_ptr<Character> character = nullptr;
+	std::unique_ptr<Character> character{};
 	std::unique_ptr<Hand> hand = std::make_unique<Hand>();
 #pragma endregion
 

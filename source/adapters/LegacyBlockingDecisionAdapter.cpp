@@ -104,17 +104,17 @@ namespace unool::adapters {
 	void LegacyBlockingDecisionAdapter::onState() {
 		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
 			if (!network_.isClientConnected(i)) continue;
-			GameState state = game_->packStateForPlayer(i);
+			GameState state = game_->get().packStateForPlayer(i);
 			bool ok = network_.sendGameStateToClient(i, state);
 			if (!ok) {
-				std::println("[Warning] broadcastState发给{}失败！", game_->getPlayerById(i).displayName());
+				std::println("[Warning] broadcastState发给{}失败！", game_->get().getPlayerById(i).displayName());
 			}
 		}
 		onCharInfo();
 	}
 
 	void LegacyBlockingDecisionAdapter::onCharInfo() {
-		const auto players = game_->getPlayers();
+		const auto players = game_->get().getPlayers();
 		for (std::size_t i = 0; i < players.size(); ++i) {
 			Player& player = players[i].get();
 			if (i < 2 && player.isCharInfoDirty()) {

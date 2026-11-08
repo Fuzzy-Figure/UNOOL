@@ -561,7 +561,7 @@ public:
 class 炼石 final : public InstantSkillImpl<炼石> {
 	friend class 成金;
 	bool usedThisTurn = false;
-	std::vector<Card*> yellowGained;  //本回合炼石重铸时获得的黄色牌
+	std::vector<ref<Card>> yellowGained{};  //本回合炼石重铸时获得的黄色牌
 public:
 	炼石() : InstantSkillImpl<炼石>(
 		"炼石",

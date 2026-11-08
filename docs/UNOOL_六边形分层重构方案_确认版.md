@@ -382,3 +382,53 @@
 ### 13.5 遗留风险
 
 本轮只移动文档与改文档引用，**不涉及任何编译单元、包含目录、链接项或运行时路径**，因此第 11 / 12 节的运行时行为不受影响。第 12.4 节记录的两个遗留项仍未解除：`Projects/*/x64` 中间产物需在 VS 里 Rebuild 或手动删除后重建；`Debug|x64` / `Release|x64` 编译与运行时回归在本机仍因 `MSBuild.exe` 被拦截而未执行。
+
+## 14. 裸指针清零与初始化风格（2026-11-08）
+
+### 14.1 确认结论
+
+用户要求：「代码里不允许出现裸指针，全部改为智能指针（所有权）或引用（观察）或引用包装器（`this`、与第三方库交互以及特殊情况除外，特殊情况需说明）；初始化使用 `{}`」。经只读评估后按 7 项推荐确认执行：
+
+1. 只改项目自有代码（`header/`、`source/`，56 文件 / 17,875 行）的裸指针；
+2. `dep/` 第三方源码不动；
+3. `&a == &b` 身份比较按特殊情况豁免并登记；
+4. 两处可空观察槽用 `opt_ref<T>`（`optional<reference_wrapper<T>>`，项目已有别名）而非改装配顺序；
+5. `std::vector<Card*>` → `std::vector<ref<Card>>`；
+6. `{}` 只用于本轮新增/修改的代码 + 可改的 `= nullptr` 初始化，不做全库替换；
+7. 保持线上协议 / 配置 / 对外行为不变，验收降级为静态验证（`MSBuild.exe` 仍被拦截）。
+
+### 14.2 改动的 5 组裸指针（7 个文件，23 增 / 20 删）
+
+| 组 | 位置 | 改法 |
+|---|---|---|
+| 1 | `header/adapters/LegacyBlockingDecisionAdapter.h:23,44` + `source/adapters/LegacyBlockingDecisionAdapter.cpp:107,110,117` | `GameLogic* game_ = nullptr` / `game_ = &game` → `opt_ref<GameLogic> game_{}` / `game_ = std::ref(game)`；3 处 `game_->X` → `game_->get().X`。GameLogic 在 adapter 之后构造，只能延迟绑定，用可空引用包装器表达观察语义 |
+| 2 | `source/utils.cpp:157,158,169,173` | `DomainServices*& installedSlot()` / `static DomainServices* slot = nullptr` → `opt_ref<DomainServices>&` / `static opt_ref<DomainServices> slot{}`；`services()` 改 `has_value()` + `->get()`；`installServices()` 改 `= std::ref(s)` |
+| 3 | `header/InstantSkill.h:564` + `source/InstantSkill.cpp:1194,1231,1233` | `std::vector<Card*> yellowGained` → `std::vector<ref<Card>> yellowGained{}`；`push_back(&...)` → `push_back(std::ref(...))`；`for (Card* cp ...)` → `for (const ref<Card>& cp ...)`，`== cp` → `== &cp.get()` |
+| 4 | `source/InstantSkill.cpp:906,911,915,924` | `std::vector<Player*> candidates` → `std::vector<ref<Player>> candidates{}`；`push_back(&p)` → `push_back(std::ref(p))`；`*candidates[i]` → `candidates[i].get()` |
+| 5 | `source/PassiveSkill.cpp:1211,1213` | `const Card* ptr = &c.get()` → `const Card& card{c.get()}`；`== ptr` → `== &card` |
+
+另按 Q6 把 `header/Player.h:32` 的 `std::unique_ptr<Character> character = nullptr` 改为 `character{}`（所有权不变，仅初始化风格）。
+
+`ref` / `opt_ref` 由 `header/utils.h:21-25` 提供；`LegacyBlockingDecisionAdapter.h` 新增 `#include "utils.h"`（与同目录 `LegacyServicesAdapter.h` 一致），`InstantSkill.h` 经 `Skill.h` 已可见该别名。`Skill.h` 原本就用 `opt_ref<Player>` 配 `class Player;` 前向声明，因此 `opt_ref<GameLogic>` 对不完整类型可用，无需把 `GameLogic.h` 拉进头文件。
+
+### 14.3 例外与特殊情况登记（按用户要求说明）
+
+- **第三方库交互（豁免）**：SFML 3 的 `sf::Event::getIf<T>()` 返回 `const T*`，局部接住它的 8 处（`ClientMain.cpp:78,93`；`LoginScene.cpp:62,66,70`；`ShopScene.cpp:247,251,255`）；Win32 / nlohmann 需要的 `nullptr` 与缓冲区地址（`utils.cpp:20,81,107,116,118` 的 `GetModuleFileNameW` / `MultiByteToWideChar` / `WideCharToMultiByte` / `&utf8[0]` / `json::parse(..., nullptr, ...)`，`UserDB.cpp:183`）。均在交互边界内，不包装、不改签名。
+- **`dep/` 第三方源码**：SFML / mbedtls / libssh2 头文件自身含大量裸指针，不属于本仓库代码，未动。
+- **`this` 相关（豁免）**：`*this`（大量）、`GameState.cpp:5` 的 `this != &other`、lambda 捕获 `[this]`。
+- **对象身份比较 `&a == &b`（特殊情况，豁免并登记）**：约 8 处（`Player.cpp:644`；`PassiveSkill.cpp:2078,2110,2284,3030`；`InstantSkill.cpp:1173`；`GameRenderer.cpp` 等）。只产生临时指针值用于比较，不是裸指针变量 / 成员 / 参数 / 返回值；彻底消除需要引入对象 ID 或改接口，会动到行为与协议，故按特殊情况保留。本轮第 3、5 组改造后的比较仍是这一惯用法。
+- **不是裸指针（无需改）**：`std::optional::operator->`（`event->`、`input->`、`choice->`、`resp->`）、迭代器 `it->second`、`unique_ptr` / `shared_ptr` 的 `->` 与 `*`、`.get()`（引用包装器）、`typeid(*s)`、`*this`、乘法 `*`。
+- **`= nullptr` 中未改的 3 处**（扫描共 6 处，实际只有 3 处是初始化）：`header/pch.h:27` 的 `j = nullptr` 是 `std::optional<T>` 序列化无值分支写入 JSON `null`，改成 `j = {}` 会改变序列化字节；`header/Socket.h:176` 与 `source/Socket.cpp:75` 的 `!= nullptr` 是 `unique_ptr` 判空比较，不是初始化。以上均保持原样，属特殊情况。全库其余约 406 处标量 `= 0/false/true`、19 处构造初始化列表 `(...)` 未做全量 `{}` 替换（Q6）：`std::vector<T> v{n}` 与 `v(n)` 语义不同，`{}` 禁止窄化可能直接编译失败，且本机无法编译验证。
+
+### 14.4 验证结果（静态只读，全部通过）
+
+- 正则扫描 `header/` + `source/` 全部 `.h` / `.cpp`：**裸指针声明 0 处**；剩余 `*` 命中全部是解引用（`*unique_ptr`、`*optional`、`*this`）、乘法与 `*it`，已逐条核对。
+- 3 处 `game_->` 全部改为 `->get().`；`yellowGained` 6 个使用点、`candidates` 4 个使用点全部同步；`git diff` 仅 7 个源码文件、23 增 20 删。
+- 编码：`/utf-8` 在 6 个 `.vcxproj` 中均存在；改动文件全部 UTF-8 无 BOM；`adapters/` 两个文件保持原本的 LF，其余改动文件保持原本的 CRLF（Edit 未整份重写，`git diff` 无全文件换行变化）。
+- 包含链：`opt_ref` / `ref` / `std::ref` 均可经 `utils.h`（含 `<functional>`、`<optional>`）到达；`opt_ref<不完整类型>` 在本项目已有先例且可编译。
+
+### 14.5 遗留风险
+
+- **未编译验证**：`MSBuild.exe` 仍被环境安全策略拦截，本轮未再尝试调用或绕过。`Debug|x64` / `Release|x64` 编译与运行时回归仍需用户在 VS 里执行；第 12.4 节的 `Projects/*/x64` 中间产物须 Rebuild 或手动删除后重建。
+- **需重点回归的技能**：`炼石` / `成金`（`yellowGained` 改为引用包装器后按地址比较找手牌下标）、`飞手`（`candidates` 改为引用包装器后取目标）、`水鬼`（蓝色牌身份比较改为引用）、以及 Server 首次状态广播 / 角色信息刷新（`game_->get()` 路径）。这些改动均为观察语义替换，线上协议字节与配置内容未变。
+- 全库 `{}` 初始化风格统一尚未执行（Q6 范围外），如后续要求需单独评估窄化与容器构造语义差异。
