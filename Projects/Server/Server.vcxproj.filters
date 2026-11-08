@@ -63,6 +63,12 @@
     <ClInclude Include="..\..\header\ShopData.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\Card.cpp">
@@ -132,6 +138,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\docs\rules.md" />
+    <Text Include="..\..\docs\rules.md">
+      <Filter>资源文件</Filter>
+    </Text>
   </ItemGroup>
 </Project>

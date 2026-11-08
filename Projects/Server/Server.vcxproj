@@ -168,17 +168,6 @@
     <ClInclude Include="..\..\header\TransformSkill.h" />
     <ClInclude Include="..\..\header\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
-    <ClInclude Include="..\..\header\domain\Types.h" />
-    <ClInclude Include="..\..\header\application\ICommands.h" />
-    <ClInclude Include="..\..\header\application\IDecisionPort.h" />
-    <ClInclude Include="..\..\header\application\IServerView.h" />
-    <ClInclude Include="..\..\header\application\IConfigProvider.h" />
-    <ClInclude Include="..\..\header\application\IUserRepository.h" />
-    <ClInclude Include="..\..\header\application\IRandom.h" />
-    <ClInclude Include="..\..\header\application\IClock.h" />
-    <ClInclude Include="..\..\header\application\IAssetCatalog.h" />
-    <ClInclude Include="..\..\header\application\Services.h" />
-    <ClInclude Include="..\..\header\domain\Keys.h" />
     <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
     <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
   </ItemGroup>

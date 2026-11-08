@@ -432,3 +432,36 @@
 - **未编译验证**：`MSBuild.exe` 仍被环境安全策略拦截，本轮未再尝试调用或绕过。`Debug|x64` / `Release|x64` 编译与运行时回归仍需用户在 VS 里执行；第 12.4 节的 `Projects/*/x64` 中间产物须 Rebuild 或手动删除后重建。
 - **需重点回归的技能**：`炼石` / `成金`（`yellowGained` 改为引用包装器后按地址比较找手牌下标）、`飞手`（`candidates` 改为引用包装器后取目标）、`水鬼`（蓝色牌身份比较改为引用）、以及 Server 首次状态广播 / 角色信息刷新（`game_->get()` 路径）。这些改动均为观察语义替换，线上协议字节与配置内容未变。
 - 全库 `{}` 初始化风格统一尚未执行（Q6 范围外），如后续要求需单独评估窄化与容器构造语义差异。
+
+## 15. 工程头文件条目按分层归位（2026-11-08，用户确认 A 方案）
+
+### 15.1 口径澄清（本轮最重要的事实）
+
+`ClInclude` 在 MSBuild 中**不是编译输入**：编译只遍历 `ClCompile`，`ClInclude` 仅用于 IDE「头文件」节点、IntelliSense 导航与静态分析。因此删除任意 `ClInclude` 条目（乃至全部删除）**不影响编译、链接、运行与线上协议**。此前第 14 节及本轮之前的「编译依赖闭包」统计按 `#include` 传递关系计算，与「哪些工程条目可删」是两个不同口径，不可混用。
+
+用户实测删除 `IClock.h` 条目无异常，即属此类。但 `IClock.h` **文件本身仍是真实编译依赖**：`Services.h:3` 包含它、`DomainServices` 持有 `IClock& clock`、`Player.cpp` 6 处 `services.clock.now()`、`LegacyServicesAdapter.h` 继承并实现 `now()`、`ServerMain.cpp:123` 与 `utils.cpp:163` 为 5 项聚合初始化。删除文件或 `#include` 会直接编译失败。
+
+### 15.2 改动范围（4 个工程文件，共删 13 条，全部为 `ClInclude` 行）
+
+| 文件 | 删除条目 | 条数变化 |
+|---|---|---|
+| `Projects/Server/Server.vcxproj` | `domain\Types.h`、`domain\Keys.h` 及 7 个 `application\*` 端口头 | 27 → 18 |
+| `Projects/Server/Server.vcxproj.filters` | 与上完全对应的 9 个 `<ClInclude>` 块（每个含 `<Filter>头文件</Filter>`） | 27 → 18 |
+| `Projects/Application/UNOOL.Application.vcxproj` | `application\ICommands.h`、`application\IClock.h` | 12 → 10 |
+| `Projects/Adapters/UNOOL.Adapters.vcxproj` | `application\ICommands.h`、`application\IClock.h` | 14 → 12 |
+
+`Domain` 工程 3 条不变。归位依据：`application/` 9 个头与 `domain/` 2 个头在 `Application` / `Domain` 工程中原本就各有条目，删掉 Server 的重复项不会让任何头失去归属；Server 保留 16 个共享业务头 + 2 个 `adapters/` 头（这两者是 `ServerMain.cpp` / `utils.cpp` 直接 `#include` 的组合根依赖）。
+
+### 15.3 结果与需注意的一点
+
+- Server 的 `vcxproj` 与 `filters` 条目集合**完全一致**（各 18 条）；Server 中已无 `application/` / `domain/` 条目。
+- `application/IClock.h` 与 `application/ICommands.h` **文件仍在磁盘、未删除**，但按 A 方案清掉 4 条残留后，二者不再出现在任何工程的「头文件」节点。`ICommands.h` 是零引用骨架（第 5 节已说明本阶段无调用方），无节点合理；`IClock.h` 是活跃的 5 端口之一，若希望它在 IDE 里可见，可在 `Application` 工程补回 1 条（纯显示，不影响编译）。
+- `Adapters` 工程仍列着 7 个 `application/` 与 2 个 `domain/` 端口头，属同类跨工程重复；本轮按 A 的字面范围未动，可后续按需再清。
+
+### 15.4 验证结果（静态只读）
+
+9 个 `.vcxproj` / `.filters` XML 全部可解析；**285 个文件类 Include 引用 0 缺失**（33 个 `.filters` 虚拟筛选器节点已排除；条目由 298 减至 285，与删除 13 条精确对应）；BOM 状态保持（3 个 filters 有 / 6 个 vcxproj 无）；换行保持（Server 系 CRLF、Application/Adapters/Domain 系 LF），`Server.vcxproj.filters` 末尾仍无换行；`git diff` 只有 4 个工程文件的 `ClInclude` 行变化，**未触碰任何源文件、包含目录、链接项、配置或运行时路径**，因此第 14 节的编译闭包与第 11 节的运行时行为均不变。
+
+### 15.5 遗留风险
+
+本轮为纯 IDE 组织调整，无功能影响。第 12.4 / 14.5 节的两项遗留不变：本机 `MSBuild.exe` 被拦截，`Debug|x64` / `Release|x64` 编译与运行时回归仍未执行；`Projects/*/x64` 中间产物仍需 VS Rebuild 或手动删除后重建。
