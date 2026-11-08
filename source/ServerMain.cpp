@@ -2,6 +2,7 @@
 #include "Socket.h"
 #include "utils.h"
 #include "UserDB.h"
+#include "adapters/LegacyBlockingDecisionAdapter.h"
 #include <Windows.h>
 #include <chrono>
 #include <thread>
@@ -102,7 +103,11 @@ int main() {
 		return 1;
 	}
 
-	GameLogic gameLogic(serverNetwork);
+	// Composition Root：唯一出现「谁实现谁」的地方。
+	// 同一个遗留适配器实现 IDecisionPort 与 IServerView，注入棋局后由端口转发。
+	unool::adapters::LegacyBlockingDecisionAdapter adapter(serverNetwork);
+	GameLogic gameLogic(adapter, adapter);
+	adapter.attach(gameLogic);
 
 	std::println("[Server] 等待客户端连接...");
 	while (!serverNetwork.isReady()) {

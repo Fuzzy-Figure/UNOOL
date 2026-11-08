@@ -1,10 +1,11 @@
 #include "Player.h"
 #include "GameLogic.h"
 #include "UserDB.h"
+#include <SFML/System/Clock.hpp>
 #include <thread>
 
 std::string Player::displayName() const {
-	const std::string& username = game.getNetwork().getClientSlots()[id].username;
+	const std::string username = game.usernameOf(id);
 	if (username.empty()) return std::format("玩家{}", id);
 	if (characterName() == "白板") return username;
 	return std::format("{}（{}）", username, characterName());
@@ -77,7 +78,7 @@ std::size_t Player::loseHp(std::size_t num) {
 }
 
 bool Player::tryUseBombCard() {
-	const std::string& username = game.getNetwork().getClientSlots()[id].username;
+	const std::string username = game.usernameOf(id);
 	if (username.empty()) return false;
 	if (UserDB::instance().getItemCount(username, "炸弹卡") <= 0) return false;
 	if (bombUsed >= 2) {
@@ -211,8 +212,7 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 		const auto& skins = character->getSkins();
 		for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
 			if (Character::getSkinQuality(names[i], skins[i]) == Character::SkinQuality::drink) {
-				const auto& slots = game.getNetwork().getClientSlots();
-				UserDB::instance().addPoints(slots[id].username, 1);
+				UserDB::instance().addPoints(game.usernameOf(id), 1);
 				break;
 			}
 		}
@@ -490,8 +490,7 @@ Player& Player::prev() const { return game.getPlayerById(game.prevPlayerIndex(id
 // === 初始化 ===
 std::string Player::chooseSkin(const std::string& charName) {
 	//只允许选择已拥有的皮肤
-	const auto& slots = game.getNetwork().getClientSlots();
-	const auto& owned = UserDB::instance().getOwnedSkins(slots[id].username, charName);
+	const auto owned = UserDB::instance().getOwnedSkins(game.usernameOf(id), charName);
 	auto skins = Character::getSkins(charName);
 	std::string skin = "默认";
 	//按 Character::getSkins 顺序过滤出已拥有的皮肤
@@ -518,9 +517,8 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 
 std::optional<std::size_t> Player::chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
 											  bool forced, ActiveSkill::TriggerTime phase) {
-	ServerNetwork& network = game.getNetwork();
 	game.setOperatingPlayer(id);
-	network.sendPlayerChoice(id, title, {}, forced);
+	decision.showChoice(id, { title, {}, forced });
 	opt_ref<TransformSkill> activeMode;  //当前激活的转换型主动技
 
 	std::vector<ref<InstantSkill>>   instantRefs;
@@ -528,16 +526,16 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 	collectAvailableSkills(phase, instantRefs, transformRefs);
 
 	while (true) {
-		network.update();
-		if (!network.isClientConnected(id)) {
+		decision.poll();
+		if (!decision.isConnected(id)) {
 			// 玩家掉线，等待重连
-			const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
+			const auto timeoutSec = decision.reconnectTimeoutSec();
 			sf::Clock clock;
 			bool reconnected = false;
 			std::println("[Player] {} 掉线，等待重连（最多 {} 秒）", displayName(), timeoutSec);
 			while (clock.getElapsedTime().asSeconds() < timeoutSec) {
-				network.update();
-				if (network.isClientLoggedIn(id)) {
+				decision.poll();
+				if (decision.isLoggedIn(id)) {
 					reconnected = true;
 					break;
 				}
@@ -549,20 +547,20 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			}
 			std::println("[Player] {} 重连成功，恢复选择", displayName());
 			game.broadcastState();
-			network.sendPlayerChoice(id, title, {}, forced);
+			decision.showChoice(id, { title, {}, forced });
 			continue;
 		}
 
-		auto inputOpt = network.receiveClientInput();
+		auto inputOpt = decision.takeInput();
 		if (!inputOpt.has_value()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(16));
 			continue;
 		}
 
-		ClientInput clientInput = inputOpt.value();
-		if (clientInput.playerId != id) continue;
+		const auto clientInput = inputOpt.value();
+		if (clientInput.player != id) continue;
 
-		sf::Keyboard::Scancode input = clientInput.key;
+		sf::Keyboard::Scancode input = static_cast<sf::Keyboard::Scancode>(clientInput.key);
 		setInput(input);
 		hand->setSelectedIndex(clientInput.selectedIndex);  //统一同步选中索引
 
@@ -576,7 +574,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			&& input == sf::Keyboard::Scancode::B) {
 			if (tryUseBombCard()) {
 				game.setOperatingPlayer(id);
-				network.sendPlayerChoice(id, title, {}, forced);
+				decision.showChoice(id, { title, {}, forced });
 				game.broadcastState();
 			}
 			continue;
@@ -590,14 +588,14 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			case sf::Keyboard::Scancode::Up:
 			case sf::Keyboard::Scancode::W:
 				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
-					network.clearPlayerChoice(id);
+					decision.clearChoice(id);
 					return result.value();
 				}
 				break;
 			case sf::Keyboard::Scancode::Down:
 			case sf::Keyboard::Scancode::S:
 				if (!forced) {
-					network.clearPlayerChoice(id);
+					decision.clearChoice(id);
 					return std::nullopt;
 				}
 				break;
@@ -628,7 +626,6 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 	auto digit = digitFromScancode(input);
 	if (!digit.has_value() || digit.value() == 0) return false;
 
-	ServerNetwork& network = game.getNetwork();
 	std::size_t idx = digit.value() - 1;  //0-based
 	//前 instantRefs.size() 个键：触发即时技
 	if (idx < instantRefs.size()) {
@@ -648,11 +645,11 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 		TransformSkill& skill = transformRefs[tIdx].get();
 		if (activeMode.has_value() && &activeMode.value().get() == &skill) {
 			activeMode.reset();
-			network.clearPlayerChoice(id);
+			decision.clearChoice(id);
 		}
 		else {
 			activeMode = skill;
-			network.sendPlayerChoice(id, skill.getPrompt(), {}, false);
+			decision.showChoice(id, { skill.getPrompt(), {}, false });
 		}
 	}
 	return true;
@@ -661,7 +658,6 @@ bool Player::handleDigitKey(sf::Keyboard::Scancode input,
 std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const Card&)>& condition,
 												 const opt_ref<TransformSkill>& activeMode) {
 	if (handEmpty()) return std::nullopt;
-	ServerNetwork& network = game.getNetwork();
 
 	if (activeMode.has_value()) {
 		//转换技：尝试转化选中的牌并打出（暂仅支持单牌转换）
@@ -676,7 +672,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 					//转化成功打出：执行附加效果，累加使用次数
 					mode.addition(game, *this);
 					mode.incrementCount();
-					network.clearPlayerChoice(id);
+					decision.clearChoice(id);
 					game.clearOperatingPlayer();
 					return hand->getSelectedIndex();
 				}
@@ -696,7 +692,7 @@ std::optional<std::size_t> Player::handleConfirm(const std::function<bool(const 
 		}
 	}
 	else if (condition(hand->getSelectedCard())) {
-		network.clearPlayerChoice(id);
+		decision.clearChoice(id);
 		game.clearOperatingPlayer();
 		return hand->getSelectedIndex();
 	}
@@ -723,7 +719,6 @@ std::vector<ref<Card>> Player::chooseCardsToDiscardPile(const std::string& title
 	if (const std::size_t _handCount = handCount(); num > _handCount)
 		num = _handCount;
 
-	ServerNetwork& network = game.getNetwork();
 	std::println("{}请选择{}{}张牌", displayName(), reason, num);
 
 	std::size_t discardedCount = 0;
@@ -881,7 +876,6 @@ std::optional<Card::Name> Player::chooseCardName(const std::string& title, bool 
 
 std::size_t Player::ask(const std::string& title, const std::vector<std::string>& options,
 						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
-	ServerNetwork& network = game.getNetwork();
 	std::string errorMsg;
 
 	//RAII: 进入/退出操作锁
@@ -906,7 +900,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 	auto sendPage = [&]() {
 		if (!usePaging) {
-			network.sendPlayerChoice(id, title, options, forced, errorMsg, toTimeoutMs(), 0, 1);
+			decision.showChoice(id, { title, options, forced, errorMsg, toTimeoutMs(), 0, 1 });
 			return;
 		}
 		std::vector<std::string> pageOptions;
@@ -915,7 +909,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		for (std::size_t i = start; i < end; ++i) {
 			pageOptions.push_back(options[i]);
 		}
-		network.sendPlayerChoice(id, title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages);
+		decision.showChoice(id, { title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages });
 	};
 
 	sendPage();
@@ -925,14 +919,14 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		//1. 超时检测
 		if (timeoutMs.has_value()
 			&& clock.getElapsedTime().asMilliseconds() >= timeoutMs.value().count()) {
-			network.clearPlayerChoice(id);
+			decision.clearChoice(id);
 			std::println("{}超时未选择", displayName());
 			return 0;
 		}
 
 		//2. 网络更新 + 掉线重连检测
-		network.update();
-		if (!network.isClientConnected(id)) {
+		decision.poll();
+		if (!decision.isConnected(id)) {
 			std::println("[Player] {} 掉线，等待重连...", displayName());
 			if (!waitForReconnect()) {
 				std::println("[Player] {} 掉线超时，ask 返回默认值", displayName());
@@ -945,16 +939,16 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		}
 
 		//3. 收包
-		auto inputOpt = network.receiveClientInput();
+		auto inputOpt = decision.takeInput();
 		if (!inputOpt.has_value()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(16));
 			continue;
 		}
-		ClientInput clientInput = inputOpt.value();
-		if (clientInput.playerId != id) {
+		const auto clientInput = inputOpt.value();
+		if (clientInput.player != id) {
 			continue;
 		}
-		sf::Keyboard::Scancode input = clientInput.key;
+		sf::Keyboard::Scancode input = static_cast<sf::Keyboard::Scancode>(clientInput.key);
 		setInput(input);
 
 		//4. 翻页键
@@ -971,7 +965,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		}
 
 		//6. 返回
-		network.clearPlayerChoice(id);
+		decision.clearChoice(id);
 		std::print("[ask] 标题：“{}”，{}选择了{}", title, displayName(), *choice);
 		if (*choice != 0) {
 			std::println(": {}", options[*choice - 1]);
@@ -982,13 +976,12 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 }
 
 bool Player::waitForReconnect() {
-	ServerNetwork& network = game.getNetwork();
-	const auto timeoutSec = unool::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
+	const auto timeoutSec = decision.reconnectTimeoutSec();
 	sf::Clock dcClock;
 	std::println("[Player] {} 掉线，等待重连（最多 {} 秒）", displayName(), timeoutSec);
 	while (dcClock.getElapsedTime().asSeconds() < timeoutSec) {
-		network.update();
-		if (network.isClientLoggedIn(id)) {
+		decision.poll();
+		if (decision.isLoggedIn(id)) {
 			return true;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));

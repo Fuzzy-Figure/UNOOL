@@ -118,8 +118,9 @@ Pile& GameLogic::getDiscardPile() { return *discardPile; }
 const Pile& GameLogic::getDiscardPile() const { return *discardPile; }
 const Pile& GameLogic::getPile() const { return *pile; }
 
-GameLogic::GameLogic(ServerNetwork& _network)
-	:network(_network) {
+GameLogic::GameLogic(unool::application::IServerView& _view,
+					 unool::application::IDecisionPort& _decision)
+	: view(_view), decision(_decision) {
 	pile = std::make_unique<Pile>(*this);
 	discardPile = std::make_unique<Pile>(*this);
 }
@@ -142,7 +143,7 @@ void GameLogic::initPlayers() {
 	bonusCardUsed.fill(false);
 	//先用"白板"创建两个Player，以便使用ask
 	for (std::size_t i = 0; i < 2; ++i) {
-		auto p = std::make_unique<Player>(i, *this, Character::make("白板"));
+		auto p = std::make_unique<Player>(i, *this, decision, Character::make("白板"));
 		players.push_back(std::move(p));
 	}
 
@@ -169,9 +170,8 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 	SelectionState state;
 
 	//获取双方用户名与角色池
-	const auto& slots = network.getClientSlots();
-	const std::string& user1 = slots[firstSeatId].username;
-	const std::string& user2 = slots[secondSeatId].username;
+	const std::string user1 = view.usernameOf(firstSeatId);
+	const std::string user2 = view.usernameOf(secondSeatId);
 	const auto& pool1 = UserDB::instance().getCharacterPool(user1);
 	const auto& pool2 = UserDB::instance().getCharacterPool(user2);
 
@@ -259,9 +259,8 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSeatId) {
 	//双将模式：从双方用户角色池抽取候选
 	const std::size_t doubleCandidateCount = unool::getServerConfig()["rules"]["double"].value("candidateCount", 5);
-	const auto& slots = network.getClientSlots();
-	const std::string& user1 = slots[firstSeatId].username;
-	const std::string& user2 = slots[secondSeatId].username;
+	const std::string user1 = view.usernameOf(firstSeatId);
+	const std::string user2 = view.usernameOf(secondSeatId);
 	const auto pool1 = UserDB::instance().getCharacterPool(user1);
 	const auto pool2 = UserDB::instance().getCharacterPool(user2);
 
@@ -302,8 +301,7 @@ void GameLogic::initPlayersDouble(std::size_t firstSeatId, std::size_t secondSea
 }
 
 void GameLogic::askBonusCard(std::size_t playerId) {
-	const auto& slots = network.getClientSlots();
-	const std::string& username = slots[playerId].username;
+	const std::string username = view.usernameOf(playerId);
 	if (UserDB::instance().getItemCount(username, "增分卡") <= 0) return;
 	std::size_t choice = players[playerId]->ask("是否使用增分卡？", { "使用", "不使用" }, false);
 	if (choice == 1) {
@@ -314,8 +312,7 @@ void GameLogic::askBonusCard(std::size_t playerId) {
 }
 
 void GameLogic::askTotem(std::size_t playerId) {
-	const auto& slots = network.getClientSlots();
-	const std::string& username = slots[playerId].username;
+	const std::string username = view.usernameOf(playerId);
 	//可重复使用任意张：持有多少张就可以用多少张
 	while (UserDB::instance().getItemCount(username, "不死图腾") > 0) {
 		std::size_t choice = players[playerId]->ask(
@@ -374,8 +371,7 @@ std::optional<std::string> GameLogic::banPhase(std::size_t bannerId, std::size_t
 
 void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& state) {
 	//选将时只允许选择用户 ownedCharacters 中已解锁的角色
-	const auto& slots = network.getClientSlots();
-	const std::string& username = slots[playerId].username;
+	const std::string username = view.usernameOf(playerId);
 	const auto& owned = UserDB::instance().getOwnedCharacters(username);
 
 	std::vector<std::string> opts;
@@ -421,7 +417,7 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 			player.hint("将池可换角色不足，无法换一批");
 			return false;
 		}
-		if (!network.trySpendPoints(playerId, 5)) {
+		if (!view.spendPoints(playerId, 5)) {
 			player.hint("积分不足，无法换一批");
 			return false;
 		}
@@ -500,7 +496,7 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 		if (chars.size() != 4)
 			throw std::invalid_argument("双将模式指定角色时，角色数量必须为4");
 		for (std::size_t i = 0; i < 2; ++i) {
-			auto p = std::make_unique<Player>(i, *this,
+			auto p = std::make_unique<Player>(i, *this, decision,
 											  Character::makeCombined(chars[i * 2], "默认", chars[i * 2 + 1], "默认"));
 			players.push_back(std::move(p));
 		}
@@ -510,7 +506,7 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 		if (chars.size() != 2)
 			throw std::invalid_argument("指定角色时，角色数量必须为2");
 		for (std::size_t i = 0; i < 2; ++i) {
-			auto p = std::make_unique<Player>(i, *this, Character::make(chars[i]));
+			auto p = std::make_unique<Player>(i, *this, decision, Character::make(chars[i]));
 			players.push_back(std::move(p));
 		}
 	}
@@ -540,19 +536,8 @@ bool GameLogic::runTurn() {
 }
 
 void GameLogic::broadcastState() {
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
-		if (!network.isClientConnected(i)) continue;
-		GameState state = packStateForPlayer(i);
-		bool ok = network.sendGameStateToClient(i, state);
-		if (!ok) {
-			std::println("[Warning] broadcastState发给{}失败！", getPlayerById(i).displayName());
-		}
-	}
-	flushCharInfo();
-}
-
-ServerNetwork& GameLogic::getNetwork() {
-	return network;
+	// 发包实现已平移到 IServerView 适配器（onState 末尾仍调用 onCharInfo）。
+	view.onState();
 }
 
 GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
@@ -614,44 +599,8 @@ void GameLogic::clearOperatingPlayer() {
 }
 
 void GameLogic::flushCharInfo() {
-	for (std::size_t i = 0; i < players.size(); ++i) {
-		Player& player = *players[i];
-		if (i < 2 && player.isCharInfoDirty()) {
-			CharInfo info;
-			info.playerIndex = i;
-
-			//levelPart
-			std::string levelPart;
-			if (player.isCombined()) {
-				auto levels = player.getLevels();
-				levelPart = std::format("{}+{}", levels[0], levels[1]);
-			}
-			else {
-				levelPart = std::format("{}", player.characterLevel());
-			}
-
-			//marksPart
-			std::string marksPart = "标记：";
-			for (const auto& [name, count] : player.getMarks()) {
-				marksPart += std::format("{}*{}，", name, count);
-			}
-
-			//skillsPart
-			std::string skillsPart;
-			if (!player.isSealed()) skillsPart = "技能：\n";
-			else skillsPart = std::format("技能（已被封印，{}回合后解除）：\n", player.getSealed());
-			skillsPart += player.getSkillsText();
-
-			//合并
-			info.fullText = std::format(
-				"{}（{}）\n{}\n{}",
-				player.characterName(), levelPart, marksPart, skillsPart
-			);
-
-			network.sendCharInfo(info);
-			player.clearCharInfoDirty();
-		}
-	}
+	// 文案拼装与发包实现已平移到 IServerView 适配器（onCharInfo）。
+	view.onCharInfo();
 }
 
 Player& GameLogic::getPlayerById(const std::size_t id) {

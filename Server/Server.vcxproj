@@ -168,6 +168,11 @@
     <ClInclude Include="..\header\TransformSkill.h" />
     <ClInclude Include="..\header\UserDB.h" />
     <ClInclude Include="..\header\utils.h" />
+    <ClInclude Include="..\header\domain\Types.h" />
+    <ClInclude Include="..\header\application\ICommands.h" />
+    <ClInclude Include="..\header\application\IDecisionPort.h" />
+    <ClInclude Include="..\header\application\IServerView.h" />
+    <ClInclude Include="..\header\adapters\LegacyBlockingDecisionAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\pch.cpp">
@@ -259,6 +264,11 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="rules.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Adapters\UNOOL.Adapters.vcxproj">
+      <Project>{a1000000-0000-4000-8000-000000000003}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

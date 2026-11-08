@@ -1,12 +1,12 @@
 #pragma once
-#include <SFML/Network.hpp>
 #include <array>
 #include <vector>
 #include "Card.h"
 #include "Player.h"
 #include "GameState.h"
-#include "Socket.h"
 #include "utils.h"
+#include "application/IDecisionPort.h"
+#include "application/IServerView.h"
 
 class GameLogic {
 private:
@@ -24,7 +24,10 @@ private:
 	Card::Color currentColor = Card::Color::no;
 	Card::Name currentName = Card::Name::no;
 	Direction direction = Direction::increase;
-	ServerNetwork& network;
+	// 出站端口：状态广播/角色信息/会话查询与决策 I/O 全部经此转发，
+	// GameLogic 不再持有 ServerNetwork&（技能签名仍以 GameLogic& 为门面，零改动）。
+	unool::application::IServerView&  view;
+	unool::application::IDecisionPort& decision;
 	std::size_t gameCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
@@ -67,7 +70,8 @@ private:
 public:
 	std::size_t getFirstPlayerId() const { return getSeatPlayerId(0); }
 #pragma region 构造与析构
-	GameLogic(ServerNetwork& _network);
+	GameLogic(unool::application::IServerView& _view,
+			  unool::application::IDecisionPort& _decision);
 	~GameLogic();
 #pragma endregion
 
@@ -86,7 +90,9 @@ public:
 	//设置/清除当前正在操作的玩家，并广播状态
 	void setOperatingPlayer(std::size_t playerId);
 	void clearOperatingPlayer();
-	ServerNetwork& getNetwork();
+	// 会话用户名：原先由 Player 通过 game.getNetwork().getClientSlots() 取得，
+	// 现在统一经 IServerView 端口，领域层不再认识 ServerNetwork。
+	std::string usernameOf(std::size_t id) const { return view.usernameOf(id); }
 	Player& currentPlayer() const;
 	GameState packStateForPlayer(std::size_t playerId) const;
 	std::size_t getCurrentPlayerId() const;

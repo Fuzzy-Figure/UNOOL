@@ -11,6 +11,7 @@
 #include "Character.h"
 #include "Card.h"
 #include "utils.h"
+#include "application/IDecisionPort.h"
 
 class GameLogic;
 class GameRenderer;
@@ -20,6 +21,8 @@ private:
 #pragma region 成员变量 - 身份与引用
 	std::size_t id = 0;
 	GameLogic& game;
+	// 决策通道：所有收发包/连接判定/配置读取都经此端口，Player 不再认识 ServerNetwork。
+	unool::application::IDecisionPort& decision;
 #pragma endregion
 
 #pragma region 成员变量 - 角色与手牌
@@ -85,8 +88,10 @@ private:
 
 public:
 #pragma region 构造与身份
-	Player(const std::size_t _id, GameLogic& _game, std::unique_ptr<Character> _character)
-		:id(_id), game(_game), character(std::move(_character)) {}
+	Player(const std::size_t _id, GameLogic& _game,
+		   unool::application::IDecisionPort& _decision,
+		   std::unique_ptr<Character> _character)
+		:id(_id), game(_game), decision(_decision), character(std::move(_character)) {}
 	std::size_t getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
 	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}
