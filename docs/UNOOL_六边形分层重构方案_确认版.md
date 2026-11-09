@@ -2386,3 +2386,95 @@ private:
 ### 48.10 提交与后续
 
 本批与 S1 同口径：代码 + 文档一并交付，待用户 Rebuild 通过后由助手生成结构化提交消息提交，提交时工作区保持干净。之后按 46.4 的顺序是 **S3 两个 Scene 纯 View 化（1443 行，最高风险）**；考虑到运行时回归清单已积压多批，建议先实跑 48.9 再动 S3，是否立即推进由用户点选。
+
+## 49. 第十八批只读评估：S3 两个 Scene 纯 View 化的结构性障碍与分段（2026-11-09，S2 编译通过后继续）
+
+### 49.1 前置与口径
+
+- 用户在第十七批 S2 后确认 `Debug|x64` / `Release|x64` Rebuild 通过；助手生成结构化提交消息并提交 **`6f9e71b`**（13 文件，+231/−52，提交时工作区干净）。阶段 4 前两段均闭环：S1 `cfa91f3` → S2 `6f9e71b`。
+- 48.10 明确「之后按 46.4 是 S3 两个 Scene 纯 View 化，建议先实跑 48.9 回归再动 S3，是否立即推进由用户点选」。本批按 37.6「不擅自判定口径」**只做只读盘点与分段设计**：零代码、零工程文件改动，不改写任何函数体、不增删任何 `ClCompile` / `ClInclude` / `ProjectReference`，不擅自启动 S3。
+- 本批三个产出：① S3 的精确行数与耦合分类（订正 46.4 的 1443 行估算）；② 3 个必须先定口径的结构性障碍；③ 把 S3 拆成 S3a / S3b / S3c 的建议分段与 49.8 的三个待确认口径。
+
+### 49.2 精确盘点（S2 后的当前 HEAD）
+
+| 单元 | 头文件 | 源文件 | 合计 |
+|---|---|---|---|
+| `LoginScene` | 66 | 545 | 611 |
+| `ShopScene` | 104 | 876 | 980 |
+| **两个 Scene 合计** | **170** | **1421** | **1591** |
+| 三个纯 View 参照（`GameRenderer` / `TextManager` / `ImageManager`） | 241 | 721 | 962 |
+
+- 46.2 记录的 `LoginScene 561 / ShopScene 882 = 1443` 是当时两个 Scene 的 **.cpp 行数**；S2 删除心跳分支与 peek 判定段后降为 `545 / 876 = 1421`。若连头文件计入（S3 必然要改构造签名与成员），实际改动面是 **1591 行**，比 46.4 的估算更大。
+- **三个纯 View 单元零网络符号复核**：6 个文件对 `ClientNetwork|net\.|sf::Packet|MessageType|json::|sendShopPurchase` 的 `grep -c` 全为 **0**，可作 S3 的目标形态参照。
+
+耦合分五类：
+
+| 类别 | 精确位置 / 计数 |
+|---|---|
+| `ClientNetwork&` 成员与构造 | `LoginScene.h:27` / `ShopScene.h:23`；构造 `LoginScene.cpp:10` / `ShopScene.cpp:13` |
+| `net.*` 调用共 **15 处** | `send` 6、`sendShopPurchase` 4、`update` 2、`isConnected` 2、`setPlayerId` 1 |
+| 协议构造 / 解析 | `LoginScene`：4 个 `AccountProtocol::make*Request` + `ReadyToPlay` / `CheckinRequest` 手写包 + 3 处响应解析（`parseCheckUsernameResponse` 1、`parseAccountResponse` 2）；`ShopScene`：3 处 `nlohmann::json::parse` + 3 处 `j.get<T>()`（`ShopData` / `SkillInfoResponseBody` / `ShopPurchaseResult`）+ 4 处 `j.dump()` 组装 + 1 处 `SkillInfoRequest` 手写包 |
+| 主循环网络驱动 | `LoginScene::run():51` 与 `ShopScene::run():26` 内的 `net.update()` / `net.isConnected()`，断线即退出场景 |
+| UI 状态机 | 6 个 `enum class`（`Mode` / `Status` / `Focus`、`View` / `Mode` / `Row::Type`），枚举与分支关键字在两个 `.cpp` 中共 **50 处命中** |
+
+两个额外结构：
+
+- **Scene 内嵌 Scene**：`LoginScene.cpp:150` 在 `handleMouseClick` 的大厅分支里直接 `ShopScene shop(renderer, net, username); shop.run();`，商城退出后以 `!net.isConnected() || !renderer.windowIsOpen()` 决定是否结束登录并回到大厅。
+- **业务状态留在 View**：`ShopScene::skillsCache` 是进程级 `static`（商城退出后仍保留技能描述），`pendingSkills` 是按次请求去重集合；二者都不是渲染状态。
+- `LoginScene::Result::enterShop` 目前只在 `startGameBtn` 分支被设为 `false`，商城路径走的是同步嵌套调用而非该字段。
+
+### 49.3 三个必须先定口径的结构性障碍
+
+**障碍 1 · 端口与 SFML / JSON 依赖的层归属。** S1 特意把 `IClientSession`（`header/application/IClientSession.h`）做成纯标准库 6 方法端口（connect / disconnect / update / isConnected / getPlayerId / getUsername），**完全不覆盖**两个 Scene 实际需要的 `send(sf::Packet&)` / `sendShopPurchase(std::string)` / `setPlayerId(std::size_t)` / `peekMessageType()` / `receivePacket()`。若直接把这些加进 `IClientSession`，端口头就必须出现 `sf::Packet`，`Application` 层从此依赖 SFML，与 47.2「不含 SFML / nlohmann」的 S1 口径冲突（Q8 只约束 `Domain`，但 S1 已把纯标准库作为客户端端口的既定设计）。三条路见 49.8 口径 ②。
+
+**障碍 2 · 场景切换上移会改 S1 刚固化的装配顺序。** 纯 View 化要求 View 不持有网络、也不自行切换场景，因此 `LoginScene.cpp:150` 的商城嵌套必须上移。`ClientApp::run()` 目前是「连接 → `GameRenderer` → `LoginScene::run()` → `gamePhase`」的线性顺序（47.3 等价性证据）；上移有两条路：组合根注入「进入商城」回调（只换调用者、行为等价），或把 `run()` 改成「登录 → 大厅 → 商城 → 大厅 → 开局」状态机（改变返回 / 重入语义与断线判定位置，属**时序与行为变化风险**）。上移前还需澄清 `Result::enterShop` 是否仍有语义。
+
+**障碍 3 · `PacketDispatcher` 具体类型绑定与静态缓存归属。** `PacketDispatcher.h:26/27` 两个 `next()` 重载都绑定具体 `ClientNetwork&`。S3 若把收包从 Scene 移出，要么把 dispatcher 调用整体上移到组合根、再把 `InboundPacket` 经新的「结果回调」喂给 Scene，要么把签名泛化到传输端口（与障碍 1 的选型耦合）。`skillsCache` / `pendingSkills` 则要决定留在 Scene（View 仍持业务缓存，纯 View 化不彻底）还是上移到用例 / 缓存服务（新增文件 + 生命周期变化）。
+
+**附带发现（本批不改）**：`ClientNetwork::setCredentials()` 在 `Socket.h:188` 声明，全项目 `grep` **零调用点**；`gamePhase`（`ClientApp.cpp:130`）用 `net.getUsername()` 打印「分配到玩家」时，该 `username` 字段因此始终为空串。这是既有潜在缺陷，不属 S3 范围，按 46.7 ③B「不擅自改行为」保持原样，单独记录待用户决定。
+
+### 49.4 建议把 S3 拆成 S3a / S3b / S3c
+
+| 段 | 内容 | 改动面 | 风险 |
+|---|---|---|---|
+| **S3a 端口边界与场景切换** | 定 49.3 障碍 1 / 2 的选型；新增端口与「意图 / 结果」通道类型；把 `LoginScene.cpp:150` 的商城嵌套等价上移到组合根。**两个 Scene 内部业务判定零改动**，新增文件 + 1 处装配点，约 80–120 行 | 中 | 中：装配时序 |
+| **S3b `LoginScene` 纯 View 化** | 611 行：4 个请求构造 + 3 个响应解析 + `pollAccountPackets` 的订阅消费 + `net.update()` / `isConnected()` 移出；`Mode` / `Status` / `Focus` 状态机、`render()` 与文案原样保留 | 大 | 高：登录 → 注册 → 大厅 → 签到 → 开局全链路 |
+| **S3c `ShopScene` 纯 View 化** | 980 行：3 处 `json::parse` + 4 处 `dump` 组装 + `SkillInfoRequest` 包 + `handleNetwork` 移出；`View` / `Mode` / `Row::Type` 分支、分页 / 搜索 / 展开 / 购买流程与 `skillsCache` 归属 | 最大 | 最高：商城 UI 状态机 |
+
+**建议顺序 S3a → S3b → S3c**，每段单独提交、单独经用户 Rebuild 与运行时回归。46.4 把 S3 当作单段（1443 行）；在 49.3 三个障碍与实测 1591 行下，单段一次性改写已不具备低风险前提，故建议拆段。S4 `InputAdapter` 仍排最后，不受本评估影响。
+
+### 49.5 零改动项
+
+`MessageType` 25 值与顺序、线上包体与消息号、端口 8888 / 14341、JSON 配置与存档格式、`ServerNetwork` / 两个用例服务、`Socket.h` / `Socket.cpp` 全部函数体、`IClientSession` / `ClientApp` / `PacketDispatcher` 全部签名与实现、`LoginScene` / `ShopScene` 全部函数体与 UI 状态机、三个纯 View 单元、`reconnect()` 第四处收包循环、`ICommands.h` 零引用骨架、第四章库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10 口径、46.7 的 ③B 决定。
+
+### 49.6 本批静态核对（零代码 / 零工程改动）
+
+- `git status` 除本批三份文档外干净；`MessageType.h` 25 值、两个 config、`ServerMain.cpp` 的 `git diff` 为空。
+- 三处收包循环仍各自调用 `PacketDispatcher::next`（`ClientApp.cpp:122` / `LoginScene.cpp:241` / `ShopScene.cpp:59`），心跳回复仍只 `PacketDispatcher.cpp` 一处。
+- 三个纯 View 单元 6 个文件网络符号 0 命中；`Client1` / `Client2` 的 `ClCompile` 集合继续一致。
+- 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截、从未绕过；本批无代码可编译，也未本地编译。
+
+### 49.7 运行时回归清单积压（S3 前置建议）
+
+48.9（跨阶段留包、三处心跳与 3 秒超时、商城 / 签到 / 购买、双开双配置、键位与 `ClientInput.key` 字节、端口与包体）、47.9、43.6 / 44.6 / 42.7 / 41.6 / 40.7 的运行时与线上字节清单**全部仍待实跑**。其中登录阶段非账号包留队给 `gamePhase`、心跳超时、商城购买与积分同步三项是 S3 改动后最容易被误判为「重构引入」的既有风险点，建议在任何 S3 代码落地前先建立基线。
+
+### 49.8 三个待确认口径（集中提问，见 49.9）
+
+| 口径 | 选项 | 原因 / 影响 |
+|---|---|---|
+| ① **推进节奏** | **A（推荐）先实跑 49.7 回归清单，S3 暂缓** | 已积压 7 批运行时清单，先建基线；本批只交评估 |
+| | B 立即按 **S3a** 起步（端口边界 + 场景切换，两个 Scene 内部零改动） | 保持推进但只碰装配层，风险可控 |
+| | C 一口气做完整 S3（1591 行） | 46.4 原单段方案，三个障碍叠加，不推荐 |
+| | D 跳过 S3 先做 S4 `InputAdapter`（约 60 行） | 风险中，但会提前动 `gamePhase` 键位映射与 `ClientInput.key` 字节 |
+| ② **端口归属（障碍 1）** | **A（推荐）新建 `adapters` 层网关端口**（可含 `sf::Packet`），`IClientSession` 保持纯标准库不动 | 与既有分层一致、改动最小；端口在 adapters 层而非 application 层 |
+| | B `application` 端口改收「请求值对象 DTO」，由适配器组装包 | 层最干净，但需新建账号 / 商城请求 DTO 并改 9 处构造点，改动最大 |
+| | C 扩 `IClientSession` 到含 `sf::Packet` | 改动最小但破坏 S1「纯标准库端口」口径 |
+| | D 两个 Scene 仍持 `ClientNetwork&`，只把协议解析与请求组装抽到辅助函数 | 最小改动，但「纯 View 化」不彻底，与 46.4 S3 目标不符 |
+| ③ **场景切换与 `ICommands.h`（障碍 2）** | **A（推荐）商城嵌套等价上移到 `ClientApp`，`ICommands.h` 零引用骨架继续不动** | 只换调用者、行为等价；延续 46.7 ③B 既有决定 |
+| | B 上移并接受 `run()` 改为状态机 | 时序与断线判定位置变化，需单独回归 |
+| | C 解禁 `ICommands.h`，把 `IGameCommands` 纳入阶段 4 端口 | 与其「阶段 5 接入」注释冲突，且推翻 46.7 ③B，需明确改口径 |
+| | D 保持嵌套调用，只做 S3b / S3c 内部解耦 | View 仍自行切换 View，纯 View 化不彻底 |
+
+### 49.9 需用户确认（一次点选即可开工）
+
+请就 49.8 的 **口径 ① / ② / ③** 各选一项（默认推荐组合 **①A + ②A + ③A**：先跑回归、端口放 adapters、场景切换等价上移）。确认后助手按所选分段执行第十九批，并列出等价性证据与需本地 Rebuild / 运行时回归的清单。本节与 README / 工作记忆以一次独立的文档提交交付，提交后工作区保持干净（与第十五批 `91039e2` 同口径）。若选 **①A**，助手本批到此为止，等回归结果再继续；口径 ② / ③ 的选择会顺延到 S3a 开工时生效。
