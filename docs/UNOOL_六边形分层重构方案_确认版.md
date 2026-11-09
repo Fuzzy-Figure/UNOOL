@@ -2145,3 +2145,81 @@ B2 规模复核：6 单元 **2428 行**（`ClientMain.cpp` 264、`GameRenderer.c
 按 37.6「助手不擅自判定拆库口径」，本批不改动任何代码 / 工程文件；本节与 README / 工作记忆以一次独立的文档提交交付，提交后工作区保持干净。请就 45.5 的 **A / B / C** 选择方向；若选 **B**，视为同时接受 45.4 的推荐组合 ①A + ②A + ③A，若需不同口径请直接说明。
 
 **风险**：① 45.3 的「强连通符号闭包」结论来自静态扫描、未经链接期实测，若选 B 必须用户本地 Rebuild 验证；② 第十三 / 十四批的运行时与线上字节清单仍待实跑；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+---
+
+## 46. 阶段 3 收官与第十六批只读评估：阶段 4 客户端装配的精确分段（2026-11-09，用户选 A）
+
+### 46.1 阶段 3 收官口径（用户选 A 后确立）
+
+用户在 45.7 的三方向中选 **A「阶段 3 收官 → 转 B2 阶段 4 客户端装配」**，即接受以下终态，不再把 `Domain` / `Application` 库实装列为遗留待办：
+
+- **`Domain` / `Application` 是「设计层目录 + 独立 PCH 占位库」**：Q8「各自一份、绝不共享；`Domain` 纯标准库 PCH」继续成立，两个库各只编译 1 个 PCH 生成单元，`ClInclude` 挂本层头供 IDE 显示。四层目录是**源码归属与依赖方向的约束**，`header/domain` / `header/application` / `header/adapters` / `header/protocol` 与 `source/` 四层一一对应；所有 `.cpp` 由 `UNOOL.Core` 统一编译一次、3 个 exe 共同链接。
+- **这不是「未完成」，而是受结构性约束的终态**：45.3 已实测 `Core` 20 个业务单元构成强连通符号闭包，在不放宽 Q8、不改写模型层函数体的前提下拆库必然产生 `lib ↔ lib` 双向引用与 LNK2019 风险；第十四批的头文件自足化只解决了编译期依赖。**B1 拆库就此结案**，不再尝试。
+- **阶段 3 已落地并全部编译闭环**：`UNOOL.Protocol` → `UNOOL.Core` 库改名与 PCH 改名、领域头四层归位、`source/` 四层归位、`MessageType` 物理归位、W5 账号 / 商城用例服务（含签到与购买决策）、`services()` 与 JSON 配置门面归位、默认组合剥离、头文件自足化，共十四批，逐批经用户本地 Debug / Release x64 Rebuild 通过；最近两个提交为 `0f43809`（第十四批代码）与 `91039e2`（第十五批评估）。
+- **Q3 排除项、`MessageType` 25 值、端口 8888 / 14341、JSON 存档格式、Q10 不要求新旧客户端混跑、Q2 不删 Client2 一律继续有效**。
+
+### 46.2 阶段 4 精确盘点：6 个客户端专属单元（助手侧只读实测）
+
+| 单元 | 行数 | `sf::` 命中 | 网络关键词命中 | `MessageType` 命中 | json 命中 | 现状角色 |
+|---|---|---|---|---|---|---|
+| `source/ClientMain.cpp` | 264 | 14 | 7 | 13 | 6 | **入口 + 组合根 + 游戏阶段主循环**：`handleChoicePacket`、`gamePhase`（13 个 `case` 的收包 switch）、`main`（读配置 → `ClientNetwork::connect` → `GameRenderer` → `LoginScene::run` → `gamePhase`） |
+| `source/adapters/GameRenderer.cpp` | 474 | 55 | 0 | 0 | 0 | **纯 View**：`GameState` → 绘制、事件轮询、指针 / 选择提示；零网络 / 零协议符号 |
+| `source/adapters/LoginScene.cpp` | 561 | 81 | 9 | 15 | 0 | **UI + 账号收发 + 大厅调度**：`run()` 自建循环、`pollAccountPackets()` 自己 `peekMessageType` 过滤并消费 6 类账号包、自己回心跳；大厅点「商城」时在 `LoginScene.cpp:148` 直接构造 `ShopScene` 并 `run()` |
+| `source/adapters/ShopScene.cpp` | 882 | 81 | 7 | 6 | 14 | **UI + 商城收发 + JSON 解析**：`run()` 自建循环、`handleNetwork()` 自己收 4 类包并回心跳、自己 `json::parse` / `get<ShopData>` / `get<ShopPurchaseResult>`、自己发购买请求 |
+| `source/adapters/TextManager.cpp` | 175 | 40 | 0 | 0 | 0 | **纯 View**：文字测量 / 换行 / 绘制；零网络符号 |
+| `source/adapters/ImageManager.cpp` | 72 | 8 | 0 | 0 | 0 | **纯 View**：纹理缓存与绘制；零网络符号 |
+| **合计** | **2428** | **279** | **23** | **34** | **20** | — |
+
+（`sf::` / 网络 / `MessageType` / json 均为关键词命中数，用于定位耦合密度，不等于调用次数。行数较 37.4 的 2426 多 2 行 = 第十四批给 `ClientMain.cpp` / `LoginScene.cpp` 各补 1 行 `<SFML/Network.hpp>`。）
+
+**两个 exe 共享同一批源文件**：`Client1` / `Client2` 的 `ClCompile` 都指向 `source/pch.cpp` + 上述 6 个 `.cpp`（各 7 条），因此阶段 4 的一处改动**自动同时作用于两个 exe**，不存在「只改一个」的选项；两工程的配置差异（含端口）按 Q3 / 用户既有口径保持不变。
+
+### 46.3 三处各自为政的收包循环与隐式协议约定
+
+| 位置 | 收包方式 | 消费的消息 | 心跳回复 |
+|---|---|---|---|
+| `ClientMain.cpp:111` `gamePhase` | `while (net.receivePacket())` + `switch (static_cast<MessageType>(msgType))`，13 个 `case` | `ConnectionInfo` / `GameStart` / `GameState` / `PointerUpdate` / `CharInfo` / `GameEnd` / `ConnectionRefused` / `Choice` / `Heartbeat` / `ShopData` / `ShopResult` / `ShopPurchase` | `ClientMain.cpp:173` 立即回 |
+| `LoginScene.cpp:237` `pollAccountPackets` | 先 `net.peekMessageType()`，**只消费 6 类账号包**，其余包**不消费、留在队列里给 `gamePhase`** | `Heartbeat` / `ConnectionInfo` / `CheckUsernameResponse` / `RegisterResponse` / `LoginResponse` / `CheckinResponse` | `LoginScene.cpp:258` 立即回 |
+| `ShopScene.cpp:56` `handleNetwork` | `while (net.receivePacket())` + `if` 链 | `ShopData` / `SkillInfoResponse` / `ShopResult` / `Heartbeat` | `ShopScene.cpp:122` 立即回 |
+
+- `ClientNetwork` 是一个 **18 个 public 方法的混合门面**（`connect` / `disconnect` / `update` / `sendClientInput` / `send` / `sendShopPurchase` / `receivePacket` / `peekMessageType` / `setPlayerId` / `getPlayerId` / `getUsername` / `isConnected` / `setCredentials` / `reconnect` 等），同时承担传输、会话状态、凭据与包队列；`receivedPackets` 队列的 `peekMessageType()` 复制队首包读 `int msgType`，是「跨阶段留包」约定的实现基础。
+- **重复**：3 处收包循环、3 处心跳回复逻辑、`ShopData` / `ShopResult` 在 `ClientMain.cpp:180 / 198` 还有两支**只 `std::println` 打印、带 `TODO: ShopScene ...（Task 7）` 注释**的分支（实际商城 UI 由 `ShopScene` 自己收包驱动）。
+- `header/application/ICommands.h` 仍是**零引用骨架**：`IGameCommands` 4 个纯虚方法（`submit` / `onLoggedIn` / `onDisconnected` / `onReconnected`），注释明确写「阶段 5 换非阻塞决策适配器时再接入」，且与客户端装配无调用关系。
+- 上述三处循环都直接 `renderer.pollEvent()` / `net.update()` / `render()`，即 **UI、输入、网络、业务判定混在 Scene 与主循环里**，这是阶段 4 要拆的核心。
+
+### 46.4 分段设计（S1–S4，均保持线上字节与 `MessageType` 不变）
+
+| 段 | 内容 | 改动面 | 风险 |
+|---|---|---|---|
+| **S1 组合根与端口骨架** | 新增 `ClientApp`（持有 `ClientNetwork` / `GameRenderer` / 三个 Scene 的生命周期与场景切换）、`IClientSession`（把 `ClientNetwork` 的 18 个方法收敛为「连接 / 发送 / 订阅 / 会话状态」几组端口）；`ClientMain.cpp::main` 瘦身为「读配置 → 构造 `ClientApp` → `run()`」。**三个 Scene 内部一行不改** | 低：新增文件 + `main` 改写，约 60 行 | 低：无收包顺序变化 |
+| **S2 统一收包分发** | 新增 `PacketDispatcher`，把三处收包循环收拢为单点：`update()` 后按 `MessageType` 分发给订阅者；**逐字保留** `LoginScene` 的「非账号包不消费、留给 `gamePhase`」语义（改为按订阅集过滤），心跳回复统一到一处 | 中：约 120 行，触碰 3 个循环 | **中高**：消息顺序 / `peek` 语义 / 跨阶段留包若失准，会改变登录→开局时序 |
+| **S3 三个 Scene 纯 View 化** | `LoginScene` / `ShopScene` 去掉 `ClientNetwork&` 成员，改为经端口回调接收数据；`ShopScene` 的 `json::parse` 与购买请求组装上移到用例侧；`GameRenderer` / `TextManager` / `ImageManager` 本来就是纯 View，无需改 | **最大**：1443 行两个 Scene | 高：UI 状态机（22 个 `Status` / `Mode` / `View` 枚举分支）与购买流程需逐条回归 |
+| **S4 输入适配** | 把 `gamePhase` 的键盘 / 鼠标映射（`Scancode` → 指针移动 / `sendClientInput` / 点击）搬入 `InputAdapter`，`GameRenderer` 只暴露 `pollEvent` / `display` | 中：约 60 行 | 中：键位映射与线上 `ClientInput.key` 字节必须逐字一致（既有 `toDomainKey` 口径见 Keys.h 相关批次） |
+
+**建议顺序 S1 → S2 → S3 → S4**：先建立组合根与端口边界，再收拢收包，最后才动两个 Scene 的状态机；每段单独提交、单独经用户本地 Rebuild 与运行时回归，避免一次性改写 2428 行。
+
+### 46.5 三个待确认口径（集中提问，见 46.7）
+
+| 口径 | 选项 | 原因 / 影响 |
+|---|---|---|
+| ① **首批范围与分段顺序** | **A（推荐）先做 S1**：组合根 + 端口骨架，`main` 瘦身，三个 Scene 零改动 | 风险最低，先固化边界；后续 S2 / S3 逐段推进 |
+| | B 先做 S2 统一收包分发 | 收益最明显但直接碰消息顺序与跨阶段留包约定 |
+| | C S1 + S2 合并一批 | 一次到位，但单批验证面扩大 |
+| | D 先做 S3 Scene 纯 View 化 | 改动最大（1443 行），不建议作为首批 |
+| ② **心跳与 `peekMessageType` 过滤的归属** | **A（推荐）统一到 `PacketDispatcher`**：先 peek 再按订阅集消费、心跳立即回，语义逐字保留 | 消除 3 处重复，且不改变任何包的消费顺序 |
+| | B 下沉到 `ClientNetwork::update()` 自动回心跳 | 传输层自己回包，层职责更清，但会改变「谁在哪个循环里回」的时序 |
+| | C 保持三处各自处理，只做物理归位 | 零语义风险，但重复代码保留 |
+| ③ **`ClientMain` 两支只打印的商城分支 + `ICommands.h` 零引用骨架** | **A（推荐）原样保留** | Q3 排除项：不擅自删死代码、不擅自接入阶段 5 骨架；两支 `println` 与 TODO 注释维持现状 |
+| | B 移除两支死分支 | 会减少控制台输出，属**对外行为变化**，需明确确认 |
+| | C 把 `IGameCommands` 纳入阶段 4 端口定义 | 会改 `ICommands.h` 且与其「阶段 5 接入」注释冲突，需明确确认 |
+
+### 46.6 边界与风险
+
+- **零改动项**：`MessageType` 25 值与顺序、线上包体与消息号、端口 8888 / 14341、JSON 配置与存档格式、`ServerNetwork` / 两个用例服务、`Core` 库归属与 PCH、`Domain` / `Application` 占位库、Q8 / Q3 / Q9 / Q10 口径、Win32 边界（35.4）、`slnx` 工程数。
+- **本批零代码、零工程文件改动**：只读盘点 + 分段设计，未改写任何函数体、未增删任何 `ClCompile` / `ClInclude` / `ProjectReference`，按 37.6 不擅自改写函数体、不擅自判定拆库口径。
+- **风险**：① 46.3 的三处收包循环与 `peekMessageType` 留包约定是**隐式协议**，S2 一旦收拢必须逐条对照 3 × 消息清单验证，否则登录→开局时序可能变；② 2 个 exe 共享同一批源文件，任何改动同时影响 Client1 / Client2，需双开双配置回归；③ 第十三 / 十四 / 十五批的运行时与线上字节清单仍待实跑；④ 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截，从未绕过，本批未本地编译；⑤ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+### 46.7 需用户确认（一次点选即可开工）
+
+请就 46.5 的 **口径 ① / ② / ③** 各选一项（默认推荐组合 ①A + ②A + ③A，即先做 S1、心跳归 `PacketDispatcher`、死分支与骨架原样保留）。确认后助手按所选分段执行第十六批代码改动，并列出等价性证据与需本地 Rebuild / 运行时回归的清单；本节与 README / 工作记忆以一次独立的文档提交交付，提交后工作区保持干净（与第十五批 `91039e2` 同口径）。
