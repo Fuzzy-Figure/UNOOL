@@ -15,7 +15,6 @@
 #include <vector>
 #include <format>
 #include <print>
-#include "application/Services.h"
 
 
 template<typename T>
@@ -67,9 +66,9 @@ namespace unool {
 			using result_type = std::mt19937::result_type;
 			static constexpr result_type min() { return std::mt19937::min(); }
 			static constexpr result_type max() { return std::mt19937::max(); }
-			result_type operator()() {
-				return unool::application::services().random.next();
-			}
+			// 定义移到 source/utils.cpp：避免本头为取随机数而包含
+			// application/Services.h，使纯领域头闭包不再传递依赖端口层。
+			result_type operator()();
 		};
 		extern RandomEngine rng;
 		int randomInt(const int begin, const int end);

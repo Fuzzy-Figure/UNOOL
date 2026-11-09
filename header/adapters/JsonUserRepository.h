@@ -16,7 +16,7 @@ namespace unool::adapters {
 
 	// 用户数据出站端口的 UserDB 实现。
 	// 端口用 string_view / 底层整数，适配器在这里还原为 UserDB 需要的具体类型。
-	// header-only：三个 exe 都编译 utils.cpp，不新增链接依赖。
+	// header-only：utils.cpp 现由 UNOOL.Protocol 静态库编译一次、3 个 exe 共同链接，不新增链接依赖。
 	class JsonUserRepository final : public application::IUserRepository {
 	public:
 		std::vector<std::string> getCharacterPool(std::string_view username) const override {

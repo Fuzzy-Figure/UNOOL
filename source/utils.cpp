@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "application/Services.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <cmath>
@@ -124,6 +125,9 @@ namespace unool {
 	namespace random {
 		// 真正的 mt19937 已移入适配器的 Mt19937Random；这里只留无状态的端口门面，
 		// 使 shuffle / sample / distribution 的所有既有调用点保持源码不变。
+		RandomEngine::result_type RandomEngine::operator()() {
+			return unool::application::services().random.next();
+		}
 		RandomEngine rng;
 		int randomInt(const int begin, const int end) {
 			return unool::application::services().random.intIn(begin, end);
@@ -149,9 +153,9 @@ namespace unool {
 	}
 }
 
-// 默认服务定位：三个 exe 工程原本都编译本文件，因此定义放这里不会新增
-// 编译单元或链接依赖。静态工具（Character）与全局随机门面（utils）在
-// 未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
+// 默认服务定位：本文件现由 UNOOL.Protocol 静态库编译一次、3 个 exe 共同链接，
+// 因此定义放这里不会新增编译单元或链接依赖。静态工具（Character）与全局随机
+// 门面（utils）在未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
 namespace unool::application {
 	namespace detail {
 		opt_ref<DomainServices>& installedSlot() {

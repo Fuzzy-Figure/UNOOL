@@ -5,8 +5,9 @@
 // 阶段 2 起，五个出站端口各自有独立适配器；Composition Root（ServerMain）
 // 直接构造五个对象并自行组装 DomainServices，可单独替换 / 注入假实现。
 // 本文件不再实现任何端口，只把五个适配器汇集为一个可直接静态构造的默认门面。
-// 采用 header-only 内联实现，避免给 Client1/Client2 引入新的 .cpp 与链接依赖；
-// services() / installServices() 的定义仍在所有 exe 都已编译的 source/utils.cpp。
+// 采用 header-only 内联实现，避免引入新的 .cpp 与链接依赖；
+// services() / installServices() 的定义在 source/utils.cpp，现由 UNOOL.Protocol
+// 静态库编译一次、3 个 exe 共同链接。
 #include "adapters/JsonConfigProvider.h"
 #include "adapters/JsonUserRepository.h"
 #include "adapters/Mt19937Random.h"

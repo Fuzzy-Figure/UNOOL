@@ -854,9 +854,11 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - `pch.protocol.h` 与 `pch.server.h` 去注释后逐字一致；`adl_serializer<std::optional<T>>` 特化在 `header/pch.h`、`pch.server.h`、`pch.protocol.h` 三者长度一致（531 字符，本轮统计口径）。
 - 源码 / 头文件 / `UNOOL.slnx` / `slnLaunch.user` / 3 个 json / 链接项 `git diff` 全为空；3 个 exe 各保留 1 条 Protocol `ProjectReference`；BOM 保持（3 filters 有 / 7 个 vcxproj 无），换行保持（Server / Client 系 CRLF，Protocol 库系 LF）；`git diff --check` 干净；裸指针扫描 0。
 
-### 23.5 需用户本地验证
+### 23.5 用户本地验证（已闭环）
 
-第 16 / 17.5 / 18.5 / 19.5 / 21.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+**状态更新（用户「编译通过，继续」，2026-11-09）**：本批已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `30040b4`「集中迁移共享业务源码至 Protocol 静态库」、工作区干净，回归任务 #33 完成。第 23.6 节风险 ① 就此解除——**`pch.protocol.cpp` 生成独立 PCH、15 个 `.cpp` 经 `/FI` 编译通过；3 个 exe 首次从 `UNOOL.Protocol.lib` 拉入 12 个共享编译单元、`Adapters.lib → Protocol.lib` 单向库间引用与 `ServerMain.cpp` 的 `installServices()` 均无 LNK2019 / LNK2001**；`utils.cpp` 由「每 exe 各编译一份」变为「链接同一库 `.obj`」未引发链接或单例问题。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 节验收均不覆盖本批，请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
 
 1. **编译链接（最高优先级）**：`pch.protocol.cpp` 生成独立 PCH、15 个 `.cpp` 经 `/FI pch.protocol.h` 编译；3 个 exe 能否从 `UNOOL.Protocol.lib` 解析全部共享符号；`Adapters.lib → Protocol.lib` 的单向库间引用与 `ServerMain.cpp` 的 `installServices()` 有无 LNK2019 / LNK2001；
 2. **静态状态语义**：`utils.cpp` 从「每个 exe 各编译一份」变为「每个 exe 链接同一份库 `.obj`」，确认 `installedSlot()` / `RandomEngine` / `paths` 的进程内单例语义不变，随机序列与洗牌、发牌、BP 候选一致；
@@ -874,4 +876,93 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，无用例服务，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 23.5），其中 3 个 exe 首次把 12 个编译单元改为从静态库拉入、`Adapters.lib → Protocol.lib` 库间解析是最需要链接验证的两点；② 库名 `Protocol` 与内容不符，属已确认的过渡归属；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-09 确认本批编译通过（`30040b4`，见 23.5），3 个 exe 从静态库拉入 12 个编译单元与 `Adapters.lib → Protocol.lib` 库间解析均通过链接验证；② 库名 `Protocol` 与内容不符，属已确认的过渡归属；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 24. 阶段 3 第一批闭环与第二批只读评估（2026-11-09，用户「编译通过，继续」）
+
+### 24.1 状态闭环
+
+用户于 2026-11-09 确认阶段 3 第一批本地编译通过并提交 `30040b4`（工作区干净），回归任务 #33 完成。**阶段 2 四批 + 阶段 3 第一批至此全部编译闭环**；助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未说明双配置与运行时回归的覆盖范围，第 16.4 节注记继续有效。
+
+### 24.2 阶段 3 第二批只读核查：`utils.h` 反向依赖的实际可拆性
+
+第 22.2 节事实 3 把 `header/utils.h:18` 的 `#include "application/Services.h"` 判为「拆它需要重新设计」。本轮逐文件核对 include 链后，结论应修正为**可小步拆**：
+
+1. **唯一真正卡住删除的是 `RandomEngine::operator()()`**：`utils.h:70-72` 把它写成 inline 函数体，直接调 `unool::application::services().random.next()`。只要把函数体改为声明、定义移到 `source/utils.cpp`（该函数体逐字不变），`utils.h` 就不再需要 `Services.h`。`RandomEngine` 仍满足 `std::uniform_random_bit_generator`（`min()` / `max()` 是 static constexpr，`operator()` 可调用），`std::ranges::shuffle` / `sample` / distribution 的所有调用点一行不用改，随机序列仍走同一个 `services().random.next()`，逐字等价。
+2. **没有别的传递依赖受害者**：`source/Character.cpp`（4 处 `services()`）与 `source/ServerMain.cpp` 本就显式 include `application/Services.h`；`source/utils.cpp` 经 `adapters/LegacyServicesAdapter.h:12` 传递拿到，改为显式 include 更稳妥。`header/GameLogic.h` / `header/Player.h` 也各自显式 include `IDecisionPort.h` / `IServerView.h` / `Services.h`。其余纯领域头（`Card` / `Effect` / `Skill` / `Character` / `GameState` / `InstantSkill` / `PassiveSkill` / `TransformSkill` / `UserDB` / `ShopData`）与 `Socket` / `ImageManager` / `TextManager` / `GameRenderer` 只使用 `utils.h` 自身的标准库工具，未使用任何 `unool::application` 符号。
+3. **删除后的边界必须说清**：`utils.h:44/49` 仍以 `nlohmann::json&` 出现在函数声明中却不 include `json.hpp`（历来靠 PCH 提供），所以「`utils.h` = 纯标准库头」**仍不完全成立**；`GameLogic.h` / `Player.h` 显式依赖 Application 端口层属用例层的正常依赖，不是本批能消除、也不该消除的对象。本批只解除**纯领域头闭包 → Application 端口层**的传递依赖。
+4. **另有两处注释已过时**：`header/application/Services.h:24-25` 与 `source/utils.cpp:152-154` 都写「三个 exe 工程原本都编译本文件 / `utils.cpp`」，阶段 3 第一批后它只由 `UNOOL.Protocol.lib` 编译一次。改注释不影响行为。
+
+### 24.3 其余剩余项的实际规模
+
+| 项 | 规模 / 门槛 |
+|---|---|
+| 领域头归位 | `header/` 顶层平铺 21 个 `.h`（另 3 个子目录共 19 个已分层头）。物理移动需解除 A6，批量改约 60 处 `#include` 与 7 个工程的 `ClInclude` / `.filters` 路径，或给全部工程补包含目录；零行为变化但纯组织收益 |
+| `Domain` / `Application` 实装 | `Domain` `ClCompile`=1 / `ClInclude`=3，`Application`=1 / 10，两库仍只有 PCH 占位；两库 PCH 均为纯标准库，但缺 `<filesystem>` / `<random>` / `<algorithm>` / `<array>` / `<type_traits>` 等 `utils.h` 所需头。把 15 个单元拆到这两库会重新引入第 22.2 节事实 4 的 `lib ↔ lib` 双向引用 |
+| 库命名 | `Protocol` 库现含 16 个编译单元（12 个共享业务逻辑 + 3 个协议 / DTO + 1 个 PCH），库名与内容不符，属第 23 节已确认的过渡归属 |
+| W5 账号 / 商城用例服务 | `Socket.cpp` 1004 行中，`trySpendPoints`(82–90)、`handleAccountPacket`(319–412)、`sendShopData`(544–648)、`handleSkillInfoRequest`(648–676)、`handleCheckin`(676–697)、`handleShopPurchase`(697–844) 约 400 行属业务；需新建端口与用例服务并重接组合根，按第 21.6 节归原方案阶段 4 |
+| 阶段 4 客户端装配 | 6 个客户端专属单元共 2424 行，`sf::` 出现 231 处、Socket / send 耦合 30 处；`ICommands.h` 仍是零引用骨架。需单独口径，本轮不列为选项 |
+
+### 24.4 第二批路线（待用户确认）
+
+| 路线 | 内容 | 改动面 / 风险 |
+|---|---|---|
+| A · `utils.h` 分层净化（推荐） | `utils.h` 删 1 行 include、`RandomEngine::operator()()` 改声明；定义逐字移到 `utils.cpp` 并显式 include `application/Services.h`；订正 2 处过时注释。零工程改动、零协议字节变化 | 小步可逆，有真实架构收益；`operator()` 由 inline 变外联（随机序列不变、调用开销略增），需本地编译验证一次 |
+| B · 领域头归位 + 库命名 | 解除 A6，把 20 个平铺头按层归目录，批量订正 include 与工程条目；并把过渡库 `Protocol` 改名 `UNOOL.Core`（改工程名 / slnx / 3 个 `ProjectReference` / README） | 纯组织整理、零行为变化，但改动面最大（约 60 处 include + 7 工程 + slnx） |
+| C · W5 账号 / 商城用例服务 | 约 400 行业务从 `Socket.cpp` 抽出到 `AccountService` / `ShopService`，新建端口并重接组合根 | 跨登录 / 注册 / 查重 / 签到 / 商城 / 技能信息全链路，剩余项里风险最高 |
+| D · 暂停 | 接受阶段 3 第一批状态 | `utils.h` 反向依赖、领域头平铺、Domain / Application 占位、库名不符都保留 |
+
+**用户选择：A「`utils.h` 净化」**（B 领域头归位、C W5、D 暂停均未选），执行结果见第 25 节。Q3 排除项（`MessageType` 拆分、长度帧 / Partial、子技能异常、安全修复）继续有效；A6「不物理移动现有文件」继续有效；阶段 4 / 5 / 6 另期。
+
+## 25. 阶段 3 第二批：`utils.h` 分层净化（2026-11-09）
+
+### 25.1 范围与决策
+
+用户选择路线 A：解除 `header/utils.h` 对 `application/Services.h` 的传递依赖。本批**零工程文件改动、零协议字节变化、不物理移动文件**，不含路线 B（领域头归位 / 库改名）、路线 C（W5 用例服务）与阶段 4。不改 `RandomEngine` 的语义、不改任何 `shuffle` / `sample` / distribution 调用点，线上端口 8888 / 14341、`MessageType`、配置格式与对外行为一律不变。
+
+### 25.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `header/utils.h` | 删 `#include "application/Services.h"`（第 18 行）；`RandomEngine::operator()()` 由类内 inline 定义改为**声明** `result_type operator()();`，并加 2 行说明注释。本头 17 条 `#include` 现在**全部是标准库** |
+| `source/utils.cpp` | 显式补 `#include "application/Services.h"`；在 `namespace unool::random` 新增类外定义 `RandomEngine::result_type RandomEngine::operator()()`，函数体 `return unool::application::services().random.next();` 与 HEAD 逐字一致；订正底部「三个 exe 工程原本都编译本文件」注释 |
+| `header/application/Services.h` | 订正 `services()` / `installServices()` 定义位置的过时注释 |
+| `header/adapters/LegacyServicesAdapter.h` | 订正「所有 exe 都已编译 `utils.cpp`」的过时注释 |
+| `header/adapters/JsonUserRepository.h` | 订正「三个 exe 都编译 `utils.cpp`」的过时注释 |
+
+共 **5 个源码 / 头文件**。第 24.4 节路线 A 描述里估计「2 处过时注释」，执行时全库扫描发现实际共 **4 处**（`utils.cpp` + 上表 3 个头文件），已全部订正，全库同类注释归零。所有工程文件、`UNOOL.slnx`、3 个 json、链接项、`ProjectReference`、`ClCompile` / `ClInclude`、协议与源码其余文件均未改。
+
+### 25.3 收益与必须说清的边界
+
+- **纯领域头闭包不再传递依赖 Application 端口层**：`Card.h` / `Effect.h` / `Skill.h` / `Character.h` / `GameState.h` / `InstantSkill.h` / `PassiveSkill.h` / `TransformSkill.h` / `UserDB.h` / `ShopData.h` 经 `utils.h` 现在只拿到标准库。此前 `utils.h:18` 让这些头全部传递包含 `Services.h` 及 5 个端口头。
+- **随机序列逐字等价**：`RandomEngine` 的 `min()` / `max()` 仍为 static constexpr，`operator()` 仍满足 `std::uniform_random_bit_generator`；取数依旧走同一个 `services().random.next()`，洗牌 / 发牌 / BP 候选 / 概率判定与 `std::ranges::sample` 的所有调用点一行未改。差别仅是 `operator()` 由隐式 inline 变为外联函数（调用开销略增）。
+- **边界（阶段 3 仍未完成）**：① `utils.h:44/49` 仍以 `nlohmann::json&` 出现在函数声明中却不 include `json.hpp`，历来靠 PCH 提供，所以「`utils.h` = 纯标准库头」不完全成立；② `GameLogic.h` / `Player.h` 显式 include 端口头，属用例层的正常依赖，不是本批该消除的对象；③ `Domain` / `Application` 仍只编译 `pch.*.cpp` 占位、领域头仍平铺在 `header/`、库名 `Protocol` 仍与内容不符、W5 与阶段 4 未做。
+
+### 25.4 验证结果（助手侧静态只读）
+
+- **等价性**：从 `HEAD:header/utils.h` 与工作区 `source/utils.cpp` 分别抽出函数体并剥离缩进，`return unool::application::services().random.next();` **逐字一致**；全库 `RandomEngine::operator()()` 定义 **1 处**，无重复。
+- **include 链无断裂**：`utils.h` 本地头 `#include` **0 条**、17 条标准库 include 齐全；新增的 `header/application/Services.h` 路径可达；所有调用 `unool::application::services()` 的编译单元（`Character.cpp` 4 处、`ServerMain.cpp`、`utils.cpp` 5 处）各有 1 条显式 `application/Services.h`；`header/application/` 端口头第三方头 **0 处**，删除传递包含不会让任何 TU 丢失 SFML / json / Windows 声明；`header/pch.h`、`pch.server.h`、`pch.protocol.h`、`pch.adapters.h` 均含 `json.hpp`（分别 1 / 2 / 3 / 1 处），`nlohmann::json` 可见性不变。
+- **改动边界**：`git diff --name-only` 确认 `Projects/` 全部工程文件、`source/Socket.cpp` / `header/Socket.h` / `GameState.*` / `AccountProtocol.*`、`UNOOL.slnx`、`slnLaunch.user`、3 个 json 全部未改；7 个 `.vcxproj` XML 仍全部可解析。
+- `git diff --check` 干净；BOM 保持（4 个改动文件均无 BOM）；换行保持（`git diff` 无整文件差异）；项目自有裸指针声明 **0**（`utils.h:114 return *it;` 是迭代器解引用，正则误报，属第 15 节已确认的特殊情况）；全库「三个 exe 都编译」类过时注释扫描归零。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 25.5 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. **编译链接（最高优先级）**：`RandomEngine::operator()` 由 inline 变外联后，`UNOOL.Protocol.lib` 内 15 个单元与 3 个 exe 能否解析该符号，有无 LNK2019 / LNK2001；`std::ranges::shuffle` / `sample` / distribution 对声明式 `operator()` 的模板实例化是否通过；
+2. **随机行为**：洗牌、发牌、BP 候选、概率判定的序列与重构前一致（仍走同一 `next()`）；
+3. **运行路径**：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；
+4. Debug / Release 两个配置。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 25.6 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **推进两项**：共享编译单元已集中（第一批）；纯领域头闭包已不再传递依赖 Application 端口层（第二批）。仍未做：领域头归位、Domain / Application 库实装、库拆分命名、`utils.h` 的 `nlohmann::json` PCH 依赖 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 25.5），其中 `operator()` 外联后的模板实例化与符号解析是最需要验证的一点；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
