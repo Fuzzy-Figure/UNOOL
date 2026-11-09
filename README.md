@@ -68,6 +68,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 **阶段 4 · S3 前置评估（第十八批只读，S2 编译通过后继续）**：用户确认 S2 编译通过后提交 `6f9e71b`。本批零代码、零工程文件改动，只做 S3 精确盘点：两个 Scene 实测 **1591 行**（头 170 + 源 1421；46.2 的 1443 是当时两个 `.cpp` 的行数，S2 删心跳 / peek 段后降为 1421），三个纯 View 参照单元 6 个文件网络符号 0 命中。耦合分五类：`ClientNetwork&` 成员与构造、15 处 `net.*` 调用（send 6 / sendShopPurchase 4 / update 2 / isConnected 2 / setPlayerId 1）、协议构造与解析（`LoginScene` 4 个 `AccountProtocol` 请求 + 2 个手写包 + 3 处响应解析；`ShopScene` 3 处 `json::parse` + 3 处 `get<T>()` + 4 处 `dump()` + 1 个手写包）、两个 Scene 主循环里的 `net.update()` / `isConnected()`、6 个 `enum class` 共 50 处枚举分支；另有 `LoginScene.cpp:150` 的 Scene 内嵌 Scene 与 `ShopScene::skillsCache` 进程级静态业务缓存。**三个结构性障碍**：① S1 的 `IClientSession` 是纯标准库 6 方法端口，不覆盖 Scene 需要的 `send(sf::Packet&)` 等方法，直接扩会让 `Application` 层依赖 SFML；② 商城嵌套上移可能把 `ClientApp::run()` 从线性顺序改成状态机，属时序风险；③ `PacketDispatcher::next(ClientNetwork&)` 绑定具体类型、静态缓存归属未定。附带发现 `setCredentials()` 全项目零调用点（既有潜在缺陷，按 46.7 ③B 不擅改、仅记录）。建议把 S3 拆为 **S3a 端口边界与场景切换 → S3b `LoginScene` 纯 View 化 → S3c `ShopScene` 纯 View 化**，每段单独提交与回归；49.8 给出推进节奏 / 端口归属 / 场景切换三个待确认口径，默认 ①A + ②A + ③A（先跑 49.7 已积压 7 批的回归清单、端口放 adapters、商城嵌套等价上移）。详见方案文档第 49 节。
 
+**S3 口径已确认（49.10）**：用户一次点选 **①A + ②A + ③A** —— 先实跑 49.7 已积压 7 批的运行时与线上字节清单建立基线、**S3 暂缓**；S3a 开工时端口放 `adapters` 层网关（`IClientSession` 保持纯标准库不动）、`LoginScene.cpp:150` 的商城嵌套等价上移到 `ClientApp`（`run()` 线性顺序不变）、`ICommands.h` 零引用骨架继续不动。第十九批的前置条件是回归清单实跑完成，开工按 S3a → S3b → S3c 分段。本批零代码、零工程文件改动。
+
 ## 文档
 
 | 文件 | 内容 |
