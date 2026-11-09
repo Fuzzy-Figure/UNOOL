@@ -11,7 +11,7 @@
 #include "utils.h"
 #include "MessageType.h"
 #include "application/IAccountSession.h"
-#include "application/IClientSession.h"
+#include "adapters/IClientGateway.h"
 #include "application/AccountService.h"
 #include "application/ShopService.h"
 
@@ -148,9 +148,11 @@ public:
 	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson) override;
 };
 
-// 阶段 4 · S1：实现 IClientSession 端口。只加基类与 override 标记，
-// 六个方法的签名与函数体逐字未改；ClientNetwork 仍是唯一的具体实现。
-class ClientNetwork : public unool::application::IClientSession {
+// 阶段 4 · S1 实现 IClientSession 端口；S3a（用户 49.10 口径②A）改由
+// adapters 层的 IClientGateway 继承实现——该网关端口间接继承 IClientSession，
+// 会话 6 方法的签名与函数体仍逐字未改，新增 3 个出站方法的 override 标记。
+// ClientNetwork 仍是唯一的具体实现，S1 的 IClientSession& 端口视图继续有效。
+class ClientNetwork : public unool::adapters::IClientGateway {
 private:
 	std::unique_ptr<sf::TcpSocket> socket;
 	sf::SocketSelector selector;
@@ -174,13 +176,13 @@ public:
 	void update() override;
 
 	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
-	bool send(sf::Packet& packet);
+	bool send(sf::Packet& packet) override;
 	// 发送商城购买请求（purchaseData 为 JSON 字符串）
-	bool sendShopPurchase(const std::string& purchaseData);
+	bool sendShopPurchase(const std::string& purchaseData) override;
 	std::optional<sf::Packet> receivePacket();
 	std::optional<int> peekMessageType() const;
 
-	void setPlayerId(std::size_t id) { playerId = id; }
+	void setPlayerId(std::size_t id) override { playerId = id; }
 	std::size_t getPlayerId() const override { return playerId; }
 	const std::string& getUsername() const override { return username; }
 	bool isConnected() const override { return socket != nullptr; }

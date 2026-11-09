@@ -2490,3 +2490,74 @@ private:
 因此**第十九批的前置条件是 49.7 回归清单实跑完成**；开工时按 **S3a → S3b → S3c** 分段，首段只做端口边界与场景切换、两个 Scene 内部业务判定零改动。②A / ③A 是 S3a 的既定口径，无需再次点选。障碍 3（`PacketDispatcher` 具体类型绑定与 `skillsCache` / `pendingSkills` 归属）在 ②A 选型下顺延到 S3c 前再判，不在 49.8 三口径内。附带发现的 `setCredentials()` 零调用点仍保持原样，待用户单独决定是否处理。
 
 **本批终态**：零代码、零工程文件改动；`MessageType` 25 值、端口 8888 / 14341、JSON 存档、三处收包循环与 `PacketDispatcher` 单点、两个 Scene 与三个纯 View 单元、库归属与 PCH、`UNOOL.slnx` 7 工程、Q2 / Q3 / Q8 / Q9 / Q10 / 35.4 / 46.7 ③B 全部保持。`6f9e71b`（S2）与 `6554e48`（第十八批评估）提交后工作区干净；本节以一次独立的口径记录提交交付，提交后工作区继续干净。
+
+## 50. 第十九批 S3a：端口边界与商城场景切换等价上移（2026-11-09，用户确认回归通过）
+
+### 50.1 前置与口径
+
+- 用户已实跑 49.7 积压的运行时与线上字节回归清单并确认「测试了，没问题」，49.10 约定的第十九批前置条件满足；任务 #66 闭环。
+- 按 49.10 既定口径开工，无需再次点选：**①A 先跑回归（已完成）→ S3a / ②A `adapters` 层网关端口 / ③A 商城嵌套等价上移**。`IClientSession` 保持纯标准库不动、`ClientApp::run()` 线性顺序不变、`ICommands.h` 零引用骨架继续不动。
+- 本批严格限定在 **S3a**：新增端口边界 + 1 处装配点，**两个 Scene 内部业务判定零改动**；S3b（`LoginScene` 611 行）/ S3c（`ShopScene` 980 行）/ S4 一律不动。
+
+### 50.2 执行清单（2 新增 + 4 改动代码 + 5 工程文件）
+
+**新增 2 个端口头**
+
+| 文件 | 内容 |
+|---|---|
+| `header/adapters/IClientGateway.h` | ②A 落地：`unool::adapters::IClientGateway : public unool::application::IClientSession`。`adapters` 层、允许出现 `sf::Packet` 但只用 `namespace sf { class Packet; }` 前向声明，不引入完整 SFML 头；新增 3 个纯虚 `send(sf::Packet&)` / `sendShopPurchase(const std::string&)` / `setPlayerId(std::size_t)`，配合继承自 `IClientSession` 的 `update()` / `isConnected()` 正好覆盖 49.2 盘点的 15 处 `net.*` 调用的全部 5 类方法 |
+| `header/adapters/IShopOpener.h` | ③A 落地：场景切换「意图」端口，1 个纯虚 `openShop(const std::string& username)` + 虚析构，纯标准库 `<string>`，不含 SFML / nlohmann |
+
+**改动 4 个代码文件**
+
+- `header/adapters/Socket.h`：include 从 `application/IClientSession.h` 换成 `adapters/IClientGateway.h`（后者自带 `IClientSession.h`，头文件自足）；`ClientNetwork` 基类从 `unool::application::IClientSession` 改为 `unool::adapters::IClientGateway`；`send` / `sendShopPurchase` / `setPlayerId` 加 `override`。**会话 6 方法的签名与函数体、以及 `Socket.cpp` 全部函数体逐字未改**。
+- `header/adapters/LoginScene.h`：加 `adapters/IShopOpener.h`；新增引用成员 `IShopOpener& shopOpener`（排在 `net` 之后）；构造签名加第 3 个参数 `IShopOpener& opener`。
+- `source/adapters/LoginScene.cpp`：删 `#include "ShopScene.h"`、加意图端口头；构造函数加参数并按声明顺序初始化；`handleMouseClick` 大厅分支中 `ShopScene shop(renderer, net, username); shop.run();` 两行改为 `shopOpener.openShop(username);`，**断线 / 关窗判定 `if (!net.isConnected() || !renderer.windowIsOpen())` 连同 `status = Status::Done; result.ok = false;` 原位置、原顺序保留**。
+- `source/adapters/ClientApp.cpp`：加意图端口头；在 `namespace unool::adapters` 内的匿名 namespace 定义文件局部类 `ShopOpener final : public IShopOpener`（持有 `GameRenderer&` / `ClientNetwork&` 两个引用，构造列表绑定、零裸指针），`openShop()` 函数体逐字是原商城两行；`run()` 在 `GameRenderer renderer(...)` 之后、`LoginScene` 之前多一个栈上局部 `ShopOpener shopOpener(renderer, net_)`，并把该对象作为第 3 个参数传给 `LoginScene`。
+
+**改动 5 个工程文件**：`Client1` / `Client2` 的 `.vcxproj` 各 +2 `ClInclude`、两个 `.vcxproj.filters` 各 +2 带 `<Filter>头文件</Filter>` 的显示条目（保留 UTF-8 BOM）、`Projects/Adapters/UNOOL.Adapters.vcxproj` +2 `ClInclude`（按 35.4 仅 IDE 显示）。两个客户端 `ClCompile` 集合不变、仍编译同一批 8 个 `.cpp`。
+
+### 50.3 设计说明
+
+- **②A 为何用继承而非并列接口**：`IClientGateway` 继承 `IClientSession`，方向是 `adapters → application`，`IClientSession.h` 零改动即可保持「纯标准库、不含 SFML / nlohmann」的 S1 口径；同时 `ClientApp.h` 里既有的 `application::IClientSession& session_` 端口视图仍能从 `ClientNetwork&` 经无歧义的公有继承链隐式转换，`ClientApp.h` 零改动。`ClientNetwork` 仍是唯一具体实现。
+- **边界先行，不在本批切 Scene 成员**：S3a 只定义 `IClientGateway` 并让 `ClientNetwork` 实现；两个 Scene 暂仍持 `ClientNetwork&`。这是 49.4 分段的必然——先固化接口与适配器实现、单独一次 Rebuild 验证继承链与虚表，S3b / S3c 再把各自成员逐个切到端口，每批改动面可控、可逐段 `diff` 验等价；若本批同时改 15 处调用点就退回到「一口气 1591 行」的高风险路径。
+- **③A 为何等价**：`openShop()` 在组合根侧同步构造并运行同一个 `ShopScene`，构造参数（`GameRenderer&` / `ClientNetwork&` / `username`）指向同三个对象，栈上生命周期与同步 `run()` 返回后回到大厅的时序完全一致；`ClientApp::run()` 仍是「连接 → `GameRenderer` → `LoginScene::run()` → `gamePhase`」线性顺序，只多一个无副作用的栈上局部对象。**结果回传通道顺延 S3b / S3c**（届时才需要把响应解析上移），本段只建意图通道。
+- **障碍 3 顺延**：`PacketDispatcher::next(ClientNetwork&)` 的具体类型绑定与 `ShopScene::skillsCache` / `pendingSkills` 归属按 49.10 留到 S3c 前再判，本批零触碰。
+- S1 有意保留的冗余 include 之一 `ShopScene.h`（`ClientApp.cpp`）在本批被真正使用，消化 1 个；其余冗余 include 仍按 47.4 口径保留到后续批次逐条清理。
+- 附带发现 `setCredentials()` 零调用点（`Socket.h:188`）按 49.10 继续原样保留，本批未修。
+
+### 50.4 等价性证据
+
+- `git diff` 显示 `LoginScene.cpp` 只有 3 处变化：include 一行、构造函数签名/初始化列表、商城分支两行 + 注释；**从 `sendLoginRequest()` 到 `pollAccountPackets()` 的全部业务判定、状态机、协议构造与解析、文案、`ClientInput.key` 相关代码零改动**。
+- 原商城两行与新 `ShopOpener::openShop()` 函数体 `diff -u` 只差缩进层级（类内多一层 tab），语句逐字一致。
+- `ClientApp::run()` 主体与 HEAD `diff -u`：剔除新增注释与 `ShopOpener` 局部后，唯一差异是 `LoginScene` 构造多传一个 `shopOpener` 参数；`handleChoicePacket` / `gamePhase` 两个静态函数体零改动，`PacketDispatcher::next` 三处调用点行号仅因新增类整体后移、语句未变。
+- `LoginScene` 全项目只有 1 个构造调用点（`ClientApp.cpp:242`），已同步；`ShopScene` 构造签名未变。
+- **本批无对外行为变化**：消息号、包体、端口、控制台输出、场景时序、断线判定均不变。
+
+### 50.5 零改动项
+
+`MessageType` 25 值与顺序、线上包体与消息号、端口 8888 / 14341、JSON 配置与存档格式、`ServerNetwork` / 两个用例服务、`Socket.cpp` 全部函数体（含 `reconnect()` 第四处收包循环）、`IClientSession.h` / `ClientApp.h` / `PacketDispatcher.h` / `PacketDispatcher.cpp` / `ICommands.h`、`ShopScene.h` / `ShopScene.cpp` 全部内容、`LoginScene` 的业务判定与 UI 状态机、三个纯 View 单元、`PCH` 与库归属、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、`ClCompile` 集合、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10、46.7 ③B、49.10 全部口径。
+
+### 50.6 静态验证（助手侧，未本地编译）
+
+- 7 个 `.vcxproj` + 3 个 `.vcxproj.filters` 全量 `[xml]` 解析通过；`ClCompile` / `ClInclude` / `None` 共 **169 条 Include 路径 0 缺失**（26 / 15 / 37 / 37 / 27 / 4 / 23）；两个客户端 `ClCompile` + `ClInclude` 集合 `diff` 为空。
+- 两个新头在 5 个工程文件中各登记 2 条显示条目；`IClientGateway.h` 的 `application/IClientSession.h` include 唯一解析到 `header/application/IClientSession.h`。
+- `IClientGateway` 新增 3 个纯虚全部在 `Socket.h` 有 `override` 且 `Socket.cpp` 有定义；`IClientSession` 的 6 个纯虚仍由同 6 个方法覆盖；`IShopOpener::openShop` 在 `ShopOpener` 有 `override`、在 `LoginScene.cpp:152` 有唯一调用点。
+- 新增与改动代码裸指针 **0 命中**；`ShopOpener` 两个引用成员经构造列表绑定，无值成员需 `{}` 初始化；`git diff --check` 干净。
+- 三处收包循环仍各自调用 `PacketDispatcher::next`，心跳回复仍只 `PacketDispatcher.cpp` 一处；`MessageType.h` 枚举计数 25，两个 config、`ServerMain.cpp`、协议目录的 `git diff` 为空。
+- 编辑工具把 4 个文件写成 LF（两个新头、`ClientApp.cpp`、`Adapters.vcxproj`），已按既有口径复位；最终 11 个改动文件均 **UTF-8 无 BOM + CRLF**（两个 `.filters` 保留 UTF-8 BOM `efbbbf`）。
+- 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截、从未绕过，**本批未本地编译**。
+
+### 50.7 请用户 Rebuild 的重点
+
+- `Debug|x64` 与 `Release|x64` 重新生成，重点看：① `IClientGateway.h` 的 `namespace sf { class Packet; }` 前向声明与 `Socket.h` 中 `<SFML/Network.hpp>` 完整定义共存（第十四批 `Card.h` 已有先例）；② 继承链由 `IClientSession → ClientNetwork` 变为 `IClientSession → IClientGateway → ClientNetwork` 后，`ClientApp.cpp` 构造函数 `session_{ net }` 的隐式向上转换、虚表与 `LNK2019`；③ 3 个新 `override` 与 `Socket.cpp` 定义签名匹配、`send` / `sendShopPurchase` 变虚后无二义；④ **`LoginScene.cpp` 删掉 `ShopScene.h` include 后是否仍有传递依赖**（助手侧不能编译；`pch.h` 强制包含提供 `json.hpp` / `vector` / `optional`，`GameRenderer.h` 提供 SFML 图形类型，理论上足够）；⑤ 匿名 namespace 里 `ShopOpener` 对 `IShopOpener` 的名字查找、`ShopScene` 构造签名；⑥ `LoginScene` 新引用成员与初始化列表顺序一致（避免 `-Wreorder`）。
+
+### 50.8 运行时回归重点（本批唯一变化路径）
+
+- **大厅「商城」按钮** → 商城展示 / 技能描述 / 搜索 / 分页 / 购买与积分同步 → ESC 或关窗退出 → **回到大厅**（而非直接结束登录）。
+- 商城期间断线或关闭窗口 → 仍按原判定置 `status = Status::Done; result.ok = false;`，客户端走「登录未完成，退出」路径。
+- 登录 → 大厅 → 开始游戏 → `gamePhase` 全链路、跨阶段留包、心跳与 3 秒超时、双开双配置、端口 8888 / 14341 与包体字节；49.7 其余清单继续有效。
+
+### 50.9 提交与后续
+
+本批与 S1 / S2 同口径：代码 + 文档一并交付，**待用户 Rebuild 通过后由助手生成结构化提交消息提交**，提交时工作区保持干净。之后按 49.4 / 49.10 推进 **S3b `LoginScene` 纯 View 化**（611 行，把 15 处 `net.*` 调用中的账号部分切到 `IClientGateway`、请求构造与响应解析上移、状态机与 `render()` 原样保留），再 **S3c `ShopScene`**（980 行，含障碍 3 的 `PacketDispatcher` 泛化与 `skillsCache` 归属）。

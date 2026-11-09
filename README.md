@@ -70,6 +70,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 **S3 口径已确认（49.10）**：用户一次点选 **①A + ②A + ③A** —— 先实跑 49.7 已积压 7 批的运行时与线上字节清单建立基线、**S3 暂缓**；S3a 开工时端口放 `adapters` 层网关（`IClientSession` 保持纯标准库不动）、`LoginScene.cpp:150` 的商城嵌套等价上移到 `ClientApp`（`run()` 线性顺序不变）、`ICommands.h` 零引用骨架继续不动。第十九批的前置条件是回归清单实跑完成，开工按 S3a → S3b → S3c 分段。本批零代码、零工程文件改动。
 
+**阶段 4 · S3a（第十九批代码，用户确认回归通过后开工，待本地 Rebuild）**：按 49.10 既定口径 ②A + ③A 落地，**两个 Scene 内部业务判定零改动**。新增 `header/adapters/IClientGateway.h`（②A：`adapters` 层网关端口，继承 `unool::application::IClientSession` 以复用其纯标准库会话 6 方法，`sf::Packet` 只用前向声明，新增 `send` / `sendShopPurchase` / `setPlayerId` 三个纯虚，正好覆盖两个 Scene 的 15 处 `net.*` 调用）；`Socket.h` 基类改由它继承、3 个方法加 `override`，`IClientSession.h` / `ClientApp.h` / `Socket.cpp` 函数体零改动、`session_{ net }` 端口视图继续有效。新增 `header/adapters/IShopOpener.h`（③A：场景切换意图端口，单个 `openShop(username)`）；`ClientApp.cpp` 在匿名 namespace 定义文件局部 `ShopOpener`，函数体逐字是原商城两行；`LoginScene.cpp:150` 的同步嵌套改为 `shopOpener.openShop(username)`，断线 / 关窗判定原位置保留，`ClientApp::run()` 线性顺序不变、只多一个栈上局部对象。5 个工程文件补 2 个新头的 IDE 显示条目（`ClCompile` 集合不变）。**本批无对外行为变化**：构造参数指向同三个对象、栈上生命周期与返回大厅时序一致。结果回传通道与障碍 3（`PacketDispatcher` 具体类型绑定、`skillsCache` 归属）顺延 S3b / S3c。静态验证：7 个 `.vcxproj` + 3 个 `.filters` 全解析、169 条 Include 路径 0 缺失、双工程条目集合一致、裸指针 0、`git diff --check` 干净、11 个改动文件统一 UTF-8 无 BOM + CRLF（filters 保留 BOM）、协议与端口文件未改。助手侧构建工具仍被拦截、未本地编译。Rebuild 重点：前向声明与完整 SFML 定义共存、继承链变更与虚表 / `LNK2019`、3 个新 `override`、`LoginScene.cpp` 删 `ShopScene.h` 后的传递依赖。运行时重点是大厅商城按钮 → 展示 / 购买 → 退出回大厅，以及商城期间断线 / 关窗的退出判定。详见方案文档第 50 节。
+
 ## 文档
 
 | 文件 | 内容 |

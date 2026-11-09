@@ -5,6 +5,7 @@
 #include "LoginScene.h"
 #include "ShopScene.h"
 #include "Socket.h"
+#include "adapters/IShopOpener.h"
 #include "utils.h"
 #include "adapters/JsonConfig.h"
 #include "AccountProtocol.h"
@@ -193,6 +194,29 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 
 namespace unool::adapters {
 
+	namespace {
+
+		// 阶段 4 · S3a（用户 49.10 口径③A）：组合根侧的商城意图实现。
+		// 原 LoginScene::handleMouseClick 在这里同步构造并运行 ShopScene；
+		// 上移后只换调用者，构造参数（renderer / net / username）、栈上生命周期、
+		// 同步 run() 与返回后回到大厅的时序全部不变。
+		class ShopOpener final : public IShopOpener {
+		public:
+			ShopOpener(GameRenderer& renderer, ClientNetwork& net)
+				: renderer_{ renderer }, net_{ net } {}
+
+			void openShop(const std::string& username) override {
+				ShopScene shop(renderer_, net_, username);
+				shop.run();
+			}
+
+		private:
+			GameRenderer& renderer_;
+			ClientNetwork& net_;
+		};
+
+	} // namespace
+
 	ClientApp::ClientApp(ClientNetwork& net, const std::string& windowTitle,
 	                     const std::string& titleBrackets, const std::string& ipAddress,
 	                     unsigned short port)
@@ -210,8 +234,12 @@ namespace unool::adapters {
 		GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle_));
 		GameRenderer renderer(rendererConfig);
 
+		// S3a：商城由组合根经 IShopOpener 打开；只在登录场景之前多一个局部对象，
+		// 「连接 → 渲染器 → 登录场景 → 游戏阶段」的线性顺序不变。
+		ShopOpener shopOpener(renderer, net_);
+
 		// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
-		LoginScene login(renderer, net_, titleBrackets_);
+		LoginScene login(renderer, net_, shopOpener, titleBrackets_);
 		auto session = login.run();
 		if (!session.ok) {
 			std::println(stderr, "{} 登录未完成，退出", titleBrackets_);

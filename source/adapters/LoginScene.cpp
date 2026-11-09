@@ -2,13 +2,14 @@
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
 #include <SFML/Network.hpp>
-#include "ShopScene.h"
+#include "adapters/IShopOpener.h"
 #include "PacketDispatcher.h"
 #include <utility>
 
 
-LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title)
-	: renderer(r), net(n), titleBrackets(title) {
+LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n,
+	                       unool::adapters::IShopOpener& opener, const std::string& title)
+	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
 }
 
@@ -146,9 +147,9 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 			return;
 		}
 		if (lobbyShopBtn.contains(pos)) {
-			// 进入商城，退出后回到大厅
-			ShopScene shop(renderer, net, username);
-			shop.run();
+			// 进入商城，退出后回到大厅（S3a：只把构造 / 运行上移到组合根，
+			// 此处仅发意图；断线与关窗判定仍在原位置，行为等价）
+			shopOpener.openShop(username);
 			if (!net.isConnected() || !renderer.windowIsOpen()) {
 				status = Status::Done;
 				result.ok = false;

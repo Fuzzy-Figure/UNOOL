@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include "Socket.h"
+#include "adapters/IShopOpener.h"
 
 class GameRenderer;
 
@@ -25,6 +26,8 @@ private:
 
 	GameRenderer& renderer;
 	ClientNetwork& net;
+	// S3a：商城由组合根经意图端口打开，本 Scene 不再自行构造 ShopScene。
+	unool::adapters::IShopOpener& shopOpener;
 	const std::string titleBrackets;
 
 	std::string username;
@@ -48,7 +51,8 @@ private:
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 
 public:
-	LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title);
+	LoginScene(GameRenderer& r, ClientNetwork& n,
+	           unool::adapters::IShopOpener& opener, const std::string& title);
 	Result run(); // 跑登录循环，成功/失败/关窗后返回
 
 private:

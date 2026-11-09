@@ -90,6 +90,8 @@
     <ClInclude Include="..\..\header\application\IClientSession.h" />
     <ClInclude Include="..\..\header\adapters\ClientApp.h" />
     <ClInclude Include="..\..\header\adapters\PacketDispatcher.h" />
+    <ClInclude Include="..\..\header\adapters\IClientGateway.h" />
+    <ClInclude Include="..\..\header\adapters\IShopOpener.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\client_config.json" />

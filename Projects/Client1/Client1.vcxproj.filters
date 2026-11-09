@@ -119,6 +119,12 @@
     <ClInclude Include="..\..\header\adapters\PacketDispatcher.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\adapters\IClientGateway.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\adapters\IShopOpener.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\client_config.json">

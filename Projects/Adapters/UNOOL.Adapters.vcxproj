@@ -109,6 +109,8 @@
     <ClInclude Include="..\..\header\adapters\JsonConfig.h" />
     <ClInclude Include="..\..\header\adapters\ClientApp.h" />
     <ClInclude Include="..\..\header\adapters\PacketDispatcher.h" />
+    <ClInclude Include="..\..\header\adapters\IClientGateway.h" />
+    <ClInclude Include="..\..\header\adapters\IShopOpener.h" />
     <ClInclude Include="..\..\header\application\IDecisionPort.h" />
     <ClInclude Include="..\..\header\application\IServerView.h" />
     <ClInclude Include="..\..\header\application\IConfigProvider.h" />
