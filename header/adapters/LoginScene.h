@@ -9,8 +9,9 @@ class GameRenderer;
 // 登录场景：图形界面完成注册/登录，成功后返回账号信息
 // 阶段 4 · S3b1（用户 51.11 口径①A）：成员与构造参数由具体 ClientNetwork& 切到
 // adapters 层的 IClientGateway&，并删掉 #include "Socket.h" 的粗粒度传递依赖。
-// 5 个请求构造 / 4 个响应解析 / 状态机 / render() / run() 主循环逐字留在 .cpp，
-// 协议上移按 51.5 ①A 归 S3b2；本批零行为变化。
+// 阶段 4 · S3b2（53.9 口径①A + ②A）：5 个请求构造与 4 处响应解析上移到 Protocol
+// 层、结果经同步值对象返回；状态机 / render() / run() 主循环仍逐字留在 View。
+// ③A：Result::enterShop 全项目零读取点，声明与赋值一并删除。
 class LoginScene {
 public:
 	struct Result {
@@ -20,7 +21,6 @@ public:
 		int wins = 0;
 		int losses = 0;
 		bool ok = false;
-		bool enterShop = false; // 登录成功后进入商城（而非直接开始游戏）
 	};
 
 private:

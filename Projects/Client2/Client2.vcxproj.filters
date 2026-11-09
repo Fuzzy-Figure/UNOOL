@@ -44,6 +44,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\header\protocol\AccountEvent.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h">
       <Filter>头文件</Filter>
     </ClInclude>

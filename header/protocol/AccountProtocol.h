@@ -9,9 +9,13 @@ namespace sf { class Packet; }
 
 namespace AccountProtocol {
 	// 构造请求 packet（客户端用）
+	// 阶段 4 · S3b2（53.9 ①A）：补齐两个原本在 View 手写包的 helper，5 个账号请求
+	// 全部由本层构造；消息号与字段顺序逐字不变。
 	sf::Packet makeRegisterRequest(const std::string& username, const std::string& password);
 	sf::Packet makeLoginRequest(const std::string& username, const std::string& password);
 	sf::Packet makeCheckUsernameRequest(const std::string& username);
+	sf::Packet makeCheckinRequest();
+	sf::Packet makeReadyToPlay();
 
 	// 构造响应 packet（服务端用）
 	sf::Packet makeAccountResponse(MessageType type, bool ok,

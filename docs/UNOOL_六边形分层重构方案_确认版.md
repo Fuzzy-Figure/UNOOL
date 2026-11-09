@@ -2818,3 +2818,80 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 5. **验证**：逐段 `diff` 证明 5 个请求包字节、4 个响应字段顺序、`status=Done` 先于 `ReadyToPlay` 发包、全部文案与状态机分支零变化；169 条 Include 路径复核、XML 全解析、双客户端条目一致、裸指针 0、UTF-8 无 BOM + CRLF；请用户 Rebuild `Debug|x64` / `Release|x64` 并实跑 52.8 清单（重点：链式同帧时序、跨阶段留包、三处心跳与 3 秒超时）。
 
 口径记录以独立文档提交交付，提交后工作区继续只剩用户侧 `UNOOL.slnx`。助手按此计划执行第二十三批 S3b2 代码，**不再另行点选**；S3c `ShopScene`（980 行）与 S4 `InputAdapter` 顺序不变。
+
+## 54. 第二十三批 S3b2：协议层上移 + 同步结果值 + 删死字段（2026-11-09，53.9 口径确认后）
+
+### 54.1 本批性质与起点
+
+`150994b`（第二十二批口径确认 ①A + ②A + ③A）后，工作区仍只剩用户 / VS 侧的 `UNOOL.slnx` 改动，继续排除在提交之外。本批按 53.9 **不再另行点选**，直接执行 S3b2 代码：把「5 个请求构造 + 4 处响应解析 + `ConnectionInfo` 的 `packet >> pid`」从 `LoginScene`（View）上移到 Protocol 层，结果以同步值对象返回；`run()` 主循环、每帧顺序、状态机、链式请求触发点、全部文案与线上字节逐字保留。
+
+**本批无对外行为变化**。编译按用户 21:44 的口径由用户本地执行；助手侧 `MSBuild.exe` 仍被命令校验黑名单拦截（54.8，含本轮「PowerShell + `dangerouslyDisableSandbox: true`」组合再试失败的记录），未绕过、未本地编译。
+
+### 54.2 改动清单（12 个代码 / 工程文件：1 新增 + 11 修改；另 3 个文档 + 1 个 `UNOOL.slnx` IDE 显示改动，合计 16 个文件）
+
+| 文件 | 改动 | 原因 / 影响 |
+|---|---|---|
+| `header/protocol/AccountEvent.h` | **新增**：`AccountEvent` 纯值对象（`type` / `ok` / `exists` / `msg` / `points` / `wins` / `losses` / `pid`）+ `parseAccountEvent(MessageType, sf::Packet&) -> std::optional<AccountEvent>` 声明 | ②A 的结果载体；纯标准库 + `MessageType`，`sf::Packet` 仅前向声明，不把 SFML 带进 `Application` |
+| `header/protocol/AccountProtocol.h` | 新增 `makeCheckinRequest()` / `makeReadyToPlay()` 两个声明 | ①A：5 个账号请求构造全部收拢到 Protocol 层 |
+| `source/protocol/AccountProtocol.cpp` | 两个 helper 实现 + `parseAccountEvent()` 实现（switch 覆盖 5 类响应） | 实现并入既有 Core 编译单元，**零新增 `ClCompile`**；既有 4 个请求 / 4 个解析函数体逐字未改 |
+| `header/adapters/LoginScene.h` | 删 `Result::enterShop` 声明；更新 S3b2 注释 | ③A：零读取点死字段 |
+| `source/adapters/LoginScene.cpp` | 加 `AccountEvent.h`；两处手写包换 helper；`pollAccountPackets()` 从 `if` 链改同步 `switch`；删 `result.enterShop = false` | ①A + ②A + ③A；业务判定与文案逐字保留（54.5） |
+| 7 个工程文件（Core / Client1 / Client2 / Server 的 4 个 `.vcxproj` + 3 个 `.filters`） | 各补 1 条 `AccountEvent.h` 的 `ClInclude` 显示条目 | 仅 IDE 显示，编译集合 / `ProjectReference` / 包含目录 / 链接项零改动（54.7） |
+
+### 54.3 ①A 协议层上移：5 个请求构造
+
+| 请求 | 原构造点（View） | 新构造点 | 包体（逐字不变） |
+|---|---|---|---|
+| `LoginRequest` | `makeLoginRequest` @189 | 未动 | `int` 消息号 + `username` + `password` |
+| `RegisterRequest` | `makeRegisterRequest` @204 | 未动 | `int` 消息号 + `username` + `password` |
+| `CheckUsernameRequest` | `makeCheckUsernameRequest` @219 | 未动 | `int` 消息号 + `username` |
+| `CheckinRequest` | `LoginScene.cpp` 手写 2 行 @229–230 | `AccountProtocol::makeCheckinRequest()` | 仅 `int` 消息号 |
+| `ReadyToPlay` | `handleMouseClick` 手写 2 行 @144–146 | `AccountProtocol::makeReadyToPlay()` | 仅 `int` 消息号 |
+
+两个新 helper 的函数体就是原手写两行的逐字平移（`sf::Packet` 局部变量 + `<< static_cast<int>(MessageType::…)`），无新增字段、无消息号变化。`handleMouseClick` 的 `startGameBtn` 分支中 **`status = Status::Done` 仍逐字先于包构造与 `net.send()`**（53.6 不可动语义）。
+
+### 54.4 ②A 同步值返回：4 处响应解析 + `ConnectionInfo`
+
+`parseAccountEvent(type, packet)` 的 `switch` 与旧解析逐条对应（`packet` 已由 `PacketDispatcher` 消费掉开头 `int` 消息号）：
+
+| 消息类型 | 旧解析 | 新解析（字段顺序相同） | 失败语义 |
+|---|---|---|---|
+| `ConnectionInfo` | `std::size_t pid; if (packet >> pid)` | `packet >> ev.pid` | `nullopt` → View 静默 `continue`（旧代码同样不写 `message` / `status`） |
+| `CheckUsernameResponse` | `parseCheckUsernameResponse` → `optional<bool>` | `packet >> ev.exists` | `nullopt` → `message = "响应解析失败"; status = Idle` |
+| `RegisterResponse` / `LoginResponse` | `parseAccountResponse` → `ok >> msg >> points >> wins >> losses` | 同序 5 字段 | `nullopt` → 同上失败分支 |
+| `CheckinResponse` | `packet >> msg >> ok >> points`（**不检查返回值**，`ok` 未使用） | 同序 3 字段，不检查返回值 | **恒返回值对象**：与旧代码「坏包也弹窗、`points` 取默认 / 部分解析值」逐字一致 |
+
+`CheckinResponse` 恒返回值对象是本批最关键的等价性细节：旧 View 从未对该包做失败分支，若让 `parseAccountEvent` 在 `>>` 失败时返回 `nullopt`，View 就会多出一条「响应解析失败」路径，属行为变化。因此该分支保留旧写法，只把三个局部字段换成值对象字段；View 侧的三元兜底（`std::string{}` / `0`）在正常路径上恒不触发，仅用于避免对 `optional` 解引用。
+
+`pollAccountPackets()` 由 5 段 `if (mt == X && status == Y)` 改为 `switch (mt)` + 每个 `case` 内 `if (status != Y) continue;`，`message` / `status` / `mode` / `result` / `checkinPopup` 仍全部由 View 写，没有回调、没有新端口、没有新继承。
+
+### 54.5 逐段等价性证据（`git diff` 逐行核对）
+
+- **订阅集与循环头**：`PacketDispatcher::next(net, { 5 类订阅 })`、`auto [mt, packet] = std::move(*next)`、Filtered 的「非账号包 peek 不消费、留给 `gamePhase`」逐字未改；心跳仍由 dispatcher 单点消费并回复。
+- **`continue` / 门控顺序**：旧 `&&` 短路在 `status` 不匹配时跳过整段（不解析该包），新 `case` 内的 `if (status != …) continue;` 位于 `parseAccountEvent()` **之前**，门控时机一致；旧代码 `status` 不匹配时走到循环体末尾再进入下一轮 `next()`，新代码 `continue` / `default: continue;` 同样直接回到 `while` 条件，队列消费行为一致。
+- **链式请求同帧**：`sendRegisterRequest()`（查重可用）与 `sendLoginRequest()`（注册成功）仍在原 `case` 的对应分支内、`continue` 之前，未跨帧、未引入事件队列，服务端看到的发包顺序不变。
+- **状态机与文案**：`Mode` / `Status` / `Focus` 51 处枚举引用、全部 `message` 文案、`std::println` 的 `{}` 占位与半角冒号、`result` 五个字段赋值顺序、`checkinPopup` 写入点逐字保留；`run()` 每帧 `pollEvent → net.update → pollAccountPackets → render → Done break` 未动。
+- **S3a 商城返回判定**：`shopOpener.openShop(username)` 与随后的 `!net.isConnected() || !renderer.windowIsOpen()` 判定零改动。
+- **零改动文件**：`MessageType.h`（25 值）、`client_config.json` / `server_config.json`（8888 / 14341）、`PacketDispatcher.h/.cpp`、`IClientGateway.h`、`IClientSession.h`、`ICommands.h`、`ClientApp.cpp`、`ShopScene.*`、`Socket.h/.cpp`、`ServerMain.cpp`、`AccountService.*`、`ShopService.*` 的 `git diff` 均为空；JSON 存档与 `ClientInput.key` 字节未动。
+
+### 54.6 ③A 死字段与骨架
+
+`Result::enterShop` 全项目仅声明 + `LoginScene.cpp:141` 赋 `false` 两处、零读取点，按 51.11 ③C 先例删除声明与赋值；`header/application/ICommands.h` 的 `IGameCommands` 零引用骨架继续**不动**（46.7 ③B / 阶段 5 口径）。`ClientApp.cpp:244` 仍只使用 `session.ok`，组合根不受影响。
+
+### 54.7 层与工程条目取舍（53.9 ④ 的落地口径）
+
+53.9 ④ 的「零工程文件改动」指**零 `ClCompile` / `ProjectReference` / 包含目录 / 链接项改动**：`AccountProtocol.cpp` 已在 `UNOOL.Core` 统一编译，`AccountEvent.h` 是纯头，Core 仍是 20 个业务单元、3 个 exe 的链接面不变，`Application` 仍是 Q8 占位库。本批另按 S3a / 第十七批先例给 7 个工程文件补了 `AccountEvent.h` 的 `ClInclude`，原因是保持新头在 IDE 中可见与双客户端条目一致；`ClInclude` 仅 IDE 显示（35 节已确认），不参与编译，因此不改变上述「零编译面改动」结论。若严格按字面零工程文件改动，可回退这 7 条显示条目而不影响任何编译结果。
+
+### 54.8 静态验证（助手侧只读，未本地编译）
+
+- 10 个 `.vcxproj` / `.filters` 全量 `[xml]` 解析成功；**267 条带 `Include` 属性的条目（`ClInclude` 201 + `ClCompile` 66）路径 0 缺失**（本批 +7 条 `AccountEvent.h` 显示条目）。
+- `Client1` / `Client2` 的 `.vcxproj` 与 `.filters` 条目集合 `Compare-Object` 差异均为 **0**；`AccountEvent.h` 在 7 个工程文件中登记。
+- `git diff --check` 干净；工作区共 15 个已跟踪改动文件 + 1 个未跟踪新头 `header/protocol/AccountEvent.h`。用户 21:59 改口径：`UNOOL.slnx` **不再排除、一并提交**——其差异为 VS 侧 **6+/5−** 的纯 IDE 显示改动（7 个 `<Project Path>` 按字母重排 + `/doc/` 挂载 `docs/UNOOL_六边形分层重构方案_确认版.md`），不动任何编译 / 链接 / GUID / 平台配置。**本批提交共 16 个文件**（1 新增 + 15 修改 = 12 个代码 / 工程 + 3 个文档 + 1 个 `UNOOL.slnx`）。
+- 新增代码裸指针 0，新变量一律 `{}` 初始化（`AccountEvent ev{}` / `std::string{}`）；12 个改动 / 新增文件统一复位 UTF-8 无 BOM + CRLF（3 个 `.filters` 保留 UTF-8 BOM）。
+- 编译能力再试记录：本轮按用户建议用 PowerShell 调用 MSBuild 并带 `dangerouslyDisableSandbox: true`，仍返回 `Command blocked for security: Known LOLBin executable that can run arbitrary code outside PowerShell validation` —— 拦截发生在命令静态校验层，沙箱外运行开关不解除该名单，助手按安全规则未换等价命令重试。用户已确认由本人本地编译。
+
+### 54.9 待用户验证与后续
+
+用户已确认本地 `Debug|x64` / `Release|x64` Rebuild **编译通过**（2026-11-09 21:59，脚本 `%TEMP%\UNOOL_Rebuild.bat`）；下列原 Rebuild 重点全部排除：`AccountEvent.h` 前向声明与 `AccountProtocol.cpp` 中 `sf::Packet` 完整定义共存、`switch` 中 `case` 内 `{}` 块的变量作用域、`std::optional<AccountEvent>` 跨 Core.lib 链接（`LNK2019`）、两处新 helper 的重载解析、`LoginScene.cpp` 新增 include 的传递依赖。运行时按 52.8 / 49.7 清单实跑（任务 #73 仍 pending）：**链式请求同帧时序（查重→注册→登录）**、`status=Done` 先于 `ReadyToPlay` 发包、跨阶段留包、三处心跳与 3 秒超时、签到弹窗与积分同步、登录 / 注册 / 查重全部文案。
+
+编译通过后由助手生成结构化提交消息、提交 **16 个文件**（按用户 21:59 口径，`UNOOL.slnx` 不再排除、一并提交）；之后按 46.4 顺序推进 **S3c `ShopScene`（980 行，`skillsCache` / `pendingSkills` 归属）→ S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。

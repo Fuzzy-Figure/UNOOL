@@ -1,6 +1,7 @@
 #include "LoginScene.h"
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
+#include "AccountEvent.h"
 #include <SFML/Network.hpp>
 #include "adapters/IShopOpener.h"
 #include "PacketDispatcher.h"
@@ -138,11 +139,11 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 			return;
 		}
 		if (startGameBtn.contains(pos)) {
-			result.enterShop = false;
+			// ③A（53.9）：result.enterShop 零读取点，删声明与赋值。
+			// status = Done 仍逐字先于 ReadyToPlay 包的构造与发送。
 			status = Status::Done;
 			//通知服务器：已准备开始游戏
-			sf::Packet readyPkt;
-			readyPkt << static_cast<int>(MessageType::ReadyToPlay);
+			sf::Packet readyPkt = AccountProtocol::makeReadyToPlay();
 			net.send(readyPkt);
 			return;
 		}
@@ -226,8 +227,7 @@ void LoginScene::sendCheckUsername() {
 }
 
 void LoginScene::sendCheckinRequest() {
-	sf::Packet req;
-	req << static_cast<int>(MessageType::CheckinRequest);
+	sf::Packet req = AccountProtocol::makeCheckinRequest();
 	if (!net.send(req)) {
 		message = "发送失败，请重试";
 		return;
@@ -238,7 +238,11 @@ void LoginScene::sendCheckinRequest() {
 void LoginScene::pollAccountPackets() {
 	// 阶段 4 · S2：收包动作收拢到 PacketDispatcher。订阅集与原 6 类集合等价
 	// （Heartbeat 由 dispatcher 内部统一消费并回复），「非账号包不消费、留给
-	// gamePhase」的跨阶段留包约定由 next() 逐字保留；以下业务判定逐字未改。
+	// gamePhase」的跨阶段留包约定由 next() 逐字保留。
+	// 阶段 4 · S3b2（53.9 ②A）：响应解析上移到 AccountProtocol::parseAccountEvent()，
+	// 结果以同步值对象返回；5 类订阅集、每帧顺序、continue 与链式请求
+	// （查重→注册→登录）的同帧触发点逐字保留，message / status / mode /
+	// result / checkinPopup 仍由 View 写。
 	while (auto next = unool::adapters::PacketDispatcher::next(net, {
 		       MessageType::ConnectionInfo,
 		       MessageType::CheckUsernameResponse,
@@ -247,77 +251,89 @@ void LoginScene::pollAccountPackets() {
 		       MessageType::CheckinResponse })) {
 		auto [mt, packet] = std::move(*next);
 
-		if (mt == MessageType::ConnectionInfo) {
-			std::size_t pid;
-			if (packet >> pid) {
-				net.setPlayerId(pid);
-				std::println("{} 分配到玩家: {}", titleBrackets, username);
+		switch (mt) {
+			case MessageType::ConnectionInfo: {
+				auto event = AccountProtocol::parseAccountEvent(mt, packet);
+				if (event) {
+					net.setPlayerId(event->pid);
+					std::println("{} 分配到玩家: {}", titleBrackets, username);
+				}
+				continue;
 			}
-			continue;
-		}
 
-		if (mt == MessageType::CheckUsernameResponse && status == Status::WaitingCheck) {
-			auto exists = AccountProtocol::parseCheckUsernameResponse(packet);
-			if (!exists) { message = "响应解析失败"; status = Status::Idle; continue; }
-			if (*exists) {
-				message = "该用户名已存在";
-				status = Status::Idle;
-			}
-			else {
-				message = "用户名可用，继续注册";
-				sendRegisterRequest(); // 自动进入注册请求
-			}
-			continue;
-		}
+			case MessageType::CheckUsernameResponse:
+				if (status != Status::WaitingCheck) continue;
+				{
+					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
+					if (event->exists) {
+						message = "该用户名已存在";
+						status = Status::Idle;
+					}
+					else {
+						message = "用户名可用，继续注册";
+						sendRegisterRequest(); // 自动进入注册请求
+					}
+				}
+				continue;
 
-		if (mt == MessageType::RegisterResponse && status == Status::WaitingRegister) {
-			auto resp = AccountProtocol::parseAccountResponse(packet);
-			if (!resp) { message = "响应解析失败"; status = Status::Idle; continue; }
-			if (resp->ok) {
-				message = "注册成功，自动登录中...";
-				sendLoginRequest(); // 注册成功，自动登录
-			}
-			else {
-				message = std::format("注册失败: {}", resp->msg);
-				status = Status::Idle;
-			}
-			continue;
-		}
+			case MessageType::RegisterResponse:
+				if (status != Status::WaitingRegister) continue;
+				{
+					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
+					if (event->ok) {
+						message = "注册成功，自动登录中...";
+						sendLoginRequest(); // 注册成功，自动登录
+					}
+					else {
+						message = std::format("注册失败: {}", event->msg);
+						status = Status::Idle;
+					}
+				}
+				continue;
 
-		if (mt == MessageType::LoginResponse && status == Status::WaitingLogin) {
-			auto resp = AccountProtocol::parseAccountResponse(packet);
-			if (!resp) { message = "响应解析失败"; status = Status::Idle; continue; }
-			if (resp->ok) {
-				result.username = username;
-				result.password = password;
-				result.points = resp->points;
-				result.wins = resp->wins;
-				result.losses = resp->losses;
-				result.ok = true;
-				// 登录成功后切换到大厅模式
-				mode = Mode::Lobby;
-				status = Status::Idle;
-				message = "登录成功";
-				std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, resp->msg, resp->points, resp->wins, resp->losses);
-			}
-			else {
-				message = std::format("登录失败: {}", resp->msg);
-				status = Status::Idle;
-			}
-			continue;
-		}
+			case MessageType::LoginResponse:
+				if (status != Status::WaitingLogin) continue;
+				{
+					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
+					if (event->ok) {
+						result.username = username;
+						result.password = password;
+						result.points = event->points;
+						result.wins = event->wins;
+						result.losses = event->losses;
+						result.ok = true;
+						// 登录成功后切换到大厅模式
+						mode = Mode::Lobby;
+						status = Status::Idle;
+						message = "登录成功";
+						std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, event->msg, event->points, event->wins, event->losses);
+					}
+					else {
+						message = std::format("登录失败: {}", event->msg);
+						status = Status::Idle;
+					}
+				}
+				continue;
 
-		// 签到结果：弹出结果框，同步最新积分
-		if (mt == MessageType::CheckinResponse && status == Status::WaitingCheckin) {
-			std::string msg;
-			bool ok = false;
-			int points = 0;
-			packet >> msg >> ok >> points;
-			checkinMsg = msg;
-			checkinPopup = true;
-			result.points = points;
-			status = Status::Idle;
-			continue;
+			// 签到结果：弹出结果框，同步最新积分
+			case MessageType::CheckinResponse:
+				if (status != Status::WaitingCheckin) continue;
+				{
+					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					// parseAccountEvent 对该类型恒返回值对象（不检查 >> 结果），
+					// 与原 View 的 msg / points 默认值行为逐字一致。
+					checkinMsg = event ? event->msg : std::string{};
+					checkinPopup = true;
+					result.points = event ? event->points : 0;
+					status = Status::Idle;
+				}
+				continue;
+
+			default:
+				continue;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #include "AccountProtocol.h"
+#include "AccountEvent.h"
 #include <SFML/Network.hpp>
 
 namespace AccountProtocol {
@@ -23,6 +24,20 @@ namespace AccountProtocol {
 		sf::Packet packet;
 		packet << static_cast<int>(MessageType::CheckUsernameRequest);
 		packet << username;
+		return packet;
+	}
+
+	// 阶段 4 · S3b2（53.9 ①A）：原 LoginScene.cpp 两处手写包逐字平移，
+	// 包体只有开头的 int 消息号，不带其它字段。
+	sf::Packet makeCheckinRequest() {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::CheckinRequest);
+		return packet;
+	}
+
+	sf::Packet makeReadyToPlay() {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::ReadyToPlay);
 		return packet;
 	}
 
@@ -66,6 +81,33 @@ namespace AccountProtocol {
 		bool exists;
 		if (!(packet >> exists)) return std::nullopt;
 		return exists;
+	}
+
+	// 阶段 4 · S3b2（53.9 ②A）：4 处响应解析与 ConnectionInfo 的 packet >> pid
+	// 收拢到单点，字段顺序与 View 原解析逐字一致；packet 已 >> 过开头消息号。
+	// CheckinResponse 沿用原 View 的写法：不检查 >> 结果，字段保留默认 / 部分解析值，
+	// 因此该类型恒返回值对象（与旧代码「坏包也弹窗、积分取 0」的行为一致）。
+	std::optional<AccountEvent> parseAccountEvent(MessageType type, sf::Packet& packet) {
+		AccountEvent ev{};
+		ev.type = type;
+		switch (type) {
+			case MessageType::ConnectionInfo:
+				if (!(packet >> ev.pid)) return std::nullopt;
+				break;
+			case MessageType::CheckUsernameResponse:
+				if (!(packet >> ev.exists)) return std::nullopt;
+				break;
+			case MessageType::RegisterResponse:
+			case MessageType::LoginResponse:
+				if (!(packet >> ev.ok >> ev.msg >> ev.points >> ev.wins >> ev.losses)) return std::nullopt;
+				break;
+			case MessageType::CheckinResponse:
+				packet >> ev.msg >> ev.ok >> ev.points;
+				break;
+			default:
+				return std::nullopt;
+		}
+		return ev;
 	}
 
 }
