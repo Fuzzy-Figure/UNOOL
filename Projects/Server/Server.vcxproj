@@ -179,67 +179,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\..\source\Character.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\InstantSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\Card.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\Effect.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\GameLogic.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\Player.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\PassiveSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
     <ClCompile Include="..\..\source\ServerMain.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\Skill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\Socket.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\TransformSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\UserDB.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\utils.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

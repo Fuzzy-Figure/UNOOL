@@ -33,7 +33,7 @@ Projects/               7 个 VS 工程目录
   Domain/               UNOOL.Domain.vcxproj（纯标准库领域层，独立 pch）
   Application/          UNOOL.Application.vcxproj（端口与服务定位，独立 pch）
   Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
-  Protocol/             UNOOL.Protocol.vcxproj（协议与 DTO 序列化，独立 pch）
+  Protocol/             UNOOL.Protocol.vcxproj（共享编译单元与协议 / DTO 序列化，独立 pch）
 header/                 头文件；domain/ application/ adapters/ 为分层新增目录
 source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口，后者也是装配根）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
@@ -48,7 +48,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
 
-`Protocol` 静态库持有 `GameState.cpp` / `AccountProtocol.cpp` / `protocol/CardPacket.cpp` 三个协议与 DTO 编译单元（`GameState` / `CharInfo` 的 6 个 `sf::Packet` 运算符、`Card` / `Hand` 的 4 个运算符与 9 个账号协议函数），由 3 个 exe 共同链接，避免同一份代码各编译一遍；它使用独立的 `pch.protocol.h`。`MessageType` 枚举与网络收发仍留在 `Socket.*`，未拆分。
+`Protocol` 静态库（阶段 3 起为共享编译库）统一编译 15 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）与 `GameState.cpp` / `AccountProtocol.cpp` / `protocol/CardPacket.cpp` 三个协议与 DTO 单元，使用独立的 `pch.protocol.h`。集中后 `Protocol.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。库名 `Protocol` 暂与内容不完全对应，属阶段 3 的过渡归属，后续拆分命名时再调整。`MessageType` 枚举与网络收发仍留在 `Socket.*`，未拆分。
 
 ## 文档
 

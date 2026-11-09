@@ -771,7 +771,9 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - `git diff --name-only` 确认 `Socket.*`、`GameState.*`、`AccountProtocol.*`、`Card.h`、`ServerMain.cpp`、`UNOOL.slnx`、`UNOOL.slnLaunch.user`、3 个 json、端口 8888 / 14341、`MessageType` **全部未改**。
 - BOM 保持（3 个 filters 有 / 7 个 vcxproj 无）；换行保持（源文件 LF，`core.autocrlf=true` 由 Git 规范化）。
 
-### 21.5 需用户本地验证
+### 21.5 用户本地验证（已闭环）
+
+**状态更新（用户「编译通过，继续」，2026-11-09）**：本批已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `30efd3f`、工作区干净。第 21.6 节风险 ① 就此解除——**Server 去掉 `sfml-window` 后无 LNK2019；`CardPacket.obj` 加入后 4 个 operator 与 `Card::make` 的反向引用解析正常**。助手侧 `MSBuild.exe` 拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
 
 第 16 / 17.5 / 18.5 / 19.5 节的验收均不覆盖本批，请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
 
@@ -790,4 +792,86 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，无用例服务，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 21.5），其中 Server 去 window 与新增静态库编译单元是最需要链接验证的两点；② Protocol 库对 exe 对象文件的反向符号引用依旧存在，彻底消除需阶段 3 把共享领域逻辑集中编译；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-09 确认本批编译通过（`30efd3f`，见 21.5），Server 去 window 与新增静态库编译单元均通过链接验证；② Protocol 库对 exe 对象文件的反向符号引用依旧存在，彻底消除需阶段 3 把共享领域逻辑集中编译；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 22. 阶段 2 全部闭环与阶段 3 只读评估（2026-11-09，用户「编译通过，继续」）
+
+### 22.1 状态闭环
+
+用户于 2026-11-09 确认阶段 2 收官批本地编译通过并已提交 `30efd3f`，回归任务 #32 完成。**阶段 2 四批（W1+W2、W4、W3 工程归属版、S1+S2 收官）至此全部编译闭环**；助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未说明双配置与运行时回归的覆盖范围，第 16.4 节注记继续有效。
+
+### 22.2 阶段 3 只读核查：四个此前未摊开的事实
+
+1. **9 个共享 `.cpp` 完全不含第三方符号**：`Card` / `Character` / `Effect` / `GameLogic` / `Player` / `PassiveSkill` / `InstantSkill` / `Skill` / `TransformSkill` 共 9 个编译单元里，`sf::` / `nlohmann::json` / `Windows.h` API 出现 **0 行**；含第三方符号的仅 `Socket.cpp`（71 行）、`UserDB.cpp`（6 行）、`utils.cpp`（14 行）。
+2. **领域头并不需要 SFML 头文件**：`Card.h` 只有 `namespace sf { class Packet; }` 前向声明；`GameState.h` 经 `Card.h` 拿到该声明，friend 声明使用 `sf::Packet&`，二者都不 include SFML 头。真正 include 第三方头的是 `Socket.h`（Network + Window/Keyboard）、`UserDB.h` / `ShopData.h`（json.hpp）、`AccountProtocol.h`（Network）、以及 4 个渲染头（Graphics）。因此「Domain 外部头 = 0」的障碍不是 SFML 头，而是**分层归属**。
+3. **真正的反向依赖在 `utils.h`**：`header/utils.h:18` include `application/Services.h`，而 `Card.h` / `Skill.h` / `GameLogic.h` / `Player.h` 都传递包含 `utils.h` → 全部领域头闭包都依赖 Application 端口层。且 `utils.h` 内的 `RandomEngine::operator()` 是 inline 调用 `services()`，简单删 include 会编译失败；`utils.cpp` 又 include `adapters/LegacyServicesAdapter.h` + `<Windows.h>` + `<json.hpp>`，是混合层文件。拆它需要重新设计，不是删一行 include。
+4. **工程现状与新发现的链接风险**：`Domain` / `Application` 库只编译各自的 `pch.*.cpp`；3 个 exe 各编译 12 个共享 `.cpp`；**没有任何 exe 直接引用 `Domain` / `Application`**（Server 引用 Adapters + Protocol，Client1/2 只引用 Protocol）。`Domain` / `Application` 的 x64 配置已有 `/utf-8 /MP`，但 `pch.domain.h` / `pch.application.h` 只列了少量标准头，缺 `<format>` / `<print>` / `<ranges>` / `<functional>` / `<memory>` 等。
+   - **库间循环依赖（本轮最重要发现）**：`Socket.cpp` 有 8 处调用 `AccountProtocol::*`（定义在 `AccountProtocol.cpp`，属 Protocol 库），`GameState.cpp` / `CardPacket.cpp` 又需要 `Card::make` 与 Card/Hand 的运算符（在共享 `.cpp`）。若把 12 个共享 `.cpp` 移到**另一个**静态库，就会形成 `Protocol.lib ↔ 新库` 的双向引用；与已验证的「静态库 → exe 直接 `.obj`」不同，多库互相引用受链接命令行顺序影响，不能静态断言。要彻底避免，15 个共享 / 协议编译单元必须落在**同一个库**里。
+
+### 22.3 阶段 3 三条路线（待用户确认）
+
+| 路线 | 内容 | 改动面 / 风险 |
+|---|---|---|
+| A · 单库集中（推荐） | 把 12 个共享 `.cpp` 的 `ClCompile` 从 3 个 exe 移到**同一个**库，与现有 3 个协议编译单元汇合；不新建工程或新建 1 个命名清晰的库。零源码改动、不移动文件、协议字节不变 | 一次性消除「三份编译」与「Protocol 反向引用 exe」，且无库间循环；链接结构变化最大，需本地验证；库名与内容是否匹配需用户拍板 |
+| B · 小步试点 | 只把 9 个纯领域 `.cpp` 移到 `UNOOL.Application` 库，补 `pch.application.h` 标准头，3 个 exe 加 Application 引用 | 工程改动中等，但 `Protocol.lib ↔ Application.lib` 循环依赖风险最高，需先实测链接，可能白做一轮 |
+| C · 分层净化优先 | 先拆 `utils.h` 的 `application/Services.h` 反向依赖与 `utils.cpp` 的 adapters 依赖，把领域头移入 `domain/`（需解除 A6 物理移动），再谈集中编译 | 最贴近真六边形，但要改多处源码 / 头文件，`RandomEngine` inline 依赖 `services()` 需重新设计，风险最高 |
+| D · 暂停 | 接受阶段 2 收官状态 | `Domain` / `Application` 仍为占位，共享逻辑仍编译三遍 |
+
+**用户选择：A「复用 Protocol 库」**（不新建工程、15 个编译单元同库、零源码改动），执行结果见第 23 节。Q3 排除项继续有效；阶段 4 客户端装配、阶段 5 / 6 另期。
+
+## 23. 阶段 3 第一批：共享编译单元集中到 Protocol 库（2026-11-09）
+
+### 23.1 范围与决策
+
+用户确认阶段 2 收官批编译通过并选择「复用 Protocol 库（推荐）」：把 12 个共享 `.cpp` 的 `ClCompile` 从 3 个 exe 移到现有 `UNOOL.Protocol.vcxproj`，与库内 3 个协议 / DTO 编译单元汇合为 15 个。选择依据见第 22.2 节事实 4：`Socket.cpp` 与协议单元互相引用，只有落在同一个库才能避免 `lib ↔ lib` 双向依赖。本批不含路线 B（小步试点）、C（`utils.h` 分层净化）与阶段 4；Q3 排除项继续有效；A6 不物理移动现有文件继续有效（**所有 `.cpp` / `.h` 文件原地不动**）；零源码改动，线上协议字节、配置格式与对外行为不变。
+
+### 23.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `UNOOL.Protocol.vcxproj` | 新增 12 条 `ClCompile`（`..\..\source\{Card,Character,Effect,GameLogic,InstantSkill,PassiveSkill,Player,Skill,Socket,TransformSkill,UserDB,utils}.cpp`），每条 `Use` + `PrecompiledHeaderFile=pch.protocol.h` + `/FI pch.protocol.h`，与库内既有 3 条格式一致；库内共 **16 个编译单元**（含 `pch.protocol.cpp`） |
+| `Server.vcxproj` / `.filters` | 各删 12 条共享 `ClCompile`；剩 `pch.server.cpp` + `ServerMain.cpp` = **2 条** |
+| `Client1/Client2.vcxproj` / `.filters` | 各删 12 条；剩 `pch.cpp` + `ClientMain.cpp` + `GameRenderer.cpp` + `ImageManager.cpp` + `LoginScene.cpp` + `ShopScene.cpp` + `TextManager.cpp` = **7 条** |
+| `pch.protocol.h` | **仅注释更新**（15 个共享 / 协议单元 + 1 个 PCH 生成单元）；`#pragma once`、include 列表与 `adl_serializer` 特化一字未改 |
+| `README.md` | 目录树 Protocol 行与分层段订正：库名暂与内容不完全对应，属阶段 3 过渡归属 |
+
+`UNOOL.slnx` 仍 7 个工程；3 个 exe 的 `ProjectReference`（各已有 1 条指向 Protocol）、`AdditionalDependencies`、包含目录、`ClInclude`、PCH 生成单元一律未动；`CardPacket.cpp` / `GameState.cpp` / `AccountProtocol.cpp` 与全部源码、配置、端口 8888 / 14341、`MessageType` 零改动。
+
+**未新增 `ClInclude`**：沿用第 15 节 A 方案口径——这些头在 3 个 exe 的「头文件」节点已有条目，`ClInclude` 不参与编译，新增只会造成跨工程重复。
+
+### 23.3 收益与必须说清的边界
+
+- **消除三份编译**：12 个共享 `.cpp` 现在只编译一次，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。
+- **反向引用从结构上消除（静态判断）**：`Protocol.lib` 现在自含 `Card::make` / Card·Hand 运算符 / `AccountProtocol::*` / `GameState` 序列化 / `services()` 与 `paths`；扫描确认 15 个单元不引用 `Adapters.lib` 独有的 `NetworkServerView` / `LegacyBlockingDecisionAdapter` 符号，也不引用 exe 的入口 / 渲染符号。第 19.3 / 21.6 节记录的两处风险在本批后不再成立，但 `Adapters.lib → Protocol.lib` 的单向库间引用仍存在（见 23.5）。
+- **PCH 可见性有实证**：`pch.protocol.h` 去掉注释 / 空行后与 `pch.server.h` **逐字一致**，而 Server 此前正是用 `pch.server.h` 成功编译过这 12 个共享 `.cpp` 与 2 个协议 `.cpp`；Protocol 工程 4 个配置的包含目录均含 `dep\nlohmann`、`dep\SFML\include`、`header`。因此 `utils.cpp`（Windows.h / json.hpp）、`UserDB.cpp`（json.hpp）、`Socket.cpp`（SFML Network + Window/Keyboard）的声明可见性与之前一致。
+- **这不是「Domain 净化」**：`Domain` / `Application` 仍只编译各自的 `pch.*.cpp` 占位；`utils.h:18` 对 `application/Services.h` 的反向依赖、领域头平铺在 `header/`、库名 `Protocol` 承载游戏逻辑这三点都还在。阶段 3 的后续批次（拆 `utils.h`、领域头归位、库拆分命名）未做。
+
+### 23.4 验证结果（助手侧静态只读）
+
+- 10 个 `.vcxproj` / `.filters` XML 全部可解析；同口径文件类 Include 引用 **218 条、0 缺失**（第 22 节基线 278 − 3 exe 各 12 − 3 filters 各 12 + Protocol 12 = 218，精确对应）。
+- `vcxproj` 与 `.filters` 集合完全一致：Server `ClCompile` 2/2、`ClInclude` 19/19；Client1 / Client2 各 `ClCompile` 7/7、`ClInclude` 21/21。
+- 12 个共享 `.cpp` 的 `ClCompile` **只存在于** `UNOOL.Protocol.vcxproj`；Protocol 共 16 条 `ClCompile`，新增 12 条的 `Use` / `pch.protocol.h` / `/FI` 三项齐全；`CardPacket.cpp` 归属不变。
+- `pch.protocol.h` 与 `pch.server.h` 去注释后逐字一致；`adl_serializer<std::optional<T>>` 特化在 `header/pch.h`、`pch.server.h`、`pch.protocol.h` 三者长度一致（531 字符，本轮统计口径）。
+- 源码 / 头文件 / `UNOOL.slnx` / `slnLaunch.user` / 3 个 json / 链接项 `git diff` 全为空；3 个 exe 各保留 1 条 Protocol `ProjectReference`；BOM 保持（3 filters 有 / 7 个 vcxproj 无），换行保持（Server / Client 系 CRLF，Protocol 库系 LF）；`git diff --check` 干净；裸指针扫描 0。
+
+### 23.5 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. **编译链接（最高优先级）**：`pch.protocol.cpp` 生成独立 PCH、15 个 `.cpp` 经 `/FI pch.protocol.h` 编译；3 个 exe 能否从 `UNOOL.Protocol.lib` 解析全部共享符号；`Adapters.lib → Protocol.lib` 的单向库间引用与 `ServerMain.cpp` 的 `installServices()` 有无 LNK2019 / LNK2001；
+2. **静态状态语义**：`utils.cpp` 从「每个 exe 各编译一份」变为「每个 exe 链接同一份库 `.obj`」，确认 `installedSlot()` / `RandomEngine` / `paths` 的进程内单例语义不变，随机序列与洗牌、发牌、BP 候选一致；
+3. **运行路径**：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；
+4. Debug / Release 两个配置的 `-d` / 非 `-d` SFML 库组合。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 23.6 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **推进一项**：共享编译单元已集中、三份编译消除、Protocol 反向引用从结构上消除。仍未做：`utils.h` 分层净化、领域头归位、Domain / Application 库实装、库拆分命名 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，无用例服务，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 23.5），其中 3 个 exe 首次把 12 个编译单元改为从静态库拉入、`Adapters.lib → Protocol.lib` 库间解析是最需要链接验证的两点；② 库名 `Protocol` 与内容不符，属已确认的过渡归属；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

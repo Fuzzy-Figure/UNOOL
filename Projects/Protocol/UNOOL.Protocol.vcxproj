@@ -127,6 +127,66 @@
       <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\Card.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Character.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Effect.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\GameLogic.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\InstantSkill.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\PassiveSkill.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Player.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Skill.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Socket.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\TransformSkill.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\UserDB.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\utils.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

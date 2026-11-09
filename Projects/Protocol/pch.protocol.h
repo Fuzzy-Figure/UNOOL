@@ -1,16 +1,18 @@
 #pragma once
 
-// UNOOL.Protocol 专用预编译头（阶段 2 / W3）。
+// UNOOL.Protocol 专用预编译头（阶段 2 / W3 建立，阶段 3 起承载全部共享编译单元）。
 // 与 header/pch.h、pch.server.h、pch.adapters.h 完全独立：不共享文件、不共享 .pch 产物。
-// 本库编译 source/GameState.cpp、source/AccountProtocol.cpp 与 source/protocol/CardPacket.cpp 三个协议 / DTO 编译单元。
-// 内容按 pch.server.h 逐字保留（Server 已成功编译过这两个 .cpp），确保声明可见性一致：
+// 本库统一编译 15 个共享业务 / 协议单元（12 个原由 3 个 exe 各自编译的 .cpp，
+// 加上 GameState.cpp / AccountProtocol.cpp / protocol/CardPacket.cpp）与 1 个 PCH 生成单元。
+// 内容按 pch.server.h 逐字保留：Server 此前用 pch.server.h 成功编译过这 12 个共享 .cpp
+// 与 2 个协议 .cpp，因此声明可见性一致；json.hpp / Windows.h 由本 PCH 或各 .cpp 显式包含。
 //   Network        : sf::Packet（序列化与协议构造）
 //   System         : 由 Network 间接依赖
 //   Window/Keyboard: sf::Keyboard::Scancode（Socket.h 中 ClientInput.key 的字节依赖）
 //   json.hpp       : adl_serializer<std::optional<T>> 特化的前置声明
 // 下面 adl_serializer<std::optional<T>> 特化与 header/pch.h 逐字一致：
 // 去掉或改写会改变 JSON 序列化字节，属于存档 / 对外行为变更，因此原样保留。
-// 不含 <SFML/Graphics.hpp>：这两个编译单元没有任何图形符号。
+// 不含 <SFML/Graphics.hpp>：这 15 个编译单元没有任何图形符号。
 #include <SFML/Network.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Window/Keyboard.hpp>
