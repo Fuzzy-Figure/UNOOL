@@ -53,6 +53,11 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\adapters\ClientApp.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\pch.h" />
@@ -77,6 +82,8 @@
     <ClInclude Include="..\..\header\domain\TransformSkill.h" />
     <ClInclude Include="..\..\header\adapters\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
+    <ClInclude Include="..\..\header\application\IClientSession.h" />
+    <ClInclude Include="..\..\header\adapters\ClientApp.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\client_config.json" />

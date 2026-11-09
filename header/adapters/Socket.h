@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "MessageType.h"
 #include "application/IAccountSession.h"
+#include "application/IClientSession.h"
 #include "application/AccountService.h"
 #include "application/ShopService.h"
 
@@ -147,7 +148,9 @@ public:
 	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson) override;
 };
 
-class ClientNetwork {
+// 阶段 4 · S1：实现 IClientSession 端口。只加基类与 override 标记，
+// 六个方法的签名与函数体逐字未改；ClientNetwork 仍是唯一的具体实现。
+class ClientNetwork : public unool::application::IClientSession {
 private:
 	std::unique_ptr<sf::TcpSocket> socket;
 	sf::SocketSelector selector;
@@ -166,9 +169,9 @@ public:
 	ClientNetwork() = default;
 	~ClientNetwork();
 
-	bool connect(const std::string& ip, unsigned short port);
-	void disconnect();
-	void update();
+	bool connect(const std::string& ip, unsigned short port) override;
+	void disconnect() override;
+	void update() override;
 
 	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
 	bool send(sf::Packet& packet);
@@ -178,9 +181,9 @@ public:
 	std::optional<int> peekMessageType() const;
 
 	void setPlayerId(std::size_t id) { playerId = id; }
-	std::size_t getPlayerId() const { return playerId; }
-	const std::string& getUsername() const { return username; }
-	bool isConnected() const { return socket != nullptr; }
+	std::size_t getPlayerId() const override { return playerId; }
+	const std::string& getUsername() const override { return username; }
+	bool isConnected() const override { return socket != nullptr; }
 
 	void setCredentials(const std::string& u, const std::string& p) { username = u; password = p; }
 	bool reconnect();

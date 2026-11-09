@@ -103,6 +103,7 @@
     <ClInclude Include="..\..\header\application\IConfigProvider.h" />
     <ClInclude Include="..\..\header\application\IUserRepository.h" />
     <ClInclude Include="..\..\header\application\IAccountSession.h" />
+    <ClInclude Include="..\..\header\application\IClientSession.h" />
     <ClInclude Include="..\..\header\application\AccountService.h" />
     <ClInclude Include="..\..\header\application\ShopService.h" />
     <ClInclude Include="..\..\header\application\IRandom.h" />

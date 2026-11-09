@@ -2223,3 +2223,84 @@ B2 规模复核：6 单元 **2428 行**（`ClientMain.cpp` 264、`GameRenderer.c
 ### 46.7 需用户确认（一次点选即可开工）
 
 请就 46.5 的 **口径 ① / ② / ③** 各选一项（默认推荐组合 ①A + ②A + ③A，即先做 S1、心跳归 `PacketDispatcher`、死分支与骨架原样保留）。确认后助手按所选分段执行第十六批代码改动，并列出等价性证据与需本地 Rebuild / 运行时回归的清单；本节与 README / 工作记忆以一次独立的文档提交交付，提交后工作区保持干净（与第十五批 `91039e2` 同口径）。
+
+## 47. 第十六批 S1：客户端组合根与会话端口（2026-11-09，用户选 ①A + ②A + ③B）
+
+### 47.1 口径确认与授权范围
+
+用户在 46.7 一次点选确认三个口径，本批严格按所选范围执行：
+
+| 口径 | 用户选择 | 本批落地 |
+|---|---|---|
+| ① 首批范围与分段顺序 | **A 只做 S1** | 组合根 + 端口骨架 + `main` 瘦身；S2 / S3 / S4 一律不动 |
+| ② 心跳与 `peekMessageType` 过滤归属 | **A 归 `PacketDispatcher`** | S1 不触及三处收包循环与三处心跳回复，语义逐字保留；`PacketDispatcher` 顺延 S2 创建，②A 是归属约定而非本批已实现 |
+| ③ 两支只打印商城死分支 + `ICommands.h` 零引用骨架 | **B 删除死分支** | 删除 `gamePhase` 的 `MessageType::ShopData` / `ShopResult` 两支；`ICommands.h` 零引用骨架保持原样不动 |
+
+③B 是**用户明确授权的对外行为变化**，见 47.4，单独记录，不与「零行为变化」的其余改动混写。
+
+### 47.2 执行清单（3 个新文件 + 8 个改动代码 / 工程文件）
+
+**新增**
+
+| 文件 | 内容 |
+|---|---|
+| `header/application/IClientSession.h` | 客户端会话端口，纯标准库（`<cstddef>` / `<string>`），不含 SFML / nlohmann，满足 Q8。6 个纯虚方法：`connect` / `disconnect` / `update` / `isConnected` / `getPlayerId` / `getUsername`。与 `IAccountSession` 区分：后者是服务端会话端口（`ServerNetwork` 实现），本端口是客户端会话端口（`ClientNetwork` 实现） |
+| `header/adapters/ClientApp.h` | 组合根声明，持有 `ClientNetwork& net_` 与 `application::IClientSession& session_`（同一对象的两个视图），4 个配置值成员全部 `{}` 初始化，零裸指针 |
+| `source/adapters/ClientApp.cpp` | 234 行：平移 `handleChoicePacket` / `gamePhase`，新增 `ClientApp` 构造与 `run()` |
+
+**修改**
+
+- `header/adapters/Socket.h`：加 `#include "application/IClientSession.h"`；`ClientNetwork` 继承端口；6 个方法加 `override`；**零函数体改写**。析构因基类虚析构自然为虚，未额外标注。
+- `source/ClientMain.cpp`：264 → 28 行，只保留 `SetConsoleCP` / `SetConsoleOutputCP`、`getClientConfig()` 读 IP / 端口、构造 `ClientApp` 并 `return app.run();`。
+- `Projects/Client1/Client1.vcxproj` / `Projects/Client2/Client2.vcxproj`：各 +1 `ClCompile`（`source\adapters\ClientApp.cpp`，`Use pch.h` + `/FI`）+2 `ClInclude`（`IClientSession.h` / `ClientApp.h`）。
+- 两个 `.vcxproj.filters`：各 +1 `ClCompile` +2 `ClInclude` 的 IDE 显示条目，保留原 UTF-8 BOM 与 CRLF。
+- `Projects/Application/UNOOL.Application.vcxproj`：+1 `ClInclude`（`IClientSession.h`）。
+- `Projects/Adapters/UNOOL.Adapters.vcxproj`：+1 `ClInclude`（`ClientApp.h`）。
+
+按 35.4 既有澄清，`ClInclude` / filters 只影响 IDE 显示，真正决定编译的是 `ClCompile`；两侧都补齐是为了工程条目核查口径一致。
+
+### 47.3 等价性证据
+
+- **函数体归一化比对**（剔除注释行后 `diff -u`）：`handleChoicePacket` 与 `gamePhase` 从 HEAD `ClientMain.cpp` 平移到 `ClientApp.cpp`，**唯一差异即删除的两支死分支共 33 行**；其余语句、`case` 顺序、心跳回复、键位映射、`ClientInput.key` 线上字节逐字一致。
+- **装配顺序**：`ClientApp::run()` 与原 `main` 一致 → 连接 → `GameRenderer` → `LoginScene::run()` → `gamePhase`；连接失败 / 登录未完成的 `system("pause")`、返回码 1 与 stderr 文案不变。
+- **虚表引入风险已排除**：全项目 `ClientNetwork` 只有 1 个栈上实例，其余全是引用，无值拷贝 / 移动 / 按基类指针删除；6 个 `override` 签名与 `IClientSession` 逐一匹配且全部有定义（4 个在 `Socket.cpp`、2 个内联），虚析构定义在 `Socket.cpp` 保留。
+- `Client1` / `Client2` 的 `ClCompile` 集合 `diff` 为空，两个 exe 仍编译同一批 7 个 `.cpp`。
+
+### 47.4 对外行为变化（用户授权，唯一一处）
+
+删除 `gamePhase` 中两支只打印的死分支后，客户端不再输出：
+
+- `收到商城数据：积分…，角色…个，道具…个`（及其 JSON 解析失败的 stderr）
+- `购买结果：成功/失败（…），剩余积分 …`（及其 JSON 解析失败的 stderr）
+
+这两支原本只 `std::println` + `TODO(Task 7)` 注释，不写回任何状态、不发任何包；商城包实际由 `ShopScene.cpp` 自己的收包循环处理。因此**不影响线上协议、游戏状态与商城功能**，仅减少 4 条控制台输出。`MessageType::ShopPurchase` 忽略分支与 `default` 分支保留，`ICommands.h` 未改。
+
+### 47.5 有意保留的冗余 include（本批不清理）
+
+`ClientApp.cpp` 的 include 从原 `ClientMain.cpp` 逐字平移。删除死分支后，`ShopScene.h` / `utils.h` / `adapters/JsonConfig.h` / `AccountProtocol.h` / `ShopData.h` / `<Windows.h>` / `<thread>` / `<chrono>` 已不再被函数体直接使用，本批**一律保留**：S1 是结构平移，助手侧无法本地编译（47.7），任何 include 删减都可能改变传递依赖（`GameRenderer.h` 提供 SFML 图形类型、`ShopData.h` 提供 `ShopPurchaseResult`、强制包含的 `pch.h` 提供 `<vector>` / `<optional>`）。清理顺延到 S2 / S3 随 Scene 端口化一并做，届时逐条验证。
+
+### 47.6 零改动项
+
+`MessageType` 25 值与顺序、线上包体与消息号、端口 8888 / 14341、JSON 配置与存档格式、`ServerNetwork` / 两个用例服务、`LoginScene` / `ShopScene` / 三个纯 View 单元、`Socket.cpp` 全部函数体、三处收包循环与三处心跳回复、`peekMessageType()` 跨阶段留包语义、`Core` / `Domain` / `Application` 库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10 口径。
+
+### 47.7 静态验证（助手侧，未本地编译）
+
+- 7 个 `.vcxproj` 全量 `[xml]` 解析通过；`ClCompile` / `ClInclude` / `None` 共 **158 条** Include 路径，缺失 **0**（23 / 15 / 33 / 33 / 27 / 4 / 23）。
+- 4 个改动过的 `.vcxproj` 与 2 个 `.vcxproj.filters` 解析通过；filters 保留 UTF-8 BOM（`efbbbf`），源码与工程文件 UTF-8 无 BOM + CRLF，新增行 `bareLF = 0`。
+- `git diff --check` 干净；新增代码裸指针扫描 **0 命中**；`ClientApp` 4 个值成员全部 `{}` 初始化；`MessageType.h`、`client_config.json`、`server_config.json`、`ServerMain.cpp` 的 `git diff` 为空；`MessageType.h` 枚举值计数 25。
+- 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截，从未绕过，**本批未本地编译**。
+
+### 47.8 需用户确认与后续
+
+1. 本地 **Rebuild `Debug|x64` 与 `Release|x64`**。重点观察：`ClientApp.cpp` 新编译单元的 `pch.h` / `/FI` 是否生效、`IClientSession` 6 个 `override` 是否全部匹配、虚析构 vtable 是否引发 `LNK2019`、`ClientApp.cpp` 与 `ClientMain.cpp` 同时包含 `Socket.h` 是否重复定义（两个 `static` 函数已整体移走，`ClientMain.cpp` 不再含它们）。
+2. 实跑 47.9 运行时回归清单。
+3. 编译通过后，助手生成结构化提交消息并提交本批 14 个文件（11 个代码 / 工程 + 3 个文档），提交后按 ②A 推进 S2 `PacketDispatcher`。
+
+### 47.9 S1 后运行时回归清单
+
+- 双开 Client1 / Client2 + 两套配置：登录场景 → 大厅 → 开局；`LoginScene` 的「非账号包不消费、留给 `gamePhase`」留包语义未变。
+- 商城展示 / 技能描述 / 每日签到 / 购买与积分同步：确认 `ShopScene` 自行收包仍正常，控制台不再出现 47.4 的 4 条输出属预期。
+- 心跳与 3 秒超时、`ConnectionRefused`、断线提示、重连。
+- 键位（← / → / A / D / 数字 / 鼠标点击）与 `ClientInput.key` 线上字节。
+- 端口 8888 / 14341、`MessageType` 消息号与包体、JSON 存档格式回归。
+- 第十三 / 十四 / 十五批遗留的运行时与线上字节清单继续有效。

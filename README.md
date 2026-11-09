@@ -62,6 +62,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 阶段 4 客户端装配评估（第十六批只读）：6 个客户端专属单元共 **2428 行**，其中 `GameRenderer` / `TextManager` / `ImageManager`（721 行）已是零网络耦合的纯 View；`ClientMain.cpp`（入口 + 组合根 + 游戏阶段 13 个 `case` 的收包 switch）、`LoginScene.cpp`、`ShopScene.cpp` 各自持有 `ClientNetwork&` 并自建收包循环、各自回心跳，形成 3 处重复分发与「非账号包不消费、留给 `gamePhase`」的隐式队列约定。方案文档第 46 节给出 S1 组合根与端口骨架 → S2 统一收包分发 → S3 两个 Scene 纯 View 化 → S4 输入适配的分段设计，以及首批范围 / 心跳归属 / 死分支与零引用骨架三个待确认口径。本批零代码、零工程文件改动；`MessageType` 25 值、端口 8888 / 14341、JSON 存档与全部既有口径继续有效。
 
+**阶段 4 · S1（第十六批代码，用户选 ①A + ②A + ③B，待本地 Rebuild）**：新增 `header/application/IClientSession.h`（客户端会话端口，纯标准库、6 个纯虚方法，与服务端 `IAccountSession` 区分）、`header/adapters/ClientApp.h` + `source/adapters/ClientApp.cpp`（客户端组合根），`ClientNetwork` 只加继承与 `override`、零函数体改写，`source/ClientMain.cpp` 从 264 行瘦身为 28 行的入口组合根。原 `main` 的 `handleChoicePacket` / `gamePhase` 与装配顺序逐字平移到 `ClientApp::run()`；三个 Scene、三处收包循环、三处心跳回复与 `peekMessageType()` 跨阶段留包语义一律未动，②A 的 `PacketDispatcher` 顺延 S2。按用户 ③B 授权删除 `gamePhase` 中两支只打印的商城死分支（`ShopData` / `ShopResult`），这是本批**唯一对外行为变化**：客户端少 4 条控制台输出，商城功能仍由 `ShopScene` 自己的收包循环处理，线上协议与游戏状态不变；`ICommands.h` 零引用骨架保持原样。`Client1` / `Client2` 的 `ClCompile` 同步登记 `ClientApp.cpp` 并保持一致，`Application` / `Adapters` 静态库只补 IDE 显示用的 `ClInclude`。静态验证：7 个工程 158 条 Include 路径 0 缺失、XML 全解析、裸指针 0、`git diff --check` 干净、`MessageType` 25 值与端口未变；助手侧构建工具仍被拦截、未本地编译。详见方案文档第 47 节。
+
 ## 文档
 
 | 文件 | 内容 |
