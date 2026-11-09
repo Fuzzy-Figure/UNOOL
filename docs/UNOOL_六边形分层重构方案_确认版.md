@@ -2077,3 +2077,71 @@ A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读�
 第十四批只是 B1 的编译期前置，**库归属仍未改变**：`Domain` / `Application` 依旧是 PCH 占位库。下一批仍按 37.6 由用户在 **B1 直接拆库（需先确认 44.5 的三个口径，风险高）** 与 **B2 阶段 4 客户端装配（6 单元 2426 行 UI 改写）** 之间选择；助手不擅自判定拆库口径。
 
 **风险**：① 本批编译与运行时回归尚未执行（见 44.6），其中「协议头去完整 SFML 头后 5 个 `.cpp` 的声明可见性」最需验证；② 头自足化不消除 `Socket.cpp ↔ 用例服务 ↔ Character → services()` 的双向符号边；③ `source/domain/Character.cpp` 有一行非本批的 `#pragma warning(suppress: 6262)`，提交前需确认；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。改动**未提交**（15 个本批文件 + 1 个用户侧文件）。
+
+---
+
+## 45. 第十四批闭环与第十五批只读评估：B1 拆库的结构性结论（2026-11-09）
+
+### 45.1 闭环与提交
+
+用户确认 `source/domain/Character.cpp` 的 `#pragma warning(suppress: 6262)` 为**本人添加**（抑制 C6262 栈占用静态分析告警），并确认第十四批 `Rebuild Debug|x64` / `Release|x64` **编译通过**：44.6 第 1 项各验证点通过，无 C2027 / C2079 / C2664 / C4099 / LNK2019。助手生成结构化提交消息并提交 **`0f43809`**（**19 个文件，+121 / −1**，含该 1 行用户侧 pragma），提交时工作区干净；任务 #57 闭环。44.6 第 2 / 3 项运行时与线上字节清单仍待实跑。本节为**只读评估**，未改动任何代码 / 工程文件；按 37.6 不擅自判定拆库口径。
+
+### 45.2 精确盘点：4 静态库 + 3 exe（助手侧只读实测）
+
+| 工程 | `ClCompile` | PCH | 包含目录含 `dep` | `ProjectReference` |
+|---|---|---|---|---|
+| `UNOOL.Domain` | 1（`pch.domain.cpp`） | `pch.domain.h` 纯标准库 | 否 | 无 |
+| `UNOOL.Application` | 1（`pch.application.cpp`） | `pch.application.h` 纯标准库 | 否 | → `Domain` |
+| `UNOOL.Adapters` | 3（PCH + `LegacyBlockingDecisionAdapter.cpp` / `NetworkServerView.cpp`） | `pch.adapters.h` 含 SFML Graphics / Network / Keyboard + `json.hpp` | 是 | → `Domain`、`Application` |
+| `UNOOL.Core` | 21（PCH + 20 业务单元） | `pch.core.h` 含 SFML Network / System / Keyboard + `json.hpp` + `adl_serializer<std::optional<T>>` 特化 | 是 | 无 |
+| `Server` | 2（PCH + `ServerMain.cpp`） | `pch.server.h` 同 Core 口径 | 是 | → `Adapters`、`Core` |
+| `Client1` / `Client2` | 各 7（`pch.cpp` + 6 个 UI 单元） | `header/pch.h` 含 SFML Graphics / Network / Keyboard + `json.hpp` | 是 | 仅 → `Core` |
+
+`UNOOL.slnx` 共 7 个工程；`Client1` / `Client2` 只引用 `Core`，`Server` 引用 `Adapters` + `Core`，4 个静态库之间只有 `Application → Domain`、`Adapters → Domain / Application` 两条引用，**没有任何 exe 引用 `Domain` / `Application`**。
+
+### 45.3 编译单元依赖实测（第十四批之后的新事实）
+
+- `Core` 的 21 条 `ClCompile` = 1 个 PCH 生成单元 + 20 个业务单元，而 **20 = 11 + 9**：
+  - **11 个纯标准库候选单元**：`source/domain/` 7 个 + `GameLogic.cpp` / `Player.cpp` / `Services.cpp` + `source/utils.cpp`。逐个扫描 `sf::` / `SFML/` / `nlohmann` / `json.hpp`，命中 **0**（`utils.cpp` 唯一 1 次命中是第 12 行注释里的 "json.hpp" 字样；它显式包含 `<Windows.h>`，属 MSVC SDK 系统头、不在 `dep`，无需额外包含目录）。第十四批让 `domain` / `application` / `protocol` 头闭包 `GAPS = 0`、`GameState.h` / `AccountProtocol.h` 改用 `namespace sf { class Packet; }`，所以这 11 个单元**编译期**已具备在纯标准库 PCH 下编译的条件。
+  - **9 个必须依赖 `dep` 的单元**（命中数）：`AccountProtocol.cpp` 15、`Socket.cpp` 62、`ShopService.cpp` 12、`GameState.cpp` 7、`JsonConfig.cpp` 7、`CardPacket.cpp` 5、`UserDB.cpp` 4、`AccountService.cpp` 2、`LegacyBundle.cpp` 2。
+- **编译期可行 ≠ 链接期可拆**：`Services.cpp` → `defaultBundle()`（`LegacyBundle.cpp`，传递包含 `<json.hpp>` / `UserDB.h` / `SfmlClock.h`）；`utils.cpp` 4 处 → `services().random.*`；`Character.cpp` 4 处 → `services().assets / config`；`CardPacket.cpp:50` → `Card::make()`；`Socket.cpp` 9 处薄转发 → `AccountService` / `ShopService`；`ShopService.cpp` → `Character::infos` / `getCharacterPrice` / `make`。这 20 个单元构成**强连通的符号闭包**：任意单元划出 Core，都会立即产生指回 Core 的符号边。5 个默认组合适配器虽是 header-only（`JsonConfigProvider.h` 54 / `JsonUserRepository.h` 118 / `Mt19937Random.h` 42 / `SfmlClock.h` 17 / `FilesystemAssetCatalog.h` 54 行），但分别调用 `getServerConfig()`（`JsonConfig.cpp`）、`UserDB::instance()`（`UserDB.cpp`）、`paths::resourceRoot()` / `to_utf16`（`utils.cpp`），因此 `LegacyBundle.cpp` 必须有 `dep` 且需要 3 个 Core 单元的符号。
+- **硬结论**：在「不放宽 Q8（Domain 纯标准库 PCH / 无 dep 目录）+ 不改写任何模型层函数体」两条约束下，`Domain` 库**没有任何 `.cpp` 可以实装**——7 个 `domain/*.cpp` 中 6 个 include `GameLogic.h` / `Player.h`（应用层编排器）并真实调用其符号，`Character.cpp` 另调 `services()`；`Application` 库可实装的只有 `Services.cpp`（反向依赖 `defaultBundle()`）与 `utils.cpp`（反向依赖 `services()`）。第十四批只是**编译期前置**，B1 的死锁在**链接期**，与头文件是否自足无关；44.2 的「无低风险单单元试点」判断在第十四批后依然成立。
+
+### 45.4 三个口径落地为可点选项（44.5 的具体化）
+
+| 口径 | 选项 | 原因 / 影响 |
+|---|---|---|
+| ① Q8 / 包含目录 | **A（推荐）仅放宽 `Application`**：给 `UNOOL.Application` 加 `dep\nlohmann` / `dep\SFML\include` 并把 `pch.application.h` 扩为含 `<SFML/Network.hpp>` / `<json.hpp>`；**Domain 仍纯标准库 PCH，Q8 对 Domain 继续成立** | 9 个需 dep 单元里有 2 个属 `application/` 用例服务。代价：Application 不再是纯标准库层，六边形纯度下降，PCH 口径需同步 README / 方案文档 |
+| | B 完全不放宽 | 按 45.3 结论 Domain / Application 仍是占位库，B1 等于没做（等价于 45.5 方向 A / C） |
+| | C 连 Domain 一起放宽 | 与用户 Q8「Domain 单独建纯标准库 pch」直接冲突，不建议 |
+| ② `services()` / `defaultBundle()` 门面与未装配客户端 | **A（推荐）保持惰性默认组合不动**：`Services.cpp` 与 `LegacyBundle.cpp` 同库；Server 仍 `installServices()`，Client1 / 2 仍落到与重构前逐字等价的默认组合 | 随机序列、配置 reload、资源路径、`userDatas.json` 存档零变化。代价：门面所在库必须有 `dep` |
+| | B 改 Composition Root 显式装配 | 删 `defaultBundle()`、3 个 exe 各自构造 5 个适配器并装配；属函数体改动（Q3 边界），客户端新增装配代码，需重验 43.6 第 2 项 |
+| | C 新增第 5 个静态库专放默认组合 | 工程数 7→8，`slnx` / `.filters` / `ProjectReference` 全要动，改动面更大 |
+| ③ 9 个互调模型 `.cpp` 与 exe 引用 / 链接顺序 | **A（推荐）整体不按目录硬拆**：9 个模型 `.cpp` 继续留在同一库（Core，或随口径①整体划入 Application），`Domain` 只保留纯头 + `pch.domain.cpp`；3 个 exe 的 `ProjectReference` 按 `exe → Adapters → Application → Domain → Core` 增量添加 | 避免 `lib ↔ lib` 双向符号，依赖方向不反转 |
+| | B 按目录硬拆（7 个 domain → Domain、2 个 application → Application） | 必然双向，且 Domain 反向依赖 Application 编排器，违反依赖方向，风险最高 |
+| | C 11 个纯标准库单元整体划入 Application、Domain 保持占位 | 会触发 ①A + ②A 的组合（Application 需 `dep` 才能解析 `defaultBundle()`） |
+
+**链接风险（③ 的关键）**：MSVC 链接器按命令行顺序从 `.lib` 按需提取 obj；出现循环引用时通常需要同一 `.lib` 在链接项里出现两次或启用 `/WHOLEARCHIVE`，否则 LNK2019。`ProjectReference` 默认只列一次，这是 B1 最主要的链接风险点，必须用户本地 Rebuild 实测。
+
+### 45.5 方向选项（集中提问，见 45.7）
+
+| 选项 | 内容 | 风险 |
+|---|---|---|
+| **A（推荐）阶段 3 收官 → 转 B2 阶段 4 客户端装配** | 承认在 Q8 + 零函数体改写下 `Domain` / `Application` 只能是「设计层目录 + PCH 占位库」，把阶段 3 的 W1–W5 / 库改名 / 四层归位 / 头自足化全部闭环；下一批按阶段 4 引入 `ClientApp` / `InputAdapter` / `PacketDispatcher`，6 单元分段改写 | 高：大面积 UI 逻辑改写，但方向明确、不触碰 Q8、不产生跨库链接风险 |
+| **B · B1' 一次性拆库** | 按 45.4 推荐组合 ①A + ②A + ③A 一次性重排 `ClCompile` / `ProjectReference` / PCH / 包含目录，7 个工程 + `.filters` 同步；可能触发 LNK2019 / MSB8028 | 最高：跨库符号与链接顺序、PCH 口径改写 |
+| **C · 暂停拆库，先跑运行时回归** | 不改代码，按 40.7 / 41.6 / 42.7 / 43.6 / 44.6 汇总清单实跑，确认 W1–W5 行为等价后再决定 | 无编译风险，但阶段 3 不推进 |
+| D · 只做零口径改动的前置 | 实测无此类剩余项：第十四批已把编译期前置做完，剩余全部触碰口径 | — |
+
+B2 规模复核：6 单元 **2428 行**（`ClientMain.cpp` 264、`GameRenderer.cpp` 474、`LoginScene.cpp` 561、`ShopScene.cpp` 882、`TextManager.cpp` 175、`ImageManager.cpp` 72），较 37.4 的 2426 多 2 行 = 第十四批给 `ClientMain.cpp` / `LoginScene.cpp` 各补 1 行 `<SFML/Network.hpp>`；`ICommands.h` 仍是零引用骨架。
+
+### 45.6 边界与遗留
+
+- 第 35.4 节 Win32 边界、第 36.1 节 `MessageType` 口径、Q3 其余排除项、Q10 不要求新旧客户端混跑继续有效且未被改动。
+- 44.5 的两项遗留（`ShopData.h` 含 `<json.hpp>` 与序列化宏、`AccountService.cpp` 按值传 `sf::Packet`）本批未改：前者属 Core 合法依赖，后者属 Q3 排除的接口改造。
+- 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截，从未绕过；本批为只读评估，**未做本地编译**。
+
+### 45.7 需用户确认（一次点选）
+
+按 37.6「助手不擅自判定拆库口径」，本批不改动任何代码 / 工程文件；本节与 README / 工作记忆以一次独立的文档提交交付，提交后工作区保持干净。请就 45.5 的 **A / B / C** 选择方向；若选 **B**，视为同时接受 45.4 的推荐组合 ①A + ②A + ③A，若需不同口径请直接说明。
+
+**风险**：① 45.3 的「强连通符号闭包」结论来自静态扫描、未经链接期实测，若选 B 必须用户本地 Rebuild 验证；② 第十三 / 十四批的运行时与线上字节清单仍待实跑；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

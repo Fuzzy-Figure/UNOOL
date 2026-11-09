@@ -56,6 +56,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 头文件自足化（阶段 3 第十四批）：`header/domain/`、`header/application/`、`header/protocol/` 下的头显式包含自身直接使用的标准库类型；`GameState.h` 与 `AccountProtocol.h` 改用 `namespace sf { class Packet; }` 前向声明（与 `Card.h` 一致），后者原先的 `<SFML/Network.hpp>` 下沉到 5 个使用它的 `.cpp`。头闭包不再依赖 PCH 的传递包含，`Domain` 纯标准库 PCH 口径（Q8）与线上字节、函数行为均未改变；这只是 B1 拆库的编译期前置，库归属尚未调整。
 
+第十五批只读评估（阶段 3）：确认第十四批只解决**编译期**依赖——`Core` 的 20 个业务单元构成强连通的符号闭包（11 个纯标准库候选单元 + 9 个必须依赖第三方头的单元），B1 拆库的死锁在**链接期**；在 Q8（`Domain` 纯标准库 PCH）与零函数体改写两条约束下，`Domain` 没有任何 `.cpp` 可以实装。方案文档第 45 节给出 4 静态库 / 3 exe 的精确工程矩阵、三个口径的可点选项与方向 A / B / C。本批不改代码与工程文件，库归属、`ProjectReference`、PCH 与包含目录一律保持现状，待用户确认方向后再动。
+
 ## 文档
 
 | 文件 | 内容 |
