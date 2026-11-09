@@ -1696,7 +1696,9 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 - `ServerNetwork` 因实现端口新增虚函数表；未装配 `AccountService` 时两个薄转发分别返回 `false` / 直接返回。组合根在 `start()` 之后、首次 `update()` 之前装配，**不存在未装配窗口**；客户端不装配账号服务但链接 `Core.lib`，`Socket.obj` 会按需拉入 `AccountService.obj`（其符号全部在库内可解析）。
 - Q3 其余排除项、第 36.1 节 `MessageType` 口径、第 35.4 节 Win32 边界继续有效。
 
-### 38.7 需用户本地验证
+### 38.7 需用户本地验证（已闭环，2026-11-09）
+
+用户确认编译通过并自行提交 `cb2ee56`，工作区干净，回归任务 #44 完成；第 16 / 17.5 / … / 36.8 节验收不覆盖本批，本节的 5 项验收全部通过。原验收清单如下（保留备查）：
 
 请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（新增 `.cpp` + 多个头文件变化会触发大范围重编，属预期），重点回归：
 
@@ -1706,7 +1708,7 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 4. **线上字节**：各响应包的消息号与文本与重构前一致（Q10 不要求新旧客户端混跑）。
 5. IDE 里 `Application` 工程能看到两个新头、`Core` 能看到新编译单元。
 
-助手侧不做编译（策略拦截）。改动**未提交**（沿用用户编译后自行提交的习惯）。
+助手侧不做编译（策略拦截）。~~改动**未提交**~~ **已闭环**：用户确认编译通过，自行提交 `cb2ee56`；新增 `AccountService.obj` 后 3 个 exe（含不装配账号服务的 Client1 / Client2）无 LNK2019，`ServerNetwork` 继承端口无 C2259 / C2280，新头无 C1083，`AccountInfo` 与 `string_view` 转换无 C2440 / C2664，账号全链路与商城扣积分行为等价。
 
 ### 38.8 阶段状态
 
@@ -1717,4 +1719,126 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 | 4 | 未做（三个 Scene 仍非纯 View） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 38.7），其中「新增编译单元后 3 个 exe 的链接」与「账号全链路行为等价」最需验证；② W5 只完成第一段，商城段仍内联；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除**（见 38.7，用户确认编译通过并提交 `cb2ee56`）；② W5 只完成第一段，商城段仍内联，见第 39 节评估；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+---
+
+## 39. 第九批闭环与第十批只读评估（2026-11-09，用户「编译通过，继续重构」）
+
+### 39.1 闭环与阶段状态
+
+第九批已由用户提交 `cb2ee56`（工作区干净），回归任务 #44 完成，38.7 / 38.8 风险①解除。**阶段 2 四批 + 阶段 3 九批全部编译闭环。** 本节只做只读评估，未改任何代码。
+
+### 39.2 W5 第二段实测坐标（第九批后）
+
+`source/adapters/Socket.cpp` 由 1004 行降至 985 行，商城段左移至 **517–824**：
+
+| 方法 | 行区间 | 行数 | 性质 |
+|---|---|---|---|
+| `sendShopResult` | 517–523 | 7 | 纯传输（`ShopResult` + JSON 字符串），**留适配器** |
+| `sendShopData` | 525–628 | 104 | 组装 `ShopData` + JSON 序列化 + 发包 + 日志 |
+| `handleSkillInfoRequest` | 629–656 | 28 | JSON 解析 + `Character::make(name)->getSkillsText()` + 回包 |
+| `handleCheckin` | 657–677 | 21 | `UserDB::checkin` + 回包 + 同步 `clientSlots_[].points` |
+| `handleShopPurchase` | 678–824 | 147 | 购买决策（S 档门槛 / 档位集齐触发随机解锁 / 道具价格）+ 回包 + 成功后刷新商城 |
+
+业务合计约 **300 行**。段内计数：`UserDB::instance()` **21 处 / 10 个不同方法**（`hasAllCharactersOfLevel` 6、`getItemCount` 5、`hasAllNonSRank` 2、`getPoints` 2，及 `purchaseCharacter` / `purchaseSkin` / `purchaseItem` / `getUserInfo` / `checkin` / `checkAndUnlockSRank` 各 1）；`Character::` **30 处**（`infos` / `getCharacterPrice` / `getSkins` / `getSkinPrice` / `getSkinQuality` / `to_string` / `make()`）；`nlohmann::json` 8 处、`std::println` 3 处、`clientSlots_` 4 处；线上消息值 3 个（`ShopData` / `SkillInfoResponse` / `CheckinResponse`）＋ `sendShopResult` 的 `ShopResult`。
+
+调用点：`handleClientPackets()` 的 252 / 260 / 265 三处；内部互调 `sendShopResult` 2 处、`sendShopData` 2 处（701 刷新请求、821 购买成功后刷新）。
+
+### 39.3 与第一段的三处结构性差异（本批不是简单复制）
+
+1. **DTO 在 `domain/` 且含第三方头**：`header/domain/ShopData.h` 117 行，含 `<json.hpp>` 与 `"Character.h"`、8 个 struct、2 个 enum、8 个 `NLOHMANN_DEFINE_TYPE_INTRUSIVE`、2 个 `NLOHMANN_JSON_SERIALIZE_ENUM`、1 个 inline `to_string`。这是第 37.2 节第 3 条指出的 **Q8（Domain 纯标准库）违规**；只被 3 处包含（`ShopScene.h`、`Socket.cpp`、`ClientMain.cpp`），未污染核心领域头闭包。物理归位到 `header/protocol/` 属低风险动作，但**需就本批解除 A6**。
+2. **签到结果类型在适配器头**：`CheckinResult` 定义在 `header/adapters/UserDB.h`；端口不能暴露它，需新增端口侧值类型。同理 `getUserInfo()` 返回 `const UserInfo&`（含 JSON 存档字段），须收敛为端口值类型（积分 + 角色/皮肤拥有集合）。
+3. **会话端口语义不足**：`IAccountSession` 现 9 个方法中 `onPointsSpent()` 是「减 amount」，而商城 / 签到要**把槽位积分设为绝对值**；`sendResponse()` 收 `sf::Packet&`，商城三处回包均为「消息号 + JSON 字符串」。需扩展端口或新建 `IShopSession`。
+
+### 39.4 方案要点与影响面（若执行）
+
+- **端口扩展**：`IUserRepository` 11 → 约 21 个方法（新增 10 个商城 / 签到方法）；`Character::Level` 沿用既有「底层整数透传」约定；唯一实现 `JsonUserRepository` 补 10 个 override。
+- **会话端口**：`IAccountSession` 增 1–2 个方法（绝对值同步积分；可选 JSON 回包），`ServerNetwork` 实现。
+- **用例服务**：新建 `ShopService`（`header/application/` + `source/application/`）承接 4 个方法；`ServerNetwork` 保留 4 个薄转发以维持对外接口与 `handleClientPackets()` 三处调用点不变；用 `unool::opt_ref` 持有（无裸指针）；组合根 `installShopService()` 在首次 `update()` 之前装配。
+- **工程**：`Core` +1 ClCompile（17→18，Use `pch.core.h` + `/FI`）、`Application` +2 ClInclude；`ShopData.h` 归类需同步 4 个 `ClInclude` + 3 个 `.filters` 路径；`pch.core.h` 注释与 README 单元数订正。
+- **零协议字节 / 零 `MessageType` 值 / 零 switch / 零链接项 / 零 slnx / 零 x64 配置改动**。
+
+### 39.5 分段建议
+
+单批 300 行函数体 + 10 个端口方法 + DTO 归类，是本次重构至今**最大的一批**。可拆为「展示 / 技能查询 / 签到」153 行与「购买决策」147 行两段，各自单独回归；也可整段一次完成。第 37.3 节反向边 ② 与 `Domain` / `Application` 库实装不因本批消解。
+
+### 39.6 方向确认
+
+~~待用户确认~~ **用户已选 A「分段·先做展示签到」**（153 行 + `ShopData.h` 归类，`handleShopPurchase` 147 行留下一批）。选择 A 同时确认：**Q8 口径收口** —— 允许把含 `<json.hpp>` 与序列化宏的 `ShopData.h` 从 `header/domain/` 物理归位到 `header/protocol/`；**A6 就本批解除**，不扩及其他文件。Q3 其余排除项、第 36.1 节 `MessageType` 口径、第 35.4 节 Win32 边界继续有效。
+
+---
+
+## 40. 阶段 3 第十批：W5 分段第二段 A · 商城展示 / 技能 / 签到（2026-11-09，用户选 A）
+
+### 40.1 范围与决策
+
+按 39.6 的 A 路线：只抽 `sendShopData`（104 行）、`handleSkillInfoRequest`（28 行）、`handleCheckin`（21 行）共 **153 行**；`sendShopResult`（7 行，纯传输）与 `handleShopPurchase`（147 行，购买决策）**留在 `Socket.cpp`**，留 W5 第二段下一批。同时把 `ShopData.h` 物理归位以收口 Q8。沿用第九批的「端口 + 用例服务 + 薄转发 + `opt_ref` + 组合根」模式，不引入新架构概念。
+
+### 40.2 设计：三个结构性差异的处理
+
+| 39.3 差异 | 处理 |
+|---|---|
+| `ShopData.h` 在 `domain/` 且含 `<json.hpp>` | `git mv` 到 `header/protocol/`（**纯 rename，内容 100% 不变**）；3 个既有使用点 + 新 `ShopService.cpp` 的 `#include "ShopData.h"` 靠分层包含目录解析，写法零改动。归位后 `header/domain/` 9 个头**第三方 include 数 = 0**，Q8 收口 |
+| `CheckinResult` / `UserInfo` 在适配器头 | `IUserRepository` 新增两个端口侧值类型：`ShopUserInfo{points, ownedCharacters}`（只保留积分与「角色 → 已解锁皮肤集合」）、`CheckinOutcome{ok, msg, points}`，字段与 `CheckinResult` 同构；`JsonUserRepository` 负责转换 |
+| `onPointsSpent` 是减量、商城/签到要绝对值 | `IAccountSession` 新增 `onPointsChanged(idx, points)`（写 `clientSlots_[idx].points`）与 `bool sendPayload(idx, sf::Packet&)`（返回 `sendPacketToClient` 结果，供 `sendShopData` 保持 `bool` 返回值）；**已有 9 个方法签名一个未改**，`AccountService.cpp` 零改动 |
+
+### 40.3 改动内容
+
+- **新增 2 文件**：`header/application/ShopService.h`（32 行）、`source/application/ShopService.cpp`（178 行，含 include、构造函数与三段函数体）。
+- **端口扩展**：`IUserRepository` 11 → **14** 个纯虚方法（+`getShopUserInfo` / `hasAllNonSRank` / `checkin`）、`IAccountSession` 9 → **11** 个（+`onPointsChanged` / `sendPayload`）；唯一实现 `JsonUserRepository` 补 3 个 override、`ServerNetwork` 补 2 个 override。
+- **`Socket.cpp`**：三段函数体 → 3 个薄转发（17 行），新增 2 个端口实现（11 行）；`handleClientPackets()` 的 252 / 260 / 265 三处调用点、`handleShopPurchase` 内 2 处 `sendShopData` 刷新调用与对外接口全部不变。
+- **组合根**：`ServerMain.cpp` 在 `installAccountService()` 之后、首次 `update()` 之前装配 `ShopService`（两个服务共用同一 `ServerNetwork` 与 `userRepository`）。
+- **工程 / 文档**：`Core` +1 `ClCompile`（17 → **18**，Use `pch.core.h` + `/FI`）、`Application` +1 `ClInclude`；3 个 `.vcxproj` + 3 个 `.filters` 共 **6 条** `ClInclude` 路径 `domain\ShopData.h` → `protocol\ShopData.h`（仅 IDE 显示）；`pch.core.h` 注释 16 → 17、README 单元数 / 端口 / 目录说明订正，方案文档追加第 39 / 40 节、工作记忆同步。
+- **零改动**：`source/protocol/` 与 `header/protocol/` 的 `AccountProtocol.h` / `GameState.h` / `MessageType.h`、全部 `MessageType` 值、switch、链接项、包含目录、slnx、x64 配置、PCH 有效内容。
+
+### 40.4 行为等价性（助手侧证据）
+
+- **逐字等价**：把 HEAD 三段（UTF-8 无损导出）按调用点映射后归一化（去注释 / 去空行 / trim），与 `ShopService.cpp` 三个函数体逐位置比对：**113 行 / 113 行，位置差异 0**。唯一变化就是 12 处「会话状态 / 存档访问 → 端口」替换与三处函数名前缀。
+- **线上字节**：`static_cast<int>(MessageType` 全库 **35 / 35**；`ShopData` 3 / 3、`SkillInfoResponse` 2 / 2、`CheckinResponse` 3 / 3、`ShopResult` 3 / 3；发包顺序、JSON 字段、消息文本与日志前缀 `[ServerNetwork]` 原样保留。
+- **关键字面量 14 项全同**：`"白板"` / `"默认"` / `"选将扩充卡"` / `"增分卡"` / `"不死图腾"` / `"炸弹卡"` / `"成功"` / `"已签到"` 各 2 或 1 次，`88 + 100 * count * (count+1) / 2`、`488`、`std::ranges::sort`、`std::to_underlying`、两条日志文本逐字一致；F→S 排序、S 档集齐后 488、道具价格与数量上限逻辑未动。
+- **顺序保持**：签到仍是「先发包 → 再同步槽位积分 → 再打印日志」；商城展示仍是「先组装 → 序列化 → 发包 → 日志」；技能描述仍是「解析失败直接忽略 / 未定义角色跳过」。
+
+### 40.5 验证结果（助手侧静态只读）
+
+10 个 XML 全可解析；224 条 `ClCompile` / `ClInclude` 引用 0 缺失；端口纯虚方法与实现 **14 / 14、11 / 11** 全部对应；27 个 `.cpp` + 45 个 `.h` 的 53 个引号 include 目标 **unresolved 0 / ambiguous 0**；`ShopData.h` 相似度 100% 纯 rename、旧位置不存在；`header/domain/` 第三方 include **0**；端口实现类各 1 个；`Socket.cpp` 花括号 200 / 200 配平；新代码裸指针 0；`git diff --check` 干净；BOM / 换行按字节核验与各自 HEAD 表示一致（新 `.cpp` 转 CRLF、新头保持 LF）。
+
+**两处脚本误报已排除**（未因此改任何代码）：① Q8 检查首版把 `deque` / `list` / `unordered_set` / `bit` / `iosfwd` 等标准库头当违规 7 条，第二版把同层本地头 `Effect.h` / `Skill.h` / `utils.h` 当违规 8 条，第三版精确按 `json|SFML|Windows|nlohmann` 判定后归零；② 归一化比对首版用 PowerShell 5.1 直接接 `git show` 输出，按 ANSI 解码导致中文全乱码、行数 115 / 113 假差异，改为 UTF-8 无损读文件后 113 / 113 零差异。
+
+### 40.6 边界
+
+- **W5 第二段未完**：`handleShopPurchase` 147 行仍内联，`Socket.cpp` 仍有 14 处 `UserDB::instance()` 商城调用（含 S 档门槛、档位集齐解锁、三类购买），下一批继续按同口径抽到 `ShopService`；`sendShopResult` 7 行是纯传输，按设计留适配器。
+- 第 37.3 节反向边 ② 未动，`Domain` / `Application` 库仍为 PCH 占位、3 个 exe 无 `ProjectReference`；本批不消解拆库门槛。
+- `ServerNetwork` 虚函数表由 11 增至 13；未装配 `ShopService` 时三个薄转发分别返回 `false` / 直接返回，组合根在首次 `update()` 之前装配，**无未装配窗口**。客户端不装配但链接 `Core.lib`，`Socket.obj` 按需拉入 `ShopService.obj`（`Character::make` 等符号均在库内）。
+- `ShopData.h` 归到 `protocol/` 后仍 include `header/domain/Character.h`（protocol → domain，方向合法）；`Application` 层直接调 `Character::` 静态 API 亦属合法方向。
+- 第 35.4 节 Win32 边界、Q3 其余排除项、第 36.1 节 `MessageType` 口径继续有效。助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 40.7 需用户本地验证
+
+请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（新增 `.cpp` + 头移动 + 多个头文件变化会触发大范围重编，属预期），重点回归：
+
+1. **最高优先级**：`ShopService.cpp` 加入 `Core` 后 3 个 exe（尤其不装配商城服务但链接 `Core.lib` 的 Client1 / Client2）有无 **LNK2019**；`ShopData.h` 移到 `header/protocol/` 后，`ShopScene.h` / `ClientMain.cpp` / `Socket.cpp` / `ShopService.cpp` 有无 **C1083**（分层包含目录是否覆盖）；`ShopUserInfo` / `CheckinOutcome` 聚合初始化与 `string_view → std::string` 转换有无 **C2440 / C2664**；`ServerNetwork` 新增 override 有无 **C2259 / C3668**。
+2. **装配时机**：确认 `installShopService()` 在首次 `update()` 之前，商城 / 技能 / 签到包不会落到「未装配」早退路径。
+3. **运行路径**：登录后商城数据展示（角色按 F→S 排序、S 档集齐后售价 488、皮肤解锁态、4 类道具数量与价格）、技能描述请求（含未定义角色与解析失败）、每日签到（成功 / 已签到、积分同步）、购买请求触发的两处自动刷新商城（`type=Request` 与购买成功后）、积分显示与槽位缓存一致、心跳与 3 秒超时、Client1 / Client2 双开、Debug / Release 双配置。
+4. **线上字节**：`ShopData` / `SkillInfoResponse` / `CheckinResponse` 三个响应包的消息号与 JSON 字段与重构前一致（Q10 不要求新旧客户端混跑）。
+5. IDE 里 `Application` 能看到 `ShopService.h`、`Core` 能看到新编译单元，3 个 exe 的「头文件」筛选器能定位归位后的 `ShopData.h`。
+
+### 40.8 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | 组织整理、协议头独立、账号用例、商城展示 / 技能 / 签到用例、`ShopData.h` 归类与 Q8 收口均落地；剩余：W5 第二段购买决策（147 行）、反向边 ② 与 `Domain` / `Application` 库实装 |
+| 4 | 未做（三个 Scene 仍非纯 View） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 40.7），其中「头移动后的包含解析」与「新增编译单元后 3 个 exe 的链接」最需验证；② W5 第二段只完成一半，购买决策仍内联；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。改动**未提交**（沿用用户编译后自行提交的习惯）。
+
+### 40.9 首次 Rebuild（Debug x64 全量重生成）：失败 → 已修复
+
+- **现象**：`2 成功 / 5 失败`。成功的是 `UNOOL.Domain` 与 `UNOOL.Application`（PCH 占位库）；失败的 `UNOOL.Core` / `UNOOL.Adapters` / `Client1` / `Client2` / `Server` 全部指向同一处 `header/adapters/Socket.h`：`C2039 "opt_ref" 不是 "unool" 的成员`（61 / 63 行）、`C2059`、`C2334`（跳过类体），连锁导致 124 / 129 行与 `Socket.cpp` 的 83 / 84、399 / 400、538 / 539、543 / 544、548 / 549 全部 `C2065 未声明的标识符`（`accountService_` / `shopService_`）。日志中**没有其他独立错误源**；`ShopService.cpp`、`AccountService.cpp`、协议单元均编译通过。
+- **根因**：`ref` / `opt_ref` 定义在 `header/utils.h` 第 20–24 行的**全局命名空间**（既有约定，领域 / 应用 / 适配器共 100+ 处均不加限定），而第九批 `cb2ee56` 新增的 `accountService_` 与第十批照抄的 `shopService_` 误写成 `unool::opt_ref`。`unool` 内只有 `MAX_PLAYERS` / `paths` / `random` / `math` / `scoreboard` 及 `domain::` / `application::` / `adapters::`，从无 `opt_ref`，故 C2039。此前第九批「编译通过」应为增量编译未重编 `Socket.obj`，本次「全部重新生成」才暴露。
+- **修复**：`Socket.h` 61 / 63 行去掉 `unool::` 限定改为 `opt_ref<...>`，并加 1 行注释固定该约定。**仅 2 行类型限定 + 1 行注释**；零行为、零对外接口、零协议字节变化；未改 `utils.h`、未改工程文件、未动第十批其余文件。
+- **为何不把别名收进 `unool::`**：`ref` / `opt_ref` 是重构前就存在的全局工具别名，全库 100+ 处引用；移命名空间属 Q3 范围外的大范围删改。Q7 的「新类型用命名空间」只约束 `player_id` 等本阶段新增类型。若日后要统一收口，应另开独立批次并同步所有调用点。
+- **助手侧静态复验**：全库 `unool::opt_ref` / `unool::ref<` 残留 **0**；`Socket.h` 第 11 行自身 include `utils.h`，`opt_ref` 在所有包含该头的编译单元均可见；`git diff --check` 干净；改动 diff 仅 3 行。助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+- **待办**：请再次 Rebuild `Debug|x64` 与 `Release|x64`。预期 7 个项目全部成功；若仍有错误，优先按 40.7 的 C1083 / LNK2019 / C2440 / C2664 / C2259 / C3668 清单排查新 `ShopService.cpp` 的包含与链接。

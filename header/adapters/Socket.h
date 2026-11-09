@@ -12,6 +12,7 @@
 #include "MessageType.h"
 #include "application/IAccountSession.h"
 #include "application/AccountService.h"
+#include "application/ShopService.h"
 
 
 struct GameState;
@@ -57,7 +58,10 @@ private:
 	sf::Clock heartbeatClock;
 	std::array<sf::Clock, unool::MAX_PLAYERS> lastRecvClocks;
 	// W5 第一段：账号用例服务由组合根注入，本类只保留会话状态与薄转发
-	unool::opt_ref<unool::application::AccountService> accountService_{};
+	// 注意：ref / opt_ref 是 utils.h 定义在全局命名空间的别名，不能加 unool:: 限定
+	opt_ref<unool::application::AccountService> accountService_{};
+	// W5 第二段（分段第一段）：商城展示 / 技能描述 / 签到用例服务
+	opt_ref<unool::application::ShopService> shopService_{};
 
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
@@ -121,6 +125,11 @@ public:
 		accountService_ = std::ref(service);
 	}
 
+	// 组合根装配商城展示 / 技能描述 / 签到用例服务（首次 update() 之前）
+	void installShopService(unool::application::ShopService& service) {
+		shopService_ = std::ref(service);
+	}
+
 	// === IAccountSession ===
 	bool isConnected(std::size_t clientIdx) const override;
 	bool isLoggedIn(std::size_t clientIdx) const override;
@@ -132,6 +141,9 @@ public:
 	void onPointsSpent(std::size_t clientIdx, int amount) override;
 	void onReadyToPlay(std::size_t clientIdx) override;
 	void sendResponse(std::size_t clientIdx, sf::Packet& packet) override;
+	// W5 第二段：绝对值积分同步与可判成败的响应包发送
+	void onPointsChanged(std::size_t clientIdx, int points) override;
+	bool sendPayload(std::size_t clientIdx, sf::Packet& packet) override;
 };
 
 class ClientNetwork {

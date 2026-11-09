@@ -71,7 +71,7 @@
     <ClInclude Include="..\..\header\application\Player.h" />
     <ClInclude Include="..\..\header\domain\Skill.h" />
     <ClInclude Include="..\..\header\adapters\Socket.h" />
-    <ClInclude Include="..\..\header\domain\ShopData.h" />
+    <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\adapters\ShopScene.h" />
     <ClInclude Include="..\..\header\adapters\TextManager.h" />
     <ClInclude Include="..\..\header\domain\TransformSkill.h" />

@@ -37,5 +37,14 @@ namespace unool::application {
 
 		// 回送已编码的账号响应包
 		virtual void sendResponse(std::size_t clientIdx, sf::Packet& packet) = 0;
+
+		// === 商城展示 / 签到用例（W5 第二段）===
+		// 把槽位积分同步为绝对值；与 onPointsSpent 的「减 amount」语义不同
+		// （签到返回签到后积分、商城购买返回购买后积分，都是全量值）。
+		virtual void onPointsChanged(std::size_t clientIdx, int points) = 0;
+
+		// 回送商城 / 技能描述 / 签到响应包，返回是否发送成功；
+		// 供 sendShopData 保持原 bool 返回值，其余调用点忽略返回值。
+		virtual bool sendPayload(std::size_t clientIdx, sf::Packet& packet) = 0;
 	};
 }

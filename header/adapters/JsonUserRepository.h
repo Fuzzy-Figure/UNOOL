@@ -76,5 +76,18 @@ namespace unool::adapters {
 				static_cast<Character::SkinQuality>(loserSkinQuality),
 				winnerBonusCard);
 		}
+
+		// === 商城展示 / 签到用例（W5 第二段）：收敛 UserDB 的存档类型 ===
+		application::ShopUserInfo getShopUserInfo(std::string_view username) const override {
+			const UserInfo& info = UserDB::instance().getUserInfo(std::string(username));
+			return application::ShopUserInfo{ info.points, info.ownedCharacters };
+		}
+		bool hasAllNonSRank(std::string_view username) const override {
+			return UserDB::instance().hasAllNonSRank(std::string(username));
+		}
+		application::CheckinOutcome checkin(std::string_view username) override {
+			const CheckinResult r = UserDB::instance().checkin(std::string(username));
+			return application::CheckinOutcome{ r.ok, r.msg, r.points };
+		}
 	};
 }

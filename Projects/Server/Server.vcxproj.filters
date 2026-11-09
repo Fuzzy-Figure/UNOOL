@@ -63,7 +63,7 @@
     <ClInclude Include="pch.server.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\domain\ShopData.h">
+    <ClInclude Include="..\..\header\protocol\ShopData.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h">

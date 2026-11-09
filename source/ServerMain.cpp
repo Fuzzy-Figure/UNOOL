@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "application/Services.h"
 #include "application/AccountService.h"
+#include "application/ShopService.h"
 #include "adapters/LegacyBlockingDecisionAdapter.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include "adapters/NetworkServerView.h"
@@ -132,6 +133,11 @@ int main() {
 	// serverNetwork 在装配前只监听、未调用 update()，不存在「未装配」窗口。
 	unool::application::AccountService accountService(serverNetwork, userRepository);
 	serverNetwork.installAccountService(accountService);
+	// W5 第二段（分段第一段）：商城展示 / 技能描述 / 签到用例服务，
+	// 与账号服务共用 IAccountSession（由 ServerNetwork 实现）与 IUserRepository。
+	// 同样在首次 update() 之前装配，不存在「未装配」窗口。
+	unool::application::ShopService shopService(serverNetwork, userRepository);
+	serverNetwork.installShopService(shopService);
 	unool::adapters::Mt19937Random randomService;
 	unool::adapters::SfmlClock clockService;
 	unool::adapters::FilesystemAssetCatalog assetCatalog;

@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <optional>
 #include <set>
 #include <string>
@@ -12,6 +13,20 @@ namespace unool::application {
 		int points = 0;
 		int wins = 0;
 		int losses = 0;
+	};
+
+	// 商城展示所需的存档投影（W5 第二段）：只保留积分与「角色 → 已解锁皮肤集合」，
+	// 不暴露 UserInfo 的密码、签到日期、道具等存档字段。
+	struct ShopUserInfo {
+		int points = 0;
+		std::map<std::string, std::set<std::string>> ownedCharacters;
+	};
+
+	// 签到结果（W5 第二段）：与 UserDB::CheckinResult 字段同构，端口不暴露适配器类型。
+	struct CheckinOutcome {
+		bool ok = false;
+		std::string msg;
+		int points = 0;
 	};
 
 	// 用户数据出站端口。方法与原 UserDB::instance() 调用点一一对应。
@@ -43,5 +58,10 @@ namespace unool::application {
 								   bool winnerFullHp,
 								   int winnerSkinQuality, int loserSkinQuality,
 								   bool winnerBonusCard) = 0;
+
+		// === 商城展示 / 签到用例（W5 第二段）===
+		virtual ShopUserInfo getShopUserInfo(std::string_view username) const = 0;
+		virtual bool hasAllNonSRank(std::string_view username) const = 0;
+		virtual CheckinOutcome checkin(std::string_view username) = 0;
 	};
 }
