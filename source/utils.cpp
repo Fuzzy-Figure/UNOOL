@@ -1,14 +1,15 @@
 #include "utils.h"
 #include "application/Services.h"
-#include "adapters/JsonConfig.h"
-#include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <cmath>
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <json.hpp>
 #include <system_error>
+
+// 阶段 3 第十二批：JSON 配置缓存门面归位到 source/adapters/JsonConfig.cpp，
+// 默认服务定位 services() 归位到 source/application/Services.cpp（两者仍由
+// UNOOL.Core 编译一次、3 个 exe 共同链接）。本单元只保留路径 / 编码 / 随机 /
+// 数学工具，不再包含任何 adapters 头，也不再需要完整 json.hpp。
 
 namespace unool {
 
@@ -69,39 +70,6 @@ namespace unool {
 		}
 	}
 
-	namespace {
-		nlohmann::json readConfig(const std::string& fileName) {
-			const std::filesystem::path exe = paths::exeDir();
-			const std::filesystem::path path = paths::locate(fileName);
-			std::ifstream configFile(path);
-			if (!configFile.is_open()) {
-				throw std::runtime_error(std::format(
-					"无法打开配置文件 {}（已从可执行文件目录 {} 向上查找）",
-					fileName, exe.string()));
-			}
-			// ignore_comments=true：server_config.json 中的 // 注释是受支持的既有格式。
-			return nlohmann::json::parse(configFile, nullptr, true, true);
-		}
-	}
-
-	nlohmann::json& getServerConfig() {
-		static nlohmann::json config = readConfig("server_config.json");
-		return config;
-	}
-
-	void reloadServerConfig() {
-		getServerConfig() = readConfig("server_config.json");
-	}
-
-	nlohmann::json& getClientConfig() {
-		static nlohmann::json config = readConfig("client_config.json");
-		return config;
-	}
-
-	void reloadClientConfig() {
-		getClientConfig() = readConfig("client_config.json");
-	}
-
 	namespace string {
 		std::wstring to_utf16(const std::string& utf8) {
 			if (utf8.empty()) return std::wstring();
@@ -153,31 +121,3 @@ namespace unool {
 		}
 	}
 }
-
-// 默认服务定位：本文件现由 UNOOL.Core 静态库编译一次、3 个 exe 共同链接，
-// 因此定义放这里不会新增编译单元或链接依赖。静态工具（Character）与全局随机
-// 门面（utils）在未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
-namespace unool::application {
-	namespace detail {
-		opt_ref<DomainServices>& installedSlot() {
-			static opt_ref<DomainServices> slot{};
-			return slot;
-		}
-		DomainServices& legacyBundle() {
-			// 默认组合门面：五个独立适配器各一份，random 与随机门面共用同一实例。
-			static adapters::LegacyServicesAdapter adapter;
-			return adapter.bundle;
-		}
-	}
-
-	DomainServices& services() {
-		auto& installed{detail::installedSlot()};
-		if (installed.has_value()) return installed->get();
-		return detail::legacyBundle();
-	}
-	void installServices(DomainServices& s) {
-		detail::installedSlot() = std::ref(s);
-	}
-}
-
-

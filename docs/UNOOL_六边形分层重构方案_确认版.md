@@ -1892,3 +1892,71 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
 **风险**：① 本批编译与运行时回归尚未执行（见 41.6），其中「端口扩展后实现类是否仍可实例化」与「新增 override 的签名匹配」最需验证；② `sendShopData` 保留但无内部调用者；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 42. 第十一批闭环与第十二批：拆库前置 · 服务定位器归属整理（2026-11-09，用户选 A）
+
+### 42.1 闭环与提交
+
+用户确认第十一批本地编译通过，助手生成提交消息并提交 `e4787b3`（**13 个文件，+299 / −191**，提交时工作区干净）。该提交除第十一批 10 个文件外，还包含用户侧的解决方案文档组织调整：`Projects/Server/Server.vcxproj` 与 `.filters` 移除 5 个杂项 `<None>` / `<Text>` 条目，改由 `UNOOL.slnx` 新增 `<Folder Name="/doc/">` 统一挂载 `.gitignore` / `docs/rules.md` / `docs/todoList.txt` / `README.md` / `userDatas.json`；纯 IDE 显示组织，不动编译 / 链接 / 包含目录。41.6 的运行时回归清单继续留作后续实跑。
+
+### 42.2 只读评估：W5 收官后的依赖图（精确形态）
+
+| 库 | `ClCompile`（除 PCH 生成单元） | `ProjectReference` |
+|---|---|---|
+| `UNOOL.Domain` | **0**（仅 `pch.domain.cpp`） | 无 |
+| `UNOOL.Application` | **0**（仅 `pch.application.cpp`） | → `Domain` |
+| `UNOOL.Adapters` | 2（`LegacyBlockingDecisionAdapter` / `NetworkServerView`） | → `Domain` / `Application` |
+| `UNOOL.Core` | **17**：3 protocol + 7 domain + 4 application + 2 adapters + `utils` | 无 |
+| 3 个 exe | Server 1；Client1 / Client2 各 6 | Server → `Adapters` / `Core`；两个客户端 → `Core` |
+
+- **反向边 ② 的两条真实根**：① `header/application/GameLogic.h` / `Player.h` 被 `source/domain/` 6 个 `.cpp` 包含并大量调用（`PassiveSkill.cpp` 中 `GameLogic/Player` 字面 280 处、领域符号 215 处；`InstantSkill.cpp` 83 / 75 处），反过来 `GameLogic.cpp` / `Player.cpp` 又依赖 `Character.h` / `Card.h`——9 个 `.cpp` 是同一模型集群，硬拆两库必然 `lib ↔ lib` 双向符号引用；② `services()` / `installServices()` / `legacyBundle()` 定义在 `source/utils.cpp`，而该文件还 include `adapters/JsonConfig.h` 与 `adapters/LegacyServicesAdapter.h`，`Character.cpp` 4 处、`utils.cpp` 随机门面 4 处调它，即 **`Core` 内部就存在 `utils → adapters` 边**。W5 清理的是 `Socket.cpp` 的业务混装，消解不了这两条。
+- **调用点实测**：`services()` 全库 11 处、`getServerConfig()` 18 处（含声明）。
+
+### 42.3 路线选项与用户选择
+
+按 37.6「助手不擅自判定拆库口径」，本批开工前给出三条路线：**A（推荐）拆库前置 · 服务定位器归属整理**（低风险、单批可闭环）、**B 直接做 `Domain` / `Application` 库实装试点**（需重排 8–10 个工程文件、解除 A6、可能 LNK2019）、**C 阶段 4 客户端装配**（6 单元 2426 行 UI 改写）。**用户选 A**。三条均保持线上协议字节、端口与对外行为不变。
+
+### 42.4 执行范围与设计原因 / 影响
+
+A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读核对发现 `header/adapters/JsonConfig.h` 声明的 4 个配置门面函数（`getServerConfig` / `reloadServerConfig` / `getClientConfig` / `reloadClientConfig`）**定义也在 `utils.cpp`**，仅删 include 会导致声明 / 定义分离却不编译定义。故 A 必要展开为**两个归位单元**（均为逐字平移、无新增依赖方向）：
+
+1. 新建 `source/application/Services.cpp`：`services()` / `installServices()` / `detail::installedSlot()` / `detail::legacyBundle()`（含 `static LegacyServicesAdapter` 默认组合），归位到 application 层。
+2. 新建 `source/adapters/JsonConfig.cpp`：匿名命名空间 `readConfig()` + 4 个配置缓存门面函数，归位到 adapters 层；`JsonConfig.h` 仍只 include `json_fwd.hpp`，本单元显式 include 完整 `<json.hpp>`。
+3. `source/utils.cpp` 删掉两段，去掉 `adapters/JsonConfig.h`、`adapters/LegacyServicesAdapter.h`、`<fstream>`、`<json.hpp>` 四个 include，保留 `application/Services.h`（随机门面需 `services()` 声明）与 `<Windows.h>`；只剩 `paths` / `string` / `random` / `math` 四组工具。
+4. 三个头的过时注释订正（`Services.h` / `JsonConfig.h` / `LegacyServicesAdapter.h` 中「定义在 utils.cpp」改为新路径）；`UNOOL.Core.vcxproj` +2 条 `ClCompile`（`Use pch.core.h` + `/FI`，与既有 17 条同规格）；`pch.core.h` 注释 17 → 19；README 单元数 17 → 19 并补归位说明。
+
+- **零改动**：所有函数体语句、`MessageType` 25 值与 switch、端口、`slnx`、3 个 exe 的 `ProjectReference`、`AdditionalIncludeDirectories`、链接项、x64 配置、PCH 有效内容（`adl_serializer<std::optional<T>>` 特化逐字未动）、`source/protocol/`、`ServerMain.cpp` 组合根、Core 之外的 6 个工程文件。Core 无 `.filters` 文件，故无筛选器同步项。
+- **影响**：`Core` 编译单元 17 → 19（+ PCH 生成单元）；`services()` 等符号仍由 `Core.lib` 编译一次、3 个 exe 共同链接，链接关系不变；`utils.cpp` 从此不含 `adapters` 头与完整 `json.hpp`，具备划入 `Domain` 库的条件（本批**未**实装库）。`Services.cpp` 物理位于 `source/application/` 但仍由 `Core` 编译，属「目录先归位、库待拆」的过渡态。
+
+### 42.5 行为等价性与静态验证（助手侧只读）
+
+- **逐字等价**：把 HEAD 的 `source/utils.cpp` 与拆分后的三个单元 UTF-8 无损导出，归一化（去注释 / 去空行 / 去 `#include` / 去纯命名空间与大括号结构行 / 合并空白 / trim）后作**语句行多重集**比对：**HEAD 99 行 / NEW 99 行，`ONLY_IN_HEAD = 0`、`ONLY_IN_NEW = 0`**，即全部语句逐字平移、零增删改。7 个关键函数签名逐一确认新归属（`services` / `installServices` → `Services.cpp`，4 个配置门面 → `JsonConfig.cpp`），且全库各自**仅 1 处定义**（无重复定义 / 无丢失）。
+- **静态验证**：10 个 `.vcxproj` / `.filters` XML 全可解析、`ClCompile` / `ClInclude` 引用 **224 → 226 条、0 缺失**（增量恰为 2 条新条目）；三个单元花括号 25/25、8/8、10/10 配平；新代码裸指针 0；两个新单元的 5 个本地 include 目标全部存在；`git diff --check` 干净。
+- **编码基线**：Edit 曾把 6 个文件写成 LF、并在 `utils.cpp` 尾部留下多余空行，已统一复位为项目基线 **UTF-8 无 BOM + CRLF**（9 个相关文件逐字节复核 `bareLF = 0`），未产生换行 / BOM 漂移。方案文档本身沿用既有 LF。
+- 助手侧 `MSBuild.exe` 仍被安全策略拦截，未绕过，**未做本地编译**。
+
+### 42.6 边界与风险
+
+- **反向边 ② 仍在**：9 个模型 `.cpp` 互调、`GameLogic.h` / `Player.h` 的跨层包含未动；`Domain` / `Application` 仍是 PCH 占位库、3 个 exe 无 `ProjectReference`。本批只清掉 `utils → adapters` 这条被忽略的边，为后续库划分扫清前置，**不等于拆库完成**。
+- 两个新单元仍归 `Core` 库编译，静态局部对象的进程内唯一性、配置缓存语义与随机序列均与重构前一致；链接由 `Core.lib` 内部解析，3 个 exe 的引用不变。
+- `IConfigProvider` / `DomainServices` 端口头、`JsonConfig.h` 的 `json_fwd.hpp` 口径、第 35.4 节 Win32 边界、Q3 其余排除项、第 36.1 节 `MessageType` 口径继续有效。
+- 用户确认编译通过后由助手生成结构化提交消息，本批 11 个文件随本次提交一并交付，提交时工作区干净。
+
+### 42.7 用户本地验证（编译已闭环）
+
+用户已确认 **Rebuild `Debug|x64` 与 `Release|x64` 编译通过**：新增 2 个编译单元的 PCH 配置、`utils.cpp` 去掉 4 个 include 后的声明可见性、3 个 exe 对 `services()` 与 4 个配置门面的链接均正常，无 C1083 / LNK2019 / LNK2005。本批 11 个文件随本次提交一并交付，提交时工作区干净。下列清单第 1 项已闭环，第 2 / 3 项继续留作运行时实跑：
+
+1. **编译 / 链接**：两个新 `.cpp` 的 PCH `Use` + `/FI` 配置无 C1083 / C2857；`Services.cpp` 的 `opt_ref` / `std::ref`、`JsonConfig.cpp` 的完整 `json.hpp` 与 `std::format` 无 C2039 / C2065；`utils.cpp` 去掉 4 个 include 后仍能看到 `RandomEngine` / `paths` / `std::error_code`；3 个 exe 对 `services()` / 4 个配置门面无 LNK2019（符号改由 `Services.obj` / `JsonConfig.obj` 提供）；`Core.lib` 无重复定义 LNK2005。
+2. **运行路径**：服务器与两个客户端读 `server_config.json` / `client_config.json`（路径仍按 exe 目录向上查找）、每局前 `reload`、配置缺文件时报错文本、随机序列（洗牌 / 发牌 / 角色随机）与重构前一致、未装配客户端的遗留默认组合、组合根装配后 `Character::getImagePath` / `getSkins` / 屏蔽角色与分组、登录 / 商城 / 签到回归、`userDatas.json` 存档读写。
+3. **线上字节**：端口 8888 / 14341、`MessageType` 消息号与包体、JSON 配置格式与存档格式全部不变（Q10 不要求新旧客户端混跑）。
+
+### 42.8 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | W5 账号 / 商城用例全部收官；第十二批完成「服务定位器与配置门面归位」，`utils.cpp` 净化。剩余：反向边 ②、`Domain` / `Application` 库实装 |
+| 4 | 未做（三个 Scene 仍非纯 View） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① **编译已闭环**（用户 2026-11-09 确认 Debug / Release x64 Rebuild 通过，见 42.7），运行时回归仍待实跑；② 目录归位不等于库拆分，`Domain` / `Application` 仍为空壳；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
