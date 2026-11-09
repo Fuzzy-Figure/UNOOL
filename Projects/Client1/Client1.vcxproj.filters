@@ -39,6 +39,9 @@
     <ClCompile Include="..\..\source\adapters\ClientApp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\adapters\PacketDispatcher.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\utils.h">
@@ -111,6 +114,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\ClientApp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\adapters\PacketDispatcher.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,6 +3,8 @@
 #include "AccountProtocol.h"
 #include <SFML/Network.hpp>
 #include "ShopScene.h"
+#include "PacketDispatcher.h"
+#include <utility>
 
 
 LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n, const std::string& title)
@@ -233,34 +235,16 @@ void LoginScene::sendCheckinRequest() {
 }
 
 void LoginScene::pollAccountPackets() {
-	while (true) {
-		auto peek = net.peekMessageType();
-		if (!peek) break;
-		auto mt = static_cast<MessageType>(*peek);
-
-		//非账号类型的包（GameState/Choice等游戏包）：不消费，留给 gamePhase 处理
-		if (mt != MessageType::Heartbeat
-			&& mt != MessageType::ConnectionInfo
-			&& mt != MessageType::CheckUsernameResponse
-			&& mt != MessageType::RegisterResponse
-			&& mt != MessageType::LoginResponse
-			&& mt != MessageType::CheckinResponse) {
-			break;
-		}
-
-		auto packetOpt = net.receivePacket();
-		if (!packetOpt) break;
-		sf::Packet packet = *packetOpt;
-		int msgType;
-		if (!(packet >> msgType)) continue;
-
-		// 心跳包：立即回复，防止服务器判定掉线
-		if (mt == MessageType::Heartbeat) {
-			sf::Packet hb;
-			hb << static_cast<int>(MessageType::Heartbeat);
-			net.send(hb);
-			continue;
-		}
+	// 阶段 4 · S2：收包动作收拢到 PacketDispatcher。订阅集与原 6 类集合等价
+	// （Heartbeat 由 dispatcher 内部统一消费并回复），「非账号包不消费、留给
+	// gamePhase」的跨阶段留包约定由 next() 逐字保留；以下业务判定逐字未改。
+	while (auto next = unool::adapters::PacketDispatcher::next(net, {
+		       MessageType::ConnectionInfo,
+		       MessageType::CheckUsernameResponse,
+		       MessageType::RegisterResponse,
+		       MessageType::LoginResponse,
+		       MessageType::CheckinResponse })) {
+		auto [mt, packet] = std::move(*next);
 
 		if (mt == MessageType::ConnectionInfo) {
 			std::size_t pid;

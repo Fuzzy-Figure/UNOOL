@@ -2304,3 +2304,85 @@ B2 规模复核：6 单元 **2428 行**（`ClientMain.cpp` 264、`GameRenderer.c
 - 键位（← / → / A / D / 数字 / 鼠标点击）与 `ClientInput.key` 线上字节。
 - 端口 8888 / 14341、`MessageType` 消息号与包体、JSON 存档格式回归。
 - 第十三 / 十四 / 十五批遗留的运行时与线上字节清单继续有效。
+
+## 48. 第十七批 S2：`PacketDispatcher` 统一收包分发（2026-11-09，用户确认 S1 编译通过后继续）
+
+### 48.1 前置与口径
+
+用户确认第十六批 S1 的 `Debug|x64` / `Release|x64` Rebuild 通过，助手生成结构化提交消息提交 **`cfa91f3`**（14 文件，+428 / −251，提交时工作区干净），随后按 ②A 推进 S2。口径不变：①A 的「首批只做 S1」已完成，本批单独做 S2；②A「心跳回复与 `peekMessageType` 过滤归 `PacketDispatcher`、语义逐字保留」在本批落地；③B 的死分支删除已在 S1 完成；S3 / S4 不动。46.4 的 S2 设计为「把三处收包循环收拢为单点，逐字保留 `LoginScene` 的『非账号包不消费、留给 `gamePhase`』语义，心跳回复统一到一处」。
+
+### 48.2 执行前的精确只读盘点
+
+| 位置 | 收包方式 | 消费集合 | 心跳 | 坏包处理 |
+|---|---|---|---|---|
+| `ClientApp.cpp::gamePhase` | `while (net.receivePacket())` + `switch` | drain-all：9 个业务 `case` + `ShopPurchase` 忽略 + `default` | `case Heartbeat` 立即回 | `>> msgType` 失败 `continue`（丢弃） |
+| `LoginScene.cpp::pollAccountPackets` | `while (true)` + `peekMessageType()` | **6 类账号包**；非订阅 `break`，包留队列 | 订阅集内首支立即回 | peek 为 `nullopt` → `break` **且留包**；`>>` 失败 → `continue` 丢弃 |
+| `ShopScene.cpp::handleNetwork` | `while (net.receivePacket())` + `if` 链 | drain-all：4 类 + 其它忽略 | `if Heartbeat` 立即回 | `>> msgType` 失败 `continue`（丢弃） |
+
+另发现**第四处**收包循环：`ClientNetwork::reconnect()`（`Socket.cpp:616`）是一次性重连等待流程，用副本 peek、暂存非登录包并在成功后放回队列、自身不回心跳。它不属于三处主渲染循环，且属于传输层内部行为，**本批零改动**；重连期间收到的心跳包仍被暂存并在成功后放回队列，由主循环（现经 `PacketDispatcher`）统一回复，行为不变。
+
+### 48.3 设计：迭代器式单点，不做订阅回调
+
+新增 `header/adapters/PacketDispatcher.h` + `source/adapters/PacketDispatcher.cpp`：
+
+```cpp
+struct InboundPacket {
+    MessageType type{};
+    sf::Packet packet{};   // 已消费开头的 int 消息号
+};
+class PacketDispatcher {
+public:
+    static std::optional<InboundPacket> next(ClientNetwork& net);                       // DrainAll
+    static std::optional<InboundPacket> next(ClientNetwork& net,
+                                             std::initializer_list<MessageType> sub);  // Filtered
+private:
+    static void replyHeartbeat(ClientNetwork& net);
+};
+```
+
+- **DrainAll**：消费队列所有包，坏包丢弃，心跳内部回复，其余包交给调用方（未匹配的仍由原 `if` 链 / `default` 忽略）。
+- **Filtered**：先 `peekMessageType()`；心跳优先消费并回复；非订阅包 `break` **不消费、留在队列**；订阅包 pop 并消费消息号后返回。
+- 心跳回复统一到 `replyHeartbeat()` 一处，仍是 `hb << static_cast<int>(MessageType::Heartbeat); net.send(hb);`，**字节不变**。
+- **为何是迭代器式而非订阅回调**：三处业务判定可以逐字留在原函数里（`continue` / `break` / `case` 顺序全不变），只换循环头、删心跳分支，改动面最小且等价性可逐段 `diff` 证明；订阅回调是 S3 两个 Scene 纯 View 化时的事，本批不提前引入额外状态。
+
+### 48.4 执行清单（2 新增 + 8 改动代码 / 工程 + 3 文档）
+
+- **新增**：`header/adapters/PacketDispatcher.h`、`source/adapters/PacketDispatcher.cpp`（63 行）。
+- **修改 3 个 `.cpp`**：`ClientApp.cpp` / `LoginScene.cpp` / `ShopScene.cpp` 各 +2 include（`PacketDispatcher.h`、`<utility>`），循环头改为 `PacketDispatcher::next(...)` + `auto [mt, packet] = std::move(*next);`，删除各自的心跳分支 / `case`；`LoginScene` 的 6 类过滤改为订阅集（`Heartbeat` 由 dispatcher 单独处理）。业务判定段零增删改。
+- **修改 5 个工程文件**：`Client1` / `Client2` 的 `.vcxproj` 各 +1 `ClCompile`（`PacketDispatcher.cpp`，`Use pch.h` + `/FI`）+1 `ClInclude`；两个 `.filters` 各 +1 `ClCompile` +1 `ClInclude`（保留 UTF-8 BOM）；`Projects/Adapters/UNOOL.Adapters.vcxproj` +1 条 IDE 显示用 `ClInclude`。`Application` / `Core` / `Domain` / `Server` 工程零改动。
+
+### 48.5 等价性证据
+
+- `git diff` 显示三个函数**只有循环头、include、心跳分支 / `case` 三处变化**；`LoginScene` 从 `if (mt == MessageType::ConnectionInfo) {` 到函数结束与 HEAD `diff -u` **完全一致**。
+- 过滤集合等价：原集合 `Heartbeat / ConnectionInfo / CheckUsernameResponse / RegisterResponse / LoginResponse / CheckinResponse`，现订阅集 = 原集合减去 `Heartbeat`（由 dispatcher 内部处理），其余 5 类一致。
+- 三处被删的心跳代码逐字相同；`grep` 复核客户端主循环心跳回复只剩 `PacketDispatcher.cpp:14` 一处（`Socket.cpp:377` 是服务端主动发心跳，`Socket.cpp:249` 是服务端收心跳判定，均非客户端回复）。
+- 消费顺序：`DrainAll` 与 `Filtered` 都在处理完一个包后重新回到调用方的 `while` 条件，等价于原循环的 `continue`；连续心跳在 `next()` 内部连续消化，等价于原循环连续 `continue`。返回给调用方的 `packet` 已消费 `int` 消息号，与原循环 `>> msgType` 之后的状态一致。
+- ④ 键位映射、`ClientInput.key` 线上字节、`MessageType` 25 值 / 顺序、端口 8888 / 14341、JSON 配置与存档格式均未改。
+
+### 48.6 零改动项
+
+`Socket.cpp` 全部函数体（含 `reconnect()` 第四处循环）、`ClientNetwork` 接口与 `peekMessageType()` 实现、`ServerNetwork` / 两个用例服务、三个纯 View 单元、两个 Scene 的 UI 状态机与购买流程、`MessageType.h`、两个 config、`ServerMain.cpp`、`Core` / `Domain` / `Application` 库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference` / 包含目录 / 链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10 口径、`ICommands.h`、S3 / S4。**本批无对外行为变化。**
+
+### 48.7 静态验证（助手侧，未本地编译）
+
+- 7 个 `.vcxproj` + 3 个 `.filters` 全量 XML 解析通过；`ClCompile` / `ClInclude` / `None` 共 **163 条** Include 路径 0 缺失（24 / 15 / 35 / 35 / 27 / 4 / 23）。
+- `Client1` / `Client2` 的 `ClCompile` 集合 `diff` 为空；新增代码裸指针 0 命中，新变量一律 `{}` 初始化；`git diff --check` 干净；新增文件 UTF-8 无 BOM + CRLF，filters 保留 BOM；`MessageType.h` 枚举计数 25。
+- 助手侧 `MSBuild.exe` / Python 仍被安全策略拦截、从未绕过，**本批未本地编译**。
+
+### 48.8 请用户 Rebuild 的重点
+
+- 新编译单元 `PacketDispatcher.cpp` 的 `pch.h` / `/FI` 生效；`std::initializer_list<MessageType>` 两个重载的解析；`auto [mt, packet]` 结构化绑定与 `sf::Packet` 移动构造；`std::optional<InboundPacket>` 的聚合初始化。
+- **`Debug|x64` 带 `/we4715`**：两个 `next()` 已用显式 `for` / `while` + 末尾 `return std::nullopt` 收尾，避免「并非所有控制路径都返回值」被判为错误。
+- 三处调用点的 `continue` 仍在各自 `while` 里，迭代顺序不变。
+
+### 48.9 运行时回归清单（S2 后重点）
+
+- **跨阶段留包**：登录阶段服务器若推 `GameState` / `Choice` 等非账号包，必须仍留在队列直到 `gamePhase` 一口气消费（46.3 隐式协议，S2 最高风险点）。
+- **心跳与 3 秒超时**：登录场景、商城场景、游戏阶段各停留足够久，确认服务器不掉线判定；断线提示与重连（第四处循环未改）仍正常。
+- 商城展示 / 技能描述 / 每日签到 / 购买与积分同步；双开双配置登录→大厅→开局。
+- 键位与 `ClientInput.key` 字节、端口 8888 / 14341、消息号与包体、JSON 存档格式。
+- 47.9 与第十三 / 十四 / 十五批遗留清单继续有效。
+
+### 48.10 提交与后续
+
+本批与 S1 同口径：代码 + 文档一并交付，待用户 Rebuild 通过后由助手生成结构化提交消息提交，提交时工作区保持干净。之后按 46.4 的顺序是 **S3 两个 Scene 纯 View 化（1443 行，最高风险）**；考虑到运行时回归清单已积压多批，建议先实跑 48.9 再动 S3，是否立即推进由用户点选。

@@ -1,5 +1,6 @@
 #include "adapters/ClientApp.h"
 
+#include "PacketDispatcher.h"
 #include "GameRenderer.h"
 #include "LoginScene.h"
 #include "ShopScene.h"
@@ -16,6 +17,7 @@
 #include <cstdlib>
 #include <format>
 #include <print>
+#include <utility>
 
 // 阶段 4 · S1：以下两个函数从 source/ClientMain.cpp 逐字平移到组合根实现单元。
 // 函数体、case 顺序、心跳回复、键位映射与线上 ClientInput.key 字节均未改动；
@@ -116,12 +118,11 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		}
 
 		//每帧消化所有积压包，防止服务器多包推送时延迟累积
-		while (auto packetOpt = net.receivePacket()) {
-			sf::Packet packet = std::move(*packetOpt);
-			int msgType;
-			if (!(packet >> msgType)) continue;
+		// 阶段 4 · S2：DrainAll 模式，心跳回复由 PacketDispatcher 统一处理。
+		while (auto next = unool::adapters::PacketDispatcher::next(net)) {
+			auto [mt, packet] = std::move(*next);
 
-			switch (static_cast<MessageType>(msgType)) {
+			switch (mt) {
 				case MessageType::ConnectionInfo: {
 					std::size_t playerId;
 					if (packet >> playerId) {
@@ -178,13 +179,6 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				case MessageType::Choice:
 					handleChoicePacket(packet, renderer);
 					break;
-				case MessageType::Heartbeat: {
-					//收到服务器心跳，立即回一个 Heartbeat 让服务器知道自己还活着
-					sf::Packet hb;
-					hb << static_cast<int>(MessageType::Heartbeat);
-					net.send(hb);
-					break;
-				}
 				case MessageType::ShopPurchase:
 					//客户端不接收此类型（客户端→服务器的购买请求），忽略
 					break;

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <format>
 #include <string>
+#include <utility>
+#include "PacketDispatcher.h"
 
 // 技能描述缓存（静态成员定义）
 std::unordered_map<std::string, std::string> ShopScene::skillsCache;
@@ -53,11 +55,9 @@ void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
 }
 
 void ShopScene::handleNetwork() {
-	while (auto packetOpt = net.receivePacket()) {
-		sf::Packet packet = *packetOpt;
-		int msgType;
-		if (!(packet >> msgType)) continue;
-		auto mt = static_cast<MessageType>(msgType);
+	// 阶段 4 · S2：DrainAll 模式，消费队列所有包；坏包丢弃与心跳回复收拢到 PacketDispatcher。
+	while (auto next = unool::adapters::PacketDispatcher::next(net)) {
+		auto [mt, packet] = std::move(*next);
 
 		if (mt == MessageType::ShopData) {
 			std::string jsonStr;
@@ -118,13 +118,7 @@ void ShopScene::handleNetwork() {
 			}
 			continue;
 		}
-		// 心跳包：立即回复，防止服务器判定掉线
-		if (mt == MessageType::Heartbeat) {
-			sf::Packet hb;
-			hb << static_cast<int>(MessageType::Heartbeat);
-			net.send(hb);
-			continue;
-		}
+		// 心跳包已由 PacketDispatcher 统一消费并回复
 		// 其它包忽略（商城场景不处理游戏/账号包）
 	}
 }
