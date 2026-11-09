@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
 #include <optional>
-#include <SFML/Network.hpp>
 #include "MessageType.h"
+
+// 头文件自足化（第十四批）：协议声明只需 sf::Packet 的类型声明；完整定义由
+// 各 .cpp 显式包含 <SFML/Network.hpp>，写法与 header/domain/Card.h 一致。
+namespace sf { class Packet; }
 
 namespace AccountProtocol {
 	// 构造请求 packet（客户端用）

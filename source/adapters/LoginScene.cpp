@@ -1,6 +1,7 @@
 #include "LoginScene.h"
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
+#include <SFML/Network.hpp>
 #include "ShopScene.h"
 
 

@@ -1,4 +1,5 @@
 #include "AccountProtocol.h"
+#include <SFML/Network.hpp>
 
 namespace AccountProtocol {
 

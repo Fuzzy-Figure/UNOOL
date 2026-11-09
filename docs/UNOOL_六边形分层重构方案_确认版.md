@@ -2023,3 +2023,57 @@ A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读�
 下一批两条路线按 37.6 需用户确认（当前批未擅自判定拆库口径）：**B1 `Domain` 库实装试点**——先盘点 9 个互调模型 `.cpp` 与 `GameState` / `AccountProtocol` / `CardPacket` / `UserDB` 的跨库符号，再整体划分库归属并重排 `ClCompile` / `ProjectReference` / PCH，风险高、可能需调整 Q8 口径；**B2 阶段 4 客户端装配**——6 单元 2426 行引入 `ClientApp` / `InputAdapter` / `PacketDispatcher`，改动面最大。
 
 **风险**：① **编译已闭环**（用户 2026-11-09 确认 Debug / Release x64 Rebuild 通过，见 43.6），运行时回归仍待实跑；② A 收官只解决了编译期依赖纯度，`Domain` → Core 的符号边仍在；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 44. 第十三批闭环与第十四批：B1 前置 · 头文件自足化（2026-11-09）
+
+### 44.1 闭环与提交
+
+用户确认第十三批 `Rebuild Debug|x64` 与 `Release|x64` 编译通过（跨 TU `defaultBundle()` 的链接、`Services.cpp` 去掉 adapters 头后的声明可见性均正常，无 C1083 / C2857 / LNK2019 / LNK2005）。助手生成结构化提交消息并提交 `049bbc5`（**9 个文件，+117 / −17**），提交时工作区干净；43.6 / 43.5 / 43.7 的编译闭环记录与工作记忆随该提交一并交付，未留未暂存文件。43.6 第 2 / 3 项运行时清单继续留作后续实跑。
+
+### 44.2 只读评估：B1 不存在「低风险单单元试点」
+
+| 事实 | 实测 |
+|---|---|
+| `GameLogic.h` / `Player.h` | 直接持有 `IServerView&` / `IDecisionPort&` / `DomainServices&`，并包含 `GameState.h`（`sf::Packet` friend DTO）。二者是**应用层编排器**，阶段 3 归入 `header/application` 是正确口径；移到 `domain` 会制造 Domain → Application 反向边并违反 Q8 |
+| `source/domain/` 6 个技能 / 牌 `.cpp` | 包含并调用 `GameLogic` / `Player`（`PassiveSkill.cpp` 约 280 处），是真实模型集群互调，不是可删的传递包含；`Character.cpp` 另有 4 处直调 `services()` |
+| 库现状 | `Domain` / `Application` 各仅 1 个 PCH 生成单元（`ClInclude` 已挂两个用例服务头但无 `.cpp`）；`Core` 20 个单元；Server 引用 `Adapters` + `Core`，Client1 / 2 只引用 `Core` |
+| 双向 lib 边 | `Socket.cpp` 薄转发 → `AccountService` / `ShopService` → `Character::` → `services()`，而 `Character.cpp` 又在 Core 内：**只把任一个用例服务划出 Core，立刻形成 Core ↔ Application 双向静态库引用** |
+
+- **结论**：B1「Domain / Application 库实装」无法分批做低风险试点，必须一次性决定库归属、`services()` / `defaultBundle()` 门面下沉方式与 3 个 exe 的 `ProjectReference`；按 37.6 该口径需用户确认，助手未擅自判定。
+- **可低风险推进的编译期前置**：`Card.h` / `AccountService.h` / `IAccountSession.h` 已有 `namespace sf { class Packet; }` 前向声明，但 `GameState.h` 靠 PCH 隐式提供 `sf::Packet`、`AccountProtocol.h` 显式包含完整 `<SFML/Network.hpp>`，且多个头未显式包含自身使用的标准库类型。纯标准库 PCH 的 `Domain` / `Application` 库编译这些头会出现 C2039 / C2065 / C1083。
+- 交用户选择后选 **A：B1 前置 · 头文件自足化**（B 直接拆库高风险、C 阶段 4 客户端装配改动面最大）。
+
+### 44.3 执行范围
+
+1. 8 个头补显式标准库 include（剔除注释后按 `std::` 符号逐个映射，不凭印象添加）：`Card.h`（`<string_view>`）、`Character.h`（`<stdexcept>` / `<string_view>` / `<utility>`）、`InstantSkill.h`（`<cstddef>` / `<optional>` / `<set>` / `<string>` / `<vector>`）、`PassiveSkill.h`（`<cstddef>` / `<map>` / `<memory>` / `<optional>` / `<string>` / `<unordered_map>` / `<utility>` / `<vector>`）、`Skill.h`（`<cstddef>` / `<print>` / `<utility>`）、`TransformSkill.h`（`<cstddef>` / `<string>` / `<vector>`）、`GameLogic.h`（`<cstddef>` / `<functional>` / `<memory>` / `<optional>` / `<string>` / `<unordered_set>`）、`Player.h`（`<chrono>` / `<memory>` / `<utility>`）。
+2. `GameState.h` 补 `<cstddef>` / `<optional>` 与 `namespace sf { class Packet; }`：6 处 `friend sf::Packet& operator<<` 只需类型声明，前向声明即可，不引入 SFML 头。
+3. `AccountProtocol.h` 把 `#include <SFML/Network.hpp>` 换成 `namespace sf { class Packet; }`（写法与 `Card.h` 一致）；5 个包含它的 `.cpp`（`ClientMain.cpp` / `adapters/LoginScene.cpp` / `adapters/Socket.cpp` / `application/AccountService.cpp` / `protocol/AccountProtocol.cpp`）各补一行 `#include <SFML/Network.hpp>`，保证按值 `sf::Packet` 与 `operator<<` 处有完整定义。
+4. **零改动**：任何类型声明、函数签名、函数体、模板、`MessageType` 25 值与 switch、端口与 `DomainServices`、工程 `ClCompile` / `ClInclude` / `ProjectReference`、包含目录、链接项、PCH 有效内容、`slnx`、x64 配置、`source/utils.cpp`、Q8「Domain 纯标准库 PCH」与 Q3 排除项。
+5. **工作区额外改动（非本批）**：`source/domain/Character.cpp` 出现一行 `#pragma warning(suppress: 6262)`（HEAD 无、写入时间在本批脚本之后，推测为用户在 VS 中为抑制 C6262 所加）。助手未创建、未修改、未删除该行；后续提交会一并带上，需用户确认。
+
+### 44.4 等价性与静态验证（助手侧只读）
+
+- **改动行类型**：`git diff -U0` 共 **63 增 / 1 删**，逐行分类后除上述 1 行用户侧 `#pragma warning` 外，全部为 `#include`、注释与 `namespace sf { class Packet; }` 前向声明；**零声明、零函数体、零协议字节变化**。
+- **缺口复扫**：剔除块注释 / 行注释后重扫 `header/domain` / `application` / `protocol` 全部头的 `std::` 符号与 `sf::` 符号，**GAPS = 0**（每个符号都有直接 include 或前向声明 / 完整第三方头）。
+- **前向声明安全性**：`header/pch.h` / `pch.core.h` / `pch.adapters.h` / `pch.server.h` 均含 `<SFML/Network.hpp>` 与 `<SFML/Graphics.hpp>`；`Card.h` 的同类前向声明已在既有编译中验证可与该定义共存。5 个 `.cpp` 已显式补完整头，不存在「只有前向声明却按值使用」的编译单元。
+- **静态验证**：10 个 `.vcxproj` / `.filters` XML 全可解析、`ClCompile` / `ClInclude` 引用 **227 条 0 缺失**；15 个改动文件统一 UTF-8 无 BOM + CRLF（`bareLF = 0`），无换行 / BOM 漂移；`git diff --check` 干净。助手侧 MSBuild.exe / Python 仍被安全策略拦截，从未绕过，**未做本地编译**。另：批量写文档的 PowerShell 脚本被安全策略拦截一次，未绕过，改用专用文件编辑工具写入，未影响代码。
+
+### 44.5 边界与遗留（头自足化 ≠ 拆库）
+
+- `ShopData.h`（protocol 层）仍显式包含 `<json.hpp>` 与序列化宏，属 Core 库合法依赖，本批未改；`AccountService.cpp` 的 `handleAccountPacket(std::size_t, MessageType, sf::Packet packet)` 按值传包，即使头已自足，`Application` 库将来编译它仍需 `dep\SFML\include` 包含目录或接口改造（后者属 Q3 排除范围）。
+- B1 仍需用户确认三个口径：① 是否放宽 Q8 让 `Domain` 库拥有 SFML / nlohmann 包含目录；② `services()` / `defaultBundle()` 门面下沉到哪一层、未装配客户端的默认组合如何装配；③ 9 个互调模型 `.cpp` 整体划库后 3 个 exe 的 `ProjectReference` 与链接顺序。
+- 第 35.4 节 Win32 边界、第 36.1 节 `MessageType` 口径、Q3 其余排除项继续有效且未被改动。
+
+### 44.6 需用户本地验证
+
+请在 VS **Rebuild `Debug|x64` 与 `Release|x64`**（头文件改动会触发大范围重编），重点：
+
+1. **编译 / 链接**：`AccountProtocol.h` 去掉完整 SFML 头后，5 个 `.cpp` 是否都能解析 `sf::Packet` 完整定义（无 C2027 / C2079 / C2664）；按值返回 / 按值参数的函数声明用不完整类型是否被 MSVC 接受；`namespace sf { class Packet; }` 与 SFML3 真实定义无 C4099 / C2371；`GameState.h` 补 `<optional>` / `<cstddef>`、各头补 `<print>` / `<functional>` 等 stdcpp23 头后无重定义；3 个 exe 无 LNK2019。
+2. **运行时回归**：账号注册 / 登录 / 查重 / 准备 / 积分消费、商城展示 / 技能描述 / 签到 / 购买、登录场景与客户端发包、双开双配置、心跳与 3 秒超时。
+3. **线上字节**：端口 8888 / 14341、`MessageType` 消息号与包体、JSON 配置与存档格式不变（Q10 不要求新旧客户端混跑）。
+
+### 44.7 下一批方向（需用户确认）
+
+第十四批只是 B1 的编译期前置，**库归属仍未改变**：`Domain` / `Application` 依旧是 PCH 占位库。下一批仍按 37.6 由用户在 **B1 直接拆库（需先确认 44.5 的三个口径，风险高）** 与 **B2 阶段 4 客户端装配（6 单元 2426 行 UI 改写）** 之间选择；助手不擅自判定拆库口径。
+
+**风险**：① 本批编译与运行时回归尚未执行（见 44.6），其中「协议头去完整 SFML 头后 5 个 `.cpp` 的声明可见性」最需验证；② 头自足化不消除 `Socket.cpp ↔ 用例服务 ↔ Character → services()` 的双向符号边；③ `source/domain/Character.cpp` 有一行非本批的 `#pragma warning(suppress: 6262)`，提交前需确认；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。改动**未提交**（15 个本批文件 + 1 个用户侧文件）。

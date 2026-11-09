@@ -2,6 +2,7 @@
 #include "IAccountSession.h"
 #include "IUserRepository.h"
 #include "AccountProtocol.h"
+#include <SFML/Network.hpp>
 #include "utils.h"
 
 namespace unool::application {

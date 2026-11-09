@@ -11,6 +11,7 @@
 
 // ==================== 静态数据 ====================
 
+#pragma warning(suppress: 6262)
 const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"白板",     {"其他", Level::F, 1}},
 	{"特朗普",   {"元首", Level::D, {被动<粪怒>}, 145}},

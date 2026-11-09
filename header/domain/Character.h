@@ -1,4 +1,9 @@
 #pragma once
+// 头文件自足化（第十四批）：显式包含本头直接使用的标准库类型，不依赖 PCH 的传递包含。
+#include <stdexcept>
+#include <string_view>
+#include <utility>
+
 #include <string>
 #include <list>
 #include <vector>

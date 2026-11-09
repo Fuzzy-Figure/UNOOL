@@ -1,4 +1,12 @@
 #pragma once
+// 头文件自足化（第十四批）：显式包含本头直接使用的标准库类型，不依赖 PCH 的传递包含。
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_set>
+
 #include <array>
 #include <vector>
 #include "Card.h"

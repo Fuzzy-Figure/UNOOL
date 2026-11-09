@@ -1,5 +1,6 @@
 #include "Socket.h"
 #include "AccountProtocol.h"
+#include <SFML/Network.hpp>
 #include "UserDB.h"
 #include "GameState.h"
 #include "ShopData.h"
