@@ -7,8 +7,8 @@
 - 账号注册/登录 + 按双方角色等级差查表的积分系统
 
 > 角色、技能的具体数量与完整列表以代码为准<br>
-角色表见 `source/Character.cpp` 的 `Character::infos`<br>
-技能实现见 `header/domain/` 下的 `PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及对应的 .cpp 文件。
+角色表见 `source/domain/Character.cpp` 的 `Character::infos`<br>
+技能实现见 `header/domain/` 下的 `PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及 `source/domain/` 下对应的 .cpp 文件。
 
 
 ## 技术栈
@@ -35,7 +35,7 @@ Projects/               7 个 VS 工程目录
   Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
   Core/                 UNOOL.Core.vcxproj（共享编译单元与协议 / DTO 序列化，独立 pch）
 header/                 头文件；实体 / 端口 / 适配器 / 协议分别归 domain/ application/ adapters/ protocol/，pch.h 与 utils.h 留在根
-source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口，后者也是装配根）
+source/                 源文件；与 header 同按 domain/ application/ adapters/ protocol/ 四层归置，pch.cpp / utils.cpp / 两端入口留在根
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
 docs/                   设计文档与待办清单（见「文档」一节）
@@ -48,9 +48,11 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。
 
+源文件同样按四层归置，与头文件目录一一对应；`.cpp` 之间不互相 include，故归位 `.cpp` 不需要新增包含目录、也不需要改任何 `#include`，只由各工程 `ClCompile` 的 `..\..\source\<层>\X.cpp` 路径定位。`pch.cpp`、`utils.cpp` 与两端入口 `ClientMain.cpp` / `ServerMain.cpp` 留在 `source/` 根。新增源文件时请放入对应层目录，并同时登记到编译它的工程 `ClCompile`（3 个 exe 还需同步 `.vcxproj.filters`）。
+
 分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
 
-`Core` 静态库（原名 `Protocol`，阶段 3 起为共享编译库）统一编译 15 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）与 `GameState.cpp` / `AccountProtocol.cpp` / `protocol/CardPacket.cpp` 三个协议与 DTO 单元，使用独立的 `pch.core.h`（PCH 文件名与库名一致）。集中后 `Core.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。`MessageType` 枚举与网络收发仍留在 `Socket.*`，未拆分。
+`Core` 静态库（原名 `Protocol`，阶段 3 起为共享编译库）统一编译 15 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）与 `source/protocol/` 下 `GameState.cpp` / `AccountProtocol.cpp` / `CardPacket.cpp` 三个协议与 DTO 单元，使用独立的 `pch.core.h`（PCH 文件名与库名一致）。集中后 `Core.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。`MessageType` 枚举与网络收发仍留在 `Socket.*`，未拆分。
 
 ## 文档
 

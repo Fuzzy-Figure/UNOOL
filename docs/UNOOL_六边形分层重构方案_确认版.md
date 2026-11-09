@@ -1310,9 +1310,11 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 - 工程文件语义 diff 共 **248 行增删** = 108 条 `ClInclude` × 2 + 16 条包含目录 × 2，无其他语义变化；`source/` / `slnx` / 配置 diff 为空，链接项 diff 0 处；`git diff --check` 干净。
 - 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
 
-### 32.5 需用户本地验证
+### 32.5 需用户本地验证（已闭环，2026-11-09）
 
-第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 / 29.5 / 30.5 节验收均不覆盖本批。请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（头文件路径变化会触发大范围重编，属预期），重点回归：
+**闭环**：用户确认本地 Rebuild 编译通过，改动已由用户自行提交为 `b3d6466`「按四层重构领域头文件目录」，工作区干净，回归任务 #37 完成。下列 4 项视为已覆盖，32.6 风险 ① 解除；新增的 4 个分层包含目录能让 111 处源码 `#include "X.h"` 全部解析，无 C1083 / C1010 / LNK2019。**阶段 2 四批 + 阶段 3 五批全部编译闭环**，详见第 33.1 节。
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 / 29.5 / 30.5 节验收均不覆盖本批。原回归清单（保留作路径参考）：请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（头文件路径变化会触发大范围重编，属预期），重点回归：
 
 1. **最高优先级**：`Core` 库 15 个单元、`Adapters` 库 2 个单元、3 个 exe 各自单元，以及 5 个独立 PCH 的 `Create` / `Use` + `/FI`，能否经新的 4 个分层包含目录解析全部 `#include "X.h"`，有无 **C1083**（无法打开包含文件）/ **C1010** / **LNK2019**；`UNOOL.Core.lib` 与 3 个 exe 是否生成。
 2. IDE 里 7 个工程的「头文件」筛选器是否都能定位到归位后的文件（`.filters` 已同步）。
@@ -1330,4 +1332,117 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 32.5），其中 4 个新增包含目录能否让 111 处源码 include 全部解析是最需要验证的一点；② `Player.h` 归类把既有反向依赖显性化（见 32.3 边界 A），若用户不接受可在下一批单独调整；③ 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除**（见 32.5，用户确认编译通过并提交 `b3d6466`）；② `Player.h` 归类把既有反向依赖显性化（见 32.3 边界 A），若用户不接受可在下一批单独调整；③ 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；④ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+---
+
+## 33. 阶段 3 第五批闭环与第六批只读评估（2026-11-09，用户「编译通过，继续重构」）
+
+### 33.1 闭环记录
+
+用户确认第五批（领域头按四层归位）本地编译通过，并自行提交 `b3d6466`「按四层重构领域头文件目录」，工作区干净，回归任务 #37 完成。32.5 的 4 项验收（4 个分层包含目录解析 111 处源码 include、5 个独立 PCH 的 Create/Use + `/FI`、IDE 筛选器定位、运行路径与双配置）视为已覆盖，32.6 风险 ① 解除。**阶段 2 四批 + 阶段 3 五批全部编译闭环**；助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过；用户未细化双配置与运行时回归覆盖范围，第 16.4 节注记继续有效。
+
+### 33.2 剩余项重新量化（本次只读实测）
+
+| 剩余项 | 实测规模 | 约束 / 门槛 |
+|---|---|---|
+| **`source/` 平铺** | 根平铺 **22 个 `.cpp`**；已分层 `source/adapters/`（2）、`source/protocol/`（1）；7 工程 `ClCompile` 共 **37 条**（3/1/7/7/16/1/2）+ 3 个 exe `.filters` **16 条** | 需**再解除一次 A6**（第 32 批只就归位头文件解除）；`.cpp` 之间不互相 include，归位 `.cpp` **不影响任何 `#include` 解析、不需补包含目录**，比头文件归位更简单 |
+| **`Domain` / `Application` 实装** | 两库各只有 1 条 PCH 占位编译单元，`ClInclude` 3 / 10 条；**3 个 exe 均无到这两库的 `ProjectReference`**；`Adapters` 实装 2 个 `.cpp`、`Core` 15 个 | 见 33.3：卡点已定位到具体文件与行，比「`Socket.cpp ↔ AccountProtocol` 互引」更精确 |
+| **W5 用例服务** | `Socket.cpp` 1004 行；`trySpendPoints` 82–89、`handleAccountPacket` 319–411、`sendShopData` 544–647、`handleSkillInfoRequest` 648–675、`handleCheckin` 676–696、`handleShopPurchase` 697–843，约 **401 行** | 需新建端口、抽函数体、重接组合根；跨登录 / 注册 / 查重 / 签到 / 商城 / 技能信息全链路，剩余项里风险最高 |
+| **阶段 4 客户端装配** | 6 个客户端专属单元 **2424 行**（ShopScene 882 / LoginScene 560 / GameRenderer 474 / ClientMain 263 / TextManager 175 / ImageManager 72）；`ICommands.h` 零引用骨架 | 需 `ClientApp` / `InputAdapter` / `PacketDispatcher`，三个 Scene 改纯 View；Q10 不要求新旧客户端混跑 |
+| Q3 / Q9 排除项 | `MessageType` 拆分、长度帧 / Partial、子技能异常、安全修复；商城 / 登录 TODO | **继续排除**，未经用户解除不动；33.3 末段说明边界待确认 |
+
+### 33.3 新发现：拆库不可行的真正根因（此前 5 批只写了笼统一句）
+
+本次把「15 个单元必须同库」的判断追到了具体文件与行，得到两条**独立的**反向边：
+
+1. **协议层 → 适配器层（头级）**：`MessageType` 的完整枚举（25 个值、无显式底层类型）定义在 `header/adapters/Socket.h:18–44`；协议头 `header/protocol/AccountProtocol.h:6` 只有前向声明 `enum class MessageType;`。为拿到 5 处 `static_cast<int>(MessageType::…)` 的值，`source/AccountProtocol.cpp:2` 必须 `#include "Socket.h"`。反向 `source/Socket.cpp` 有 **9 处** `AccountProtocol::*` 调用（264/327/332/336/372/392/395/883/907）。这是一个 `Socket.h ↔ AccountProtocol.cpp` 的头级双向边，此前只被笼统记成「`Socket.cpp` 8 处调 `AccountProtocol::*`」。
+2. **领域实现 → 用例层（符号级）**：`GameState.cpp` / `protocol/CardPacket.cpp` 需要 `Card::make()` 与 Card/Hand 序列化符号（定义在共享 `Card.cpp`）；而 `domain/` 的 7 个 `.cpp` 中 **6 个** include `GameLogic.h` 或 `Player.h`（application 层头），`Character.cpp` 还显式 include `application/Services.h` 并调 `services()` 4 次。`GameLogic.cpp` / `Player.cpp` 又反向 include 领域头 → 领域实现与用例实现互相咬合。
+
+**结论修正**：把 `MessageType` 物理平移到 `header/protocol/MessageType.h`（值、顺序、底层类型、线上字节全不变）只消掉第 1 条边，**不足以**拆 `Domain` / `Application` 库；第 2 条边要靠 W5 或更深的领域 / 用例切分。第 22 / 28 节「当前不可行」的结论仍成立，但成因现在是可定位、可分步消解的，不再是黑箱。
+
+**Q3 口径边界（须用户明确，助手不擅自判定）**：原方案 §6 的「`MessageType` 拆分」指拆成 `ClientCommand` / `ServerEvent` 两组语义枚举并改写两端 switch；物理归位只是把**同一个**枚举定义换到另一个头文件，25 个值、顺序、数值、`static_cast<int>` 与线上字节全部不变，属纯移动。两者文字都含「`MessageType`」，是否算 Q3 排除项需用户单独确认。
+
+### 33.4 方向选项（待用户选择）
+
+| 路线 | 内容 | 影响 |
+|---|---|---|
+| **A · `source/` 源码按四层归位（推荐）** | 22 个平铺 `.cpp` 中 18 个 `git mv` 到 `domain`(7) / `application`(2) / `adapters`(7) / `protocol`(2)，根保留 `pch.cpp`、`utils.cpp`、`ClientMain.cpp`、`ServerMain.cpp`；约 **25 条 `ClCompile` + 12 条 `.filters`** 改路径 | 与第 32 批完全对称的收尾；**零函数体 / 零源码 include / 零协议字节 / 零链接项 / 零包含目录改动**；`.cpp` 归位不影响 include 解析；需就本批解除 A6；可逆 |
+| B · `MessageType` 物理归位 | 新增 `header/protocol/MessageType.h` 逐字平移 25 个枚举值；`Socket.h` 改 include、`AccountProtocol.cpp` 去掉 `#include "Socket.h"`；其余 7 个引用文件靠传递包含保持可见 | 消除协议→适配器头级反向依赖，是拆库前置之一；零函数体 / 零字节；**需确认是否解除 Q3 排除口径**；单独做仍不能拆 `Domain` / `Application` 库 |
+| C · W5 用例服务 | 约 401 行抽 `AccountService` / `ShopService`，新建端口重接组合根 | 架构收益最大、风险最高；是拆 `Domain` / `Application` 库的真正前置 |
+| D · 阶段 4 客户端装配 | 6 单元 2424 行引入 `ClientApp` / `InputAdapter` / `PacketDispatcher` | 改动面最大，属原方案阶段 4 |
+
+### 33.5 用户选择
+
+**用户选择路线 A「`source/` 源码按四层归位」**（B `MessageType` 物理归位、C W5、D 阶段 4 均未选），A6「不物理移动现有文件」**就本批再次解除**，执行结果与验证见第 34 节。Q3 / Q9 排除项继续有效；助手不擅自抽取 `Socket.cpp` 函数体、不擅自判定 `MessageType` 的 Q3 边界；Q10 不要求新旧客户端混跑；阶段 5 / 6 另期。
+
+---
+
+## 34. 阶段 3 第六批：`source/` 源码按四层归位（2026-11-09）
+
+### 34.1 范围与决策
+
+按第 33.4 节路线 A 执行，与第 32 批头文件归位**完全对称**：`git mv` 18 个平铺 `.cpp` 到四层子目录，同步工程 XML 的 `ClCompile` 路径。本批**零函数体改动、零源码 `#include` 改动、零协议字节变化、零链接项 / `slnx` / 配置 / 包含目录 / PCH 改动**。`A6` 就本批解除（只解除到"移动 `source/` 下的 `.cpp` 文件"这一动作，不代表允许抽取函数体或改头文件依赖）。
+
+### 34.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `source/` 平铺 18 个 `.cpp` | `git mv` 到四层：`domain/` 7（Card、Character、Effect、Skill、PassiveSkill、InstantSkill、TransformSkill）、`application/` 2（GameLogic、Player）、`adapters/` 7（Socket、UserDB、GameRenderer、LoginScene、ShopScene、ImageManager、TextManager）、`protocol/` 2（GameState、AccountProtocol） |
+| `source/` 根保留 4 个 | `pch.cpp`（构建基础设施）、`utils.cpp`（通用工具）、`ClientMain.cpp` / `ServerMain.cpp`（两端入口，后者也是装配根）——与第 32 批 `header/` 根保留 `pch.h` / `utils.h` 同口径 |
+| 5 个工程文件 | **33 条** `ClCompile` 路径由 `..\..\source\X.cpp` 改为 `..\..\source\<层>\X.cpp`：`Client1.vcxproj` 5、`Client1.vcxproj.filters` 5、`Client2.vcxproj` 5、`Client2.vcxproj.filters` 5、`Core/UNOOL.Core.vcxproj` 13 |
+| `README.md` | 4 处订正：`source/Character.cpp` → `source/domain/Character.cpp`、技能 `.cpp` 补 `source/domain/` 路径、目录树 `source/` 行改四层说明、`Core` 段三个协议单元改 `source/protocol/` 下；**新增 1 段**维护说明（源码分层、`.cpp` 之间不互相 include、新增源文件需登记 `ClCompile` + 3 个 exe 的 `.filters`） |
+| `source/protocol/CardPacket.cpp` | 1 行注释订正：`原位于 source/Card.cpp` → `原位于 Card.cpp 尾部（现 source/domain/Card.cpp，…）`（归位直接导致的路径失效） |
+
+归位后 `source/domain` = 7、`application` = 2、`adapters` = 9（含原有 2 个适配器）、`protocol` = 3（含原有 `CardPacket.cpp`）、根 = 4，共 25 个 `.cpp`。
+
+**未改**：`Server.vcxproj` / `.filters`（`ServerMain.cpp` 留根）、`Adapters` / `Application` / `Domain` 三个工程（分别已分层 / 只有 PCH 占位）、7 个工程的 16 条 `AdditionalIncludeDirectories`、链接项、`ProjectReference`、`/FI` 与 PCH 文件、`UNOOL.slnx`、3 个 json、端口 8888 / 14341、`MessageType`、全部 `.h`、其余 24 个 `.cpp` 的内容。
+
+### 34.3 为什么 `.cpp` 归位不需要补包含目录、也不需要改 `#include`
+
+- 源码里的头文件包含全是 `#include "Card.h"` 这类**单文件名**或 `#include "application/Services.h"` 这类**带层前缀**，靠第 32 批补齐的 4 个分层包含目录 + `$(SolutionDir)header` 解析；`.cpp` 之间**不互相 include**（全库无一条 `#include ".."` 或 `.cpp` 目标），所以移动 `.cpp` 不改变任何包含关系。
+- 唯一可能的风险是 MSVC 引号 include 的「**先查源文件所在目录**」优先级：归位后源文件目录从 `source/` 变成 `source/<层>/`。实测这些子目录下 **`.h` 文件数 = 0**，因此第一优先级不会命中任何头，解析结果与归位前完全一致；助手对 25 个 `.cpp` 的 **26 个不同引号 include 目标**做了模拟解析，全部恰好命中 1 个文件（unresolved 0 / ambiguous 0）。
+- 这比第 32 批头文件归位更简单：那批要改 108 条 `ClInclude` 并补 16 条包含目录；本批只改 33 条 `ClCompile`，包含目录一条未动。
+
+### 34.4 与评估估算的偏差（如实订正）
+
+第 33.4 节估「约 25 条 `ClCompile` + 12 条 `.filters`」，**实测为 23 条 `.vcxproj` + 10 条 `.filters` = 33 条**，少 4 条。原因：4 个留在 `source/` 根的 `.cpp`（`pch.cpp` / `utils.cpp` / `ClientMain.cpp` / `ServerMain.cpp`）、`Core` 中已在分层目录的 `protocol\CardPacket.cpp`、`Adapters` 中已在 `source/adapters/` 的 2 个单元，均不产生路径改动；3 个 exe 的 `filters` 里 `Server.filters` 只有 2 条且都留根。估算时把这部分也算进去了，结论（改动面小、可逆）不受影响。
+
+### 34.5 验证结果（助手侧静态只读）
+
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；**47 条** `ClCompile` 引用（含 PCH 占位）全部指向归位后的真实文件，**0 缺失**。
+- 3 个 exe 的 `ClCompile` 在 `vcxproj` 与 `.filters` 间集合完全一致（Server 2/2、Client1 7/7、Client2 7/7）。
+- 工程文件 diff 共 **66 行增删** = 33 条路径 × 2，**非 `ClCompile` 差异行 = 0**；`git diff --check` 干净。
+- `source/` diff：`git diff --stat -M` 显示 18 个纯 rename（增删 0/0），源码内容差异**仅 `CardPacket.cpp` 1 行注释**；`git status` 中 `R` 条目 = 18。
+- BOM / 换行表示按字节核验：3 个 `.filters` 有 BOM + CRLF、`Client1/2/Server.vcxproj` 无 BOM + CRLF、`Core.vcxproj` 无 BOM + 纯 LF，`README.md` 无 BOM + CRLF —— 与 HEAD 各自的表示一致，归一化后 diff 无换行噪声（`core.autocrlf=true` + `* text=auto` 的正常提示）。
+- 归位目录 `.h` = 0；26 个引号 include 目标全部唯一可解析；`AdditionalIncludeDirectories` 计数 16 条原样；`slnx` / 3 json / 链接项 / 配置 / PCH 内容 diff 为空。
+- 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 34.6 边界与本批未处理项
+
+- **边界 A · 目录名不等于依赖净化**：`source/domain/` 的 6 个 `.cpp` 仍 include `application/` 的 `GameLogic.h` / `Player.h`，`Character.cpp` 仍显式 include `application/Services.h`；`Socket.cpp` 与 `AccountProtocol.cpp` 的双向耦合（第 33.3 节）也原样保留。归位**只是物理组织整理，不改变任何依赖关系**，`Domain` / `Application` 库仍是 PCH 占位、3 个 exe 仍不引用，拆库门槛未变。
+- **边界 B · 遗留过时注释未动**：`source/protocol/CardPacket.cpp` 第 5–7 行仍写「`Protocol` 库」「由 exe 编译的 `Card.cpp`」「对 exe 对象文件保留反向符号引用」——这些在第 29 批库改名与第 23 批集中编译后即已失真，属**更早批次**遗留，不在本批"归位"范围内，助手未擅自扩大改动；如需订正可单独一批处理（纯注释、零行为变化）。
+- **边界 C · Win32 配置**：沿用第 32 批边界 B，`Server.vcxproj` 的 Win32 两条包含目录仍缺 `header` / `dep`，项目仅 x64，本批未补。
+- **边界 D · 阶段 3 仍未整体完成**：`Domain` / `Application` 库实装（受第 33.3 节两条反向边限制）、W5 用例服务、阶段 4 客户端装配未做。
+
+### 34.7 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 / 29.5 / 30.5 / 32.5 节验收均不覆盖本批。请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（18 个 `.cpp` 路径变化会触发重编，属预期），重点回归：
+
+1. **最高优先级**：`Core` 库 15 个单元、`Adapters` 库 2 个单元、3 个 exe 各自单元，以及 5 个独立 PCH 的 `Create` / `Use` + `/FI`，能否按新的 `..\..\source\<层>\X.cpp` 找到全部编译单元（**C1083 无法打开源文件的典型来源**）；`UNOOL.Core.lib` 与 3 个 exe 是否生成，有无 **LNK2019**。
+2. 归位后源文件目录变化是否影响任何 `#include "X.h"` 的解析（静态模拟 26 个目标全唯一可解析，但需编译器实测确认）；有无 **C1010**（意外的 PCH 头缺失）。
+3. IDE 里 3 个 exe 的「源文件」筛选器能否定位到归位后的 `.cpp`（`.filters` 已同步）。
+4. 运行路径：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；Debug / Release 双配置。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。本批改动**未提交**。
+
+### 34.8 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **推进六项**：共享编译单元集中、领域头闭包脱离 Application 端口层、`utils.h` 纯标准库头、库名与 PCH 名对齐 `UNOOL.Core` / `pch.core.*`、领域头按四层归位、源码按四层归位。**`header/` 与 `source/` 目录结构现已完全对称**。仍未做：`Domain` / `Application` 库实装（受 33.3 两条反向边限制）、W5 用例服务 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 34.7），其中"18 个 `.cpp` 新路径能否被全部工程找到"是最需要验证的一点；② 归位不改依赖，阶段 3 的组织整理项至此基本用尽，**下一批若继续推进必然触及函数体或 Q3 边界**（`MessageType` 归位 / W5 / 拆库），需要单独的用户口径确认；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

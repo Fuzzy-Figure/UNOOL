@@ -1,7 +1,7 @@
 #include "Card.h"
 #include <SFML/Network.hpp>
 
-// 阶段 2 收官：以下序列化段原位于 source/Card.cpp 尾部（542–591 行），逐字平移至此。
+// 阶段 2 收官：以下序列化段原位于 Card.cpp 尾部（现 source/domain/Card.cpp，542–591 行），逐字平移至此。
 // Card.cpp 只保留领域逻辑；Protocol 库集中持有 Card / Hand 的线上序列化。
 // 例外：operator>>(Hand&) 仍调用 Card::make()，其定义仍在由 exe 编译的 Card.cpp 中，
 // 因此本库对 exe 对象文件保留反向符号引用（见方案文档第 19.3 / 21 节）。

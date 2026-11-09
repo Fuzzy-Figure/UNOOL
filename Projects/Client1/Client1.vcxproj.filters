@@ -15,25 +15,25 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\GameRenderer.cpp">
+    <ClCompile Include="..\..\source\adapters\GameRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\ImageManager.cpp">
+    <ClCompile Include="..\..\source\adapters\ImageManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\TextManager.cpp">
+    <ClCompile Include="..\..\source\adapters\TextManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\ClientMain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\LoginScene.cpp">
+    <ClCompile Include="..\..\source\adapters\LoginScene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\ShopScene.cpp">
+    <ClCompile Include="..\..\source\adapters\ShopScene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
