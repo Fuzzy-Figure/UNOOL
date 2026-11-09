@@ -945,7 +945,9 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - **改动边界**：`git diff --name-only` 确认 `Projects/` 全部工程文件、`source/Socket.cpp` / `header/Socket.h` / `GameState.*` / `AccountProtocol.*`、`UNOOL.slnx`、`slnLaunch.user`、3 个 json 全部未改；7 个 `.vcxproj` XML 仍全部可解析。
 - `git diff --check` 干净；BOM 保持（4 个改动文件均无 BOM）；换行保持（`git diff` 无整文件差异）；项目自有裸指针声明 **0**（`utils.h:114 return *it;` 是迭代器解引用，正则误报，属第 15 节已确认的特殊情况）；全库「三个 exe 都编译」类过时注释扫描归零。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
 
-### 25.5 需用户本地验证
+### 25.5 用户本地验证（已闭环）
+
+**状态更新（用户「编译通过，继续」，2026-11-09）**：本批已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `a931e88`「集中 Protocol 编译单元并净化 utils 依赖」、工作区干净，回归任务 #34 完成。第 25.6 节风险 ① 就此解除——**`RandomEngine::operator()` 由 inline 变外联后，`UNOOL.Protocol.lib` 内 15 个单元与 3 个 exe 均正常解析该符号，`std::ranges::shuffle` / `sample` / distribution 对声明式 `operator()` 的模板实例化通过，无 LNK2019 / LNK2001**；随机序列与洗牌、发牌、BP 候选行为未变。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
 
 第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
 
@@ -965,4 +967,94 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 25.5），其中 `operator()` 外联后的模板实例化与符号解析是最需要验证的一点；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-09 确认本批编译通过（`a931e88`，见 25.5），外联 `operator()` 的模板实例化与符号解析均通过链接验证；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 26. 阶段 3 第二批闭环与第三批只读评估（2026-11-09，用户「编译通过，继续」）
+
+### 26.1 状态闭环
+
+用户于 2026-11-09 确认阶段 3 第二批本地编译通过并提交 `a931e88`（工作区干净），回归任务 #34 完成。**阶段 2 四批 + 阶段 3 前两批至此全部编译闭环**；助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未说明双配置与运行时回归的覆盖范围，第 16.4 节注记继续有效。
+
+### 26.2 第三批只读核查：`utils.h` 剩下的 json 依赖可以一次拆干净
+
+第 25.3 节把「`utils.h` 仍靠 PCH 拿 `nlohmann::json`」列为未完成项。本轮核查发现它有一条**零函数体改动**的收口路径：
+
+1. **`dep/nlohmann/json_fwd.hpp` 已存在**（v3.12.0），第 174 行定义 `using json = basic_json<>;`，自身只 include `<cstdint>` / `<map>` / `<memory>` / `<string>` / `<vector>` 五个标准库头。7 个工程的 `AdditionalIncludeDirectories` 中，凡需要 json 的工程都含 `$(SolutionDir)dep\nlohmann`，因此 `json_fwd.hpp` 可直接用于声明返回类型 `nlohmann::json&`。
+2. **配置门面的声明与调用点都很集中**：`utils.h:43-51` 共 4 个声明（`getServerConfig` / `reloadServerConfig` / `getClientConfig` / `reloadClientConfig`）；实际调用只在 `header/GameRenderer.h:22`、`header/adapters/JsonConfigProvider.h`（8 处）、`source/ClientMain.cpp:236`、`source/TextManager.cpp:7`，实现在 `source/utils.cpp`。其中 `JsonConfigProvider.h` 已显式 include `<json.hpp>`，其余 3 个靠 PCH 拿完整定义——拆声明不影响这些完整定义的可见性。
+3. **因此可把 4 个声明平移到一个新头**（例如 `header/adapters/JsonConfig.h`，仅 `#pragma once` + `<json_fwd.hpp>` + 4 行声明），`utils.h` 删掉它们后就是**纯标准库头**，被它传递包含的整片领域头闭包也随之变成纯标准库，正面满足 Q8 的「Domain 纯标准库」口径。5 个使用点各补 1 行显式 include，不改任何函数体、不改工程文件、不改协议字节。
+
+### 26.3 其余剩余项的精确影响面
+
+| 项 | 精确影响面 |
+|---|---|
+| 领域头归位 | `header/` 顶层平铺 21 个 `.h`；平铺 `#include "X.h"` 引用最密集的是 `utils.h`(20)、`GameLogic.h`(10)、`Character.h`(9)、`Card.h`(9)、`Socket.h`(8)；7 个工程 `ClInclude` 共 **97 条**（Server 19 / Client1 21 / Client2 21 / Application 10 / Adapters 18 / Domain 3 / Protocol 5），`.filters` 同量。物理移动需解除 A6，且要么批量改 include 路径，要么给全部工程补包含目录 |
+| 库改名 `Protocol → Core` | `UNOOL.slnx:12` 1 条、`README.md` 4 处、3 个 exe 各 1 条 `ProjectReference`、工程目录 / 文件名；GUID `...0004` 可保持不变，`pch.protocol.*` 文件名可保留（属内部实现名，不影响分层） |
+| `Domain` / `Application` 实装 | 两库仍各只有 1 条 `ClCompile`（PCH 生成单元）；第 22.2 节事实 4 的 `Socket.cpp ↔ AccountProtocol.cpp` 互引未变，15 个编译单元拆到两库仍会形成 `lib ↔ lib` 双向引用，当前不具可行性 |
+| W5 / 阶段 4 | W5 在 `Socket.cpp` 约 400 行；客户端 6 个专属单元 2424 行、`sf::` 231 处。两者都需独立口径，本轮不合并为一步 |
+
+### 26.4 第三批路线（待用户确认）
+
+| 路线 | 内容 | 改动面 / 风险 |
+|---|---|---|
+| A · 配置门面拆出（推荐） | 新增 1 个头（`json_fwd.hpp` + 4 行声明逐字平移）；`utils.h` 删 4 个声明成为纯标准库头；5 个使用点补显式 include。零函数体改动、零工程改动、零协议字节变化 | 小步可逆，收口第 25.3 节最后一项，领域头闭包真正纯标准库；需本地编译验证一次 |
+| B · 阶段 3 收官整理 | 解除 A6：20 个平铺头按层归目录，批量订正约 60 处 include 与 97+ 条工程条目；并把过渡库 `Protocol` 改名 `UNOOL.Core`（slnx / 3 个 `ProjectReference` / README） | 纯组织整理、零行为变化，但改动面最大，且一次改动同时触碰目录与工程引用 |
+| C · W5 账号 / 商城用例服务 | 约 400 行业务从 `Socket.cpp` 抽出到 `AccountService` / `ShopService`，新建端口并重接组合根 | 跨登录 / 注册 / 查重 / 签到 / 商城 / 技能信息全链路，剩余项里风险最高 |
+| D · 暂停 | 接受阶段 3 前两批状态 | 配置门面、领域头平铺、Domain / Application 占位、库名不符都保留 |
+
+**用户选择：A「配置门面拆出」**（B 阶段 3 收官整理、C W5、D 暂停均未选），执行结果见第 27 节。Q3 排除项继续有效；A6「不物理移动现有文件」继续有效；阶段 4 客户端装配、阶段 5 / 6 另期。
+
+## 27. 阶段 3 第三批：配置门面拆出，`utils.h` 纯标准库（2026-11-09）
+
+### 27.1 范围与决策
+
+用户选择路线 A：把 4 个 json 配置门面声明从 `header/utils.h` 平移到独立头，让 `utils.h` 与被它传递包含的领域头闭包成为纯标准库，正面满足 Q8 的「Domain 纯标准库」口径。本批**零函数体改动、零编译配置改动、零协议字节变化、不物理移动文件**；新增 1 条 `ClInclude` 仅用于 IDE 显示，不参与编译。不含路线 B（领域头归位 / 库改名）、路线 C（W5）与阶段 4。
+
+### 27.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `header/adapters/JsonConfig.h` | `#pragma once` + `#include <json_fwd.hpp>` + 4 个声明（连同注释、空行共 **9 行逐字平移**自 `utils.h:42-50`）+ 说明注释；与 `JsonConfigProvider`（`IConfigProvider` 端口实现）职责区分 |
+| `header/utils.h` | 删 4 个声明及其注释（10 行）；17 条 `#include` 全部为标准库，不再出现 `nlohmann` 或任何本地头 |
+| `header/GameRenderer.h`、`header/adapters/JsonConfigProvider.h`、`source/ClientMain.cpp`、`source/TextManager.cpp`、`source/utils.cpp` | 各补 1 行 `#include "adapters/JsonConfig.h"`（5 个实际使用点全部显式包含） |
+| `header/adapters/JsonConfigProvider.h` | 订正原注释「json.hpp 必须早于 utils.h：后者在返回类型里直接用了 nlohmann::json」，改为说明本适配器调用 `value()` / `operator[]` / `get<>()` 需要完整定义 |
+| `header/adapters/FilesystemAssetCatalog.h`、`header/adapters/JsonUserRepository.h` | 各删 1 行同样已失真的注释；`<json.hpp>` **保守保留**（前者由 PCH 提供、后者经 `UserDB.h:8` 自带，删除属额外清理，本批不做） |
+| `Projects/Adapters/UNOOL.Adapters.vcxproj` | 新增 1 条 `ClInclude`（`..\..\header\adapters\JsonConfig.h`），仅 IDE 显示；Adapters 工程**没有 `.filters` 文件**，无需同步 |
+
+共 9 个改动文件 + 1 个新文件。`UNOOL.slnx`、3 个 json、`AdditionalDependencies`、`ClCompile`、`ProjectReference`、`ForcedIncludeFiles`、`Socket.*` / `GameState.*` / `AccountProtocol.*`、端口 8888 / 14341 与 `MessageType` 全部未改。
+
+### 27.3 收益与必须说清的边界
+
+- **`utils.h` 成为纯标准库头**：`Card.h` / `Effect.h` / `Skill.h` / `Character.h` / `GameState.h` / `InstantSkill.h` / `PassiveSkill.h` / `TransformSkill.h` / `UserDB.h` / `ShopData.h` 等经它传递包含后，闭包内只剩标准库头；第 25.3 节列下的「`utils.h` 靠 PCH 拿 `nlohmann::json`」就此收口。
+- **配置行为零变化**：4 个声明逐字平移、实现仍在 `source/utils.cpp`、缓存静态变量与 `readConfig()` 的 `ignore_comments=true` 解析逻辑未动，调用点只多一行 include。
+- **前向声明与完整定义兼容**：`dep/nlohmann/json.hpp` 内部自带 `INCLUDE_NLOHMANN_JSON_FWD_HPP_` 保护（3 处），与 `json_fwd.hpp` 使用同一 guard，同一编译单元同时包含两者不会重复定义；需要完整定义的 TU 仍由 `<json.hpp>` 显式 include 或 4 个 PCH 提供。
+- **边界（阶段 3 仍未完成）**：领域头仍平铺在 `header/`、`Domain` / `Application` 仍只编译 PCH 占位、库名 `Protocol` 仍与内容不符、W5 与阶段 4 未做。`GameRenderer.h` / `ClientMain.cpp` / `TextManager.cpp` 仍靠 `pch.h` 拿完整 json 定义，这是既有口径，不是本批引入的依赖。
+
+### 27.4 验证结果（助手侧静态只读）
+
+- 声明块从 `HEAD:header/utils.h` 与新头分别抽取后 `diff` **无差异（9 行逐字一致）**；`utils.h` 的 `nlohmann` / `json` 类型引用与本地头 `#include` 均为 **0**，17 条标准库 include 齐全。
+- 5 个使用点各 1 条 `adapters/JsonConfig.h`；全库配置门面调用点扫描共 7 个文件，除 `JsonConfig.h`（声明）与 `IConfigProvider.h`（仅注释）外全部显式包含，无遗漏。
+- `dep/nlohmann/json_fwd.hpp` 与 `header/adapters/JsonConfig.h` 路径可达；`json.hpp` 内含同 guard，前向声明 / 完整定义兼容性确认；4 个 PCH 的 `/FI` 配置未变。
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；同口径 Include 引用 **219 条、0 缺失**（基线 218 + 新增 1 条 `ClInclude`）；新头条目只出现在 `UNOOL.Adapters.vcxproj`；3 个 exe 的 `ClCompile` / `ClInclude` 在 `vcxproj` 与 `.filters` 间集合完全一致。
+- `git diff --check` 干净；BOM 保持（新头无 BOM，与其他 adapters 头一致）；换行保持（新头 LF，`utils.h` / `utils.cpp` CRLF）；项目自有裸指针声明 **0**；新头本地头 include 0 条；全库「utils.h 返回类型用了 nlohmann::json」类过时注释扫描归零。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 27.5 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. **编译（最高优先级）**：`json_fwd.hpp` 与各工程 PCH 的 `json.hpp` 同时包含时，`nlohmann::json` 前向声明与完整定义能否正常合并（尤其 `Adapters` 库 3 个单元与 `Protocol` 库 15 个单元）；`utils.h` 删声明后，所有 TU 是否仍能解析 4 个配置门面函数，有无 C2039 / LNK2019；
+2. **配置读取**：`server_config.json` / `client_config.json` 的注释解析、bp 阶段 `reloadServerConfig()`、字体 / 图片路径、商城与账号配置；
+3. **运行路径**：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；
+4. Debug / Release 两个配置。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 27.6 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **推进三项**：共享编译单元集中、纯领域头闭包脱离 Application 端口层、`utils.h` 成为纯标准库头（Q8 口径收口）。仍未做：领域头归位、`Domain` / `Application` 库实装、库拆分 / 改名 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 27.5），其中 `json_fwd.hpp` 与 PCH `json.hpp` 的共存、以及 `utils.h` 删声明后的全库可见性是最需要验证的两点；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

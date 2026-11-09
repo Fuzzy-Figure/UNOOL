@@ -106,6 +106,7 @@
     <ClInclude Include="..\..\header\adapters\Mt19937Random.h" />
     <ClInclude Include="..\..\header\adapters\SfmlClock.h" />
     <ClInclude Include="..\..\header\adapters\FilesystemAssetCatalog.h" />
+    <ClInclude Include="..\..\header\adapters\JsonConfig.h" />
     <ClInclude Include="..\..\header\application\IDecisionPort.h" />
     <ClInclude Include="..\..\header\application\IServerView.h" />
     <ClInclude Include="..\..\header\application\IConfigProvider.h" />

@@ -1,5 +1,5 @@
 #pragma once
-// json.hpp 必须早于 utils.h：后者在返回类型里直接用了 nlohmann::json。
+// 本适配器要调用 json 的 value() / operator[] / get<>()，需要完整定义。
 #include <json.hpp>
 
 #include <cstddef>
@@ -9,6 +9,7 @@
 
 #include "application/IConfigProvider.h"
 #include "utils.h"
+#include "adapters/JsonConfig.h"
 
 namespace unool::adapters {
 

@@ -3,6 +3,7 @@
 #include "ShopScene.h"
 #include "Socket.h"
 #include "utils.h"
+#include "adapters/JsonConfig.h"
 #include "AccountProtocol.h"
 #include "ShopData.h"
 #include <Windows.h>

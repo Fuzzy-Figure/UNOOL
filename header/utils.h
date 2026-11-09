@@ -39,16 +39,6 @@ namespace unool {
 		const std::filesystem::path& resourceRoot();
 	}
 
-	//服务器专用配置：读取 server_config.json 并缓存；reload 可强制重读
-	nlohmann::json& getServerConfig();
-	//强制重新读取 server_config.json，刷新缓存（bp 阶段每局前调用）
-	void reloadServerConfig();
-
-	//客户端专用配置：读取 client_config.json 并缓存；reload 可强制重读
-	nlohmann::json& getClientConfig();
-	//强制重新读取 client_config.json，刷新缓存
-	void reloadClientConfig();
-
 	inline constexpr auto alwaysTrue = [](auto&&...) noexcept { return true; };
 
 	namespace string {

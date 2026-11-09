@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "application/Services.h"
+#include "adapters/JsonConfig.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include <Windows.h>
 #include <cmath>

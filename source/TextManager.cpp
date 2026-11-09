@@ -1,5 +1,6 @@
 #include "TextManager.h"
 #include "utils.h"
+#include "adapters/JsonConfig.h"
 
 
 TextManager::TextManager(sf::RenderWindow& _window)

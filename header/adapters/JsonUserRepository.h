@@ -1,5 +1,4 @@
 #pragma once
-// json.hpp 必须早于 utils.h：后者在返回类型里直接用了 nlohmann::json。
 #include <json.hpp>
 
 #include <set>

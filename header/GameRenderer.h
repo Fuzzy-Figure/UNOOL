@@ -8,6 +8,7 @@
 #include "ImageManager.h"
 #include "GameState.h"
 #include "utils.h"
+#include "adapters/JsonConfig.h"
 
 //游戏渲染器
 class GameRenderer {
