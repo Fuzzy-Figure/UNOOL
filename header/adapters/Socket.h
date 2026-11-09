@@ -9,39 +9,11 @@
 #include <SFML/Network.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include "utils.h"
+#include "MessageType.h"
 
 
 struct GameState;
 struct CharInfo;
-
-//网络
-enum class MessageType {
-	None,
-	ClientInput,
-	GameState,
-	ConnectionInfo,
-	ConnectionRefused,
-	GameStart,
-	GameEnd,
-	Choice,
-	PointerUpdate,
-	CharInfo,
-	RegisterRequest,
-	RegisterResponse,
-	LoginRequest,
-	LoginResponse,
-	CheckUsernameRequest,
-	CheckUsernameResponse,
-	Heartbeat,
-	ShopData,
-	ShopPurchase,
-	ShopResult,
-	ReadyToPlay,
-	SkillInfoRequest,
-	SkillInfoResponse,
-	CheckinRequest,
-	CheckinResponse
-};
 
 struct ClientInput {
 	sf::Keyboard::Scancode key;

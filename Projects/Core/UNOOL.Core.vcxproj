@@ -104,6 +104,7 @@
     <ClInclude Include="pch.core.h" />
     <ClInclude Include="..\..\header\protocol\GameState.h" />
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\protocol\MessageType.h" />
     <ClInclude Include="..\..\header\adapters\Socket.h" />
     <ClInclude Include="..\..\header\domain\Card.h" />
   </ItemGroup>

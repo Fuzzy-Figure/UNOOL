@@ -2,8 +2,7 @@
 #include <string>
 #include <optional>
 #include <SFML/Network.hpp>
-
-enum class MessageType;
+#include "MessageType.h"
 
 namespace AccountProtocol {
 	// 构造请求 packet（客户端用）

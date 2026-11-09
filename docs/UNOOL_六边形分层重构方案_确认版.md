@@ -1421,11 +1421,13 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 ### 34.6 边界与本批未处理项
 
 - **边界 A · 目录名不等于依赖净化**：`source/domain/` 的 6 个 `.cpp` 仍 include `application/` 的 `GameLogic.h` / `Player.h`，`Character.cpp` 仍显式 include `application/Services.h`；`Socket.cpp` 与 `AccountProtocol.cpp` 的双向耦合（第 33.3 节）也原样保留。归位**只是物理组织整理，不改变任何依赖关系**，`Domain` / `Application` 库仍是 PCH 占位、3 个 exe 仍不引用，拆库门槛未变。
-- **边界 B · 遗留过时注释未动**：`source/protocol/CardPacket.cpp` 第 5–7 行仍写「`Protocol` 库」「由 exe 编译的 `Card.cpp`」「对 exe 对象文件保留反向符号引用」——这些在第 29 批库改名与第 23 批集中编译后即已失真，属**更早批次**遗留，不在本批"归位"范围内，助手未擅自扩大改动；如需订正可单独一批处理（纯注释、零行为变化）。
-- **边界 C · Win32 配置**：沿用第 32 批边界 B，`Server.vcxproj` 的 Win32 两条包含目录仍缺 `header` / `dep`，项目仅 x64，本批未补。
+- **边界 B · 遗留过时注释**：`source/protocol/CardPacket.cpp` 第 5–7 行仍写「`Protocol` 库」「由 exe 编译的 `Card.cpp`」「对 exe 对象文件保留反向符号引用」——这些在第 29 批库改名与第 23 批集中编译后即已失真，属**更早批次**遗留，不在本批"归位"范围内。**已在第 35 批订正（见 35.3）**。
+- **边界 C · Win32 配置**：沿用第 32 批边界 B，`Server.vcxproj` 的 Win32 两条包含目录仍缺 `header` / `dep`，项目仅 x64，本批未补。**已在第 35 批补齐（见 35.3 / 35.4）**。
 - **边界 D · 阶段 3 仍未整体完成**：`Domain` / `Application` 库实装（受第 33.3 节两条反向边限制）、W5 用例服务、阶段 4 客户端装配未做。
 
-### 34.7 需用户本地验证
+### 34.7 用户本地验证（已闭环，2026-11-09）
+
+**闭环**：用户确认第 34 批本地 VS 编译通过，并自行提交 `0a84f66`「阶段3第六批源码分层归位」，工作区干净，回归任务 #39 完成。18 个新路径被 `Core` 15 单元 / `Adapters` 2 单元 / 3 个 exe / 5 个独立 PCH 全部找到，`UNOOL.Core.lib` 与 3 个 exe 生成且无 LNK2019；26 个引号 include 编译器实测解析正常，无 C1083 / C1010；IDE 源文件筛选器定位正常。以下为当时的验收清单，保留作历史记录（第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效）。
 
 第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 / 29.5 / 30.5 / 32.5 节验收均不覆盖本批。请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（18 个 `.cpp` 路径变化会触发重编，属预期），重点回归：
 
@@ -1434,7 +1436,7 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 3. IDE 里 3 个 exe 的「源文件」筛选器能否定位到归位后的 `.cpp`（`.filters` 已同步）。
 4. 运行路径：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；Debug / Release 双配置。
 
-助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。本批改动**未提交**。
+助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。本批改动已由用户提交为 `0a84f66`。
 
 ### 34.8 阶段状态
 
@@ -1445,4 +1447,144 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 34.7），其中"18 个 `.cpp` 新路径能否被全部工程找到"是最需要验证的一点；② 归位不改依赖，阶段 3 的组织整理项至此基本用尽，**下一批若继续推进必然触及函数体或 Q3 边界**（`MessageType` 归位 / W5 / 拆库），需要单独的用户口径确认；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除**（见 34.7，用户确认编译通过并提交 `0a84f66`）；② 归位不改依赖，阶段 3 的组织整理项至此基本用尽，**下一批若继续推进必然触及函数体或 Q3 边界**（`MessageType` 归位 / W5 / 拆库），需要单独的用户口径确认；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+---
+
+## 35. 阶段 3 第七批：遗留收尾项闭环（2026-11-09，用户「编译通过，继续重构」→「请继续完成未完成的任务」）
+
+### 35.1 第六批闭环
+
+用户确认第 34 批本地 VS 编译通过，自行提交 `0a84f66`，工作区干净，回归任务 #39 完成（详见 34.7）。**阶段 2 四批 + 阶段 3 六批全部编译闭环**。
+
+### 35.2 本批范围与依据
+
+用户要求「继续完成未完成的任务」。本批只处理**此前批次已明确记录、无需新增口径**的三项遗留：34.6 边界 B（过时注释）、34.6 边界 C（Win32 包含目录）、34.7 / 34.8 未闭环的文档状态。全部为**零函数体、零源码 `#include`、零协议字节、零 x64 配置、零链接项、零 `slnx`、零 PCH 内容改动**；不触碰 Q3 排除项（不拆 `MessageType`）、不抽取 `Socket.cpp` 函数体、不改变任何依赖方向，`A6` 无需再解除。
+
+### 35.3 改动内容
+
+| 文件 | 改动 | 依据 |
+|---|---|---|
+| `source/protocol/CardPacket.cpp` | 第 5–7 行过时注释改写为 4 行现状说明：`Protocol 库` → `UNOOL.Core 静态库`；`由 exe 编译的 Card.cpp` → `同库的 source/domain/Card.cpp`；「对 exe 对象文件保留反向符号引用」→「第 23 批集中编译单元后已不再反向引用」，并标注历史说明见 19.3 / 21 节、现状见 23 节 | 34.6 边界 B；第 29 批库改名、第 23 批集中编译后即已失真 |
+| `Projects/Server/Server.vcxproj` | `Debug|Win32` / `Release|Win32` 两条 `AdditionalIncludeDirectories` 由仅 `$(ProjectDir)` 补齐为与 x64 完全相同的 7 项（`dep\nlohmann`、`dep\SFML\include`、`header` 及 4 个分层目录），各 1 行 | 34.6 边界 C；第 32 批补 16 条时遗漏 Win32 |
+| `README.md` | 分层维护说明补 1 句：四个分层包含目录已在 7 个工程全部 Debug / Release 配置登记（含 Server 的 Win32 两条），项目实际只构建 x64、Win32 仅保持包含目录一致 | 与本批配置改动同步 |
+
+**未改**：`CardPacket.cpp` 的 4 个 `sf::Packet` operator 及其函数体、其余 24 个 `.cpp`、全部 `.h`、`Server` 的 x64 两条配置与链接项、另外 6 个工程、`ClCompile` / `ClInclude` / `.filters`、`/FI` 与 PCH、`UNOOL.slnx`、3 个 json、端口 8888 / 14341、`MessageType`。
+
+### 35.4 Win32 配置的诚实边界
+
+补齐的是**头文件解析路径一致性**，不等于让 Win32 成为可构建配置：`Server.vcxproj` 的 Win32 两段 `Link` 仍缺 `AdditionalLibraryDirectories` / `AdditionalDependencies`（x64 才有 SFML 库），`LanguageStandard` 为 `stdcpp20`（x64 为 `stdcpp23`），且解决方案未启用 Win32 平台。本批**不声称修复 Win32 构建**，也不扩大范围去补链接项与语言标准；项目实际只构建 x64（第 32.6 / 34.6 边界 C 口径）。
+
+### 35.5 验证结果（助手侧静态只读）
+
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；**18 条** `AdditionalIncludeDirectories` 按工程类型分组核对：14 条「完整」配置（Client1 / Client2 / Server / Core / Adapters）全含 6 个目录，4 条「纯标准库占位」配置（Domain / Application）全含 4 个分层目录，**违规 0**。首版脚本把 6 个目录当统一基线，误报 Domain / Application 的 4 条——按 Q8「Domain 纯标准库」口径修正脚本后归零，**未因此改动任何工程文件**。
+- `Server` 的 4 个配置（`Debug|Win32` / `Release|Win32` / `Debug|x64` / `Release|x64`）包含目录字符串完全一致；x64 两条 diff 为空，本批工程 diff 恰为 2 行（各 1 行替换）。
+- `CardPacket.cpp` 去注释后与 HEAD 逐字一致（md5 `dd52f449b3d5fbaf85d37f16934a2c5e`，两侧相同），源码 diff 4 行增删全是注释。
+- 全库受跟踪代码中「`Protocol` 库」「由 exe 编译」「exe 对象文件」「UNOOL.Protocol」「pch.protocol」残留 **0**；`JsonUserRepository.h` / `LegacyServicesAdapter.h` / `Services.h` / `utils.cpp` 的「3 个 exe 共同链接」与现状相符，保留不动。
+- `git diff --check` 干净；改动文件仅 3 个；链接项 / PCH / `/FI` / `slnx` / 3 json / 端口 / `MessageType` / 其余源码 diff 为空。
+- BOM / 换行按字节核验与 HEAD 各自表示一致：`Server.vcxproj` 无 BOM + CRLF 213 行、`README.md` 无 BOM + CRLF 157 行、`CardPacket.cpp` 无 BOM + 纯 LF 60 行。
+- 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 35.6 阶段状态与剩余口径
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **组织整理与文档一致性项全部闭环**：共享编译单元集中、`utils.h` 纯标准库、库名 / PCH 名对齐、头文件与源码按四层归位且结构对称、过时注释与 Win32 包含目录收口。仍未做且均需单独口径：`Domain` / `Application` 库实装（受 33.3 两条反向边限制）、W5 用例服务 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**三条未解除的口径**（助手不擅自判定）：
+
+1. **Q3 边界**：原方案 §6「`MessageType` 拆分」指拆成 `ClientCommand` / `ServerEvent` 两组语义枚举并改 switch；而「物理归位」只是把同一个 25 值枚举换到 `header/protocol/MessageType.h`，值 / 顺序 / 数值 / 线上字节全不变，可消掉 33.3 的反向边 ①（协议→适配器头级）。两者字面都含「MessageType」。**已在第 36 批由用户明确：允许物理归位，仍排除拆分（见 36.1）**。
+2. **反向边 ②**：`source/domain/` 6 个 `.cpp` include `application/` 头、`Character.cpp` 调 `services()`，`GameState.cpp` / `CardPacket.cpp` 依赖 `Card::make`；只挪 `MessageType` 不足以拆库，仍需 W5 或更深的领域 / 用例切分。
+3. **函数体改动**：W5（约 401 行业务）与阶段 4（客户端 6 单元 2424 行）都会大段改写函数体，此前每批均经用户逐批确认后才执行。
+
+### 35.7 需用户本地验证
+
+本批只改注释与 `Server` 的 Win32 配置，**x64 编译与链接行为不变，无需专门的 x64 回归**；下次 Rebuild 时顺带确认 Win32 配置未引入 IDE 配置告警即可。改动**未提交**（沿用用户编译后自行提交的习惯）。
+
+---
+
+## 36. 阶段 3 第八批：`MessageType` 物理归位（2026-11-09，用户选 B，确认 Q3 边界）
+
+### 36.1 Q3 口径（用户明确）
+
+用户选择「`MessageType` 物理归位」，据此确认：**Q3 排除的是原方案 §6 的「拆成 `ClientCommand` / `ServerEvent` 两组语义枚举并改 switch」；允许把同一个 25 值枚举逐字平移到另一个头文件**，前提是值 / 顺序 / 隐式数值 / 线上字节全不变。本批严格按此执行：未拆分、未改任何 `switch` / `static_cast<int>` / `std::to_underlying`、未改端口与协议字节。该口径只解除到本批动作，不代表允许后续做枚举拆分；Q3 其余排除项（长度帧 / Partial、子技能异常、安全修复）继续有效。
+
+### 36.2 目标与范围
+
+消掉第 33.3 节的**反向边 ①（协议 → 适配器，头级）**：`MessageType` 完整枚举原定义在适配器头 `Socket.h:18–44`，协议头 `AccountProtocol.h:6` 只有前向声明；为拿到 5 处 `static_cast<int>(MessageType::…)` 的值，`AccountProtocol.cpp:2` 被迫 `#include "Socket.h"`。平移后协议层自带枚举定义，该反向 include 删除。
+
+**不触及反向边 ②**（`source/domain/` 6 个 `.cpp` include `application/` 头、`Character.cpp` 调 `services()`、`GameState.cpp` / `CardPacket.cpp` 依赖 `Card::make`），因此 **`Domain` / `Application` 库实装仍不可行**，两库仍是 PCH 占位、3 个 exe 仍不引用，拆库门槛未变。
+
+### 36.3 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `header/protocol/MessageType.h` | `#pragma once` + 3 行说明 + 从 `Socket.h:17–44` **逐字平移**的 `//网络` 注释与整个枚举块（25 值）。无 BOM + CRLF，与 `Socket.h` 一致 |
+| `header/adapters/Socket.h` | 删除第 17–44 行枚举定义；include 区补 1 行 `#include "MessageType.h"`（靠分层包含目录 `$(SolutionDir)header\protocol` 解析） |
+| `header/protocol/AccountProtocol.h` | 第 6 行 `enum class MessageType;` 前向声明改为 `#include "MessageType.h"`（同目录直接命中），协议头自带完整定义 |
+| `source/protocol/AccountProtocol.cpp` | 删除第 2 行 `#include "Socket.h"`；该文件除枚举外只用 `sf::Packet` / `std::string` / `std::optional` / `std::nullopt`，均由 `AccountProtocol.h` 提供 |
+| 4 个 `.vcxproj` | `Client1` / `Client2` / `Core` / `Server` 各加 1 条 `ClInclude`（仅 IDE 显示，不参与编译） |
+| 3 个 exe `.filters` | 各加 1 个 `ClInclude` 块，`<Filter>头文件</Filter>`，与同目录协议头一致 |
+| `README.md` | `Core` 段末句订正：枚举已归位、协议层不再反向包含 `Socket.h`、未拆分成两组 |
+
+**未改**：任何函数体、`switch`、`static_cast<int>(MessageType::…)`、`std::to_underlying(MessageType::…)`、枚举值与顺序、既有 `ClCompile` / `ClInclude` 条目、链接项 / `ProjectReference` / `/FI` / PCH 内容 / 包含目录 / `UNOOL.slnx` / 3 个 json / 端口 8888 与 14341、其余 24 个 `.cpp` 与全部其他 `.h`。
+
+### 36.4 依赖链验证（关键）
+
+对 5 个引用 `MessageType` 的 TU 做引号 include 传递闭包模拟（先查当前文件目录，再查 `header` 根 + 4 个分层目录）：
+
+| TU | 命中 `MessageType.h` | 命中 `Socket.h` |
+|---|---|---|
+| `source/protocol/AccountProtocol.cpp` | 1 | **0** |
+| `source/adapters/Socket.cpp` | 1 | 1 |
+| `source/adapters/LoginScene.cpp` | 1 | 1 |
+| `source/adapters/ShopScene.cpp` | 1 | 1 |
+| `source/ClientMain.cpp` | 1 | 1 |
+
+`LoginScene` / `ShopScene` 经各自头文件传递包含 `Socket.h`，`ClientMain` / `Socket.cpp` 直接包含；`Socket.h` 现在 include `MessageType.h`，故枚举定义对所有原有使用点仍可见。**协议层目录（`header/protocol/` 与 `source/protocol/`）对任何 `adapters` 头文件的引用数 = 0**。全库 `enum class MessageType` 只剩 1 处完整定义（新头），前向声明归零。
+
+### 36.5 零线上字节变化的证据
+
+- 枚举块从 HEAD 版 `Socket.h` 提取后与新头比对：**408 字符 / 27 行，归一化换行后逐字一致**；25 个值序列 `None … CheckinResponse` 与 HEAD 相同，隐式 `int` 数值 `None=0 … CheckinResponse=24` 不变。
+- 全库 `static_cast<int>(MessageType` **35** 处、`to_underlying(MessageType` **1** 处、`switch (static_cast<MessageType` **1** 处，工作区与 HEAD 计数完全相同；源码 diff 中不含任何一行这类语句。
+- `#pragma once` 保证同一 TU 内经 `Socket.h` 与 `AccountProtocol.h` 两条路径包含该头时不重复定义。
+
+### 36.6 验证结果（助手侧静态只读）
+
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；**166 条** `ClInclude` 引用 0 缺失；7 条新增 `MessageType.h` 条目全部可达。
+- 3 个 exe 的 `ClInclude` 在 `vcxproj` 与 `.filters` 间集合完全一致（Client1 22/22、Client2 22/22、Server 20/20），且都含新头。
+- `git diff --check` 干净；工程 diff 仅 7 条新增 `ClInclude`（4 条单行 + 3 个三行块）与第七批遗留的 Server Win32 两行；源码 diff 仅 3 个文件的 include / 注释行。
+- BOM / 换行按字节核验与 HEAD 各自表示一致：新头无 BOM + CRLF 34 行，`Socket.h` / `AccountProtocol.h` / `AccountProtocol.cpp` 无 BOM + CRLF，`Core.vcxproj` 无 BOM + 纯 LF，`Client1.filters` 有 BOM + CRLF。
+- 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 36.7 边界
+
+- **反向边 ② 仍在**：`source/domain/` 6 个 `.cpp` include `application/` 头、`Character.cpp` 调 `services()`。只消掉边 ① **不足以**拆 `Domain` / `Application` 库，第 33.3 / 35.6 的判断不变。
+- `Socket.h` 仍定义 `ClientInput` / `ConnectionInfo` 等传输 DTO 并声明 `ServerNetwork` / `ClientNetwork`；`Socket.cpp` 仍调用 `AccountProtocol::*`（适配器 → 协议，方向正确）。
+- 第 35.4 节 Win32 边界沿用：Win32 仍不是可构建配置，本批未改任何 Win32 配置。
+- 第七批（第 35 节）改动仍**未提交**，与第 34 批之后各批一样按用户编译后自行提交的习惯处理。
+
+### 36.8 需用户本地验证
+
+请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（新增头 + 两个头文件的 include 变化会触发大范围重编，属预期），重点回归：
+
+1. **最高优先级**：`header/protocol/MessageType.h` 能否被 5 个独立 PCH（Create / Use + `/FI`）与所有编译单元解析到——尤其 `Socket.h` 经 `$(SolutionDir)header\protocol` 间接包含该头时有无 **C1083**；枚举从「前向声明」变「完整定义」后有无 **C2011 / C2371 重定义**。
+2. `AccountProtocol.cpp` 删除 `#include "Socket.h"` 后，`sf::Packet` / `std::optional` / `std::nullopt` 是否仍可见，有无 **C2039 / C2065 / C1010**；`UNOOL.Core.lib` 与 3 个 exe 生成、有无 **LNK2019**。
+3. 线上行为：登录 / 注册 / 查重 / 签到 / 商城 / 技能描述、状态广播 / CharInfo、出牌与选项分页、心跳、超时、600 秒重连、Client1 / Client2 双开；重点确认**消息号字节未变**（Q10 不要求新旧客户端混跑）。
+4. IDE 里 3 个 exe 的「头文件」筛选器能否看到新头；Debug / Release 双配置。
+
+助手侧不做编译（策略拦截），改动**未提交**。
+
+### 36.9 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **反向边 ①（协议 → 适配器头级）已消除**；组织整理、文档一致性、协议头独立均闭环。剩余：反向边 ②、`Domain` / `Application` 库实装、W5 用例服务 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`） |
+| 5 / 6 | 按 Q3 / Q9 另期（Q3 的「枚举拆分」仍排除，仅本批的物理归位获确认） |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 36.8），其中「新头能否被全部 PCH / TU 解析、枚举完整定义是否引发重定义」最需验证；② 反向边 ② 未消解，拆库仍不可行，W5 或更深的领域 / 用例切分是真正前置；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
