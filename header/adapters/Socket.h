@@ -150,7 +150,10 @@ public:
 
 // 阶段 4 · S1 实现 IClientSession 端口；S3a（用户 49.10 口径②A）改由
 // adapters 层的 IClientGateway 继承实现——该网关端口间接继承 IClientSession，
-// 会话 6 方法的签名与函数体仍逐字未改，新增 3 个出站方法的 override 标记。
+// 会话 6 方法的签名与函数体仍逐字未改。
+// S3b1（用户 51.11 口径②A + ③C）：网关端口新增两个入站纯虚，本类的
+// receivePacket / peekMessageType 加 override；同时删除零调用的 setCredentials /
+// reconnect 与恒为空的 username / password（不可达死代码链，对外行为零变化）。
 // ClientNetwork 仍是唯一的具体实现，S1 的 IClientSession& 端口视图继续有效。
 class ClientNetwork : public unool::adapters::IClientGateway {
 private:
@@ -159,10 +162,9 @@ private:
 	std::size_t playerId = 0;
 	std::queue<sf::Packet> receivedPackets;
 
+	// S3b1：仍由 connect() 赋值，删 reconnect() 后只写不读，顺延到后续批次再判
 	std::string serverIp;
 	unsigned short serverPort = 0;
-	std::string username;
-	std::string password;
 
 private:
 	bool sendPacket(sf::Packet& packet);
@@ -179,14 +181,16 @@ public:
 	bool send(sf::Packet& packet) override;
 	// 发送商城购买请求（purchaseData 为 JSON 字符串）
 	bool sendShopPurchase(const std::string& purchaseData) override;
-	std::optional<sf::Packet> receivePacket();
-	std::optional<int> peekMessageType() const;
+	std::optional<sf::Packet> receivePacket() override;
+	std::optional<int> peekMessageType() const override;
 
 	void setPlayerId(std::size_t id) override { playerId = id; }
 	std::size_t getPlayerId() const override { return playerId; }
-	const std::string& getUsername() const override { return username; }
+	// S3b1：原实现返回的 username 因 setCredentials() 零调用而恒为空串，删除该字段后
+	// 改为返回函数内静态空串，返回值与 ClientApp.cpp 的打印内容逐字不变。
+	const std::string& getUsername() const override {
+		static const std::string empty{};
+		return empty;
+	}
 	bool isConnected() const override { return socket != nullptr; }
-
-	void setCredentials(const std::string& u, const std::string& p) { username = u; password = p; }
-	bool reconnect();
 };

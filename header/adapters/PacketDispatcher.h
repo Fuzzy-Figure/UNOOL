@@ -4,12 +4,17 @@
 #include <SFML/Network.hpp>
 #include "MessageType.h"
 
-class ClientNetwork;
+namespace unool::adapters { class IClientGateway; }
 
 namespace unool::adapters {
 
 	// 阶段 4 · S2：把三处收包循环里重复的「peek 过滤 / 心跳回复 / 包体消息号消费」
 	// 收拢到单点。业务判定仍留在各阶段，S3 才会把两个 Scene 纯 View 化并改为订阅回调。
+	//
+	// 阶段 4 · S3b1（用户 51.11 口径②A）：两个 next() 与 replyHeartbeat() 的参数由
+	// ClientNetwork& 泛化为 IClientGateway&；三处调用点传 ClientNetwork& 时经派生→基类
+	// 隐式转换，语句逐字不变。DrainAll / Filtered 语义与跨阶段留包约定不变。
+	//
 	// 两种重载逐字对应原有语义：
 	//   next(net)             → DrainAll：消费队列里所有包，坏包丢弃，心跳内部回复；
 	//                           对应 ShopScene::handleNetwork 与 gamePhase 的收包循环。
@@ -23,12 +28,12 @@ namespace unool::adapters {
 
 	class PacketDispatcher {
 	public:
-		static std::optional<InboundPacket> next(ClientNetwork& net);
-		static std::optional<InboundPacket> next(ClientNetwork& net,
+		static std::optional<InboundPacket> next(IClientGateway& net);
+		static std::optional<InboundPacket> next(IClientGateway& net,
 		                                        std::initializer_list<MessageType> subscription);
 
 	private:
-		static void replyHeartbeat(ClientNetwork& net);
+		static void replyHeartbeat(IClientGateway& net);
 	};
 
 }

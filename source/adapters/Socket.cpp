@@ -587,67 +587,6 @@ bool ClientNetwork::connect(const std::string& ip, unsigned short port) {
 	return true;
 }
 
-bool ClientNetwork::reconnect() {
-	if (serverIp.empty() || username.empty()) {
-		std::println(stderr, "[ClientNetwork] 无法重连：缺少服务器地址或凭证");
-		return false;
-	}
-
-	// 清空旧的接收队列
-	while (!receivedPackets.empty()) receivedPackets.pop();
-
-	if (!connect(serverIp, serverPort)) {
-		return false;
-	}
-
-	// 发送登录请求
-	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
-	if (!send(req)) {
-		std::println(stderr, "[ClientNetwork] 重连：发送登录请求失败");
-		return false;
-	}
-
-	// 等待登录响应（最多等 5 秒）
-	// 暂存非登录包（如 GameState），登录成功后放回队列供主循环处理
-	std::queue<sf::Packet> savedPackets;
-	sf::Clock clock;
-	while (clock.getElapsedTime().asSeconds() < 5.f) {
-		update();
-		while (auto packetOpt = receivePacket()) {
-			sf::Packet packet = *packetOpt;
-			sf::Packet peek = packet;  // 用副本判断类型，不移动原始 packet 的读指针
-			int msgType;
-			if (!(peek >> msgType)) continue;
-
-			if (msgType == static_cast<int>(MessageType::ConnectionInfo)) {
-				std::size_t pid;
-				if (peek >> pid) setPlayerId(pid);
-				continue;
-			}
-			if (msgType == static_cast<int>(MessageType::LoginResponse)) {
-				auto resp = AccountProtocol::parseAccountResponse(peek);
-				if (resp && resp->ok) {
-					std::println("[ClientNetwork] 重连成功：{}", resp->msg);
-					// 把暂存的包放回队列
-					while (!savedPackets.empty()) {
-						receivedPackets.push(savedPackets.front());
-						savedPackets.pop();
-					}
-					return true;
-				}
-				std::println(stderr, "[ClientNetwork] 重连登录失败：{}", (resp ? resp->msg : "解析失败"));
-				return false;
-			}
-			// 其他包暂存（原始 packet 读指针未移动）
-			savedPackets.push(packet);
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	}
-
-	std::println(stderr, "[ClientNetwork] 重连：等待登录响应超时");
-	return false;
-}
-
 void ClientNetwork::disconnect() {
 	if (socket) {
 		selector.remove(*socket);

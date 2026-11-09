@@ -1,21 +1,22 @@
 #include "PacketDispatcher.h"
 
-#include "Socket.h"
+#include "IClientGateway.h"
 #include <SFML/Network.hpp>
 #include <utility>
 
 // 阶段 4 · S2：三处收包循环原本各写一份的收包动作，收拢到这里。
 // 心跳回复统一在本单元完成（用户 46.5 口径②A），`MessageType` 值、包体与回复字节逐字不变。
+// S3b1（51.11 口径②A）：参数由 ClientNetwork& 泛化为 IClientGateway&，函数体逐字未改。
 
 namespace unool::adapters {
 
-	void PacketDispatcher::replyHeartbeat(ClientNetwork& net) {
+	void PacketDispatcher::replyHeartbeat(IClientGateway& net) {
 		sf::Packet hb;
 		hb << static_cast<int>(MessageType::Heartbeat);
 		net.send(hb);
 	}
 
-	std::optional<InboundPacket> PacketDispatcher::next(ClientNetwork& net) {
+	std::optional<InboundPacket> PacketDispatcher::next(IClientGateway& net) {
 		// 显式 for 循环 + 末尾 return，避免 Debug|x64 的 /we4715 把「控制路径未全部返回值」判为错误
 		for (auto packetOpt = net.receivePacket(); packetOpt; packetOpt = net.receivePacket()) {
 			sf::Packet packet = std::move(*packetOpt);
@@ -31,7 +32,7 @@ namespace unool::adapters {
 		return std::nullopt;
 	}
 
-	std::optional<InboundPacket> PacketDispatcher::next(ClientNetwork& net,
+	std::optional<InboundPacket> PacketDispatcher::next(IClientGateway& net,
 	                                                    std::initializer_list<MessageType> subscription) {
 		while (auto peek = net.peekMessageType()) {
 			// 队列空或队首包读不出消息号：原 LoginScene 直接 break，坏包留在队列，这里保持一致

@@ -2670,3 +2670,78 @@ S3a 已提交 `d8699a2`。按 49.4 / 50.9，下一步是 **S3b `LoginScene` 纯 
 **①A + ②A 的落地清单（第二十一批 S3b1）**：`IClientGateway.h` 增 `std::optional<sf::Packet> receivePacket()` / `std::optional<int> peekMessageType() const` 两个纯虚（并按要求 include `<SFML/Network.hpp>` 与 `<optional>`）；`Socket.h` 两个方法加 `override`；`PacketDispatcher.h` 的前向声明与两个 `next` / `replyHeartbeat` 签名由 `ClientNetwork&` 改为 `IClientGateway&`，`PacketDispatcher.cpp` 的 `#include "Socket.h"` 改为端口头；`LoginScene.h` 删 `#include "Socket.h"`、成员与构造参数切到 `IClientGateway&`；`LoginScene.cpp` 只同步构造签名。`ClientApp.cpp` / `ShopScene.cpp` 的两处 `PacketDispatcher::next(ClientNetwork&)` 调用点因派生→基类隐式转换**零改动**；三处调用点的订阅集、循环头、业务判定逐字不变。5 个请求构造 / 4 个响应解析 / 状态机 / `render()` / `run()` 主循环全部逐字留在 `LoginScene.cpp`（协议上移归 S3b2）。
 
 **本批性质**：对外行为零变化（③C 删的是不可达死代码）；改动面比 51.5 表中 ①A 的 60–90 行估算更大（叠加 ③C 约 60 行删除），但三件事都是类型替换或死代码删除，可一次 Rebuild 验证。方案第 52 节将记录逐段等价性证据与 Rebuild / 回归清单；确认口径后无需再点选，助手直接开工第二十一批。
+
+---
+
+## 52. 第二十一批 S3b1：类型解耦 + `PacketDispatcher` 泛化 + 死代码链清理（2026-11-09，口径确认后）
+
+### 52.1 前置与口径
+
+第二十批只读评估 `161d391` 与口径确认 `7152e0c` 已提交，工作区在开工前只有一处**非助手产生**的 `UNOOL.slnx` 改动（VS 重排工程条目并把确认版方案加入 `/doc/` 显示），助手已 `git restore --staged` 移出暂存区、保留在工作区，**不纳入本批**。
+
+用户口径：**①A 类型解耦先行 / ②A 扩 `IClientGateway` 并泛化 `PacketDispatcher` / ③C 删掉死方法**。S3b2（协议构造 / 响应解析上移）与 S3c、S4 一律不动。
+
+### 52.2 执行清单（7 个代码文件，零工程文件改动）
+
+| 文件 | 改动 |
+|---|---|
+| `header/adapters/IClientGateway.h` | ②A：include `<optional>` 与 `<SFML/Network.hpp>`（删仅前向声明），新增 `std::optional<sf::Packet> receivePacket()` / `std::optional<int> peekMessageType() const` 两个纯虚；注释写明 S3a 的轻量化让位于完整类型要求 |
+| `header/adapters/Socket.h` | ②A：`receivePacket()` / `peekMessageType() const` 加 `override`（`ClientNetwork` 共 11 个 `override` = 会话 6 + 网关 5）。③C：删 `setCredentials()`、`bool reconnect();`、`username` / `password` 两字段；`getUsername()` 改为返回函数内 `static const std::string empty{}`。保留 `serverIp` / `serverPort`（`connect()` 仍赋值，只写不读，顺延） |
+| `source/adapters/Socket.cpp` | ③C：删 `reconnect()` 整个函数（61 行，含 S2 记录的**第四处一次性收包循环**）；其余全部函数体零改动 |
+| `header/adapters/PacketDispatcher.h` | ②A：`class ClientNetwork;` 前向声明改为 `namespace unool::adapters { class IClientGateway; }`；两个 `next()` 与 `replyHeartbeat()` 的签名由 `ClientNetwork&` 改为 `IClientGateway&` |
+| `source/adapters/PacketDispatcher.cpp` | ②A：`#include "Socket.h"` → `#include "IClientGateway.h"`，3 处签名同步；**三个函数体逐字未改** |
+| `header/adapters/LoginScene.h` | ①A：删 `#include "Socket.h"`（粗粒度传递依赖），改 `#include "adapters/IClientGateway.h"`；成员 `ClientNetwork& net` 与构造第 2 参数切到 `unool::adapters::IClientGateway&` |
+| `source/adapters/LoginScene.cpp` | ①A：**仅构造定义第 1 行参数类型同步**，其余 545 行（5 个请求构造 / 4 个响应解析 / 3 个状态机 / `render()` / `run()` / `pollAccountPackets()` 订阅集）逐字未改 |
+
+`ClientApp.cpp` / `ShopScene.cpp` / `ShopScene.h` / `ClientApp.h` / 全部工程文件 / `UNOOL.slnx` 零改动。
+
+### 52.3 设计说明
+
+- **②A 为何要完整 SFML 头**：`std::optional<sf::Packet>` 作为返回类型要求 `sf::Packet` 是完整类型，端口头必须 include `<SFML/Network.hpp>`。②A 原文允许网关端口「可含 `sf::Packet`」，S3a 的「仅前向声明」是当时的轻量化选择，此处按类型系统要求让位，不改变分层方向（`adapters → application`，`IClientSession.h` 保持纯标准库、零改动）。
+- **三处调用点为何零改动**：`ClientApp.cpp:123` 与 `ShopScene.cpp:59` 传 `ClientNetwork&`，`LoginScene.cpp:242` 传 `IClientGateway&`；前两处经派生→基类公有继承的隐式引用转换绑定到 `IClientGateway&`，重载解析仍是原来的两个 `next`（`DrainAll` / `Filtered`），订阅集、循环头、业务判定逐字不变。
+- **①A 边界先行的延续**：本批只完成「`LoginScene` 不再看见具体 `ClientNetwork`」，协议逻辑仍留在 `.cpp`。5 个请求构造与 4 个响应解析的上移需要结果回传通道与 `run()` 主循环改造，按 51.5 归 S3b2 单独评估，避免退回「一口气 616 行」的高风险路径。
+- **③C 的行为等价**：51.11 已证 `reconnect()` 零调用且恒在首行返回 `false`、`username` 恒为空串；删掉后 `getUsername()` 返回静态空串与现状逐字一致，`ClientApp.cpp:131` 的打印内容不变。删掉的是客户端唯一自动重连能力（当前不可达），将来恢复需重写——用户 ③C 明确授权。
+- **传递依赖复核**：`LoginScene.h` 删 `Socket.h` 后，`sf::FloatRect` / `sf::Event` 由 `<SFML/Graphics.hpp>` 提供；`LoginScene.cpp` 的 `std::format` / `std::println` / `std::min` / `std::vector` / `std::size_t` 由 `GameRenderer.h → utils.h`（含 `<format>` / `<print>` / `<algorithm>` / `<vector>` / `<cstddef>`）提供，`sf::Keyboard::Scancode` 由 `pch.h` 的 `<SFML/Window/Keyboard.hpp>` 提供，`MessageType` 由 `AccountProtocol.h` / `PacketDispatcher.h` 提供，`sf::Packet` 由 `.cpp` 显式 `<SFML/Network.hpp>` 提供。**未新增任何 include**。
+
+### 52.4 等价性证据
+
+- `git diff -- source/adapters/LoginScene.cpp`：仅构造签名 1 行（`ClientNetwork& n` → `unool::adapters::IClientGateway& n`），其余 545 行零差异。
+- `git diff -- source/adapters/PacketDispatcher.cpp`：仅 include 1 行 + 3 处签名 + 1 行新增注释；`replyHeartbeat` / 两个 `next` 的函数体（含 `/we4715` 规避写法、坏包丢弃、心跳消费与回复、`!accepted` 留包）逐字未改。
+- `git diff -- source/adapters/Socket.cpp`：只有 `reconnect()` 61 行的删除块，无其它 hunk。
+- 三处 `PacketDispatcher::next` 调用点所在文件 `git status` 为空；`LoginScene` 的 8 处 `net.*`（send 5 / update 1 / setPlayerId 1 / isConnected 1）全部落在 `IClientGateway` 5 个纯虚 + 继承的会话 6 方法内；`ClientNetwork` 的 11 个 `override` 全部有定义且签名匹配。
+- 双客户端 `ClCompile` / `ClInclude` 集合 `diff` 为空；`MessageType` 枚举计数 25。
+
+### 52.5 零改动项
+
+`MessageType` 25 值与顺序、端口 8888 / 14341、线上包体与 `ClientInput.key` 字节、JSON 配置与存档、跨阶段留包与三处心跳单点、5 个请求包与 4 个响应字段顺序、全部文案与状态机、S3a 刚固化的商城返回判定、三个纯 View 单元、`IClientSession.h` / `IShopOpener.h` / `ClientApp.h` / `ClientApp.cpp` / `ShopScene.h` / `ShopScene.cpp` / `ServerNetwork` 全部代码、`ICommands.h`、库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10、46.7 ③B、49.10 全部保持。**本批无对外行为变化。**
+
+### 52.6 静态验证（助手侧，未本地编译）
+
+7 个 `.vcxproj` + 3 个 `.filters` 全量 XML 解析通过，`ClCompile` / `ClInclude` / `None` 共 **169 条 Include 路径 0 缺失**（26 / 15 / 37 / 37 / 27 / 4 / 23），本批无新增文件故工程条目不变；新增 / 修改代码裸指针 **0 命中**；`git diff --check` 干净；编辑工具把 `PacketDispatcher.h/.cpp` 写成 LF，已按既有口径字节级复位，7 个改动文件全部 **UTF-8 无 BOM + CRLF**。助手侧 MSBuild / Python 仍被安全策略拦截、从未绕过。
+
+### 52.7 请用户 Rebuild 的重点
+
+1. `std::optional<sf::Packet>` 作为纯虚返回类型 + `<SFML/Network.hpp>` 与 `Socket.h` 既有完整 SFML 定义共存（第十四批 `Card.h` 先例）。
+2. 继承链 `IClientSession → IClientGateway → ClientNetwork` 变更后 11 个 `override` 匹配、虚表与 `LNK2019`；`ClientApp.h` 的 `session_{ net }` 隐式转换仍成立。
+3. `PacketDispatcher::next(ClientNetwork&)` 两处调用点的**重载解析与隐式派生→基类转换**；`PacketDispatcher.cpp` 不再 include `Socket.h` 后 `net.send()` / `receivePacket()` / `peekMessageType()` 是否都经端口可见。
+4. `LoginScene.h` 删 `Socket.h` 后的传递依赖（52.3 已逐项核对，重点看 `sf::Event::KeyPressed` / `sf::Keyboard::Scancode` 与 `std::format` / `std::println`）。
+5. ③C 删除后 `Socket.cpp` 的 `<thread>` / `AccountProtocol.h` 仍被 `ServerNetwork` 使用（已核对 `:523` / `:342`），不应产生未使用包含告警或缺失符号。
+
+### 52.8 运行时回归重点
+
+**跨阶段留包**（登录阶段 `GameState` / `Choice` 必须留到 `gamePhase`）、三处心跳与服务器 3 秒超时、5 个请求包字节与 4 个响应字段顺序、登录 → 注册 → 查重 → 大厅 → 签到 → 商城 → 开局全链路、`ConnectionInfo` 与登录成功两条控制台文案、双开双配置、端口 8888 / 14341 与包体、49.7 基线其余项。特别注意：`ClientApp.cpp:131` 的「分配到玩家」打印仍是空用户名（既有缺陷，按 ③C 口径未修）。
+
+### 52.9 编译验证（用户侧 MSBuild，2026-11-09 21:25）
+
+助手侧 `MSBuild.exe` 被客户端 LOLBin 硬黑名单拦截（用户先后把 `command.rules` 白名单写成 `MSBuild.exe` 与完整绝对路径，两种形式、两个命令通道均无效；助手未绕过），故由用户提供 `UNOOL_Rebuild.bat`（`VsDevCmd.bat -arch=amd64` + `MSBuild.exe /t:Rebuild`，日志固定 `%TEMP%\unool_debug.log` / `unool_release.log`）在本地执行，助手只读解析日志：
+
+| 配置 | 结果 | 警告 / 错误 | 用时 | 产物 |
+|---|---|---|---|---|
+| `Debug\|x64` | 已成功生成 | 0 / 0 | 00:00:16.97 | 4 `.lib` + 3 `.exe` |
+| `Release\|x64` | 已成功生成 | 0 / 0 | 00:00:23.22 | 4 `.lib` + 3 `.exe` |
+
+7 个工程全部参与 `Rebuild` 目标：`UNOOL.Domain` / `UNOOL.Application` / `UNOOL.Core` / `UNOOL.Adapters` 四个静态库与 `Client1` / `Client2` / `Server` 三个可执行文件；`x64/Debug` 与 `x64/Release` 下 6 个 `.exe` 时间戳均为 21:25。52.7 列出的 5 个编译期风险点全部排除（`std::optional<sf::Packet>` 纯虚返回、11 个 `override` 与虚表、两处派生→基类隐式转换、端口头可见性、删 `Socket.h` 后的传递依赖）。工作区未新增未跟踪文件，构建产物均被 `.gitignore` 覆盖。运行时回归仍按 52.8 由用户实跑。
+
+### 52.10 提交与后续
+
+本批代码 + 文档一并交付，用户 Rebuild 通过后由助手生成结构化提交消息提交 10 个文件（7 代码 + 方案第 52 节 + README + 工作记忆），提交时显式排除用户侧的 `UNOOL.slnx` 改动。之后按 51.5 ①A 推进 **S3b2**（5 个请求构造 / 4 个响应解析上移 + 结果回传通道，需单独评估 `run()` 主循环改造与留包时序），再 S3c `ShopScene`（980 行，含 `skillsCache` / `pendingSkills` 归属）。

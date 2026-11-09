@@ -7,7 +7,7 @@
 #include <utility>
 
 
-LoginScene::LoginScene(GameRenderer& r, ClientNetwork& n,
+LoginScene::LoginScene(GameRenderer& r, unool::adapters::IClientGateway& n,
 	                       unool::adapters::IShopOpener& opener, const std::string& title)
 	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
