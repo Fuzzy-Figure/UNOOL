@@ -1567,7 +1567,9 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 - 第 35.4 节 Win32 边界沿用：Win32 仍不是可构建配置，本批未改任何 Win32 配置。
 - 第七批（第 35 节）改动仍**未提交**，与第 34 批之后各批一样按用户编译后自行提交的习惯处理。
 
-### 36.8 需用户本地验证
+### 36.8 用户本地验证（已闭环，2026-11-09）
+
+**闭环**：用户确认第七 / 八批本地 VS 编译通过；助手将已暂存的 15 个文件提交为 `a532069`「阶段3收尾与MessageType物理归位」，工作区干净，回归任务 #42 完成。`MessageType.h` 被 5 个独立 PCH 与全部 TU 解析、无 C1083；枚举由前向声明变完整定义无重定义报错；`AccountProtocol.cpp` 删 `Socket.h` 后 `sf::Packet` / `std::optional` / `std::nullopt` 仍可见、无 C2039 / C1010；`UNOOL.Core.lib` 与 3 个 exe 生成、无 LNK2019；消息号字节未变，登录 / 商城 / 状态广播等运行路径正常；IDE 头文件筛选器可见新头。以下为当时的验收清单，保留作历史记录（第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效）。
 
 请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（新增头 + 两个头文件的 include 变化会触发大范围重编，属预期），重点回归：
 
@@ -1576,7 +1578,7 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 3. 线上行为：登录 / 注册 / 查重 / 签到 / 商城 / 技能描述、状态广播 / CharInfo、出牌与选项分页、心跳、超时、600 秒重连、Client1 / Client2 双开；重点确认**消息号字节未变**（Q10 不要求新旧客户端混跑）。
 4. IDE 里 3 个 exe 的「头文件」筛选器能否看到新头；Debug / Release 双配置。
 
-助手侧不做编译（策略拦截），改动**未提交**。
+助手侧不做编译（策略拦截）。改动已提交为 `a532069`。
 
 ### 36.9 阶段状态
 
@@ -1587,4 +1589,132 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`） |
 | 5 / 6 | 按 Q3 / Q9 另期（Q3 的「枚举拆分」仍排除，仅本批的物理归位获确认） |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 36.8），其中「新头能否被全部 PCH / TU 解析、枚举完整定义是否引发重定义」最需验证；② 反向边 ② 未消解，拆库仍不可行，W5 或更深的领域 / 用例切分是真正前置；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除**（见 36.8，用户确认编译通过并提交 `a532069`）；② 反向边 ② 未消解，拆库仍不可行，准确前置见第 37.3 节（此前「W5 是拆库真正前置」的表述偏笼统，已订正）；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+---
+
+## 37. 第七 / 八批闭环与第九批只读评估（2026-11-09，用户「编译通过，继续重构」）
+
+### 37.1 闭环
+
+用户确认第七 / 八批本地 VS 编译通过，助手提交 `a532069`，工作区干净，回归任务 #42 完成。**阶段 2 四批 + 阶段 3 八批全部编译闭环**。本节只做只读评估，未改动任何代码。
+
+### 37.2 本轮评估的三个新事实（修正此前记录）
+
+1. **领域头闭包并不反向依赖 Application 层**：`header/domain/` 的 10 个头里，对 `application/` 头或 `GameLogic.h` / `Player.h` 的 `#include` 数 = **0**。第 32.3 节边界 A 所说「`Player.h` 归类把既有 domain→application 反向依赖显性化」只在 **`source/domain/*.cpp` 实现层**成立，头文件层不存在该边；第 27 批「领域头闭包纯标准库」的结论在核心领域头上仍成立。
+2. **`GameState.cpp` 不需要 `Card::make()`**：它只用 `Card::Color` / `Card::Name` 两个枚举值（经 `GameState.h → Card.h`，编译期常量）；第 33.3 节把 `GameState.cpp` 与 `CardPacket.cpp` 并列写成「需 `Card::make`」是**误报**，实际只有 `CardPacket.cpp:50` 一处跨到领域实现的调用。协议层对领域实现的符号依赖比此前记录的更窄。
+3. **`header/domain/ShopData.h` 破坏 Q8 口径**：它是唯一 include 第三方头 `<json.hpp>` 的 `domain/` 头（117 行，含 2 个让 `nlohmann::json` 支持枚举序列化的 `adl_serializer` 特化，需完整定义，不能简单换 `json_fwd.hpp`）。第 32 批把它归入 `domain/` 属归类遗留；它只被 `ShopScene.h` / `Socket.cpp` / `ClientMain.cpp` 包含，不被任何核心领域头传递包含，因此未污染第 27 批的闭包结论。
+
+### 37.3 反向边 ② 的精确形态（拆库为何仍不可行）
+
+- `source/domain/` 7 个 `.cpp` 中 6 个 include `GameLogic.h` / `Player.h`，且是**真实符号使用**：`Card.cpp:276` `applyEffect(GameLogic&, Player&, Player&)`、`Pile::standard(GameLogic&)`；`Effect.cpp` / `InstantSkill.cpp` / `PassiveSkill.cpp` / `Skill.cpp` / `TransformSkill.cpp` 大量以 `GameLogic&` / `Player&` 为参数并调用其方法；`Character.cpp` 另有 4 处 `services().assets / config`。
+- `source/application/` 2 个 `.cpp` 反向 include `Card.h` / `Character.h` 并调用其符号。
+- `GameLogic.h` / `Player.h` 显式 include 端口头（`IDecisionPort.h` / `IServerView.h` / `Services.h`），而 `services()` 定义在 `source/utils.cpp`（`Core` 库 15 单元之一）。
+- **结论**：这 9 个 `.cpp` 是紧密互调的同一模型集群，拆成两个静态库必然形成 `lib ↔ lib` 双向符号引用；把它们全部放进同一库才能让 `GameLogic` / `Player` 的符号在库内解析，但 `services()` 又落在 `Core` 库，会产生新的跨库边。**W5（账号 / 商城用例）不能消解这条边**——它处理的是 `Socket.cpp` 的业务混装，与领域模型互调无关。此前「W5 是拆库真正前置」偏笼统，准确说法是「需要重新划分这 9 个领域模型的库归属，以及 `services()` 的所在库」。
+
+### 37.4 剩余规模实测
+
+| 项 | 实测 |
+|---|---|
+| W5 业务 | `Socket.cpp` 1004 行；`trySpendPoints` 82–89、`handleAccountPacket` 319–411、`sendShopData` 544–647、`handleSkillInfoRequest` 648–675、`handleCheckin` 676–696、`handleShopPurchase` 697–843 |
+| 阶段 4 客户端 | 6 单元 2426 行（`ClientMain.cpp` 263、`GameRenderer.cpp` 474、`LoginScene.cpp` 560、`ShopScene.cpp` 882、`TextManager.cpp` 175、`ImageManager.cpp` 72） |
+| `Domain` / `Application` 库 | 各仅 1 条 PCH 占位 `ClCompile`；3 个 exe 的 `ProjectReference` 只到 `Core` / `Adapters`，无一到这两库 |
+| 协议层 | 已无对 `adapters` 头的 include（第 36 批消除反向边 ①）；`CardPacket.cpp:50` 是唯一跨到领域实现的符号调用 |
+
+### 37.5 方向选项（待用户确认，见 37.6）
+
+| 选项 | 内容 | 风险 |
+|---|---|---|
+| **A（推荐）W5 分段 · 第一段账号用例** | 把 `trySpendPoints` + `handleAccountPacket` 约 100 行抽到 `AccountService`，注册 / 登录 / 查重走新端口，`Socket` 只留传输；商城段（约 300 行）留第二批 | 中：约 100 行函数体改写、需重接组合根、跨登录 / 注册 / 查重链路 |
+| **B 拆库可行性试点** | 按 37.3 重新划分 9 个领域 `.cpp` 的库归属，让 `Domain` 库实装、`Application` 库承载端口 / 用例，`services()` 归属一并处理；需改 `ClCompile` / `ProjectReference` / PCH | 高：跨库符号与链接顺序可能触发 LNK2019，需先做依赖图设计 |
+| **C 阶段 4 客户端装配** | 6 单元 2426 行引入 `ClientApp` / `InputAdapter` / `PacketDispatcher`，三个 Scene 改纯 View | 最高：大面积 UI 逻辑改写 |
+| **D `ShopData.h` 归类订正** | 把含 `json.hpp` 的 `ShopData.h` 从 `domain/` 移到 `protocol/` 或 `adapters/`，同步 `ClInclude` 路径；命名空间 / 类型 / 函数体 / 协议字节全不变 | 低：物理归位，与第 32 / 34 批同类 |
+
+### 37.6 待用户确认
+
+助手不擅自改写任何函数体、不擅自判定「拆库」口径。`A6`（不物理移动现有文件）此前只在特定批次逐批解除，若选 B / C 需再确认范围。Q3 其余排除项继续有效；第 36.1 节的口径只解除到「`MessageType` 物理归位」这一动作。**用户已选 A「W5 分段·第一段账号用例」**，执行结果见第 38 节。
+
+---
+
+## 38. 阶段 3 第九批：W5 分段第一段 · 账号用例服务（2026-11-09，用户选 A）
+
+### 38.1 范围与决策
+
+只抽取 `Socket.cpp` 的 `trySpendPoints`（82–89）与 `handleAccountPacket`（319–411）两段约 101 行业务；**商城段（`sendShopData` / `handleSkillInfoRequest` / `handleCheckin` / `handleShopPurchase`，约 300 行）留 W5 第二段**。线上协议字节、`MessageType`、端口 8888 / 14341、`ServerNetwork` 对外接口、3 处账号包调用点全部不变。`A6` 无需解除（未移动任何现有文件）。
+
+### 38.2 设计：端口 + 用例服务
+
+- 既有 `IUserRepository` 只有 7 个商城 / 结算方法，**不含账号方法**（`Socket.cpp` 一直直调 `UserDB::instance()`）。本批扩展为 11 个纯虚方法，新增端口值类型 `AccountInfo { points, wins, losses }`，避免端口暴露含 JSON 存档字段的 `UserDB::UserInfo`。唯一实现 `JsonUserRepository` 补齐 4 个转发并在 `login` 中做 `UserInfo → AccountInfo` 收敛。
+- 新建 `IAccountSession` 端口（9 个纯虚方法）：只描述「会话状态查询 / 变更 / 发包」，不暴露 `ClientSlot`、`sf::SocketSelector`、`sf::Clock`；由 `ServerNetwork` 实现。
+- 新建 `AccountService`（application 层）：承载注册 / 登录（含重连顶替与另一端重复登录校验）/ 查重 / 开始游戏 / 积分消费的业务判断，只依赖两个端口与 `AccountProtocol`，不依赖 `ServerNetwork` / `UserDB`。
+- `ServerNetwork` 保留 `trySpendPoints` / `handleAccountPacket` 作为**薄转发**（3 行 + 6 行），使 `handleClientPackets` 与 `handlePendingSocket` 的 3 处调用点、`NetworkServerView::spendPoints` 转发链、`getClientSlots()` 等对外接口全部不变；用 `unool::opt_ref<AccountService>` 持有服务（**无裸指针**），组合根经 `installAccountService()` 注入。
+
+### 38.3 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `header/application/IAccountSession.h` | 9 个会话端口方法（41 行） |
+| 新增 `header/application/AccountService.h` | 用例服务声明，前向声明两个端口（29 行） |
+| 新增 `source/application/AccountService.cpp` | 原两段业务逐字平移，状态访问改走端口（88 行） |
+| `header/application/IUserRepository.h` | +`<optional>`、`AccountInfo`、4 个账号纯虚方法 |
+| `header/adapters/JsonUserRepository.h` | +4 个 override 转发到 `UserDB`，`login` 收敛为 `AccountInfo` |
+| `header/adapters/Socket.h` | include 两个新头；`ServerNetwork` 继承 `IAccountSession`；+9 个 override 声明、`installAccountService()`、`opt_ref` 成员 |
+| `source/adapters/Socket.cpp` | 删两段业务（101 行），改为 9 个端口实现 + 2 个薄转发；3 处调用点与既有「服务器已满」分支未动 |
+| `source/ServerMain.cpp` | 组合根创建 `AccountService(serverNetwork, userRepository)` 并 `installAccountService()`，位于首次 `update()` 之前 |
+| `Projects/Core/UNOOL.Core.vcxproj` | +1 条 `ClCompile`（`AccountService.cpp`，Use `pch.core.h` + `/FI`）；Core 由 16 条变 17 条 |
+| `Projects/Application/UNOOL.Application.vcxproj` | +2 条 `ClInclude`（仅 IDE 显示） |
+| `Projects/Core/pch.core.h` | 注释「15 个编译单元」订正为 16 个，并列出新增单元 |
+| `README.md` | 端口清单补 `IAccountSession` / `AccountService`；Core 段 15→16 个单元 + W5 第一段说明 |
+
+**未改**：`source/protocol/` 与 `header/protocol/`（协议层零改动）、`MessageType`、端口 8888 / 14341、3 个 json、`UNOOL.slnx`、链接项 / `ProjectReference` / 包含目录 / PCH 有效内容、3 个 exe 的 `.vcxproj` / `.filters`、其余 24 个 `.cpp`。
+
+### 38.4 行为等价性
+
+| 校验项 | HEAD | 本批后 |
+|---|---|---|
+| `AccountProtocol::makeAccountResponse` 调用点 | 3 | 3 |
+| `parseAccountRequest` / `parseCheckUsernameRequest` / `makeCheckUsernameResponse` | 2 / 1 / 1 | 2 / 1 / 1 |
+| `MessageType::RegisterRequest` / `RegisterResponse` / `LoginRequest` / `LoginResponse` / `CheckUsernameRequest` / `CheckUsernameResponse` / `ReadyToPlay` / `GameStart` | 3 / 3 / 6 / 5 / 3 / 3 / 3 / 2 | 全同 |
+| 全库 `static_cast<int>(MessageType` | 35 | 35 |
+| 「注册成功」「登录成功」「该座位已被其他玩家占用，请等待」「该账号已在另一端登录」「服务器已满，且无匹配的重连槽位」 | 各 1 / 4 / 1 / 1 / 1 | 全同 |
+
+顺序与副作用逐条保持：发包在槽位状态写回**之前**；`isReconnect` 在写 `disconnected=false` **之前**读取；`lastRecvClocks.restart()` 在登录成功后；`dropConnection` 只清 socket、保留 `username` 与 `disconnected` 供重连识别；`handlePendingSocket` 的「服务器已满」拒绝包原样保留。`ReadyToPlay` 分支改用 `session_.isLoggedIn()`（= `isClientConnected && loggedIn`），但函数开头已有 `isConnected` 早退，故等价；`spendPoints` 的 `clientIdx >= unool::MAX_PLAYERS` 与原 `>= clientSlots_.size()` 等价（`size() == MAX_PLAYERS`）。
+
+### 38.5 验证结果（助手侧静态只读）
+
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；**222 条** `ClCompile` / `ClInclude` 引用 0 缺失；新单元在 `Core` 且 `Use` + `pch.core.h` + `/FI` 齐备。
+- 端口完整性：`IUserRepository` 11 个纯虚方法 ↔ `JsonUserRepository` 11 个 override（缺失 0）；`IAccountSession` 9 个纯虚方法 ↔ `Socket.h` 9 个 override 声明，且 9 个在 `Socket.cpp` 全部有定义。
+- 26 个 `.cpp` 的 **30 个**引号 include 目标模拟解析：unresolved 0 / ambiguous 0（含新增的 `AccountService.h` / `IAccountSession.h` 与 `application/*` 带层前缀写法）。
+- `Socket.cpp` 花括号配平（222 / 222）；新代码裸指针 0；`git diff --check` 干净；协议层源码 diff 为空。
+- BOM / 换行按字节核验与 HEAD 各自表示一致：`Socket.cpp` / `Socket.h` / `ServerMain.cpp` / `README.md` 无 BOM + CRLF，新增 `AccountService.cpp` 转 CRLF 与同目录 `GameLogic.cpp` 一致，新增两个头保持 LF 与 `IUserRepository.h` 一致，4 个工程 / PCH 文件保持 LF。
+- 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 38.6 边界
+
+- **W5 第二段未做**：商城段约 300 行仍内联在 `Socket.cpp`，签到 / 抽奖 / 购买 / 技能描述仍直接调 `UserDB::instance()` 与 `IRandom` / `IConfigProvider`，下一批可继续按同口径抽 `ShopService`。
+- 第 37.2 节第 3 条（`header/domain/ShopData.h` 含 `<json.hpp>`）与第 37.3 节反向边 ② 未动，`Domain` / `Application` 库仍 PCH 占位、3 个 exe 不引用；`W5` 本身不消解拆库门槛。
+- `ServerNetwork` 因实现端口新增虚函数表；未装配 `AccountService` 时两个薄转发分别返回 `false` / 直接返回。组合根在 `start()` 之后、首次 `update()` 之前装配，**不存在未装配窗口**；客户端不装配账号服务但链接 `Core.lib`，`Socket.obj` 会按需拉入 `AccountService.obj`（其符号全部在库内可解析）。
+- Q3 其余排除项、第 36.1 节 `MessageType` 口径、第 35.4 节 Win32 边界继续有效。
+
+### 38.7 需用户本地验证
+
+请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（新增 `.cpp` + 多个头文件变化会触发大范围重编，属预期），重点回归：
+
+1. **最高优先级**：`AccountService.cpp` 加入 `Core` 后 3 个 exe（尤其不装配账号服务但链接 `Core.lib` 的 Client1 / Client2）有无 **LNK2019**；`ServerNetwork` 新增虚函数 / 继承后有无 **C2259 / C2280**；新头有无 **C1083**；`AccountInfo` 聚合初始化与 `std::string → string_view` 转换有无 **C2440 / C2664**。
+2. **装配时机**：确认 `installAccountService()` 在首次 `update()` 之前，登录包不会落到「未装配」早退路径。
+3. **运行路径**：注册 / 查重 / 登录 / 同一账号另一端重复登录拒绝 / 掉线重连顶替 / 座位被占用拒绝 / 服务器已满 / 双方点「开始游戏」才开局 / 商城购买扣积分（`IServerView::spendPoints` → 薄转发 → `AccountService`）；心跳与 3 秒超时；Client1 / Client2 双开；Debug / Release 双配置。
+4. **线上字节**：各响应包的消息号与文本与重构前一致（Q10 不要求新旧客户端混跑）。
+5. IDE 里 `Application` 工程能看到两个新头、`Core` 能看到新编译单元。
+
+助手侧不做编译（策略拦截）。改动**未提交**（沿用用户编译后自行提交的习惯）。
+
+### 38.8 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | 组织整理、协议头独立、账号用例服务化均落地；剩余：W5 第二段商城用例、`ShopData.h` 归类、反向边 ② 与 `Domain` / `Application` 库实装 |
+| 4 | 未做（三个 Scene 仍非纯 View） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 38.7），其中「新增编译单元后 3 个 exe 的链接」与「账号全链路行为等价」最需验证；② W5 只完成第一段，商城段仍内联；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

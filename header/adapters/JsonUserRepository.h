@@ -18,6 +18,25 @@ namespace unool::adapters {
 	// header-only：utils.cpp 现由 UNOOL.Core 静态库编译一次、3 个 exe 共同链接，不新增链接依赖。
 	class JsonUserRepository final : public application::IUserRepository {
 	public:
+		// === 账号用例（W5 第一段）：转发到 UserDB，UserInfo 收敛为端口值类型 ===
+		bool registerUser(std::string_view username, std::string_view password,
+						  std::string& errorMessage) override {
+			return UserDB::instance().registerUser(std::string(username), std::string(password), errorMessage);
+		}
+		std::optional<application::AccountInfo> login(std::string_view username,
+													  std::string_view password,
+													  std::string& errorMessage) const override {
+			auto info = UserDB::instance().login(std::string(username), std::string(password), errorMessage);
+			if (!info) return std::nullopt;
+			return application::AccountInfo{ info->points, info->wins, info->losses };
+		}
+		bool exists(std::string_view username) const override {
+			return UserDB::instance().exists(std::string(username));
+		}
+		bool trySpendPoints(std::string_view username, int amount) override {
+			return UserDB::instance().trySpendPoints(std::string(username), amount);
+		}
+
 		std::vector<std::string> getCharacterPool(std::string_view username) const override {
 			return UserDB::instance().getCharacterPool(std::string(username));
 		}

@@ -102,6 +102,8 @@
     <ClInclude Include="..\..\header\application\IServerView.h" />
     <ClInclude Include="..\..\header\application\IConfigProvider.h" />
     <ClInclude Include="..\..\header\application\IUserRepository.h" />
+    <ClInclude Include="..\..\header\application\IAccountSession.h" />
+    <ClInclude Include="..\..\header\application\AccountService.h" />
     <ClInclude Include="..\..\header\application\IRandom.h" />
     <ClInclude Include="..\..\header\application\IAssetCatalog.h" />
     <ClInclude Include="..\..\header\application\Services.h" />

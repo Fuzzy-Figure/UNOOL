@@ -2,6 +2,7 @@
 #include "Socket.h"
 #include "utils.h"
 #include "application/Services.h"
+#include "application/AccountService.h"
 #include "adapters/LegacyBlockingDecisionAdapter.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include "adapters/NetworkServerView.h"
@@ -126,6 +127,11 @@ int main() {
 	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
 	unool::adapters::JsonConfigProvider configService;
 	unool::adapters::JsonUserRepository userRepository;
+	// W5 第一段：账号用例服务。ServerNetwork 实现 IAccountSession 端口，
+	// 注册 / 登录 / 查重 / 准备 / 积分消费经 AccountService 与 IUserRepository 完成。
+	// serverNetwork 在装配前只监听、未调用 update()，不存在「未装配」窗口。
+	unool::application::AccountService accountService(serverNetwork, userRepository);
+	serverNetwork.installAccountService(accountService);
 	unool::adapters::Mt19937Random randomService;
 	unool::adapters::SfmlClock clockService;
 	unool::adapters::FilesystemAssetCatalog assetCatalog;

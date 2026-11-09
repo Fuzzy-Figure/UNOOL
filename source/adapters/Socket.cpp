@@ -80,11 +80,78 @@ bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
 }
 
 bool ServerNetwork::trySpendPoints(std::size_t clientIndex, int amount) {
-	if (clientIndex >= clientSlots_.size()) return false;
-	const std::string& username = clientSlots_[clientIndex].username;
-	if (!UserDB::instance().trySpendPoints(username, amount)) return false;
-	clientSlots_[clientIndex].points -= amount;
-	return true;
+	if (!accountService_) return false;
+	return accountService_->get().spendPoints(clientIndex, amount);
+}
+
+// === IAccountSession（W5 第一段：会话状态与发包的端口实现）===
+// 以下方法只读写原有成员状态，不含业务判断；账号用例的分支逻辑已逐字
+// 平移到 source/application/AccountService.cpp。
+
+bool ServerNetwork::isConnected(std::size_t clientIdx) const {
+	return isClientConnected(clientIdx);
+}
+
+bool ServerNetwork::isLoggedIn(std::size_t clientIdx) const {
+	return isClientLoggedIn(clientIdx);
+}
+
+bool ServerNetwork::isDisconnected(std::size_t clientIdx) const {
+	return clientIdx < clientSlots_.size() && clientSlots_[clientIdx].disconnected;
+}
+
+std::string ServerNetwork::usernameOf(std::size_t clientIdx) const {
+	if (clientIdx >= clientSlots_.size()) return {};
+	return clientSlots_[clientIdx].username;
+}
+
+void ServerNetwork::dropConnection(std::size_t clientIdx) {
+	if (clientIdx >= clientSockets.size()) return;
+	// 原 handleAccountPacket「座位已被占用」分支的 socket 清理，逐字平移
+	if (clientSockets[clientIdx]) {
+		selector.remove(*clientSockets[clientIdx]);
+		clientSockets[clientIdx]->disconnect();
+		clientSockets[clientIdx].reset();
+	}
+}
+
+void ServerNetwork::onLoginSucceeded(std::size_t clientIdx, const std::string& username,
+									 int points, int wins, int losses) {
+	const bool isReconnect = clientSlots_[clientIdx].disconnected;
+	clientSlots_[clientIdx].loggedIn = true;
+	clientSlots_[clientIdx].disconnected = false;
+	clientSlots_[clientIdx].username = username;
+	clientSlots_[clientIdx].points = points;
+	clientSlots_[clientIdx].wins = wins;
+	clientSlots_[clientIdx].losses = losses;
+	//登录成功时重置心跳计时，避免重连场景下因 removeClient 至 login 之间的耗时被误判超时
+	lastRecvClocks[clientIdx].restart();
+
+	std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx,
+				 (isReconnect ? "重连" : "登录"), username, points);
+	//重连顶替场景下 serverReady 已为 true，不需要重复发 GameStart
+	//正常开局需等双方都点"开始游戏"后才启动
+}
+
+void ServerNetwork::onPointsSpent(std::size_t clientIdx, int amount) {
+	if (clientIdx >= clientSlots_.size()) return;
+	clientSlots_[clientIdx].points -= amount;
+}
+
+void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
+	playerReady[clientIdx] = true;
+	std::println("[ServerNetwork] {}已准备开始游戏", clientSlots_[clientIdx].username);
+	//双方都点"开始游戏"后才开局
+	if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn
+		&& playerReady[0] && playerReady[1] && !serverReady) {
+		serverReady = true;
+		sendGameStart();
+		std::println("[ServerNetwork] 双方都已准备，游戏开始");
+	}
+}
+
+void ServerNetwork::sendResponse(std::size_t clientIdx, sf::Packet& packet) {
+	sendPacketToClient(clientIdx, packet);
 }
 
 void ServerNetwork::update() {
@@ -317,96 +384,10 @@ void ServerNetwork::checkTimeouts() {
 }
 
 void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet) {
-	if (!isClientConnected(clientIdx)) return;
-
-	// 跳过 msgType（调用方已在 update() 中 peek 过，但 packet 内部仍保留完整数据）
-	int discardedMsgType;
-	packet >> discardedMsgType;
-
-	if (type == MessageType::RegisterRequest) {
-		auto req = AccountProtocol::parseAccountRequest(packet);
-		if (!req) return;
-		std::string errMsg;
-		bool ok = UserDB::instance().registerUser(req->username, req->password, errMsg);
-		std::string msg = ok ? "注册成功" : errMsg;
-		auto resp = AccountProtocol::makeAccountResponse(MessageType::RegisterResponse, ok, msg);
-		sendPacketToClient(clientIdx, resp);
-	}
-	else if (type == MessageType::LoginRequest) {
-		auto req = AccountProtocol::parseAccountRequest(packet);
-		if (!req) return;
-		std::string errMsg;
-		auto userInfo = UserDB::instance().login(req->username, req->password, errMsg);
-
-		bool ok = userInfo.has_value();
-
-		// 检查该槽位是否是掉线玩家的：若有残留 username 且不匹配当前登录账号，拒绝占用
-		if (ok && clientSlots_[clientIdx].disconnected && !clientSlots_[clientIdx].username.empty()
-			&& clientSlots_[clientIdx].username != req->username) {
-			ok = false;
-			errMsg = "该座位已被其他玩家占用，请等待";
-			//清理该 socket，避免占住槽位但未登录成功导致后续重连连锁失败
-			if (clientSockets[clientIdx]) {
-				selector.remove(*clientSockets[clientIdx]);
-				clientSockets[clientIdx]->disconnect();
-				clientSockets[clientIdx].reset();
-			}
-		}
-
-		// 检查另一端是否已用同一账号登录
-		if (ok) {
-			std::size_t other = 1 - clientIdx;
-			if (other < unool::MAX_PLAYERS
-				&& clientSlots_[other].loggedIn
-				&& clientSlots_[other].username == req->username) {
-				ok = false;
-				errMsg = "该账号已在另一端登录";
-			}
-		}
-
-		int pts = ok ? userInfo->points : 0;
-		int w = ok ? userInfo->wins : 0;
-		int l = ok ? userInfo->losses : 0;
-		std::string msg = ok ? "登录成功" : errMsg;
-
-		auto resp = AccountProtocol::makeAccountResponse(MessageType::LoginResponse, ok, msg, pts, w, l);
-		sendPacketToClient(clientIdx, resp);
-
-		if (ok) {
-			const bool isReconnect = clientSlots_[clientIdx].disconnected;
-			clientSlots_[clientIdx].loggedIn = true;
-			clientSlots_[clientIdx].disconnected = false;
-			clientSlots_[clientIdx].username = req->username;
-			clientSlots_[clientIdx].points = pts;
-			clientSlots_[clientIdx].wins = w;
-			clientSlots_[clientIdx].losses = l;
-			//登录成功时重置心跳计时，避免重连场景下因 removeClient 至 login 之间的耗时被误判超时
-			lastRecvClocks[clientIdx].restart();
-
-			std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx, (isReconnect ? "重连" : "登录"), req->username, pts);
-			//重连顶替场景下 serverReady 已为 true，不需要重复发 GameStart
-			//正常开局需等双方都点"开始游戏"后才启动
-		}
-	}
-	else if (type == MessageType::CheckUsernameRequest) {
-		auto username = AccountProtocol::parseCheckUsernameRequest(packet);
-		if (!username) return;
-		bool exists = UserDB::instance().exists(*username);
-		auto resp = AccountProtocol::makeCheckUsernameResponse(exists);
-		sendPacketToClient(clientIdx, resp);
-	}
-	else if (type == MessageType::ReadyToPlay) {
-		if (!clientSlots_[clientIdx].loggedIn) return;
-		playerReady[clientIdx] = true;
-		std::println("[ServerNetwork] {}已准备开始游戏", clientSlots_[clientIdx].username);
-		//双方都点"开始游戏"后才开局
-		if (clientSlots_[0].loggedIn && clientSlots_[1].loggedIn
-			&& playerReady[0] && playerReady[1] && !serverReady) {
-			serverReady = true;
-			sendGameStart();
-			std::println("[ServerNetwork] 双方都已准备，游戏开始");
-		}
-	}
+	// W5 第一段：业务判断已平移到 AccountService；此处保留原调用点的薄转发，
+	// 使 handleClientPackets / handlePendingSocket 三处调用与对外接口不变。
+	if (!accountService_) return;
+	accountService_->get().handleAccountPacket(clientIdx, type, std::move(packet));
 }
 
 std::optional<ClientInput> ServerNetwork::receiveClientInput() {

@@ -10,6 +10,8 @@
 #include <SFML/Window/Keyboard.hpp>
 #include "utils.h"
 #include "MessageType.h"
+#include "application/IAccountSession.h"
+#include "application/AccountService.h"
 
 
 struct GameState;
@@ -30,7 +32,7 @@ struct GameEndInfo {
 	std::size_t winnerId;
 };
 
-class ServerNetwork {
+class ServerNetwork : public unool::application::IAccountSession {
 public:
 	struct ClientSlot {
 		bool loggedIn = false;
@@ -54,6 +56,8 @@ private:
 	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat，超过 3 秒未收到任何回包则视为掉线
 	sf::Clock heartbeatClock;
 	std::array<sf::Clock, unool::MAX_PLAYERS> lastRecvClocks;
+	// W5 第一段：账号用例服务由组合根注入，本类只保留会话状态与薄转发
+	unool::opt_ref<unool::application::AccountService> accountService_{};
 
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
@@ -109,7 +113,25 @@ public:
 	bool isClientLoggedIn(std::size_t clientIndex) const;
 	const std::array<ClientSlot, unool::MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
 	// 尝试消耗指定客户端 amount 积分，成功则同步更新 ClientSlot.points
+	// （W5 第一段起为薄转发，业务判断在 AccountService）
 	bool trySpendPoints(std::size_t clientIndex, int amount);
+
+	// 组合根装配账号用例服务；ServerNetwork 自身实现 IAccountSession 端口
+	void installAccountService(unool::application::AccountService& service) {
+		accountService_ = std::ref(service);
+	}
+
+	// === IAccountSession ===
+	bool isConnected(std::size_t clientIdx) const override;
+	bool isLoggedIn(std::size_t clientIdx) const override;
+	bool isDisconnected(std::size_t clientIdx) const override;
+	std::string usernameOf(std::size_t clientIdx) const override;
+	void dropConnection(std::size_t clientIdx) override;
+	void onLoginSucceeded(std::size_t clientIdx, const std::string& username,
+						  int points, int wins, int losses) override;
+	void onPointsSpent(std::size_t clientIdx, int amount) override;
+	void onReadyToPlay(std::size_t clientIdx) override;
+	void sendResponse(std::size_t clientIdx, sf::Packet& packet) override;
 };
 
 class ClientNetwork {
