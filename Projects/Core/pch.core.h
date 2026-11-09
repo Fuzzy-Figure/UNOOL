@@ -1,6 +1,8 @@
 #pragma once
 
-// UNOOL.Protocol 专用预编译头（阶段 2 / W3 建立，阶段 3 起承载全部共享编译单元）。
+// UNOOL.Core 专用预编译头（阶段 2 / W3 建立，阶段 3 起承载全部共享编译单元）。
+// 工程与库已改名 UNOOL.Core，本 PCH 随之改名 pch.core.h/.cpp，与库名保持一致；
+// PrecompiledHeaderFile 与 /FI 同步指向新文件名。
 // 与 header/pch.h、pch.server.h、pch.adapters.h 完全独立：不共享文件、不共享 .pch 产物。
 // 本库统一编译 15 个共享业务 / 协议单元（12 个原由 3 个 exe 各自编译的 .cpp，
 // 加上 GameState.cpp / AccountProtocol.cpp / protocol/CardPacket.cpp）与 1 个 PCH 生成单元。

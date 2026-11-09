@@ -209,7 +209,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Protocol\UNOOL.Protocol.vcxproj">
+    <ProjectReference Include="..\Core\UNOOL.Core.vcxproj">
       <Project>{a1000000-0000-4000-8000-000000000004}</Project>
     </ProjectReference>
   </ItemGroup>

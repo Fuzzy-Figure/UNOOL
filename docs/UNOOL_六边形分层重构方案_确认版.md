@@ -1037,7 +1037,9 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - 10 个 `.vcxproj` / `.filters` XML 全可解析；同口径 Include 引用 **219 条、0 缺失**（基线 218 + 新增 1 条 `ClInclude`）；新头条目只出现在 `UNOOL.Adapters.vcxproj`；3 个 exe 的 `ClCompile` / `ClInclude` 在 `vcxproj` 与 `.filters` 间集合完全一致。
 - `git diff --check` 干净；BOM 保持（新头无 BOM，与其他 adapters 头一致）；换行保持（新头 LF，`utils.h` / `utils.cpp` CRLF）；项目自有裸指针声明 **0**；新头本地头 include 0 条；全库「utils.h 返回类型用了 nlohmann::json」类过时注释扫描归零。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
 
-### 27.5 需用户本地验证
+### 27.5 用户本地验证（已闭环）
+
+**状态更新（用户「编译通过，继续」，2026-11-09）**：本批已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `266bb6a`「拆分 JSON 配置门面头并降低 utils 依赖」、工作区干净，回归任务 #35 完成。第 27.6 节风险 ① 就此解除——**`json_fwd.hpp` 与 4 个 PCH 的 `json.hpp` 在同一编译单元共存未产生重复定义，`Adapters` 库 3 个单元与 `Protocol` 库 15 个单元均正常编译；`utils.h` 删掉 4 个声明后，全库所有 TU 仍能解析配置门面函数，无 C2039 / LNK2019**；配置注释解析、`ignore_comments=true`、bp 阶段 `reloadServerConfig()` 与字体 / 图片路径行为未变。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
 
 第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
 
@@ -1057,4 +1059,163 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 27.5），其中 `json_fwd.hpp` 与 PCH `json.hpp` 的共存、以及 `utils.h` 删声明后的全库可见性是最需要验证的两点；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-09 确认本批编译通过（`266bb6a`，见 27.5），`json_fwd.hpp` 与 PCH `json.hpp` 共存、`utils.h` 删声明后全库可见性均通过编译验证；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 28. 阶段 3 第三批闭环与第四批只读评估（2026-11-09，用户「编译通过，继续」）
+
+### 28.1 状态闭环
+
+用户于 2026-11-09 确认阶段 3 第三批本地编译通过并提交 `266bb6a`（工作区干净），回归任务 #35 完成。**阶段 2 四批 + 阶段 3 三批至此全部编译闭环**；助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。用户未说明双配置与运行时回归的覆盖范围，第 16.4 节注记继续有效。
+
+Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils.h` 的 17 条 include 全部为标准库，被它传递包含的 `Card.h` / `Effect.h` / `Skill.h` / `Character.h` / `GameState.h` / `InstantSkill.h` / `PassiveSkill.h` / `TransformSkill.h` / `UserDB.h` / `ShopData.h` 闭包内不再出现本地头或第三方头；领域头自身的 `namespace sf { class Packet; }` 前向声明，以及 `GameLogic.h` / `Player.h` 对 `application/*` 端口的显式依赖，属第 27.3 节已记录的既有口径，不是本批引入。
+
+### 28.2 第四批只读核查：剩余项已全是组织 / 业务改写
+
+| 项 | 精确影响面（本轮复核） |
+|---|---|
+| 库改名 `Protocol → Core` | `UNOOL.slnx:12` 1 条、`README.md` 4 处（28 / 36 / 51 / 77 行）、3 个 exe 各 1 条 `ProjectReference`、`Projects/Protocol/` 目录名与 `UNOOL.Protocol.vcxproj` 文件名、`RootNamespace`、`pch.protocol.h/.cpp` 中的库名注释。`UNOOL.slnLaunch.user` 只列 3 个 exe、不含该库；GUID `...0004` 与 `pch.protocol.*` 文件名可保持不变（内部实现名，不影响分层）；`AdditionalIncludeDirectories` 用的是 `$(ProjectDir)` 与 `$(SolutionDir)`，不写死库名 |
+| 领域头归位 | `header/` 顶层平铺 21 个 `.h`（含 `pch.h` / `utils.h`），已有 `header/domain`(2)、`header/application`(9)、`header/adapters`(9)，**无 `header/protocol` 子目录**（但 `source/protocol/CardPacket.cpp` 已存在）；平铺头被 `#include "X.h"` 引用最多的是 `utils.h`(20)、`GameLogic.h`(10)、`Character.h`(9)、`Card.h`(9)、`Socket.h`(8)。7 个工程 `ClInclude` 共 **98 条**（Server 19 / Client1 21 / Client2 21 / Application 10 / Adapters 19 / Domain 3 / Protocol 5），3 个 exe 的 `.filters` 另有同量条目。物理移动需解除 A6；分类本身含判断（`GameLogic.h` / `Player.h` 属用例层、`Socket.h` 属传输适配、`pch.h` 属全局构建基础设施），不是纯机械操作 |
+| `Domain` / `Application` 实装 | 两库仍各只有 1 条 `ClCompile`（PCH 生成单元）、`ClInclude` 分别 3 / 10 条；第 22.2 节事实 4 的 `Socket.cpp → AccountProtocol::*` 与 `GameState.cpp` / `CardPacket.cpp → Card::make` 互引未变，15 个编译单元拆到两库仍会形成 `lib ↔ lib` 双向引用，当前不具可行性 |
+| W5 / 阶段 4 | `Socket.cpp` 1004 行中账号 / 商城业务集中在 `handleAccountPacket`(319–411)、`sendShopData`(544–647)、`handleSkillInfoRequest`(648–675)、`handleCheckin`(676–696)、`handleShopPurchase`(697–843) 约 400 行；`ServerNetwork` 同时持有 `clientSlots_` / `selector` / `heartbeatClock` 等传输状态，抽出需重接组合根。客户端 6 个专属单元 2424 行、`sf::` 231 处，属阶段 4 独立口径 |
+
+### 28.3 领域头归位的两条技术口径（须先定，本轮不擅自选）
+
+若后续选择归位，有两种做法，**行为等价但改动面差别很大**：
+
+1. **补包含目录（源码零改动，推荐）**：把 21 个头按层移入 `header/<layer>/`，给 7 个工程的 `AdditionalIncludeDirectories` 补 `$(SolutionDir)header\<layer>`，则现有 `#include "Card.h"` 等语句**一字不改**仍可解析；只需订正 98 条 `ClInclude` 与 3 个 exe 的 `.filters` 路径。代价是 include 不体现层级、同名头跨层会有歧义（当前无同名）。
+2. **改 include 路径（更清晰，改动面大）**：物理移动后把约 60 处 `#include "X.h"` 改成 `#include "<layer>/X.h"`，同时订正 98 条工程条目。语义最贴近 Q7 的四层命名，但触及源码文本，回归面更大。
+
+两种口径都**不改任何函数体、不改协议字节、不改端口与 `MessageType`**。
+
+### 28.4 第四批路线（待用户确认）
+
+| 路线 | 内容 | 改动面 / 风险 |
+|---|---|---|
+| A · 库改名 `UNOOL.Core`（推荐） | 把过渡库 `Protocol` 改名为 `UNOOL.Core`：`slnx` 1 条、README 4 处、3 条 `ProjectReference`、工程目录 / 文件名、`RootNamespace`、PCH 注释；GUID 与 `pch.protocol.*` 文件名保留 | 小步、纯工程与文档、零源码改动；让库名与「15 个共享编译单元」的实际内容一致。需本地编译验证一次 |
+| B · 领域头归位 | 解除 A6：21 个平铺头按四层归目录，按 28.3 口径 1 订正 98 条 `ClInclude` + `.filters` 与 7 个工程包含目录 | 纯组织整理、零函数体改动，但需先确认每个头的分层归属，改动条目最多 |
+| C · W5 用例服务 | 约 400 行业务从 `Socket.cpp` 抽出到 `AccountService` / `ShopService`，新建端口并重接组合根 | 跨登录 / 注册 / 查重 / 签到 / 商城 / 技能信息全链路，剩余项里风险最高 |
+| D · 暂停 | 接受阶段 3 三批状态 | 库名不符、领域头平铺、Domain / Application 占位、W5 与阶段 4 都保留 |
+
+**用户选择：A「库改名 `UNOOL.Core`」**（B 领域头归位、C W5、D 暂停均未选），执行结果见第 29 节。Q3 排除项（`MessageType` 拆分、长度帧 / Partial、子技能异常、安全修复）继续有效；A6「不物理移动现有文件」除路线 B 外继续有效；阶段 4 客户端装配、阶段 5 / 6 另期。
+
+## 29. 阶段 3 第四批：过渡库改名 `UNOOL.Core`（2026-11-09）
+
+### 29.1 范围与决策
+
+用户选择路线 A：把过渡库 `Protocol` 改名为 `UNOOL.Core`，使库名与「15 个共享业务 / 协议编译单元」的实际内容一致。本批**零函数体改动、零编译配置改动、零协议字节变化、零头文件移动**；只改工程名 / 路径 / 引用与注释。`pch.protocol.h/.cpp` 文件名、GUID `...0004`、全部 `ClCompile` / `ClInclude` / `ProjectReference` 的 GUID 与编译选项一律保留。未做路线 B（领域头归位）、路线 C（W5）与阶段 4。
+
+### 29.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `Projects/Protocol/` → `Projects/Core/` | `git mv` 整个目录（含 3 个受跟踪文件；`x64/` 构建产物随目录移动，被 `.gitignore` 忽略） |
+| `UNOOL.Protocol.vcxproj` → `UNOOL.Core.vcxproj` | `git mv` 文件；`RootNamespace` 改 `UNOOL.Core`；`ProjectGuid` 保持 `{A1000000-...0004}` |
+| `UNOOL.slnx:12` | `Projects/Protocol/UNOOL.Protocol.vcxproj` → `Projects/Core/UNOOL.Core.vcxproj`，`Id` 保持 `a1000000-...0004`；仍 7 个工程 |
+| `Server.vcxproj` / `Client1.vcxproj` / `Client2.vcxproj` | 各 1 条 `ProjectReference Include` 改为 `..\Core\UNOOL.Core.vcxproj`；`<Project>` GUID 全部保持 |
+| `pch.protocol.cpp` / `pch.protocol.h` | 注释中的库名改 `UNOOL.Core`；PCH 头补 1 行说明「文件名沿用建立时的历史命名，不随名改动」 |
+| `README.md` | 4 处订正（解决方案行、目录树、分层段、启动段）；分层段标注「原名 `Protocol`」，删掉原「库名暂与内容不符、后续再调整」这句已失效的说明 |
+| `header/adapters/JsonUserRepository.h`、`header/adapters/LegacyServicesAdapter.h`、`header/application/Services.h`、`source/utils.cpp` | 各 1 行注释里的 `UNOOL.Protocol` → `UNOOL.Core`（**扫描时新发现的 4 处，均为注释，非代码**） |
+
+共 3 个 rename + 9 个修改文件。`UNOOL.slnLaunch.user`（只列 3 个 exe）、`AdditionalIncludeDirectories`（用 `$(ProjectDir)` / `$(SolutionDir)`，不写死库名）、`AdditionalDependencies`（无硬编码 `Protocol.lib`）、`ClCompile` / `ClInclude` / `ForcedIncludeFiles` / PCH 配置、链接项、3 个 json、端口 8888 / 14341 与 `MessageType` 全部未改。第 19 / 21 / 23 等历史章节中的 `UNOOL.Protocol` 保留原貌，不追改。
+
+### 29.3 收益与必须说清的边界
+
+- **库名与内容对齐**：第 23.6 / 26.3 节记录的「库名 `Protocol` 暂与内容不符」这一过渡债务消除；15 个编译单元仍全部在 `UNOOL.Core.lib`，`Adapters.lib → Core.lib` 单向引用不变，`Core.lib` 不反向引用 exe 符号。
+- **零编译配置变化**：输出库名跟随 `vcxproj` 文件名变为 `UNOOL.Core.lib`，但 3 个 exe 通过 `ProjectReference` + 同一 GUID 自动解析，链接项里从来没有写死 `Protocol.lib`（扫描 0 处），因此不需要改任何链接输入。
+- **边界 A · PCH 文件名沿用（此决定已被第 30 节按用户反馈撤销）**：`pch.protocol.h/.cpp` 未改名（当时判定为内部实现名，不影响分层），已在头注释里写明原因；`PrecompiledHeaderFile` 与 `/FI` 仍指向它们。用户随后指出库名改了而 PCH 名没改，第 30 节把两个文件同步改名为 `pch.core.h/.cpp`。
+- **边界 B · IDE 状态与旧构建产物（旧产物已清理，见 29.7）**：`.vs/UNOOL.slnx/v18/DocumentLayout*.json`、`.suo`、`Browse.VC.db` 等 VS 用户状态文件仍含旧路径，均被 `.gitignore` 忽略，重开解决方案后由 VS 自行重建，不主动修改；`Projects/Core/x64/Debug/` 里改名前的 `UNOOL.Protocol.*` 中间产物曾触发 **MSB8028**，用户反馈后助手已删除（全库扫描归零），`UNOOL.Core.*` 新产物完整保留。
+- **边界 C · Git rename 识别**：`pch.protocol.cpp` 只有 2 行、其中 1 行是注释改动，相似度低于 Git 阈值，提交时会显示为「旧路径删除 + 新路径新增」而非 rename；内容与功能不受影响。
+- **边界 D · 阶段 3 仍未整体完成**：领域头平铺、`Domain` / `Application` 占位、W5 与阶段 4 未做；第 28.2 节的 `Socket.cpp ↔ AccountProtocol.cpp` 互引限制未变，`Domain` / `Application` 实装仍不可行。
+
+### 29.4 验证结果（助手侧静态只读）
+
+- 全库（排除 `.vs/`、构建产物、历史方案文档与工作记忆）`UNOOL.Protocol` / `Projects/Protocol` 引用 **0 处**；`README.md` 只剩 1 处「原名 `Protocol`」说明。
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；同口径 Include 引用 **219 条、0 缺失**（与第 27 节基线一致，改名不改条目数）。
+- `UNOOL.slnx` 7 个工程的 `Id` 与各自 `vcxproj` 的 `ProjectGuid` **全部 Match=True**；`Core` 库 `ClCompile` 16 条（1 `Create` + 15 `Use`）、`ClInclude` 5 条，PCH / `/FI` / 包含目录 / 编译选项未变。
+- 3 个 exe 的 `ClCompile` / `ClInclude` 在 `vcxproj` 与 `.filters` 间集合完全一致；`UNOOL.slnLaunch.user` 未改；链接项硬编码 `Protocol.lib` 0 处。
+- 源码 / 头文件 diff **只有 4 行注释替换**，无函数体、无 include、无类型变化；3 个 rename 文件与 HEAD 逐字节同为「无 BOM + 纯 LF」，`pch.protocol.h` 仅 +1 行注释。
+- `git diff --check` 干净。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 29.5 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 节验收均不覆盖本批。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. **先关闭并重开解决方案**：`UNOOL.slnx` 的工程路径变了，需让 VS 重新加载；若提示找不到工程，重开即可。旧 `UNOOL.Protocol.*` 中间产物已由助手清理（见 29.7），建议 **Rebuild** 一次确认 MSB8028 不再出现。
+2. **编译链接（最高优先级）**：`UNOOL.Core.lib` 是否生成；3 个 exe 经 `ProjectReference` 拉入 15 个编译单元、`Adapters.lib → Core.lib` 单向引用有无 LNK2019 / LNK2001；PCH 的 `Create` / `Use` + `/FI` 是否仍正常（文件名已按第 30 节改为 `pch.core.h/.cpp`，需确认无 C1083 / C1010）。
+3. **运行路径**：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开；
+4. Debug / Release 两个配置。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 29.6 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | **推进四项**：共享编译单元集中、纯领域头闭包脱离 Application 端口层、`utils.h` 纯标准库头（Q8 口径收口）、库名与内容对齐（`UNOOL.Core`）。仍未做：领域头归位、`Domain` / `Application` 库实装（受互引限制）、W5 用例服务 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，W5 用例服务未做，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 29.5），其中解决方案重载、`UNOOL.Core.lib` 输出名与 3 个 exe 的 `ProjectReference` 解析是最需要验证的两点；② 阶段 3 整体未完成，上表未做项仍属真六边形的门槛；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+### 29.7 MSB8028 警告处置（2026-11-09，用户反馈）
+
+**现象**：用户本地生成时报告 `D:\...\Microsoft.CppBuild.targets(550,5): warning MSB8028: 中间目录(x64\Debug\)包含从另一个项目(UNOOL.Protocol.vcxproj)共享的文件。这会导致错误的清除和重新生成行为。`
+
+**原因**：本批把 `UNOOL.Protocol.vcxproj` 改名为 `UNOOL.Core.vcxproj`，但 MSBuild 默认中间目录 `$(ProjectDir)$(Platform)\$(Configuration)\` 随工程目录一起保留下来，其中同时存在新旧两套工程名的产物：
+
+- 旧：`UNOOL.Protocol.lib.recipe`、`UNOOL.Protocol.log`、`UNOOL.Protocol.tlog\`（含 `UNOOL.Protocol.lastbuildstate` 与 7 个 tlog）、`UNOOL.Protocol_MD.tlog\`
+- 新：`UNOOL.Core.lib.recipe`、`UNOOL.Core.log`、`UNOOL.Core.pch`、`UNOOL.Core.tlog\`、`UNOOL.Core.Build.CppClean.log` 等（09:52 已正常生成，15 个 `.obj` 齐全）
+
+`Microsoft.CppBuild.targets` 在检查中间目录时发现属于另一工程名的 `.recipe` / `.lastbuildstate`，即发出此警告。这是**改名后的产物残留，不是工程配置错误**：7 个工程都没有显式 `<IntDir>` / `<OutDir>` / `<TargetName>`，中间目录一直按默认规则各自独立；`UNOOL.Core.lib` 已正确生成，警告只影响「清除 / 重新生成」的增量判断，不改变链接结果。第 29.3 节边界 B 预告过这一风险。
+
+**处置**：助手删除 `Projects/Core/x64/Debug/` 下旧工程名条目 —— `UNOOL.Protocol.log`、`UNOOL.Protocol.tlog\`、`UNOOL.Protocol_MD.tlog\`（`UNOOL.Protocol.lib.recipe` 在执行删除前已由 VS 自行清除，故报告 NOT FOUND）。全库 `find Projects -name "UNOOL.Protocol*"` 结果 **0 个**；`UNOOL.Core.*` 全套新产物与 15 个 `.obj` 完整保留，未删除任何源码、未改动任何工程文件、未触碰 `.vs/` 用户状态。这些中间产物均被 `.gitignore` 的 `x64/` 规则忽略，不进入版本库。
+
+**待用户确认**：关闭重开解决方案后重新生成 Debug|x64 与 Release|x64，MSB8028 应消失；若仍出现，用 VS「清理解决方案」再「重新生成」即可彻底重建中间目录。回归任务 #36 仍待闭环 —— 用户本轮只反馈了警告，尚未确认编译与运行时回归全部通过。
+
+---
+
+## 30. 第 29 批订正：PCH 文件名随库改名 `pch.core.*`（2026-11-09，用户反馈）
+
+### 30.1 触发与决策
+
+用户指出：`Protocol` 已改名为 `Core`，但 `pch.protocol.h/.cpp` 没有跟着改。第 29 节曾把这两个文件当作「内部实现名、不影响分层」刻意保留（29.1 / 29.3 边界 A），该判断在命名一致性上不成立——它们是工程内唯一仍带旧库名的受跟踪文件。按用户要求撤销该保留决定，**把 PCH 文件与全部编译选项同步改名为 `pch.core.*`**。本批零函数体改动、零协议字节变化、零源码目录移动（仅 PCH 自身两个 rename），不改 GUID、不改条目数量、不改 `PrecompiledHeader` 的 `Create` / `Use` 值。
+
+### 30.2 改动内容
+
+| 文件 | 改动 |
+|---|---|
+| `Projects/Core/pch.protocol.h` → `pch.core.h` | `git mv`；第 3 行注释由「文件名沿用历史命名，不随名改动」改为「随库改名，与 `PrecompiledHeaderFile` / `/FI` 同步」 |
+| `Projects/Core/pch.protocol.cpp` → `pch.core.cpp` | `git mv`；`#include "pch.protocol.h"` → `#include "pch.core.h"`（首行注释已是 `UNOOL.Core`，不动） |
+| `Projects/Core/UNOOL.Core.vcxproj` | **33 处** `pch.protocol` → `pch.core`：1 条 `ClInclude`、1 条 `ClCompile Include`、16 条 `PrecompiledHeaderFile`（1 `Create` + 15 `Use`）、15 条 `ForcedIncludeFiles`；其余编译选项一字未改 |
+| `README.md:51` | 「使用独立的 `pch.protocol.h`（PCH 文件名沿用历史命名）」→「`pch.core.h`（PCH 文件名与库名一致）」 |
+| 方案文档 / 工作记忆 | 29.3 边界 A、29.5 第 2 条补订正指引，新增本节；第 19 / 21 / 23 / 27 等历史章节记录的是当时的真实文件名，**保留原貌不追改**；工作记忆按 append-only 追加订正记录 |
+
+### 30.3 收益与必须说清的边界
+
+- **命名一致性**：全库受跟踪代码里 `pch.protocol` 引用归零；`Projects/Core/` 现为 `UNOOL.Core.vcxproj` + `pch.core.h/.cpp`，与 `UNOOL.slnx`、3 条 `ProjectReference`、README 完全一致。
+- **PCH 内容不变**：`pch.core.h` 去掉注释 / 空行后的 **53 行有效内容**与 HEAD（改名前的 `Projects/Protocol/pch.protocol.h`）逐字一致；`#pragma once`、include 列表、`adl_serializer<std::optional<T>>` 特化全未动，声明可见性不变。`pch.core.cpp` 只有一行 include 随文件名变化。
+- **PCH 产物名不受影响**：工程未显式设置 `PrecompiledHeaderOutputFile`，`/Fp` 输出按默认规则由 `TargetName` 生成，现有产物是 `UNOOL.Core.pch`（277 MB），与头文件名无关，故保留；但 `/Yc` / `/Yu` / `/FI` 的头名变化会让 15 个 `Use` 单元全量重编一次，这是改名的预期代价。
+- **旧构建产物已清理（两处）**：① `Projects/Core/x64/Debug/` 下原有 7 个 `pch.protocol*` 条目（`pch.protocol.obj` 与 6 个 `.dt.*.json` 依赖扫描文件），删除前 `.obj` 已由 VS 自行清除，其余 6 个已删除；② 29.7 当时只扫了 `Projects/`，本次全库复查在解决方案输出目录 `x64/Debug/` 又发现 09:29 生成的 `UNOOL.Protocol.lib` / `.idb` / `.pdb` 三个旧库产物（新 `UNOOL.Core.*` 为 09:52），其中 `.lib` 删除前已被 VS 自行清除，`.idb` / `.pdb` 已删除。全库按文件名扫描 `pch.protocol*` 与 `UNOOL.Protocol*` 均归零，这些文件被 `.gitignore` 的 `x64/` 忽略。**须说清**：`.obj` / `.pch` / `.tlog` 等二进制与增量状态里仍嵌有旧头名字符串（`Cl.items.tlog` 还记录 `pch.protocol.cpp → pch.protocol.obj`），它们由 VS 在 Rebuild 时重建，不是残留文件名；改名不涉及工程名，**不会重现 29.7 的 MSB8028**。
+- **边界**：`.vs/` 用户状态、`UNOOL.Core.*` 全套新产物、15 个 `.obj`、`UNOOL.slnLaunch.user`、3 个 json、端口 8888 / 14341 与 `MessageType` 均未动；`ClCompile` 文件条目仍 16 条（1 `Create` + 15 `Use`）、`ClInclude` 5 条。
+
+### 30.4 验证结果（助手侧静态只读）
+
+- 受跟踪代码（排除历史方案文档、工作记忆、`x64/`、`.vs/`）`pch.protocol` 残留 **0 处**；`README.md` / `header/` / `source/` 中同样为 0。
+- `UNOOL.Core.vcxproj` 中 `pch.core` **33 处**：`ClInclude` 1、`ClCompile Include` 1、`PrecompiledHeaderFile` 16、`ForcedIncludeFiles` 15；`Create` / `Use` = 1 / 15，与 15 个共享编译单元一一配对。
+- 10 个 `.vcxproj` / `.filters` XML 全可解析；同口径 Include 引用 **219 条、0 缺失**（与第 27 / 29 节基线一致，改名不改条目数）；`pch.core.h/.cpp` 两条相对路径均可达。
+- `pch.core.h` 有效内容 53 行与 HEAD 逐字一致；两个文件均为「无 BOM + 纯 LF」，与原文件一致；`git diff --check` 干净。
+- 全库按文件名扫描 `pch.protocol*` / `UNOOL.Protocol*` 均 **0 个**；`x64/Debug/` 顶层只剩 `UNOOL.Core.lib/.idb/.pdb` 一套输出（09:52），3 个 exe 的 `vcxproj` / `.filters` 集合一致性复核仍全部 OK。
+- 助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。
+
+### 30.5 需用户本地验证（并入回归任务 #36）
+
+第 16 / 17.5 / 18.5 / 19.5 / 21.5 / 23.5 / 25.5 / 27.5 / 29.5 节验收均不覆盖本批。请关闭并重开 VS 解决方案后 **Rebuild** `Debug|x64` 与 `Release|x64`：
+
+1. **最高优先级**：`pch.core.cpp` 能否以 `Create` 生成 PCH、15 个 `Use` 单元经 `/FI pch.core.h` 编译，有无 **C1083**（无法打开包含文件）、**C1010**（未找到预编译头）、**LNK2019**；`UNOOL.Core.lib` 是否生成、3 个 exe 与 `Adapters.lib` 能否正常解析。
+2. 29.7 清理后 MSB8028 应继续消失；若出现，用「清理解决方案」→「重新生成」。
+3. 运行路径与 29.5 第 3 / 4 条一致：登录 / 注册 / 查重 / 签到 / 商城、状态广播 / CharInfo、出牌与选项分页、超时、600 秒重连、Client1 / Client2 双开，Debug / Release 双配置。
+
+### 30.6 状态
+
+回归任务 #36 仍为 **pending**（用户本轮只指出命名不一致，尚未确认编译与运行时回归全部通过），其描述已补入 PCH 改名与旧产物清理，不新建重复任务。阶段状态表沿用 29.6：阶段 2 全部闭环；阶段 3 推进四项但整体未完成（领域头归位、`Domain` / `Application` 实装、W5 未做）；阶段 4 / 5 / 6 未做。

@@ -154,7 +154,7 @@ namespace unool {
 	}
 }
 
-// 默认服务定位：本文件现由 UNOOL.Protocol 静态库编译一次、3 个 exe 共同链接，
+// 默认服务定位：本文件现由 UNOOL.Core 静态库编译一次、3 个 exe 共同链接，
 // 因此定义放这里不会新增编译单元或链接依赖。静态工具（Character）与全局随机
 // 门面（utils）在未装配时自动落到与重构前逐字等价的遗留实现；仅 ServerMain 显式装配。
 namespace unool::application {
