@@ -2561,3 +2561,92 @@ private:
 ### 50.9 提交与后续
 
 本批与 S1 / S2 同口径：代码 + 文档一并交付，**待用户 Rebuild 通过后由助手生成结构化提交消息提交**，提交时工作区保持干净。之后按 49.4 / 49.10 推进 **S3b `LoginScene` 纯 View 化**（611 行，把 15 处 `net.*` 调用中的账号部分切到 `IClientGateway`、请求构造与响应解析上移、状态机与 `render()` 原样保留），再 **S3c `ShopScene`**（980 行，含障碍 3 的 `PacketDispatcher` 泛化与 `skillsCache` 归属）。
+
+用户随后确认 `Debug|x64` / `Release|x64` 重新生成通过，第十九批以 **`d8699a2`**（14 文件，+192 / −15）闭环，提交时工作区干净。
+
+---
+
+## 51. 第二十批 S3b 只读评估：`LoginScene` 纯 View 化的四个卡点与障碍 3 判定（2026-11-09，S3a 编译通过后）
+
+### 51.1 前置与本批性质
+
+S3a 已提交 `d8699a2`。按 49.4 / 50.9，下一步是 **S3b `LoginScene` 纯 View 化**；但 49.10 明确把「障碍 3：`PacketDispatcher::next(ClientNetwork&)` 具体类型绑定」**顺延到 S3c 前再判**，而 S3b 只要让 `LoginScene` 脱离具体 `ClientNetwork` 就必然会撞上它。同时 49.4 只写了「请求构造与响应解析上移」，未定上移目标层与结果回传通道。
+
+因此按 **37.6「不擅自判定口径」** 与用户最初「集中提问并等待确认」的要求，本批**零代码、零工程文件改动**，只做精确盘点、把可选路线与回归代价摆清楚，再由用户一次点选；确认后才执行第二十一批代码。
+
+### 51.2 精确盘点（S3a 后实测）
+
+| 项 | 实测 |
+|---|---|
+| 行数 | `LoginScene.h` **70** + `LoginScene.cpp` **546** = **616 行**。49 节的 611 = S2 时的 66 + 545，S3a 各 +4 / +1 |
+| 头文件耦合 | `LoginScene.h:4` 仍 `#include "Socket.h"`，由此**传递引入** `<SFML/Network.hpp>`、`<SFML/Window/Keyboard.hpp>`、`MessageType.h`、`AccountService.h`、`ShopService.h`、`utils.h` —— 比 `net.*` 调用更粗的一层具体类型依赖 |
+| 成员 / 构造 | `ClientNetwork& net`；`LoginScene(GameRenderer&, ClientNetwork&, IShopOpener&, const std::string&)`，全项目仅 `ClientApp.cpp:242` 一个构造调用点 |
+| `net.*` 调用 | **8 处**：`send` 5（Login / Register / CheckUsername / Checkin / ReadyToPlay）、`update` 1、`setPlayerId` 1、`isConnected` 1；另 `PacketDispatcher::next(net, { 5 类订阅 })` 1 处 |
+| 请求构造 | **5 处**：`AccountProtocol::makeLoginRequest` / `makeRegisterRequest` / `makeCheckUsernameRequest` 3 个 helper + 2 个手写包（`MessageType::ReadyToPlay` @144–146、`MessageType::CheckinRequest` @229–230） |
+| 响应解析 | **4 处 + 1 处**：`parseCheckUsernameResponse` 1、`parseAccountResponse` 2、手写 `packet >> msg >> ok >> points`（`CheckinResponse`）1；外加 `ConnectionInfo` 的 `packet >> pid` + `net.setPlayerId(pid)` |
+| 状态机 | `Mode`(3) / `Status`(6) / `Focus`(3) 三个 `enum class`，源码内 **51 处**枚举引用；`Result` 7 字段 |
+| 纯绘制 | `drawCheckinPopup()` 325–417（93 行）+ `render()` 419–546（128 行）= **221 行零网络符号**，49.4 要求原样保留 |
+| 主循环 | `run()` 47–58：每帧 `net.update()` → `pollAccountPackets()` → `render()` → `status == Done` 时 break |
+
+### 51.3 S3b 必须解决的四个卡点
+
+1. **成员与头依赖**：`ClientNetwork& net` → `IClientGateway&`，并删 `Socket.h` include。但 `IClientGateway`（S3a，29 行）只有出站 3 方法（`send` / `sendShopPurchase` / `setPlayerId`）+ 继承的会话 6 方法，**不含** `receivePacket()` / `peekMessageType()`。
+2. **障碍 3 具体类型绑定**：`PacketDispatcher.h:26/27` 两个 `next` 与 `PacketDispatcher.cpp:12` 的 `replyHeartbeat` 全部签名 `ClientNetwork&`。Scene 不再持具体类型后，`pollAccountPackets()` 的 Filtered 调用必须改走端口，或把收包整体上移。
+3. **协议逻辑上移 + 结果回传**：49.4 要求「4 个请求构造 + 3 个响应解析 + `pollAccountPackets` 订阅消费」移出，而 S3a 的 `IShopOpener` 只建了**意图通道**，注释与 50.3 明确「结果回传通道顺延 S3b / S3c」。要上移就必须新定义结果事件 / 回调端口，且状态机（51 处引用）仍留在 View，由结果驱动。
+4. **主循环驱动**：`run()` 里的 `net.update()` + `pollAccountPackets()` 若一并上移，主循环结构会变成「tick 用例 → 消费事件 → render」，每帧时序与跨阶段留包需重新逐字证明。
+
+### 51.4 不可改动的语义约束
+
+- **跨阶段留包**：Filtered 重载对非订阅包 peek 后不消费、留队给 `gamePhase`；`Heartbeat` 由 dispatcher 消费并回复；坏包 `>>` 失败 `continue` 丢弃；队列空 / 读不出消息号时 `break` 且坏包留队。
+- **每帧顺序**：`update()` → 消费账号包 → `render()`；`status` 决定的等待态输入屏蔽（`handleKeyPressed:88` / `handleTextEntered:114` / `handleMouseClick:135,161`）。
+- **线上字节**：5 个请求包（3 个 `AccountProtocol` helper + 2 个手写 `int` 消息号）与 4 个响应解析的字段顺序；`ClientApp` 侧 `ClientInput.key` 字节。
+- **既有文案与判定**：`ConnectionInfo` 分支的 `std::println("{} 分配到玩家: {}", ...)`、登录成功 `std::println`、全部 `message` 文案、`Result` 字段、S3a 刚固化的商城返回后断线 / 关窗判定（`LoginScene.cpp:153–156`）。
+
+### 51.5 口径①：S3b 本批做到哪一步
+
+| 选项 | 内容 | 改动面 / 风险 |
+|---|---|---|
+| **A 类型解耦先行（推荐）** | 只把成员切到 `IClientGateway&`、删 `Socket.h` include、`PacketDispatcher` 两个 `next` 与 `replyHeartbeat` 泛化到端口；5 个请求构造 / 4 个响应解析 / 状态机 / `render()` / `run()` 主循环**逐字留在原处**。协议上移另拆 **S3b2** 单独评估 | 约 60–90 行、**零行为变化**、一次 Rebuild 即可验证端口与 dispatcher 泛化；代价是「纯 View 化」分两批完成 |
+| **B 一步到位纯 View** | 同时新建账号用例，把 5 个请求 / 4 个解析 / 订阅消费全部移出，View 只经结果端口更新状态机 | 约 250–350 行新增，主循环结构与留包时序需重新证明，回归面最大 |
+| **C 只抽协议 helper** | 新建静态 helper 收拢构造 / 解析，`LoginScene` 仍持 `ClientNetwork&` | 改动最小，但 View 仍绑具体类型、偏离 49.4 |
+| **D 跳过 S3b 先做 S4** | 先做 `InputAdapter`（约 60 行、不动 Scene） | 会提前动 `gamePhase` 键位映射与 `ClientInput.key` 字节，且倒置 46.4 顺序 |
+
+### 51.6 口径②：障碍 3 的收包通道怎么判（49.10 约定此时判）
+
+| 选项 | 内容 | 代价 |
+|---|---|---|
+| **A 扩 `IClientGateway`（推荐）** | 给网关端口加 `std::optional<sf::Packet> receivePacket()` 与 `std::optional<int> peekMessageType() const` 两个纯虚；`PacketDispatcher` 两个 `next` + `replyHeartbeat` 签名由 `ClientNetwork&` 改为 `IClientGateway&`。三处调用点因派生→基类隐式转换**零改动**（`ClientApp` / `ShopScene` 仍持 `ClientNetwork&`） | `std::optional<sf::Packet>` 作为返回类型要求 `sf::Packet` 完整，`IClientGateway.h` 必须 include `<SFML/Network.hpp>`，②A 的「仅前向声明」轻量化被打破（但 ②A 原文允许端口「可含 `sf::Packet`」） |
+| **B 独立入站端口** | 新建 `header/adapters/IClientInbound.h`（含完整 SFML 网络头），`IClientGateway` 继承它；`PacketDispatcher` 只依赖入站端口，出站 / 入站分离 | 层次最干净，但多 1 文件 + 1 层继承 + 5 个工程文件登记，`ClientNetwork` 需补 2 个 `override` |
+| **C 组合根驱动 + 结果回调** | `pollAccountPackets()` 整体上移到 `ClientApp`，用回调把解析结果喂给 Scene；`PacketDispatcher` **保持** `ClientNetwork&` 不变（障碍 3 不泛化） | `run()` 主循环结构改变、`update()` 驱动位置与跨阶段留包时序需重新证明，与 49.4「状态机原样保留」有张力 |
+| **D 本批不泛化** | `LoginScene` 同时持 `IClientGateway&`（出站）与 `ClientNetwork&`（收包），`PacketDispatcher` 零改动 | 改动最小，但 View 仍绑具体类型，纯 View 化不彻底 |
+
+### 51.7 口径③：`setCredentials()` 零调用点的附带发现
+
+49.3 / 50.5 记录：`ClientNetwork::setCredentials()`（`Socket.h:36`）全项目零调用点，导致 `gamePhase` 用 `getUsername()` 打印「分配到玩家」时该字段恒为空串。
+
+| 选项 | 内容 |
+|---|---|
+| **A 继续原样保留（推荐）** | 属既有潜在缺陷，按 46.7 ③B「不擅自改行为」S3b 不动，待用户单独决定 |
+| **B 顺手补一次调用** | 登录成功时 `net.setCredentials(result.username, result.password)`，属**对外行为变化**（控制台输出内容变化），需单独回归 |
+| **C 删掉死方法** | 连带清理 `username` / `password` 字段，影响 `getUsername()` 与 `reconnect()`，改动面扩散 |
+
+### 51.8 推荐组合与分段
+
+默认 **①A + ②A + ③A**。选 ①A 时 S3b 拆为：
+
+- **S3b1（第二十一批，确认口径后立即开工）**：类型解耦 + `PacketDispatcher` 泛化，约 60–90 行，零对外行为变化，单独 Rebuild 与回归。
+- **S3b2（再下一批，单独评估）**：协议构造 / 解析上移 + 结果回传通道，此时才需要动 `run()` 主循环。
+
+选 ②B 会在 ①A 下多 1 个头文件与 5 处工程登记；选 ①B 则 51.6 / 51.7 的判定会与结果端口设计合并，本批仍不写代码、需再补一次评估。
+
+### 51.9 风险与回归重点
+
+- **最高优先**：登录阶段非账号包（`GameState` / `Choice`）留队给 `gamePhase`、三处心跳与服务器 3 秒超时、5 个请求包字节与 4 个响应字段顺序。
+- **编译侧**：`std::optional<sf::Packet>` 纯虚返回类型需完整 SFML 网络头；`LoginScene.h` 删 `Socket.h` 后 `sf::FloatRect` / `sf::Event` 仍需 `<SFML/Graphics.hpp>`（已含）、`MessageType` 需显式 include（当前由 `Socket.h` 传递提供）、`std::println` / `std::format` 由 `pch.h` 提供。
+- 49.7 基线其余项（双开双配置、商城 / 签到 / 购买与积分、断线重连、键位与 `ClientInput.key` 字节、端口 8888 / 14341、消息号与包体、JSON 存档、随机序列与配置 reload、资源路径与 `userDatas.json`）继续有效。
+
+### 51.10 交付与后续
+
+本批**零代码、零工程文件改动**：`MessageType` 25 值与顺序、端口 8888 / 14341、JSON 配置与存档、三处收包循环与 `PacketDispatcher` 心跳单点、两个 Scene 全部函数体与 UI 状态机、三个纯 View 单元、`IClientSession` / `IClientGateway` / `IShopOpener` / `ClientApp` / `PacketDispatcher` 现有签名与实现、`Socket.h` / `Socket.cpp`、`ICommands.h`、库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10、46.7 ③B、49.10 全部保持。
+
+方案第 51 节 + README（同时把 S3a 段落状态订正为「已编译通过并提交 `d8699a2`」）+ 工作记忆以**一次独立的文档提交**交付，提交后工作区保持干净（与第十五批 `91039e2`、第十八批 `6554e48` 同口径）。用户就 **51.5 口径① / 51.6 口径② / 51.7 口径③** 各选一项后，助手按所选分段执行第二十一批，并给出逐段等价性证据与需本地 Rebuild / 运行时回归的清单；未确认前不写任何 S3b 代码。
