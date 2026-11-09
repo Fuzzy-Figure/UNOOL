@@ -72,7 +72,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -80,7 +80,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -88,7 +88,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -96,16 +96,16 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.core.h" />
-    <ClInclude Include="..\..\header\GameState.h" />
-    <ClInclude Include="..\..\header\AccountProtocol.h" />
-    <ClInclude Include="..\..\header\Socket.h" />
-    <ClInclude Include="..\..\header\Card.h" />
+    <ClInclude Include="..\..\header\protocol\GameState.h" />
+    <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\adapters\Socket.h" />
+    <ClInclude Include="..\..\header\domain\Card.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.core.cpp">

@@ -38,67 +38,67 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\header\AccountProtocol.h">
+    <ClInclude Include="..\..\header\protocol\AccountProtocol.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Card.h">
+    <ClInclude Include="..\..\header\domain\Card.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Effect.h">
+    <ClInclude Include="..\..\header\domain\Effect.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\GameLogic.h">
+    <ClInclude Include="..\..\header\application\GameLogic.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\GameRenderer.h">
+    <ClInclude Include="..\..\header\adapters\GameRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\GameState.h">
+    <ClInclude Include="..\..\header\protocol\GameState.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\ImageManager.h">
+    <ClInclude Include="..\..\header\adapters\ImageManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Player.h">
+    <ClInclude Include="..\..\header\application\Player.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Skill.h">
+    <ClInclude Include="..\..\header\domain\Skill.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Socket.h">
+    <ClInclude Include="..\..\header\adapters\Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\TextManager.h">
+    <ClInclude Include="..\..\header\adapters\TextManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\UserDB.h">
+    <ClInclude Include="..\..\header\adapters\UserDB.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\InstantSkill.h">
+    <ClInclude Include="..\..\header\domain\InstantSkill.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\PassiveSkill.h">
+    <ClInclude Include="..\..\header\domain\PassiveSkill.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\TransformSkill.h">
+    <ClInclude Include="..\..\header\domain\TransformSkill.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\Character.h">
+    <ClInclude Include="..\..\header\domain\Character.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\LoginScene.h">
+    <ClInclude Include="..\..\header\adapters\LoginScene.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\ShopData.h">
+    <ClInclude Include="..\..\header\domain\ShopData.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\ShopScene.h">
+    <ClInclude Include="..\..\header\adapters\ShopScene.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,7 +8,7 @@
 
 > 角色、技能的具体数量与完整列表以代码为准<br>
 角色表见 `source/Character.cpp` 的 `Character::infos`<br>
-技能实现见 `header/PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及对应的.cpp文件。
+技能实现见 `header/domain/` 下的 `PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及对应的 .cpp 文件。
 
 
 ## 技术栈
@@ -16,7 +16,7 @@
 | 项 | 选型 |
 |---|---|
 | 语言 | C++23（MSVC `stdc++23`，仅 x64 配置） |
-| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/Card.h`、`header/Character.h`），可直接放进 `{}` 占位符 |
+| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/domain/Card.h`、`header/domain/Character.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
 | 构建 | Visual Studio 2026（`.slnx` + 7 个 `.vcxproj`：3 个可执行工程 + 4 个静态库工程），**仅 x64** |
@@ -34,7 +34,7 @@ Projects/               7 个 VS 工程目录
   Application/          UNOOL.Application.vcxproj（端口与服务定位，独立 pch）
   Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
   Core/                 UNOOL.Core.vcxproj（共享编译单元与协议 / DTO 序列化，独立 pch）
-header/                 头文件；domain/ application/ adapters/ 为分层新增目录
+header/                 头文件；实体 / 端口 / 适配器 / 协议分别归 domain/ application/ adapters/ protocol/，pch.h 与 utils.h 留在根
 source/                 源文件（ClientMain.cpp / ServerMain.cpp 为两端入口，后者也是装配根）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
@@ -45,6 +45,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 ```
 
 核心模块：`GameLogic`（回合/座次/牌堆/技能触发）、`Player`（出牌摸牌与交互）、`Card`（牌堆与手牌容器）、`Skill` 系（技能框架）、`GameRenderer` / `ImageManager` / `TextManager`（客户端渲染）、`Socket`（网络封装）、`UserDB`（账号持久化）。
+
+头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。
 
 分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
 

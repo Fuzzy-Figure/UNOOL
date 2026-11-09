@@ -56,25 +56,25 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\pch.h" />
-    <ClInclude Include="..\..\header\AccountProtocol.h" />
-    <ClInclude Include="..\..\header\Card.h" />
-    <ClInclude Include="..\..\header\Character.h" />
-    <ClInclude Include="..\..\header\Effect.h" />
-    <ClInclude Include="..\..\header\GameLogic.h" />
-    <ClInclude Include="..\..\header\GameRenderer.h" />
-    <ClInclude Include="..\..\header\GameState.h" />
-    <ClInclude Include="..\..\header\ImageManager.h" />
-    <ClInclude Include="..\..\header\InstantSkill.h" />
-    <ClInclude Include="..\..\header\LoginScene.h" />
-    <ClInclude Include="..\..\header\PassiveSkill.h" />
-    <ClInclude Include="..\..\header\Player.h" />
-    <ClInclude Include="..\..\header\Skill.h" />
-    <ClInclude Include="..\..\header\Socket.h" />
-    <ClInclude Include="..\..\header\ShopData.h" />
-    <ClInclude Include="..\..\header\ShopScene.h" />
-    <ClInclude Include="..\..\header\TextManager.h" />
-    <ClInclude Include="..\..\header\TransformSkill.h" />
-    <ClInclude Include="..\..\header\UserDB.h" />
+    <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\domain\Card.h" />
+    <ClInclude Include="..\..\header\domain\Character.h" />
+    <ClInclude Include="..\..\header\domain\Effect.h" />
+    <ClInclude Include="..\..\header\application\GameLogic.h" />
+    <ClInclude Include="..\..\header\adapters\GameRenderer.h" />
+    <ClInclude Include="..\..\header\protocol\GameState.h" />
+    <ClInclude Include="..\..\header\adapters\ImageManager.h" />
+    <ClInclude Include="..\..\header\domain\InstantSkill.h" />
+    <ClInclude Include="..\..\header\adapters\LoginScene.h" />
+    <ClInclude Include="..\..\header\domain\PassiveSkill.h" />
+    <ClInclude Include="..\..\header\application\Player.h" />
+    <ClInclude Include="..\..\header\domain\Skill.h" />
+    <ClInclude Include="..\..\header\adapters\Socket.h" />
+    <ClInclude Include="..\..\header\domain\ShopData.h" />
+    <ClInclude Include="..\..\header\adapters\ShopScene.h" />
+    <ClInclude Include="..\..\header\adapters\TextManager.h" />
+    <ClInclude Include="..\..\header\domain\TransformSkill.h" />
+    <ClInclude Include="..\..\header\adapters\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -173,7 +173,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;JSON_USE_IMPLICIT_CONVERSIONS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /we4715 /MP /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -195,7 +195,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
