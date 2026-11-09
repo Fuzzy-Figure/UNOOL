@@ -59,9 +59,20 @@ namespace unool::application {
 								   int winnerSkinQuality, int loserSkinQuality,
 								   bool winnerBonusCard) = 0;
 
-		// === 商城展示 / 签到用例（W5 第二段）===
-		virtual ShopUserInfo getShopUserInfo(std::string_view username) const = 0;
-		virtual bool hasAllNonSRank(std::string_view username) const = 0;
-		virtual CheckinOutcome checkin(std::string_view username) = 0;
-	};
+	// === 商城展示 / 签到用例（W5 第二段）===
+	virtual ShopUserInfo getShopUserInfo(std::string_view username) const = 0;
+	virtual bool hasAllNonSRank(std::string_view username) const = 0;
+	virtual CheckinOutcome checkin(std::string_view username) = 0;
+
+	// === 购买决策用例（W5 第二段第二段）===
+	// 档位以底层整数透传（与 Character::Level 数值一致），由适配器还原，
+	// 端口头闭包保持纯标准库、不认识领域枚举。
+	virtual int getPoints(std::string_view username) const = 0;
+	virtual bool hasAllCharactersOfLevel(std::string_view username, int level) const = 0;
+	virtual bool purchaseCharacter(std::string_view username, std::string_view charName, int price) = 0;
+	virtual std::optional<std::string> checkAndUnlockSRank(std::string_view username) = 0;
+	virtual bool purchaseSkin(std::string_view username, std::string_view charName,
+							  std::string_view skinName, int price) = 0;
+	virtual bool purchaseItem(std::string_view username, std::string_view itemName, int price) = 0;
+};
 }

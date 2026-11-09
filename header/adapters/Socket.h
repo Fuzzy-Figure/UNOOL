@@ -67,8 +67,6 @@ private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
 	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
-	// 发送购买结果给客户端（JSON 字符串载荷）
-	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson);
 	void removeClient(std::size_t clientIndex);
 	//update() 的拆分子任务
 	void handleNewConnections();
@@ -102,9 +100,9 @@ public:
 	bool clearPlayerChoice(std::size_t clientIndex);
 	bool sendCharInfo(const CharInfo& info);
 
-	// 发送商城数据给指定客户端
+	// 发送商城数据给指定客户端（薄转发到 ShopService）
 	bool sendShopData(std::size_t clientIndex, const std::string& username);
-	// 处理购买请求
+	// 处理购买请求（W5 第二段第二段起为薄转发，业务判断在 ShopService）
 	void handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData);
 	// 处理技能描述请求：按角色名生成技能文本并回送 SkillInfoResponse
 	void handleSkillInfoRequest(std::size_t clientIndex, const std::string& requestData);
@@ -144,6 +142,9 @@ public:
 	// W5 第二段：绝对值积分同步与可判成败的响应包发送
 	void onPointsChanged(std::size_t clientIdx, int points) override;
 	bool sendPayload(std::size_t clientIdx, sf::Packet& packet) override;
+	// W5 第二段第二段：购买结果回送（IAccountSession 端口实现）。
+	// 实现体保留原 7 行纯传输逻辑（连接早退 + MessageType::ShopResult + JSON 字符串）。
+	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson) override;
 };
 
 class ClientNetwork {

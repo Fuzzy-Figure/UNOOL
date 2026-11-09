@@ -1842,3 +1842,53 @@ Q8 的「Domain 纯标准库」在**头文件闭包**层面就此收口：`utils
 - **为何不把别名收进 `unool::`**：`ref` / `opt_ref` 是重构前就存在的全局工具别名，全库 100+ 处引用；移命名空间属 Q3 范围外的大范围删改。Q7 的「新类型用命名空间」只约束 `player_id` 等本阶段新增类型。若日后要统一收口，应另开独立批次并同步所有调用点。
 - **助手侧静态复验**：全库 `unool::opt_ref` / `unool::ref<` 残留 **0**；`Socket.h` 第 11 行自身 include `utils.h`，`opt_ref` 在所有包含该头的编译单元均可见；`git diff --check` 干净；改动 diff 仅 3 行。助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
 - **编译闭环**：用户已确认修复 `opt_ref` 限定后本地编译通过，全量重生成不再报错；第十批与本修复一并提交为 `96ca2a9`（21 个文件，+461 / −160，提交时工作区干净）。40.7 的运行时回归清单（商城展示 / 技能描述 / 签到 / 两处自动刷新 / 积分缓存 / 心跳超时 / 双开双配置 / 三个响应包消息号字节）继续作为后续运行验证项；W5 第二段购买决策仍待下一批。
+
+## 41. 阶段 3 第十一批：W5 第二段收官 · 购买决策平移（助手侧已执行，未提交）
+
+### 41.1 范围与方向
+
+按 40.6 既定分工，本批把 `source/adapters/Socket.cpp` 的 `ServerNetwork::handleShopPurchase`（`552–697`，**146 行**）整体平移到 `ShopService`，W5 第二段至此收官。方向在第十批已确认，本批不新增范围；唯一实现取舍是 `sendShopResult` 的归属（见 41.2），按「不删任何现有代码」口径处理。
+
+### 41.2 设计与原因 / 影响
+
+- **存档端口**：`IUserRepository` **14 → 20**（+`getPoints`、`hasAllCharactersOfLevel`、`purchaseCharacter`、`checkAndUnlockSRank`、`purchaseSkin`、`purchaseItem`）。原函数体 14 处 `UserDB::instance()` 调用（10 个方法）中，6 类为新方法；`getItemCount`、`hasAllNonSRank` 已在第十批存在。档位 `Character::Level` 继续按第九批口径以底层 `int` 透传，由 `JsonUserRepository` 用 `static_cast<Character::Level>` 还原，端口头闭包保持纯标准库、不认识领域枚举。
+- **会话端口**：`IAccountSession` **11 → 12**（+`sendShopResult(clientIdx, const std::string&)`）。原因：`sendShopResult` 的两个调用点都在 `handleShopPurchase` 内，函数体平移后若不管它就会变成死代码；直接删除又属「删现有代码」。故把 `ServerNetwork::sendShopResult` 的**原 7 行实现逐字保留**并从 private 提升为 public `override`，`MessageType::ShopResult` 消息号与 `isClientConnected` 早退检查仍封装在适配器内，Application 层不接触该消息号。影响：会话端口多一个方法、`ServerNetwork` 虚函数表 13 → 14；线上字节、消息文本、日志与对外接口均不变。
+- **保留对外接口**：`ServerNetwork::handleShopPurchase` / `sendShopData` 均保留为薄转发 / 对外接口。购买成功与 `type=Request` 的两处自动刷新，由 `ShopService` 内部直接调用同名服务方法（少一层薄转发，行为等价）；`ServerNetwork::sendShopData` 因此暂无内部调用者，但按 Q1「保持对外接口」保留。
+- **会话状态**：`clientSlots_[idx].username` → `session_.usernameOf(idx)`（返回 `std::string` 值，原为 const 引用；本函数不修改用户名，等价）；`isClientConnected` → `session_.isConnected`；`clientSlots_[idx].points = result.points` → `session_.onPointsChanged`（第十批已有端口方法）。
+- **零改动**：`MessageType` 全部 25 个值与顺序、switch、端口 / `slnx` / x64 配置、`AdditionalIncludeDirectories`、链接项、PCH 有效内容、`ClCompile` / `ClInclude` 条目（本批**无新增文件、无路径变化**）、`ServerMain.cpp` 组合根装配（第十批已装 `ShopService`）、`source/protocol/` 全部未动。
+
+### 41.3 行为等价性（助手侧证据）
+
+- **逐字等价**：把 HEAD 的 `handleShopPurchase` 与新 `ShopService::handleShopPurchase` 分别 UTF-8 无损导出，归一化（去注释 / 去空行 / 合并空白 / trim）后逐位置比对：**121 行 / 121 行，差异 20 行**，且 20 行全部是预期替换——函数名前缀 1、`isClientConnected`→`session_.isConnected` 1、`username` 取值 1、`UserDB::instance().X`→`users_.X` 共 13（含 6 处档位 `static_cast<int>` 透传）、`sendShopResult`→`session_.sendShopResult` 2、积分写回→`onPointsChanged` 1、其余为同一类调用点。**没有任何业务分支、判断条件、价格公式或发包顺序变化**。
+- **线上字节 / 字面量**：`static_cast<int>(MessageType` 全库 **35 / 35**（第十批口径），`MessageType::ShopResult` 唯一编码点仍在 `ServerNetwork::sendShopResult`；函数体内 20 项关键字面量（`"购买数据解析失败"`、`"需集齐 ABCDF 所有角色后才可购买 S 档角色"`、`"积分不足或购买失败"`×2、`"该皮肤不可购买"`、`"已达购买上限"`、`"未知道具"`、`"积分不足"`、`"未知购买类型"`、`"购买成功"`、`"，集齐档位解锁 S 档角色"`、4 类道具名、`488`、`88 + 100 * count * (count + 1) / 2`、`to_string(req.type)`、`[ServerNetwork]` 日志、`Character::Level::S` 等）**全数 1:1 全同**。
+- **顺序保持**：仍是「解析失败先回包 → return」、`type=Request` 先回 ShopData → return；角色购买仍是「S 档门槛 → 记录 5 档 beforeStates → 购买 → 失败置错 / 成功查新集齐 → 解锁 S 档」；结果仍是「组装 → 同步积分 → 回包 → 日志 → 成功后刷新商城」；`price` 仍由服务端计算，不信任客户端。
+
+### 41.4 静态验证（助手侧只读）
+
+端口纯虚与实现精确名对应：`IUserRepository` **20 / 20**、`IAccountSession` **12 / 12**（`ServerNetwork` 12 个 override 均有 `.cpp` 定义）；10 个 `.vcxproj` / `.filters` XML 全可解析、**224 条** `ClCompile` / `ClInclude` 引用 **0 缺失**；`Socket.cpp` 花括号 155 / 155、`ShopService.cpp` 75 / 75 配平；新代码裸指针 0（`*price` / `*unlocked` 为 `std::optional` 解引用，非裸指针）；`git diff --check` 干净；`Socket.cpp` 经字节级重写后 `git diff --stat` 仅显示函数段替换（无全文件换行 / BOM 漂移）。助手侧构建工具被安全策略拦截，未绕过，**未做本地编译**。
+
+### 41.5 边界与风险
+
+- `ServerNetwork` 虚函数表 13 → 14；未装配 `ShopService` 时 `handleShopPurchase` 薄转发直接返回，组合根在首次 `update()` 之前装配，**无未装配窗口**；`Client1` / `Client2` 不装配但链接 `Core.lib`，`Socket.obj` 按需拉入 `ShopService.obj`，符号均在库内。
+- `ServerNetwork::sendShopData` 现无内部调用者（保留为对外接口）；`handleSkillInfoRequest` / `handleCheckin` 薄转发仍有 `handleClientPackets` 调用点。
+- 第 37.3 节反向边 ② 未动，`Domain` / `Application` 库仍为 PCH 占位、3 个 exe 无 `ProjectReference`；阶段 4（三个 Scene 纯 View 化）未做；第 35.4 节 Win32 边界、Q3 其余排除项、第 36.1 节 `MessageType` 口径继续有效。
+- 改动**未提交**（7 个代码文件 + README / 文档 / 记忆），沿用用户编译后自行提交的习惯。
+
+### 41.6 需用户本地验证
+
+请在 VS **Rebuild** `Debug|x64` 与 `Release|x64`（端口头变化会触发大范围重编，属预期），重点：
+
+1. **编译**：`IUserRepository` 新增 6 个纯虚方法后 `JsonUserRepository` 无 C2259 / C3668；`IAccountSession::sendShopResult` 与 `ServerNetwork::sendShopResult` 签名无 C3668；`ShopService.cpp` 新增 `<array>` / `<format>` / `<optional>` 后无 C1083 / C2039；`static_cast<int>(Character::Level)` 往返无 C2440；3 个 exe 无 LNK2019。
+2. **运行路径**：三类购买（角色 / 皮肤 / 道具）成功与失败（积分不足、已达上限、未知道具、未知类型）、S 档未集齐 ABCDF 的拦截与集齐后 488、集齐某档触发 S 档随机解锁的附加消息、解析失败回包、`type=Request` 刷新、购买成功后自动刷新、积分显示与槽位缓存一致、商城展示 / 技能描述 / 签到回归、心跳与 3 秒超时、Client1 / Client2 双开、Debug / Release 双配置。
+3. **线上字节**：`ShopResult` 响应包消息号与 JSON 字段（`ok` / `msg` / `points`）与重构前一致（Q10 不要求新旧客户端混跑）。
+
+### 41.7 阶段状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | 组织整理、协议头独立、账号用例、商城展示 / 技能 / 签到 / **购买决策全部落地**，W5 第二段收官；剩余：反向边 ② 与 `Domain` / `Application` 库实装 |
+| 4 | 未做（三个 Scene 仍非纯 View） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 41.6），其中「端口扩展后实现类是否仍可实例化」与「新增 override 的签名匹配」最需验证；② `sendShopData` 保留但无内部调用者；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

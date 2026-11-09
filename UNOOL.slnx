@@ -8,6 +8,13 @@
   <Project Path="Projects/Server/Server.vcxproj" Id="5b1467af-45d8-4c2d-a788-4d6446f8bc2d" />
   <Project Path="Projects/Domain/UNOOL.Domain.vcxproj" Id="a1000000-0000-4000-8000-000000000001" />
   <Project Path="Projects/Application/UNOOL.Application.vcxproj" Id="a1000000-0000-4000-8000-000000000002" />
+  <Folder Name="/doc/">
+    <File Path=".gitignore" />
+    <File Path="docs/rules.md" />
+    <File Path="docs/todoList.txt" />
+    <File Path="README.md" />
+    <File Path="userDatas.json" />
+  </Folder>
   <Project Path="Projects/Adapters/UNOOL.Adapters.vcxproj" Id="a1000000-0000-4000-8000-000000000003" />
   <Project Path="Projects/Core/UNOOL.Core.vcxproj" Id="a1000000-0000-4000-8000-000000000004" />
 </Solution>

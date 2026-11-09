@@ -85,9 +85,34 @@ namespace unool::adapters {
 		bool hasAllNonSRank(std::string_view username) const override {
 			return UserDB::instance().hasAllNonSRank(std::string(username));
 		}
-		application::CheckinOutcome checkin(std::string_view username) override {
-			const CheckinResult r = UserDB::instance().checkin(std::string(username));
-			return application::CheckinOutcome{ r.ok, r.msg, r.points };
-		}
-	};
+	application::CheckinOutcome checkin(std::string_view username) override {
+		const CheckinResult r = UserDB::instance().checkin(std::string(username));
+		return application::CheckinOutcome{ r.ok, r.msg, r.points };
+	}
+
+	// === 购买决策用例（W5 第二段第二段）：逐字转发，不引入业务判断 ===
+	int getPoints(std::string_view username) const override {
+		return UserDB::instance().getPoints(std::string(username));
+	}
+	bool hasAllCharactersOfLevel(std::string_view username, int level) const override {
+		return UserDB::instance().hasAllCharactersOfLevel(
+			std::string(username), static_cast<Character::Level>(level));
+	}
+	bool purchaseCharacter(std::string_view username, std::string_view charName, int price) override {
+		return UserDB::instance().purchaseCharacter(
+			std::string(username), std::string(charName), price);
+	}
+	std::optional<std::string> checkAndUnlockSRank(std::string_view username) override {
+		return UserDB::instance().checkAndUnlockSRank(std::string(username));
+	}
+	bool purchaseSkin(std::string_view username, std::string_view charName,
+					  std::string_view skinName, int price) override {
+		return UserDB::instance().purchaseSkin(
+			std::string(username), std::string(charName), std::string(skinName), price);
+	}
+	bool purchaseItem(std::string_view username, std::string_view itemName, int price) override {
+		return UserDB::instance().purchaseItem(
+			std::string(username), std::string(itemName), price);
+	}
+};
 }

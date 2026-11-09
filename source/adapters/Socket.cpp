@@ -524,6 +524,9 @@ bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& pack
 	return false;
 }
 
+// W5 第二段第二段：IAccountSession::sendShopResult 的端口实现。
+// 原 7 行纯传输逻辑逐字保留（连接早退、MessageType::ShopResult 消息号、JSON 字符串载荷）；
+// 消息号仍封装在适配器内，Application 层不接触协议枚举。
 bool ServerNetwork::sendShopResult(std::size_t clientIndex, const std::string& resultJson) {
 	if (!isClientConnected(clientIndex)) return false;
 	sf::Packet packet;
@@ -533,8 +536,9 @@ bool ServerNetwork::sendShopResult(std::size_t clientIndex, const std::string& r
 }
 
 bool ServerNetwork::sendShopData(std::size_t clientIndex, const std::string& username) {
-	// W5 第二段（分段第一段）：商城展示逻辑已平移到 ShopService；此处保留薄转发，
-	// 使 handleShopPurchase 内两处刷新调用与对外接口不变。
+	// W5 第二段：商城展示逻辑已平移到 ShopService；此处保留为对外接口的薄转发。
+	// 购买决策平移后，两处自动刷新由 ShopService 内部直接调用同名服务方法，
+	// 本方法仍可供外部调用点使用，行为不变。
 	if (!shopService_) return false;
 	return shopService_->get().sendShopData(clientIndex, username);
 }
@@ -550,150 +554,11 @@ void ServerNetwork::handleCheckin(std::size_t clientIndex) {
 }
 
 void ServerNetwork::handleShopPurchase(std::size_t clientIndex, const std::string& purchaseData) {
-	if (!isClientConnected(clientIndex)) return;
-
-	const std::string& username = clientSlots_[clientIndex].username;
-
-	// 解析购买请求 JSON
-	ShopPurchaseRequest req;
-	try {
-		nlohmann::json j = nlohmann::json::parse(purchaseData);
-		req = j.get<ShopPurchaseRequest>();
-	}
-	catch (const std::exception& e) {
-		ShopPurchaseResult result;
-		result.ok = false;
-		result.msg = std::format("购买数据解析失败：{}", e.what());
-		result.points = UserDB::instance().getPoints(username);
-		nlohmann::json rj = result;
-		sendShopResult(clientIndex, rj.dump());
-		return;
-	}
-
-	// type=Request：客户端请求刷新商城数据，直接回送 ShopData
-	if (req.type == ShopRequestType::Request) {
-		sendShopData(clientIndex, username);
-		return;
-	}
-
-	// 根据类型调用 UserDB 的 purchase 方法（价格由服务端计算，不信任客户端）
-	bool ok = false;
-	std::string errMsg;
-	std::string sUnlockMsg;	// 集齐档位触发 S 档解锁的附加消息
-
-	if (req.type == ShopRequestType::Character) {
-		// 判断是否为 S 档角色
-		auto charIt = Character::infos.find(req.name);
-		const bool isSRank = (charIt != Character::infos.end()
-							 && charIt->second.level == Character::Level::S);
-
-		std::optional<Character::price_t> price;
-		if (isSRank) {
-			// S 档角色：需集齐 ABCDF 所有角色，售价 488
-			if (UserDB::instance().hasAllNonSRank(username)) {
-				price = 488;
-			} else {
-				errMsg = "需集齐 ABCDF 所有角色后才可购买 S 档角色";
-			}
-		} else {
-			price = Character::getCharacterPrice(req.name);
-		}
-
-		if (price.has_value() && errMsg.empty()) {
-			// 购买前记录各非 S 档集齐状态，用于判断本次购买是否新集齐某档
-			const std::array<std::pair<Character::Level, bool>, 5> beforeStates = {{
-				{Character::Level::F, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::F)},
-				{Character::Level::D, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::D)},
-				{Character::Level::C, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::C)},
-				{Character::Level::B, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::B)},
-				{Character::Level::A, UserDB::instance().hasAllCharactersOfLevel(username, Character::Level::A)},
-			}};
-
-			ok = UserDB::instance().purchaseCharacter(username, req.name, static_cast<int>(*price));
-			if (!ok) {
-				errMsg = "积分不足或购买失败";
-			} else {
-				// 检查是否新集齐某档，触发 S 档随机解锁
-				bool newCollected = false;
-				for (const auto& [lv, before] : beforeStates) {
-					if (!before && UserDB::instance().hasAllCharactersOfLevel(username, lv)) {
-						newCollected = true;
-						break;
-					}
-				}
-				if (newCollected) {
-					if (auto unlocked = UserDB::instance().checkAndUnlockSRank(username)) {
-						sUnlockMsg = std::format("，集齐档位解锁 S 档角色：{}", *unlocked);
-					}
-				}
-			}
-		}
-	}
-	else if (req.type == ShopRequestType::Skin) {
-		const std::optional<Character::price_t> price = Character::getSkinPrice(req.charName, req.skinName);
-		if (!price.has_value()) {
-			errMsg = "该皮肤不可购买";
-		}
-		else {
-			ok = UserDB::instance().purchaseSkin(username, req.charName, req.skinName, static_cast<int>(*price));
-			if (!ok) errMsg = "积分不足或购买失败";
-		}
-	}
-	else if (req.type == ShopRequestType::Item) {
-		int price = 0;
-		int count = UserDB::instance().getItemCount(username, req.name);
-
-		if (req.name == "选将扩充卡") {
-			if (count >= 5) {
-				errMsg = "已达购买上限";
-			}
-			else {
-				price = 88 + 100 * count * (count + 1) / 2;
-			}
-		}
-		else if (req.name == "增分卡") {
-			price = 10;
-		}
-		else if (req.name == "不死图腾") {
-			price = 10;
-		}
-		else if (req.name == "炸弹卡") {
-			price = 5;
-		}
-		else {
-			errMsg = "未知道具";
-		}
-
-		if (errMsg.empty()) {
-			ok = UserDB::instance().purchaseItem(username, req.name, price);
-			if (!ok) errMsg = "积分不足";
-		}
-	}
-	else {
-		errMsg = std::format("未知购买类型：{}", to_string(req.type));
-	}
-
-	// 构建购买结果并发送
-	ShopPurchaseResult result;
-	result.ok = ok;
-	result.msg = ok ? ("购买成功" + sUnlockMsg) : errMsg;
-	result.points = UserDB::instance().getPoints(username);
-
-	// 购买成功时同步更新 ClientSlot.points
-	if (ok) {
-		clientSlots_[clientIndex].points = result.points;
-	}
-
-	nlohmann::json rj = result;
-	sendShopResult(clientIndex, rj.dump());
-
-	std::println("[ServerNetwork] 客户端{}（账号 {}）购买 {}：{}（剩余积分 {}）",
-				 clientIndex, username, to_string(req.type), (ok ? "成功" : "失败"), result.points);
-
-	// 购买成功后自动刷新商城数据给该客户端
-	if (ok) {
-		sendShopData(clientIndex, username);
-	}
+	// W5 第二段第二段：购买决策已平移到 ShopService；此处保留薄转发，
+	// 使 handleClientPackets 的调用点与对外接口不变。业务判断、价格计算、
+	// 档位解锁、积分同步、结果发包与两处自动刷新均逐字平移到服务层。
+	if (!shopService_) return;
+	shopService_->get().handleShopPurchase(clientIndex, purchaseData);
 }
 
 ClientNetwork::~ClientNetwork() {

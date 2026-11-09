@@ -46,5 +46,11 @@ namespace unool::application {
 		// 回送商城 / 技能描述 / 签到响应包，返回是否发送成功；
 		// 供 sendShopData 保持原 bool 返回值，其余调用点忽略返回值。
 		virtual bool sendPayload(std::size_t clientIdx, sf::Packet& packet) = 0;
+
+		// === 购买决策用例（W5 第二段第二段）===
+		// 回送已序列化为 JSON 字符串的购买结果。MessageType::ShopResult 消息号
+		// 与连接早退检查都由适配器封装，Application 层不接触协议枚举；
+		// 返回是否发送成功（两个调用点均忽略返回值，与原行为一致）。
+		virtual bool sendShopResult(std::size_t clientIdx, const std::string& resultJson) = 0;
 	};
 }

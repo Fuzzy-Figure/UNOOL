@@ -85,25 +85,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\.gitignore">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\..\userDatas.json">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\..\server_config.json">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\..\README.md">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\..\docs\todoList.txt">
-      <Filter>资源文件</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\..\docs\rules.md">
-      <Filter>资源文件</Filter>
-    </Text>
   </ItemGroup>
 </Project>

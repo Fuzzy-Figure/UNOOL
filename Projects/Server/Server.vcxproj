@@ -187,14 +187,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\.gitignore" />
-    <None Include="..\..\README.md" />
     <None Include="..\..\server_config.json" />
-    <None Include="..\..\userDatas.json" />
-    <None Include="..\..\docs\todoList.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\..\docs\rules.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Adapters\UNOOL.Adapters.vcxproj">
