@@ -2,7 +2,7 @@
 
 // UNOOL.Protocol 专用预编译头（阶段 2 / W3）。
 // 与 header/pch.h、pch.server.h、pch.adapters.h 完全独立：不共享文件、不共享 .pch 产物。
-// 本库只编译 source/GameState.cpp 与 source/AccountProtocol.cpp 两个协议 / DTO 编译单元。
+// 本库编译 source/GameState.cpp、source/AccountProtocol.cpp 与 source/protocol/CardPacket.cpp 三个协议 / DTO 编译单元。
 // 内容按 pch.server.h 逐字保留（Server 已成功编译过这两个 .cpp），确保声明可见性一致：
 //   Network        : sf::Packet（序列化与协议构造）
 //   System         : 由 Network 间接依赖

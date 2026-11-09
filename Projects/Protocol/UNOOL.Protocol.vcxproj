@@ -105,6 +105,7 @@
     <ClInclude Include="..\..\header\GameState.h" />
     <ClInclude Include="..\..\header\AccountProtocol.h" />
     <ClInclude Include="..\..\header\Socket.h" />
+    <ClInclude Include="..\..\header\Card.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.protocol.cpp">
@@ -117,6 +118,11 @@
       <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\AccountProtocol.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\protocol\CardPacket.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.protocol.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.protocol.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

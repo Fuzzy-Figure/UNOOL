@@ -2,7 +2,6 @@
 #include "GameLogic.h"
 #include "Skill.h"
 #include "utils.h"
-#include <SFML/Network.hpp>
 
 
 
@@ -536,56 +535,4 @@ void Pile::recycle(Pile& other) {
 }
 void Pile::shuffle() {
 	std::ranges::shuffle(cards, unool::random::rng);
-}
-
-
-// ==================== Packet 序列化 ====================
-sf::Packet& operator<<(sf::Packet& packet, const Card& card) {
-	packet << static_cast<int>(card.getColor())
-		<< static_cast<int>(card.getName())
-		<< static_cast<int>(card.getDiscardReason());
-	return packet;
-}
-sf::Packet& operator>>(sf::Packet& packet, Card& card) {
-	int colorInt, nameInt, reasonInt;
-	if (packet >> colorInt >> nameInt >> reasonInt) {
-		card.setColor(static_cast<Card::Color>(colorInt));
-		card.setName(static_cast<Card::Name>(nameInt));
-		card.setDiscardReason(static_cast<Card::DiscardReason>(reasonInt));
-	}
-	return packet;
-}
-
-sf::Packet& operator<<(sf::Packet& packet, const Hand& hand) {
-	std::size_t validIndex = hand.selectedIndex;
-	if (hand.count() > 0 && validIndex >= hand.count()) {
-		validIndex = hand.count() - 1;
-	}
-	else if (hand.count() == 0) {
-		validIndex = 0;
-	}
-	packet << hand.cards.size();
-	for (const auto& cardPtr : hand.cards) {
-		packet << *cardPtr;
-	}
-	packet << validIndex;
-	return packet;
-}
-sf::Packet& operator>>(sf::Packet& packet, Hand& hand) {
-	hand.cards.clear();
-	std::size_t size;
-	packet >> size;
-	for (std::size_t i = 0; i < size; ++i) {
-		Card c;
-		packet >> c;
-		hand.cards.push_back(Card::make(c));
-	}
-	packet >> hand.selectedIndex;
-	if (hand.count() == 0) {
-		hand.selectedIndex = 0;
-	}
-	else if (hand.selectedIndex >= hand.count()) {
-		hand.selectedIndex = hand.count() - 1;
-	}
-	return packet;
 }

@@ -679,7 +679,9 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 - 协议 / 核心源码 `git diff --name-only` 为空；3 个 exe 链接项无 diff；严格正则扫描裸指针声明 0；`git diff --check` 干净；README 无过时「6 个 / 3 个静态库」表述。
 - BOM 保持（3 filters 有 / 7 个 vcxproj 无），换行保持（Server / Client 系 CRLF，静态库工程与文档 LF）。
 
-### 19.5 需要用户本地验证的部分
+### 19.5 用户本地验证（已闭环）
+
+**状态更新（用户「编译通过，继续」，2026-11-09）**：本批已由用户在本地 VS 重新生成并确认编译通过，改动已提交为 `ea0898a`、工作区干净。本节原「本批编译与运行时回归未执行」与第 19.6 节风险 ① 就此解除——**含最需要验证的一点：`UNOOL.Protocol.lib` 反向引用 exe 中 `Card::make()` / `Card`·`Hand` 序列化符号，链接器未报 LNK2019**。助手侧 `MSBuild.exe` 拦截未解除、从未绕过。用户未细化双配置覆盖与运行时回归路径，下列清单保留为**回归路径参考**，不再作为交付阻塞项。
 
 本批首次给 Client1/2 引入 `ProjectReference`，并改变了两个编译单元的 PCH 与归属，**第 16 / 17.5 / 18.5 节的验收均不覆盖本批**。请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
 
@@ -699,4 +701,93 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | 4 | 未做 |
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
-**风险**：① 本批编译与运行时回归尚未执行（见 19.5），其中静态库反向引用 exe 符号是最需要链接验证的一点；② `Card.cpp` 混合文件未归位，Protocol 库尚不拥有全部序列化代码；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+**风险**：① **已解除** —— 用户 2026-11-09 确认本批编译通过（见 19.5），静态库反向引用 exe 符号经链接验证无 LNK2019；② `Card.cpp` 混合文件未归位，Protocol 库尚不拥有全部序列化代码；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 20. 第三批验收闭环与后续范围评估（2026-11-09，用户「编译通过，继续」）
+
+### 20.1 状态闭环
+
+用户于 2026-11-09 确认阶段 2 第三批（`ea0898a`，`UNOOL.Protocol` 工程）本地编译通过：第 19.5 节的 4 项回归（独立 PCH 与 `/FI`、静态库符号解析含 `Card::make` / Card·Hand operator 的反向引用、账号 / 商城 packet 与状态广播 / CharInfo、Client1/2 双开与 Debug/Release 双配置）视为已覆盖，第 19.6 节风险 ① 解除。助手侧 `MSBuild.exe` 安全策略拦截未解除、从未绕过。**至此阶段 2 三批（W1+W2、W4、W3 工程归属版）全部编译闭环**；改动已提交 `ea0898a`，工作区干净，回归任务 #31 完成。
+
+### 20.2 只读评估：阶段 2 剩余三项
+
+| 项 | 事实 | 影响 / 风险 |
+|---|---|---|
+| S1 `Card.cpp` 序列化归位（第 19 节选项 2） | `source/Card.cpp` 共 591 行，尾部 `// ==== Packet 序列化 ====` 起 49 行为 4 个 `sf::Packet` operator（`Card` << / >>、`Hand` << / >>）；`Card.cpp:5` 的 `<SFML/Network.hpp>` 只服务这一段；`Card.h:247-248 / 384-385` 仍声明并友元这些 operator | 新建 `source/protocol/CardPacket.cpp` 逐字平移 → `Card.cpp` 可去 SFML 头、Protocol 库自含 Card/Hand 序列化。但 `operator>>(Hand&)` 仍调 `Card::make()`（定义在 exe 的 `Card.cpp`），**反向引用不消失**；`Card.h` 仍带 `sf::Packet` 声明，Domain 净化未完成。上一批已明确把此项留给阶段 3，需新口径才可启用 → **用户已授权执行，见第 21 节** |
+| S2 Server 去 `sfml-window.lib` | Server 侧 `sf::Keyboard` 只出现为 `Socket.h:47` 的 `ClientInput.key` 类型与 `LegacyBlockingDecisionAdapter.cpp::toDomainKey()` 的枚举 switch，无任何 `sf::Keyboard` 函数调用；头文件依赖 `<SFML/Window/Keyboard.hpp>` 仍在。Client1/2 因 `sfml-graphics` 依赖 window，不能去 | Q5 约定「等编译结果再决定」，现已有多轮编译通过，具备判断前提。去掉 Server 的 2 条链接项风险低、可逆；但 SFML 3 是否仍有导出符号依赖必须由本地链接确认 → **已执行，见第 21 节** |
+| S3 W5 `AccountService` / `ShopService` | `source/Socket.cpp` 共 1004 行；账号 / 商城相关段约 430 行（`handleAccountPacket` 319–411、`sendShopData` 544–647、`handleSkillInfoRequest` 648–675、`handleCheckin` 676–696、`handleShopPurchase` 697–843），`ServerNetwork` 同时承担传输与业务 | 阶段 2 里唯一需要大段改写函数体的项：须新建端口 / 用例服务、改 `ServerNetwork` 与组合根，跨登录 / 注册 / 查重 / 签到 / 商城 / 技能信息，风险最高 |
+
+### 20.3 阶段 3 的门槛（尚未开工）
+
+- **共享逻辑仍编译三遍**：Server 与两个 Client 的 `ClCompile` 各有 12 个共享 `.cpp`（`Card` / `Character` / `Effect` / `GameLogic` / `InstantSkill` / `PassiveSkill` / `Player` / `Skill` / `Socket` / `TransformSkill` / `UserDB` / `utils`）；`Domain` / `Application` 两个静态库仍只编译各自的 `pch.*.cpp` 占位。
+- **硬规则「Domain 外部头 = 0」未达成**：`header/Card.h`、`header/GameState.h`、`header/Socket.h` 仍带 `sf::Packet` / `sf::Keyboard::Scancode`；Q8 要求 Domain PCH 为纯标准库，把这些 `.cpp` 直接塞进 Domain 库会违反该约定。
+- **口径未定**：W3 只对「改 3 个 exe 的编译单元与链接」解除了 A6「不物理移动现有文件」，并不等于允许搬动源码目录；是否允许改 `Card.h` / `GameState.h` 的头文件依赖（把序列化声明移到 Protocol 侧）、共享 `.cpp` 归哪个库、该库用哪份 PCH，都需要单独确认。
+- Q3 排除项（`MessageType` 拆分、长度帧 / Partial、端口统一、config 注释、子技能 / 安全修复）继续有效；阶段 4 客户端装配、阶段 5 / 6 另期。
+
+### 20.4 用户选择：阶段 2 收官（已执行，见第 21 节）
+
+用户选择「阶段 2 收官（推荐）」，即执行 S1 + S2；S3（W5 用例服务）、阶段 3 / 4 与「暂停」均未选。该选择同时解除了第 19 节「`Card.cpp` 归位留阶段 3」与 Q5「`sfml-window.lib` 先保留」两项暂缓口径——但**只解除到本批的 S1 / S2 范围**，不代表允许物理移动源码或改领域头文件依赖。执行结果见第 21 节。
+
+## 21. 阶段 2 收官：Card/Hand 序列化归位与 Server 去 window 链接（2026-11-09）
+
+### 21.1 范围与口径
+
+沿用 Q3 排除项、Q4 降级验收（助手静态验证 + 用户本地编译回归）、A6 不物理移动现有文件（本批只**新增** `source/protocol/CardPacket.cpp`，未移动任何现有文件）、线上协议字节不变。S3 / 阶段 3 / 4 不做。
+
+### 21.2 S1：Card / Hand 序列化归位（零函数体改动）
+
+| 文件 | 改动 |
+|---|---|
+| 新增 `source/protocol/CardPacket.cpp` | 原 `source/Card.cpp` 542–591 行（50 行：`// ==== Packet 序列化 ====` 注释 + 4 个 `sf::Packet` operator）**逐字平移**；文件头补 `#include "Card.h"` / `<SFML/Network.hpp>` 与说明注释 |
+| `source/Card.cpp` | 删除第 5 行 `#include <SFML/Network.hpp>` 与 540–591 行（序列化段及其前 2 个空行）；591 → **538 行**，其余内容与 HEAD 逐字一致 |
+| `Projects/Protocol/UNOOL.Protocol.vcxproj` | 补 1 条 `ClInclude`（`..\..\header\Card.h`）+ 1 条 `ClCompile`（`..\..\source\protocol\CardPacket.cpp`，`Use` + `pch.protocol.h` + `/FI`，与库内另两个单元一致） |
+| `Projects/Protocol/pch.protocol.h` | 第 4 行注释「两个编译单元」→「三个编译单元」 |
+| `README.md` | Protocol 段补 `protocol/CardPacket.cpp`；序列化函数数量订正为「`GameState` / `CharInfo` 6 个 + `Card` / `Hand` 4 个 `sf::Packet` 运算符 + 9 个账号协议函数」 |
+
+`header/Card.h` 的 2 条 operator 声明与 2 条 `Hand` friend 声明**未改**，对外接口与线上字节不变；4 个函数体逐字平移，未改任何表达式、分支或默认值。
+
+**两点必须说清，否则容易误判为「领域净化已完成」**：
+
+1. **反向引用仍在**：`operator>>(Hand&)` 仍调 `Card::make(c)`，其定义在由 3 个 exe 编译的 `source/Card.cpp` 中。第 19.3 节记录的「Protocol 库反向引用 exe 对象文件符号」这一特殊情况**没有消失**，只是从 `GameState.obj` 扩散到 `CardPacket.obj`；同类引用已由用户在第三批链接验证无 LNK2019。
+2. **不等于 Domain 净化**：`Card.cpp` 不再显式 include SFML 头，但 3 个 exe 仍强制包含含 `<SFML/Network.hpp>` 的 PCH，`header/Card.h` 仍以 `namespace sf { class Packet; }` 前向声明 + 2 条 operator 声明把 `sf::Packet` 写进领域头。硬规则「Domain 外部头 = 0」仍属阶段 3。
+
+### 21.3 S2：Server 去掉 `sfml-window` 链接项（Q5 收口）
+
+| 配置 | 改动前 | 改动后 |
+|---|---|---|
+| Debug\|x64 | `sfml-window-d.lib;sfml-system-d.lib;sfml-network-d.lib` | `sfml-system-d.lib;sfml-network-d.lib` |
+| Release\|x64 | `sfml-window.lib;sfml-system.lib;sfml-network.lib` | `sfml-system.lib;sfml-network.lib` |
+
+依据：Server 可达的 14 个编译单元与 `Adapters` 库 2 个编译单元中，`sf::Keyboard` 只以 `Socket.h:47` 的 `ClientInput.key` 类型和 `toDomainKey()` 的 `Scancode` 枚举 switch 出现；扫描 `sf::Window` / `VideoMode` / `Context` / `Cursor` / `Joystick` / `Mouse` / `Touch` / `Sensor` / `Keyboard::isKeyPressed` / `getDescription` / `localize` / `delocalize` **0 处**。SFML 3 的 `Scancode` 是头文件枚举，不产生导出符号引用。Client1 / Client2 的链接项**未动**：它们链接 `sfml-graphics`，而 graphics 依赖 window。
+
+**回退方式**：若本地 Debug 或 Release 链接报 LNK2019 / LNK2001，恢复 `Server.vcxproj` 这两行即可，其余改动不受影响。这是 Q5 约定「等编译结果再决定」的最终决定项，必须由用户本地链接确认。
+
+### 21.4 验证结果（助手侧静态只读）
+
+- 平移段：HEAD 版 `Card.cpp` 542–591 行（50 行）与 `CardPacket.cpp` 同名段 `diff` **无差异**；删段后的 `Card.cpp` 与「HEAD 去掉第 5 行 + 540–591 行」`diff` **无差异**（538 行），`SFML` / `sf::` 残留 **0 处**。
+- 10 个 `.vcxproj` / `.filters` XML 全部可解析；同口径统计 `ClCompile` / `ClInclude` / `ProjectReference`（排除宏与 `.filters` 虚拟筛选器）：**HEAD 基线 276 → 本批 278，delta = 2**，与 Protocol 新增 1 `ClInclude` + 1 `ClCompile` 精确对应；**0 缺失**。
+- `CardPacket.cpp` 的 `ClCompile` **只出现在** `UNOOL.Protocol.vcxproj`，PCH 为 `Use` + `/FI pch.protocol.h`；3 个 exe 的 `ClCompile` 无改动，Client1/2 仍保留 5 个 SFML 链接项。
+- 全库 `^sf::Packet& operator` 定义共 **10 个**（`GameState.cpp` 6 + `CardPacket.cpp` 4），无重复定义；新文件引号 include `Card.h` 可解析；项目自有裸指针声明 0；`git diff --check` 干净。
+- `git diff --name-only` 确认 `Socket.*`、`GameState.*`、`AccountProtocol.*`、`Card.h`、`ServerMain.cpp`、`UNOOL.slnx`、`UNOOL.slnLaunch.user`、3 个 json、端口 8888 / 14341、`MessageType` **全部未改**。
+- BOM 保持（3 个 filters 有 / 7 个 vcxproj 无）；换行保持（源文件 LF，`core.autocrlf=true` 由 Git 规范化）。
+
+### 21.5 需用户本地验证
+
+第 16 / 17.5 / 18.5 / 19.5 节的验收均不覆盖本批，请在 VS 重新生成 `Debug|x64` 与 `Release|x64`，重点回归：
+
+1. **链接**：Server 去掉 `sfml-window` 后有无 LNK2019；`UNOOL.Protocol.lib` 新增 `CardPacket.obj` 后，3 个 exe 能否解析 Card / Hand 的 4 个 operator，`Card::make` 的反向引用是否仍正常；
+2. **协议行为**：状态广播 / CharInfo（含 `Hand` 反序列化与 `selectedIndex` 钳制）、登录 / 注册 / 查重 / 签到 / 商城；
+3. Client1 / Client2 双开全流程（链接项未变，但 Protocol 库新增编译单元）。
+
+助手侧 `MSBuild.exe` 安全策略拦截未解除，从未绕过。
+
+### 21.6 阶段 2 收官状态
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | **全部完成**：W1（5 个出站适配器）、W2（Server 精简 PCH / 去 graphics+audio 链接）、W4（`NetworkServerView`）、W3 工程归属版（`UNOOL.Protocol`）、S1（Card/Hand 序列化归位）、S2（去 `sfml-window`）均已落地。S3（W5 账号 / 商城用例服务）按第 20.4 节用户选择不做；按原方案它属于阶段 4 的用例服务，留后续另期 |
+| 3 | 未做：Domain / Application 仍为 PCH 占位，12 个共享 `.cpp` 仍被 3 个 exe 各编译一遍，`Card.h` / `GameState.h` / `Socket.h` 仍带 SFML 类型 |
+| 4 | 未做（三个 Scene 仍非纯 View，无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，无用例服务，`ICommands.h` 仍是零引用骨架） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+**风险**：① 本批编译与运行时回归尚未执行（见 21.5），其中 Server 去 window 与新增静态库编译单元是最需要链接验证的两点；② Protocol 库对 exe 对象文件的反向符号引用依旧存在，彻底消除需阶段 3 把共享领域逻辑集中编译；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
