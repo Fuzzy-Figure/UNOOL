@@ -2650,3 +2650,23 @@ S3a 已提交 `d8699a2`。按 49.4 / 50.9，下一步是 **S3b `LoginScene` 纯 
 本批**零代码、零工程文件改动**：`MessageType` 25 值与顺序、端口 8888 / 14341、JSON 配置与存档、三处收包循环与 `PacketDispatcher` 心跳单点、两个 Scene 全部函数体与 UI 状态机、三个纯 View 单元、`IClientSession` / `IClientGateway` / `IShopOpener` / `ClientApp` / `PacketDispatcher` 现有签名与实现、`Socket.h` / `Socket.cpp`、`ICommands.h`、库归属与 PCH、`UNOOL.slnx` 7 工程、`ProjectReference`、包含目录、链接项、Win32 边界（35.4）、Q2 / Q3 / Q8 / Q9 / Q10、46.7 ③B、49.10 全部保持。
 
 方案第 51 节 + README（同时把 S3a 段落状态订正为「已编译通过并提交 `d8699a2`」）+ 工作记忆以**一次独立的文档提交**交付，提交后工作区保持干净（与第十五批 `91039e2`、第十八批 `6554e48` 同口径）。用户就 **51.5 口径① / 51.6 口径② / 51.7 口径③** 各选一项后，助手按所选分段执行第二十一批，并给出逐段等价性证据与需本地 Rebuild / 运行时回归的清单；未确认前不写任何 S3b 代码。
+
+### 51.11 口径确认结果：**①A + ②A + ③C**，以及 ③C 触发的只读核查
+
+用户在 51.10 后一次点选：**①A 类型解耦先行 / ②A 扩网关并泛化 `PacketDispatcher` / ③C 删掉死方法**。前两项与推荐一致；③C 是唯一偏离推荐（③A 原样保留）的一项，且 51.7 表已标注它「连带清理 `username` / `password` 字段，影响 `getUsername()` 与 `reconnect()`，改动面扩散」。按「每次调整说明原因 / 影响」与「特殊情况需向用户说明」，助手在写任何代码前先做了全项目只读核查，结论如下。
+
+**核查 1 · 整条链都是不可达死代码。** `setCredentials()`（`Socket.h:190`）零调用；`reconnect()`（`Socket.h:191` 声明 / `Socket.cpp:590–648` 定义）同样**零调用**（全项目 `grep` 只有声明与定义两处）。`ClientNetwork` 的 `username` / `password` 成员（`Socket.h:164/165`）只被三处引用：`setCredentials()` 写、`reconnect()` 读（`if (serverIp.empty() || username.empty()) return false;` 与 `AccountProtocol::makeLoginRequest(username, password)`）、`getUsername()` 读 `username`。因 `setCredentials()` 从未被调用，两字段恒为空串，`reconnect()` 恒在第一行返回 `false` —— 即便将来有人调用也进不了登录流程。**因此删除对外行为零变化。**
+
+**核查 2 · 不能连带删的东西。** ① `getUsername()` 是 `IClientSession`（S1 纯标准库端口）的 `override`，唯一调用点 `ClientApp.cpp:131` 的 `std::println("{} 分配到玩家：{}", ..., net.getUsername())`，删端口方法会改 S1 口径并造成控制台输出变化；② `<thread>` 不能删（`Socket.cpp:523` 的 `ServerNetwork` 仍用 `std::this_thread::sleep_for`）、`AccountProtocol.h` 不能删（`Socket.cpp:342` 仍用 `makeAccountResponse`）；③ `serverIp` / `serverPort` 由 `connect()` 赋值，删 `reconnect()` 后变成「只写不读」，但删它们要改 `connect()` 函数体，与 ①A 的「零函数体改写」冲突；④ README 已知问题里「客户端断线后重连等待默认 600 秒」描述的是**服务端** `ServerNetwork` 的等待逻辑，与 `ClientNetwork::reconnect()` 无关，不受影响。
+
+**③C 的安全落地（用户授权的死代码清理，与 ①A 端口解耦相互独立）**：
+
+- 删 `Socket.h` 的 `setCredentials()`、`bool reconnect();`、`std::string username;` / `std::string password;`。
+- 删 `Socket.cpp` 的 `reconnect()` 整个函数（含其中 S2 记录的**第四处一次性收包循环**：暂存非登录包、成功后放回队列、自身不回心跳）。该循环随不可达函数一起消失，README 第 48 节对应段落需补注。
+- `getUsername()` **保留**，实现改为返回函数内静态空串常量；因原实现返回的 `username` 本来就恒为空串，返回值与 `ClientApp.cpp:131` 的打印内容逐字一致。
+- `serverIp` / `serverPort` / `<thread>` / `AccountProtocol.h` / `connect()` 函数体全部保留；`serverIp` / `serverPort` 的「只写不读」顺延到后续批次再判。
+- **风险告知**：删掉的是客户端**唯一**的自动重连能力（虽当前不可达），将来若要恢复断线重连需重写该函数；这是用户 ③C 明确授权的删除，不属擅自改行为。
+
+**①A + ②A 的落地清单（第二十一批 S3b1）**：`IClientGateway.h` 增 `std::optional<sf::Packet> receivePacket()` / `std::optional<int> peekMessageType() const` 两个纯虚（并按要求 include `<SFML/Network.hpp>` 与 `<optional>`）；`Socket.h` 两个方法加 `override`；`PacketDispatcher.h` 的前向声明与两个 `next` / `replyHeartbeat` 签名由 `ClientNetwork&` 改为 `IClientGateway&`，`PacketDispatcher.cpp` 的 `#include "Socket.h"` 改为端口头；`LoginScene.h` 删 `#include "Socket.h"`、成员与构造参数切到 `IClientGateway&`；`LoginScene.cpp` 只同步构造签名。`ClientApp.cpp` / `ShopScene.cpp` 的两处 `PacketDispatcher::next(ClientNetwork&)` 调用点因派生→基类隐式转换**零改动**；三处调用点的订阅集、循环头、业务判定逐字不变。5 个请求构造 / 4 个响应解析 / 状态机 / `render()` / `run()` 主循环全部逐字留在 `LoginScene.cpp`（协议上移归 S3b2）。
+
+**本批性质**：对外行为零变化（③C 删的是不可达死代码）；改动面比 51.5 表中 ①A 的 60–90 行估算更大（叠加 ③C 约 60 行删除），但三件事都是类型替换或死代码删除，可一次 Rebuild 验证。方案第 52 节将记录逐段等价性证据与 Rebuild / 回归清单；确认口径后无需再点选，助手直接开工第二十一批。
