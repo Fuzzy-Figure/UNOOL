@@ -80,6 +80,8 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 **阶段 4 · S3b2 前置评估（第二十二批只读，零代码 / 零工程文件改动）**：S3b1 后 `LoginScene` 为 620 行（头 74 + 源 546），`ShopScene` 980 行，合计 1600 行。S3b2 要移走的是 **5 个请求构造**（3 个 `AccountProtocol` helper + 手写 `CheckinRequest` / `ReadyToPlay`）、**4 处响应解析**（`parseCheckUsernameResponse` 1 / `parseAccountResponse` 2 / 手写 `CheckinResponse` 1）与 `ConnectionInfo` 的 `packet >> pid`；8 处 `net.*` 与 51 处状态机枚举分支仍在 View。**三个卡点**：① 查重→注册→登录是 `pollAccountPackets()` **同一帧连续发包**，触发点移进用例自动机会改变发包时机；② 缺结果回传通道（S3a 只建了 `IShopOpener` 意图通道）；③ `run()` 每帧 `pollEvent → net.update → pollAccountPackets → render → Done break` 的固定顺序，把收包驱动上移组合根风险最高。**附带发现（未改）**：`Result::enterShop` 全项目零读取点（S3a 商城上移后的残留死字段），`ICommands.h` 的 `IGameCommands` 仍是零引用骨架。方案 53.7 给出三组口径：① 范围（A 推荐协议层上移、主循环留 View / B 一步到位纯 View / C 只抽 helper / D 跳过）；② 结果通道（A 推荐同步值 `std::optional<AccountEvent>` 返回 / B `ILoginEventSink` 回调 / C 组合根驱动 / D 裸 DTO）；③ 死字段（A 推荐删 `enterShop`、骨架不动 / B 都保留 / C 解禁 `IGameCommands`）。默认 **①A + ②A + ③A**；按 37.6 未确认前不写任何 S3b2 代码。详见方案文档第 53 节。
 
+**S3b2 口径已确认（53.9）**：用户一次点选 **①A 协议层上移、主循环留 View + ②A 同步值返回 + ③A 删 `enterShop`、骨架不动**。第二十三批将新建 `header/protocol/AccountEvent.h` 值对象、把 4 处响应解析与 `ConnectionInfo` 收拢为 `parseAccountEvent()`、补齐 `CheckinRequest` / `ReadyToPlay` 两个请求 helper，`pollAccountPackets()` 改为同步 `switch` 但链式请求触发点与每帧顺序逐字保留；实现并入既有 `source/protocol/AccountProtocol.cpp`（零工程文件改动，`Application` 仍是 Q8 占位库）；`ICommands.h` 骨架不动。口径记录独立提交后不再另行点选，直接开工 S3b2。
+
 ## 文档
 
 | 文件 | 内容 |

@@ -2806,3 +2806,15 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 ### 53.8 验证与后续
 
 选 ①A 时，助手按「新用例头文件 → `.cpp` 实现 → View 改调用点 → 工程登记 → 逐段 `diff` 等价性 → 请用户 Rebuild」闭环，Runtime 回归重点为链式请求同帧时序（查重→注册→登录）、`ReadyToPlay` 与 `status=Done` 顺序、跨阶段留包、三处心跳与 3 秒超时。方案第 53 节 + README + 工作记忆以**一次独立的文档提交**交付，提交后工作区继续只剩用户侧 `UNOOL.slnx`（与第十五批 `91039e2`、第十八批 `6554e48` 同口径）。用户就 **口径① / ② / ③** 各选一项后助手执行第二十三批；未确认前不写任何 S3b2 代码。
+
+### 53.9 口径确认（用户点选 ①A + ②A + ③A）
+
+用户一次点选 **①A 协议层上移、主循环留 View / ②A 同步值返回 / ③A 删 `enterShop`、骨架不动**。据此第二十三批 S3b2 的执行计划：
+
+1. **协议值对象**：新建 `header/protocol/AccountEvent.h`（纯值对象：消息类型 + `ok` / `msg` / `points` / `wins` / `losses` / `exists` / `pid` 等字段，纯标准库 + `MessageType`），把 4 处响应解析与 `ConnectionInfo` 的 `packet >> pid` 收拢为 `parseAccountEvent(MessageType, sf::Packet&) -> std::optional<AccountEvent>`；5 个请求构造补齐 `makeCheckinRequest()` / `makeReadyToPlay()` 两个 helper，View 只保留「填字段 → 构造请求 → `net.send()` → 设 `Status`」。
+2. **②A 同步值返回**：`LoginScene::pollAccountPackets()` 逐字保留 `PacketDispatcher::next(net, { 5 类订阅 })`、每帧顺序与 `continue`；业务判定改为对 `AccountEvent` 的同步 `switch`，`message` / `status` / `mode` / `result` / `checkinPopup` 仍由 View 写。链式请求（查重→注册→登录）触发点仍在原 `continue` 位置，**同帧顺序不变**。
+3. **③A**：删 `Result::enterShop` 声明与 `LoginScene.cpp:141` 的赋值（零读取点）；`ICommands.h` 的 `IGameCommands` 骨架继续不动。
+4. **层与工程条目的取舍**：①A 允许「application 层用例或 adapters 协议适配器」。本批选择**扩展既有 Protocol 层**（`header/protocol/AccountProtocol.h` + `source/protocol/AccountProtocol.cpp`），理由：`Application` 目前是 Q8 口径下的「设计层目录 + 独立 PCH 占位库」，无业务 `.cpp`；新建 application 编译单元需登记到 `UNOOL.Core.vcxproj` 并扩大链接面，而 `AccountProtocol.cpp` 已在 Core 统一编译、零工程文件改动即可闭环。值对象头仍是纯标准库，不把 `sf::Packet` 完整定义带进 `Application`。
+5. **验证**：逐段 `diff` 证明 5 个请求包字节、4 个响应字段顺序、`status=Done` 先于 `ReadyToPlay` 发包、全部文案与状态机分支零变化；169 条 Include 路径复核、XML 全解析、双客户端条目一致、裸指针 0、UTF-8 无 BOM + CRLF；请用户 Rebuild `Debug|x64` / `Release|x64` 并实跑 52.8 清单（重点：链式同帧时序、跨阶段留包、三处心跳与 3 秒超时）。
+
+口径记录以独立文档提交交付，提交后工作区继续只剩用户侧 `UNOOL.slnx`。助手按此计划执行第二十三批 S3b2 代码，**不再另行点选**；S3c `ShopScene`（980 行）与 S4 `InputAdapter` 顺序不变。
