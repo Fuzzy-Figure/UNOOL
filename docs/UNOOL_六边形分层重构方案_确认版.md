@@ -1960,3 +1960,66 @@ A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读�
 | 5 / 6 | 按 Q3 / Q9 另期 |
 
 **风险**：① **编译已闭环**（用户 2026-11-09 确认 Debug / Release x64 Rebuild 通过，见 42.7），运行时回归仍待实跑；② 目录归位不等于库拆分，`Domain` / `Application` 仍为空壳；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。
+
+## 43. 第十二批闭环与第十三批：A 路线收官 · 默认组合从服务定位器剥离（2026-11-09）
+
+### 43.1 闭环与提交
+
+用户确认第十二批 `Rebuild Debug|x64` 与 `Release|x64` 编译通过（新增 2 个编译单元的 PCH 配置、`utils.cpp` 去掉 4 个 include 后的声明可见性、3 个 exe 对 `services()` 与 4 个配置门面的链接均正常，无 C1083 / LNK2019 / LNK2005）。助手生成结构化提交消息并提交 `3dbe039`（**11 个文件，+178 / −75**，提交时工作区干净）；42.7 / 42.8 与工作记忆的编译闭环记录随该提交一并交付，未留未暂存文件。42.7 第 2 / 3 项运行时清单继续留作后续实跑。
+
+### 43.2 只读评估：第十二批之后 A 路线的前置尚未收官
+
+| 约束 | 实测 |
+|---|---|
+| `Projects/Domain/pch.domain.h` / `pch.application.h` | 均**纯标准库**（`<cstddef>` / `<chrono>` / `<optional>` / `<string>` / `<vector>` 等），Q8 口径明确不含 SFML / `Windows.h` / `json.hpp` |
+| 两库 `AdditionalIncludeDirectories` | `$(ProjectDir)` + `header` 及四个分层目录，**没有** `dep\nlohmann` 与 `dep\SFML\include` |
+| `header/adapters/LegacyServicesAdapter.h` 传递包含 | `JsonConfigProvider.h` / `JsonUserRepository.h` / `FilesystemAssetCatalog.h` 各带 `<json.hpp>`，`JsonUserRepository.h` 另带 `UserDB.h` / `Character.h`；`SfmlClock.h` 仅 `<chrono>`、`Mt19937Random.h` 仅标准库 |
+| 5 个适配器实现 | 全部 **header-only**（`grep source/**/*.cpp` 无 `Xxx::` 定义），但 `JsonUserRepository` 会引用 `UserDB` 符号（`source/adapters/UserDB.cpp`，Core 库） |
+| `services()` 静态调用链 | `Character.cpp` 4 处、`utils.cpp` 随机门面 4 处，共 8 处；`ServerMain.cpp` 组合根 1 处 `installServices` |
+
+- **结论**：第十二批只把 `utils.cpp → adapters` 这条边清掉；`source/application/Services.cpp` 里的 `legacyBundle()` 仍 `#include "adapters/LegacyServicesAdapter.h"`，把整串 `json.hpp` / `UserDB.h` / `Character.h` 传递依赖和 `UserDB` 符号带在身上。若此时把 `Services.cpp` 划进 `Domain` / `Application` 库，编译期就会要求第三方头，直接违反 Q8「Domain 纯标准库 PCH」，且工程还得补 `dep` 包含目录。**A 路线的前置没做完**。
+- 本批属已确认的 A 路线延续：**不动工程引用、不移动现有文件、不动 Q8 / Q3 口径、不改协议**，因此无需新增用户决策；真正拆库（B 路线）仍需按 37.6 单独确认。
+
+### 43.3 执行范围与设计原因 / 影响
+
+1. 新建 `source/adapters/LegacyBundle.cpp`（18 行）：把原 `detail::legacyBundle()` 的函数体（含 `static adapters::LegacyServicesAdapter adapter;` 与 `return adapter.bundle;`）**逐字平移**为 `unool::application::defaultBundle()`，仍由 `UNOOL.Core` 编译一次、3 个 exe 共同链接。
+2. `source/application/Services.cpp`：去掉 `#include "adapters/LegacyServicesAdapter.h"`，删掉 `detail::legacyBundle()`，改为**文件内前置声明** `DomainServices& defaultBundle();`，`services()` 的未装配分支由 `return detail::legacyBundle();` 改为 `return defaultBundle();`；`installedSlot()` / `services()` / `installServices()` 三者的其余语句逐字不变。
+   - **为什么用惰性函数而不是注册式函数指针**：注册式 provider 要依赖跨 TU 的静态初始化顺序，若某全局对象在注册完成前调用 `services()` 会取到空指针；惰性函数只在首次 `services()` 调用时进入 `defaultBundle()`，无初始化顺序问题，且两个 `.obj` 同在 `Core.lib`，由链接器扫描解析。
+   - **行为等价**：仍是进程内唯一一份静态局部 `LegacyServicesAdapter`、惰性构造，五个适配器各一份、`random` 与全局随机门面共用同一实例；仅 `ServerMain` 显式装配时走 `installServices()`，未装配的 Client1 / Client2 仍落到这一份默认组合。
+3. 三个头的过时注释订正（`LegacyServicesAdapter.h` / `Services.h`），`UNOOL.Core.vcxproj` +1 条 `ClCompile`（19 → 20，`Use pch.core.h` + `/FI`），`pch.core.h` 与 README 计数 19 → 20 并补说明；Core 无 `.filters`。
+4. **零改动**：`MessageType` 25 值与 switch、端口、`UNOOL.slnx`、3 个 exe 的 `ProjectReference`、包含目录、链接项、x64 配置、`Domain` / `Application` 两库工程（`git diff --stat` 为空）、PCH 有效内容、`source/protocol/`、`ServerMain.cpp` 组合根、其余 6 个工程文件、所有函数体的业务语句。
+
+### 43.4 行为等价性与静态验证（助手侧只读）
+
+- **归一化比对**：把 HEAD 的 `Services.cpp` 与拆分后的 `Services.cpp` + `LegacyBundle.cpp` UTF-8 无损导出，去注释 / 去空行 / 去 `#include` / 去纯结构行 / 合并空白后作语句行多重集比对：**HEAD 12 行 / NEW 13 行**；`ONLY_IN_HEAD = 2`（`DomainServices& legacyBundle() {`、`return detail::legacyBundle();`）、`ONLY_IN_NEW = 3`（`DomainServices& defaultBundle() {`、前置声明 `DomainServices& defaultBundle();`、`return defaultBundle();`）——**全部是预期的函数名 / 调用点替换与新增声明，零业务语句增删改**。
+- **符号唯一性**：`services()` 1 处定义、`installServices()` 1 处、`defaultBundle()` 定义 1 处 + 前置声明 1 处 + 调用 1 处、`LegacyServicesAdapter adapter` 静态实例 1 处；`legacyBundle` **代码残留 0**（仅 `LegacyBundle.cpp` 一处说明性注释）。
+- **A 目标达成**：`Services.cpp` 的传递包含链为 `utils.h` + `application/Services.h` → 5 个端口头（`IAssetCatalog` / `IClock` / `IConfigProvider` / `IRandom` / `IUserRepository`），实测**全部纯标准库、零第三方头**；两库现有 PCH 与包含目录已足以编译它。
+- **静态验证**：10 个 `.vcxproj` / `.filters` XML 全可解析、`ClCompile` / `ClInclude` 引用 **226 → 227 条、0 缺失**；花括号 7/7、2/2 配平；新代码裸指针 0；两个 include 目标存在；`git diff --check` 干净；9 个相关文件统一复位为 UTF-8 无 BOM + CRLF（`bareLF = 0`），无换行 / BOM 漂移。助手侧本地构建验证仍受安全策略限制，未绕过，**未做本地编译**。
+
+### 43.5 边界与风险
+
+- `Core` 编译单元 19 → 20（+ PCH 生成单元）；`Services.obj → LegacyBundle.obj` 的符号仍由 `Core.lib` 内部解析，3 个 exe 的引用不变。`LegacyBundle.cpp` 物理位于 `source/adapters/` 却仍由 Core 编译，与既有 `Socket.cpp` / `UserDB.cpp` / `JsonConfig.cpp` 一致。
+- **本批是 A 路线收官，不等于拆库完成**：反向边 ②（9 个模型 `.cpp` 互调、`GameLogic.h` / `Player.h` 跨层包含）未动；`Domain` / `Application` 仍是 PCH 占位库、3 个 exe 无 `ProjectReference`。要真正实装库，还需盘点 `GameState.cpp` / `AccountProtocol.cpp` / `CardPacket.cpp` 的跨库符号，并决定 `Domain` 库是否容纳 `defaultBundle()`（它仍依赖 Core 的 `UserDB` 符号）。
+- 第 35.4 节 Win32 边界、Q3 其余排除项、第 36.1 节 `MessageType` 口径、Q8「Domain 纯标准库 PCH」继续有效且**未被改动**。
+- 用户确认编译通过后由助手生成结构化提交消息，本批 9 个文件随本次提交一并交付，提交时工作区干净。
+
+### 43.6 用户本地验证（编译已闭环）
+
+用户已确认 **Rebuild `Debug|x64` 与 `Release|x64` 编译通过**：新增 `LegacyBundle.cpp` 的 PCH `Use` + `/FI` 配置、跨 TU `defaultBundle()` 的链接、`Services.cpp` 去掉 `LegacyServicesAdapter.h` 后 `opt_ref` / `std::ref` / `DomainServices` 的声明可见性均正常，无 C1083 / C2857 / LNK2019 / LNK2005。本批 9 个文件随本次提交一并交付，提交时工作区干净。下列清单第 1 项已闭环，第 2 / 3 项继续留作运行时实跑：
+
+1. **编译 / 链接**：`LegacyBundle.cpp` 的 PCH `Use` + `/FI` 配置无 C1083 / C2857；`Services.cpp` 内前置声明与 `LegacyBundle.cpp` 定义签名一致、3 个 exe 对 `defaultBundle()` 无 LNK2019；`LegacyServicesAdapter` 静态实例无重复定义 LNK2005；`Services.cpp` 在不含 `LegacyServicesAdapter.h` 后仍能解析 `opt_ref` / `std::ref` / `DomainServices`。
+2. **运行路径**：Client1 / Client2 **未装配**时走默认组合——随机序列（洗牌 / 发牌 / 角色随机）、配置读取与每局 `reload`、资源路径、`Character::getImagePath` / `getSkins` / 屏蔽角色分组、`userDatas.json` 存档；Server 装配后走注入组合且随机引擎仍只有一份；登录 / 商城 / 签到 / 购买回归、双开双配置、心跳与 3 秒超时。
+3. **线上字节**：端口 8888 / 14341、`MessageType` 消息号与包体、JSON 配置与存档格式不变（Q10 不要求新旧客户端混跑）。
+
+### 43.7 阶段状态与下一批方向（需用户确认）
+
+| 阶段 | 本批后状态 |
+|---|---|
+| 2 | 全部完成并编译闭环 |
+| 3 | W5 用例全部收官；第十二批 `utils.cpp` 净化、第十三批 `Services.cpp` 净化，**A「拆库前置」路线收官**。剩余：反向边 ②、`Domain` / `Application` 库实装 |
+| 4 | 未做（三个 Scene 仍非纯 View） |
+| 5 / 6 | 按 Q3 / Q9 另期 |
+
+下一批两条路线按 37.6 需用户确认（当前批未擅自判定拆库口径）：**B1 `Domain` 库实装试点**——先盘点 9 个互调模型 `.cpp` 与 `GameState` / `AccountProtocol` / `CardPacket` / `UserDB` 的跨库符号，再整体划分库归属并重排 `ClCompile` / `ProjectReference` / PCH，风险高、可能需调整 Q8 口径；**B2 阶段 4 客户端装配**——6 单元 2426 行引入 `ClientApp` / `InputAdapter` / `PacketDispatcher`，改动面最大。
+
+**风险**：① **编译已闭环**（用户 2026-11-09 确认 Debug / Release x64 Rebuild 通过，见 43.6），运行时回归仍待实跑；② A 收官只解决了编译期依赖纯度，`Domain` → Core 的符号边仍在；③ 第 16.4 节「用户编译覆盖范围未细化」的记录仍然有效。

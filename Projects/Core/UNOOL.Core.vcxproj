@@ -203,6 +203,11 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\adapters\LegacyBundle.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\utils.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>

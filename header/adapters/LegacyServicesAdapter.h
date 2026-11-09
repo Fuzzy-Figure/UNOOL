@@ -7,7 +7,8 @@
 // 本文件不再实现任何端口，只把五个适配器汇集为一个可直接静态构造的默认门面。
 // 采用 header-only 内联实现，避免引入新的 .cpp 与链接依赖；
 // services() / installServices() 的定义在 source/application/Services.cpp，
-// 仍由 UNOOL.Core 静态库编译一次、3 个 exe 共同链接。
+// 默认组合的实例化在 source/adapters/LegacyBundle.cpp；两者仍由 UNOOL.Core
+// 静态库编译一次、3 个 exe 共同链接。
 #include "adapters/JsonConfigProvider.h"
 #include "adapters/JsonUserRepository.h"
 #include "adapters/Mt19937Random.h"

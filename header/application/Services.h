@@ -22,7 +22,8 @@ namespace unool::application {
 	// 因此客户端工程不装配也不会改变任何行为。
 	// installServices 只应由 Composition Root（ServerMain）调用。
 	// 两者定义在 source/application/Services.cpp：该单元由 UNOOL.Core 静态库
-	// 编译一次、3 个 exe 共同链接，不引入新的链接依赖。
+	// 编译一次、3 个 exe 共同链接，不引入新的链接依赖。未装配时的默认组合由
+	// source/adapters/LegacyBundle.cpp 提供，端口头不认识任何具体适配器。
 	DomainServices& services();
 	void installServices(DomainServices& s);
 }
