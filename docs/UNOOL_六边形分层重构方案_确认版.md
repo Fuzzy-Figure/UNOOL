@@ -2745,3 +2745,64 @@ S3a 已提交 `d8699a2`。按 49.4 / 50.9，下一步是 **S3b `LoginScene` 纯 
 ### 52.10 提交与后续
 
 本批代码 + 文档一并交付，用户 Rebuild 通过后由助手生成结构化提交消息提交 10 个文件（7 代码 + 方案第 52 节 + README + 工作记忆），提交时显式排除用户侧的 `UNOOL.slnx` 改动。之后按 51.5 ①A 推进 **S3b2**（5 个请求构造 / 4 个响应解析上移 + 结果回传通道，需单独评估 `run()` 主循环改造与留包时序），再 S3c `ShopScene`（980 行，含 `skillsCache` / `pendingSkills` 归属）。
+
+## 53. 第二十二批只读评估：S3b2 协议上移的精确分段与三组口径
+
+### 53.1 本批性质与起点
+
+`ea7293c`（第二十一批 S3b1）提交后工作区只剩用户 / VS 侧的 `UNOOL.slnx` 改动（工程条目重排 + `/doc/` 显示），继续排除在提交之外。本批**零代码、零工程文件改动**，只做 S3b2 精确盘点并集中交口径；按 37.6 / 49.9，未确认前不写任何 S3b2 代码。S3b1 编译已由用户本地 MSBuild Rebuild 验证（52.9：Debug 16.97s / Release 23.22s，均 0 警告 0 错误）。
+
+### 53.2 S3b1 后的精确规模
+
+| 单元 | 行数 | 说明 |
+|---|---|---|
+| `header/adapters/LoginScene.h` | 74 | S3b1 后端口成员 + `Result` DTO + 3 个 `enum class` |
+| `source/adapters/LoginScene.cpp` | 546 | 5 请求 / 4 解析 / 状态机 / `render()` / `run()` |
+| `header/adapters/ShopScene.h` + `source/adapters/ShopScene.cpp` | 104 + 876 = 980 | S3c 范围，本批不动 |
+| 合计两个 Scene | **1600** | 比 49.2 的 1591 多 9 行（S3a + S3b1 的注释与签名） |
+
+`LoginScene` 的纯绘制段仍是 `drawCheckinPopup()` + `render()` 共 221 行零网络符号。
+
+### 53.3 协议耦合点（S3b2 要移走的部分）
+
+- **5 个请求构造**：`AccountProtocol::makeLoginRequest` @189、`makeRegisterRequest` @204、`makeCheckUsernameRequest` @219，手写 `CheckinRequest` @229–230、手写 `ReadyToPlay` @144–146（后者在 `handleMouseClick` 的 `startGameBtn` 分支，**`status = Status::Done` 先于 `net.send()`**）。
+- **4 处响应解析**：`parseCheckUsernameResponse` @260、`parseAccountResponse` @274 / @288、手写 `packet >> msg >> ok >> points` @315；另 `ConnectionInfo` 的 `packet >> pid` + `net.setPlayerId(pid)` @252 与 `std::println` 文案。
+- **8 处 `net.*`**：`send` 5 / `update` 1 / `setPlayerId` 1 / `isConnected` 1；另有 `PacketDispatcher::next(net, { 5 类订阅 })` @242。
+- **状态机**：`Mode`(3) / `Status`(6) / `Focus`(3) 共 51 处枚举引用，全部在 View 内；`Result` DTO 由 View 填充并 `return` 给 `ClientApp.cpp:242`（组合根只使用 `session.ok`）。
+
+### 53.4 三个结构性卡点
+
+1. **同一帧链式请求**：`pollAccountPackets()` 内「查重响应可用 → `sendRegisterRequest()`」「注册响应成功 → `sendLoginRequest()`」是**同一帧连续发包**。若把请求触发移进用例层自动机，发包时机可能跨帧变化，影响服务端响应顺序与 `Status::Waiting*` 判定；逐字保序要求链式触发仍留在原调用点。
+2. **结果回传通道缺失**：S3a 只建了 `IShopOpener`（意图通道），49.4 的「请求 / 解析上移」需要反向结果通道。若采用回调 / 事件端口，`pollAccountPackets()` 的 `continue` / 订阅集 / 跨阶段留包顺序都要重新证明。
+3. **`run()` 主循环时序**：每帧固定 `pollEvent()` → `net.update()` → `pollAccountPackets()` → `render()` → `status==Done` break。把收包驱动整体上移到组合根（51.5 口径②C）会改变每帧顺序与「非账号包留队给 `gamePhase`」的边界，属最高风险路径。
+
+### 53.5 附带发现（未改）
+
+`Result::enterShop`（`LoginScene.h:23`）全项目仅 2 个出现点：声明与 `LoginScene.cpp:141` 的 `result.enterShop = false`，**零读取点**——S3a 把商城嵌套上移到 `ClientApp` 后残留的死字段，与 ③C 的 `setCredentials` 同类。`header/application/ICommands.h` 的 `IGameCommands` 仍是零引用骨架（阶段 5 口径，46.7 ③B 已定「保持不动」）。二者本批均不改，仅作为口径③的选项。
+
+### 53.6 不可动语义
+
+Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳由 `PacketDispatcher` 消费并回复；坏包 `>>` 失败 `continue` 丢弃、队列空 break 且坏包留队；`run()` 每帧顺序；5 个请求包字节与 4 个响应字段顺序；链式请求的同帧顺序；开局分支 `Done` 先于 `ReadyToPlay` 发包；`ConnectionInfo` / 登录成功 / 全部错误文案；S3a 商城返回判定（`LoginScene.cpp:153–156`）；`MessageType` 25 值、端口 8888 / 14341、JSON 存档；`IClientSession.h` 纯标准库、`ICommands.h` 骨架、Win32（35.4）与 Q2 / Q3 / Q8 / Q9 / Q10。
+
+### 53.7 三组待确认口径
+
+**口径① S3b2 本批范围**（默认 A）：
+- **A 协议层上移、主循环留 View（推荐）**：新建 `application` 层账号用例（或 `adapters` 协议适配器），把 5 个请求构造 + 4 个响应解析移出；`pollAccountPackets()`、`run()`、状态机、链式请求触发逐字留在 View，View 仍经 `IClientGateway&` 发包。约 120–180 行新增 / 改动，可逐段 `diff` 证明零行为变化，留包时序不变。
+- **B 一步到位纯 View**：`pollAccountPackets()` 整体上移，View 只经结果端口更新状态机。约 300–400 行，51 处状态机分支事件化，`run()` 时序需重新证明，回归面最大。
+- **C 只抽静态 helper**：不建用例对象 / 端口，改动最小（约 60 行），但 View 仍直接调 `net.send()` 与 dispatcher，49.4「纯 View」不彻底。
+- **D 跳过 S3b2**：先做 S3c `ShopScene`（980 行）或 S4 `InputAdapter`，但倒置 46.4 顺序且 S4 会提前动 `ClientInput.key` 字节。
+
+**口径② 结果回传通道**（默认 A）：
+- **A 同步值返回（推荐）**：用例返回 `std::optional<AccountEvent>`（或按消息类型的 result DTO），View 在 `pollAccountPackets()` 里 `switch`。无回调、无新继承，时序最直白、可逐段 `diff`。
+- **B `ILoginEventSink` 回调端口**：View 实现 5 个 `onXxxResult`，用例回调，与 S3a `IShopOpener` 对称；需新增端口头 + 5 个方法 + 继承链 + 工程登记。
+- **C 组合根驱动 + 回调**：`ClientApp` 驱动 dispatcher 并把结果推给 View，改 `run()` 主循环，风险最高（卡点 3）。
+- **D 不建通道**：helper 只返回裸 DTO，View 直接读字段（等价 C 的加强版，边界最模糊）。
+
+**口径③ 死字段与骨架**（默认 A）：
+- **A 删 `enterShop`、骨架不动（推荐）**：按 51.11 ③C 先例删除零读取字段及其赋值；`ICommands.h` 继续保持零引用骨架。
+- **B 都保留**：严格按 46.7 ③B「不擅自改行为」，死字段顺延。
+- **C 删字段并解禁 `IGameCommands`**：把阶段 5 骨架提前用作 S3b2 结果端口，与 46.7 ③B 及「阶段 5 接入」注释冲突，需明确改口径。
+
+### 53.8 验证与后续
+
+选 ①A 时，助手按「新用例头文件 → `.cpp` 实现 → View 改调用点 → 工程登记 → 逐段 `diff` 等价性 → 请用户 Rebuild」闭环，Runtime 回归重点为链式请求同帧时序（查重→注册→登录）、`ReadyToPlay` 与 `status=Done` 顺序、跨阶段留包、三处心跳与 3 秒超时。方案第 53 节 + README + 工作记忆以**一次独立的文档提交**交付，提交后工作区继续只剩用户侧 `UNOOL.slnx`（与第十五批 `91039e2`、第十八批 `6554e48` 同口径）。用户就 **口径① / ② / ③** 各选一项后助手执行第二十三批；未确认前不写任何 S3b2 代码。
