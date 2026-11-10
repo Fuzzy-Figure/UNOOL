@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    B+ 平台外壳共用清单。
+
+    平台能力（可执行文件路径 / 编码转换）的接口在 header/platform/Platform.h，
+    共享编译单元 UNOOL.Core 只调用不实现；具体平台的实现由本清单登记，
+    在 3 个 exe 工程中各编译一次，由链接器解析 Core.lib 中的未定义符号。
+
+    换平台时只需提供 source/platform/<平台>/ 下的另一份实现，
+    并让对应外壳工程导入替换后的清单；Core 与规则内核无需重编译。
+    路径用 MSBuildThisFileDirectory 定位，避免依赖 SolutionDir /
+    工程文件所在目录，也不受各工程 PCH 名称不同的影响。
+  -->
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+</Project>

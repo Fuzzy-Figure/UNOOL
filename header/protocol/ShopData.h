@@ -5,23 +5,29 @@
 #include <cstddef>
 #include <optional>
 #include <json.hpp>
-#include "Character.h"
+#include "contract/CharacterTypes.h"
 
-// 让 nlohmann::json 支持 Character::Level 枚举序列化
-NLOHMANN_JSON_SERIALIZE_ENUM(Character::Level, {
-	{Character::Level::F, "F"},
-	{Character::Level::D, "D"},
-	{Character::Level::C, "C"},
-	{Character::Level::B, "B"},
-	{Character::Level::A, "A"},
-	{Character::Level::S, "S"},
+// B+：商城 DTO 只依赖共享契约层的纯值类型，不再 include domain/Character.h
+// （后者会传递拉入 Skill.h 与 179 个技能类）。别名指向同一类型，
+// JSON 字符串映射与线上字节完全不变。
+using ShopLevel = unool::contract::CharacterLevel;
+using ShopPrice = unool::contract::price_t;
+
+// 让 nlohmann::json 支持角色等级枚举序列化
+NLOHMANN_JSON_SERIALIZE_ENUM(ShopLevel, {
+	{ShopLevel::F, "F"},
+	{ShopLevel::D, "D"},
+	{ShopLevel::C, "C"},
+	{ShopLevel::B, "B"},
+	{ShopLevel::A, "A"},
+	{ShopLevel::S, "S"},
 })
 
 // 皮肤信息（商城展示用）
 struct ShopSkinInfo {
 	std::string name;           // 皮肤名
 	bool unlocked = false;      // 是否已解锁
-	Character::price_t price;  // 售价（std::nullopt=不可购买）
+	ShopPrice price;           // 售价（std::nullopt=不可购买）
 	std::string quality;        // 品质中文名
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopSkinInfo, name, unlocked, price, quality)
@@ -30,9 +36,9 @@ struct ShopSkinInfo {
 // 角色信息（商城展示用）
 struct ShopCharacterInfo {
 	std::string name;               // 角色名
-	Character::Level level = Character::Level::F; // 等级
+	ShopLevel level = ShopLevel::F; // 等级
 	bool unlocked = false;          // 是否已解锁英雄
-	Character::price_t price;    // 英雄售价（std::nullopt=不可购买如S档）
+	ShopPrice price;             // 英雄售价（std::nullopt=不可购买如S档）
 	std::vector<ShopSkinInfo> skins; // 皮肤列表（不含默认皮肤）
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopCharacterInfo, name, level, unlocked, price, skins)
@@ -42,7 +48,7 @@ struct ShopCharacterInfo {
 struct ShopItemInfo {
 	std::string name;           // 道具名
 	int count = 0;              // 当前数量
-	Character::price_t price = std::size_t{ 0 };  // 当前售价（道具始终有价；nullopt 保留给不可购买）
+	ShopPrice price = std::size_t{ 0 };  // 当前售价（道具始终有价；nullopt 保留给不可购买）
 	bool available = true;      // 是否可购买
 	// 展示元数据由服务端随 ShopData 下发，客户端只缓存、不写死文案与上限。
 	// 前后端同版本部署，这两个字段按协议必填。

@@ -1,14 +1,14 @@
 #pragma once
-// 默认遗留服务组合：给未装配的客户端（Client1/Client2）提供与重构前
-// 逐字等价的一组实例。
+// B+ 进程级默认服务组合：给客户端外壳（ClientMain）提供与重构前逐字等价的一组实例。
 //
-// 阶段 2 起，五个出站端口各自有独立适配器；Composition Root（ServerMain）
-// 直接构造五个对象并自行组装 DomainServices，可单独替换 / 注入假实现。
-// 本文件不再实现任何端口，只把五个适配器汇集为一个可直接静态构造的默认门面。
-// 采用 header-only 内联实现，避免引入新的 .cpp 与链接依赖；
-// services() / installServices() 的定义在 source/application/Services.cpp，
-// 默认组合的实例化在 source/adapters/LegacyBundle.cpp；两者仍由 UNOOL.Core
-// 静态库编译一次、3 个 exe 共同链接。
+// 五个出站端口各有独立适配器；服务端组合根（ServerMain）直接构造五个对象并
+// 自行组装 DomainServices，可单独替换 / 注入假实现。本文件不再实现任何端口，
+// 只把五个适配器汇集为一个可直接构造的门面（header-only，无独立编译单元）。
+//
+// 与旧版的区别：不再由 services() 在未装配时惰性创建这一份实例。
+// 现在由各 exe 的 main() 显式构造本类并调用 installServices(bundle)，
+// 因此进程里「谁实现了端口」只有组合根一处决定，不存在隐藏的默认回退。
+// services() / installServices() 的定义仍在 source/application/Services.cpp。
 #include "adapters/JsonConfigProvider.h"
 #include "adapters/JsonUserRepository.h"
 #include "adapters/Mt19937Random.h"

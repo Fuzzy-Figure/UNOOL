@@ -9,6 +9,7 @@
 #include "adapters/IClientGateway.h"
 #include "adapters/IShopOpener.h"
 #include "ShopData.h"
+#include "contract/CharacterTypes.h"
 
 namespace unool::adapters {
 	// 道具展示元数据（服务端随 ShopData 下发）：客户端缓存的只是这两项展示信息，
@@ -118,9 +119,9 @@ private:
 	void clampPage();
 	void clampCursor();
 	void setPurchaseMsg(const std::string& msg);
-	bool affordable(Character::price_t price) const;
+	bool affordable(unool::contract::price_t price) const;
 	// 状态→文字颜色：已解锁绿；未解锁可购买黄；未解锁积分不足红；不可购买(nullopt)灰
-	static sf::Color stateColor(bool unlocked, Character::price_t price, bool canAfford);
+	static sf::Color stateColor(bool unlocked, unool::contract::price_t price, bool canAfford);
 	// 渲染工具
 	void drawRowBox(const sf::Vector2f& pos, const sf::Vector2f& size, bool selected) const;
 };

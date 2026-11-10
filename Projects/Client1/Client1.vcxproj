@@ -139,6 +139,8 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <!-- B+ 平台外壳共用清单：3 个 exe 登记同一份平台实现，换平台只改这一行 -->
+  <Import Project="..\PlatformShell.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">

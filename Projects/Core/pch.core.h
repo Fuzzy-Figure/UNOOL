@@ -4,14 +4,13 @@
 // 工程与库已改名 UNOOL.Core，本 PCH 随之改名 pch.core.h/.cpp，与库名保持一致；
 // PrecompiledHeaderFile 与 /FI 同步指向新文件名。
 // 与 header/pch.h、pch.server.h、pch.adapters.h 完全独立：不共享文件、不共享 .pch 产物。
-// 本库统一编译 20 个共享业务 / 协议单元（12 个原由 3 个 exe 各自编译的 .cpp，
-// 加上 GameState.cpp / AccountProtocol.cpp / protocol/CardPacket.cpp，
-// W5 第一段新增的 application/AccountService.cpp、W5 第二段新增的
-// application/ShopService.cpp，第十二批从 utils.cpp 归位的
-// application/Services.cpp 与 adapters/JsonConfig.cpp，以及第十三批剥离默认
-// 组合的 adapters/LegacyBundle.cpp）与 1 个 PCH 生成单元。
+// 本库统一编译 20 个共享业务 / 协议单元与 1 个 PCH 生成单元。
+// B+ 起已移除 adapters/LegacyBundle.cpp（默认组合改由各 exe 的 main() 显式装配）。
+// B+ 不变量：本库任一编译单元都不得 include <Windows.h> 或任何平台 SDK；
+// 平台能力经 header/platform/Platform.h 声明，由 exe 外壳提供实现并解析符号。
 // 内容按 pch.server.h 逐字保留：Server 此前用 pch.server.h 成功编译过这 12 个共享 .cpp
-// 与 2 个协议 .cpp，因此声明可见性一致；json.hpp / Windows.h 由本 PCH 或各 .cpp 显式包含。
+// 与 2 个协议 .cpp，因此声明可见性一致；json.hpp 由本 PCH 包含。
+// Windows.h 已彻底移出本库（见 header/platform/Platform.h）。
 //   Network        : sf::Packet（序列化与协议构造）
 //   System         : 由 Network 间接依赖
 //   Window/Keyboard: sf::Keyboard::Scancode（Socket.h 中 ClientInput.key 的字节依赖）

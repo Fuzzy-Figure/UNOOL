@@ -3,7 +3,8 @@
 #include <unordered_map>
 #include <string>
 #include "Card.h"
-#include "Character.h"
+// B+：只取角色的标量类型，不引入 Character.h 及其技能类闭包。
+#include "contract/CharacterTypes.h"
 #include <cstddef>
 #include <optional>
 
@@ -16,8 +17,8 @@ struct PlayerState {
 	Hand hand;
 	std::vector<std::string> characterNames;
 	std::vector<std::string> skins;
-	Character::hp_t hp = 0;
-	Character::hp_t maxHp = 0;
+	unool::contract::hp_t hp = 0;
+	unool::contract::hp_t maxHp = 0;
 	std::size_t shield = 0;  //护盾值（显示为“体力：(+护盾)/最大体力”）
 	std::unordered_map<std::string, std::size_t> marks;
 	//本场内的局胜负计数

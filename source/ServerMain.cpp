@@ -7,7 +7,9 @@
 #include "adapters/LegacyBlockingDecisionAdapter.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include "adapters/NetworkServerView.h"
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <chrono>
 #include <thread>
 #include <vector>
@@ -105,8 +107,10 @@ static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic,
 }
 
 int main() {
+#ifdef _WIN32
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
+#endif
 
 	std::println("[Server] 启动服务器...");
 
@@ -123,7 +127,8 @@ int main() {
 	// IServerView 由 NetworkServerView 实现、IDecisionPort 由
 	// LegacyBlockingDecisionAdapter 实现，两者分别注入棋局。
 	// installServices 让无法构造注入的静态工具（Character）
-	// 与全局随机门面也指向同一组实例；客户端不装配时自动退回逐字等价的默认组合。
+	// 与全局随机门面也指向同一组实例；B+ 起该装配在每个 exe 的 main() 中
+	// 显式完成，services() 不再有隐式默认回退。
 	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
 	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
 	unool::adapters::JsonConfigProvider configService;

@@ -138,14 +138,9 @@
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Domain\UNOOL.Domain.vcxproj">
-      <Project>{a1000000-0000-4000-8000-000000000001}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Application\UNOOL.Application.vcxproj">
-      <Project>{a1000000-0000-4000-8000-000000000002}</Project>
-    </ProjectReference>
-  </ItemGroup>
+  <!-- B+：Domain / Application 两个占位库已删除。
+       本工程只编译自己的 2 个适配器实现 + PCH，不再引用空库。
+       分层语义由目录与头文件闭包表达，不再由物理库边界表达。 -->
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

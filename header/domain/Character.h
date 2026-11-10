@@ -12,26 +12,20 @@
 #include <cstddef>
 #include <unordered_map>
 #include <unordered_set>
+#include "contract/CharacterTypes.h"
 #include "Skill.h"
 
 class Character {
 #pragma region 类型定义
 public:
-	using hp_t = int;
-	// 价格类型自带「不可购买」语义：std::nullopt 表示不可购买（S 档角色、饮料限定皮肤等），
-	// 因此各处价格统一用 price_t，不再额外套一层 std::optional
-	using price_t = std::optional<std::size_t>;
-
-	enum class Level { F, D, C, B, A, S };
-	//皮肤品质
-	enum class SkinQuality {
-		normal,     // 普通
-		fine,       // 精品
-		epic,        // 史诗
-		legend,      // 传说
-		supreme,    // 至尊
-		drink        // 饮料限定
-	};
+	// B+：等级 / 品质 / 标量类型的定义已移入共享契约层
+	// （header/contract/CharacterTypes.h，纯标准库、不链接规则引擎）。
+	// 这里保留别名，使 Character::Level / Character::SkinQuality /
+	// Character::price_t / Character::hp_t 的全部既有写法与枚举值保持源码兼容。
+	using hp_t = unool::contract::hp_t;
+	using price_t = unool::contract::price_t;
+	using Level = unool::contract::CharacterLevel;
+	using SkinQuality = unool::contract::SkinQuality;
 	struct Info {
 		std::string group;
 		Level level;
@@ -205,14 +199,7 @@ public:
 #pragma endregion
 };
 
-inline constexpr std::strong_ordering
-operator<=>(const Character::Level a, const Character::Level b) noexcept {
-	return std::to_underlying(a) <=> std::to_underlying(b);
-}
-
-template<>
-struct std::formatter<Character::Level> : std::formatter<std::string_view> {
-	auto format(Character::Level l, std::format_context& ctx) const {
-		return std::formatter<std::string_view>::format(Character::to_string(l), ctx);
-	}
-};
+// B+：operator<=> 与 std::formatter 特化已移入 header/contract/CharacterTypes.h。
+// 由于 Character::Level 现在只是契约枚举的别名，特化仍作用于同一类型，
+// 所有格式化输出（"F"…"S"）与比较语义逐字不变；此处不再重复定义，
+// 否则会与契约头形成同一特化的重复定义。

@@ -1,38 +1,25 @@
 #include "utils.h"
 #include "application/Services.h"
-#include <Windows.h>
+#include "platform/Platform.h"
 #include <cmath>
 #include <filesystem>
 #include <format>
 #include <system_error>
 
-// 阶段 3 第十二批：JSON 配置缓存门面归位到 source/adapters/JsonConfig.cpp，
-// 默认服务定位 services() 归位到 source/application/Services.cpp（两者仍由
-// UNOOL.Core 编译一次、3 个 exe 共同链接）。本单元只保留路径 / 编码 / 随机 /
-// 数学工具，不再包含任何 adapters 头，也不再需要完整 json.hpp。
+// B+：平台 IO 剥离。本单元是 UNOOL.Core 的共享编译单元，被客户端与服务端
+// 共同链接，因此不再包含 <Windows.h>，也不再直接调用任何 Win32 API。
+// 可执行文件路径与编码转换转发给 header/platform/Platform.h 声明的平台接缝，
+// 由各 exe 外壳提供实现；路径查找 / 资源根定位 / 随机 / 数学逻辑保持原样。
+// 规则：Core 内任何编译单元都不得 include 平台头，平台实现只出现在 exe 工程。
 
 namespace unool {
 
 	namespace paths {
 		namespace fs = std::filesystem;
 
+		// 平台接缝：具体实现由 exe 外壳（source/platform/WindowsPlatform.cpp）提供。
 		const fs::path& exeDir() {
-			static const fs::path dir = []() -> fs::path {
-				std::vector<wchar_t> buffer(MAX_PATH);
-				for (;;) {
-					const DWORD len = ::GetModuleFileNameW(nullptr, buffer.data(),
-														   static_cast<DWORD>(buffer.size()));
-					if (len == 0) {
-						throw std::runtime_error("无法获取当前可执行文件路径");
-					}
-					// 返回值等于缓冲区长度说明可能被截断，扩容后重试。
-					if (len < buffer.size()) {
-						return fs::path(std::wstring(buffer.data(), len)).parent_path();
-					}
-					buffer.resize(buffer.size() * 2);
-				}
-			}();
-			return dir;
+			return platform::exeDir();
 		}
 
 		fs::path locate(const std::string& fileName) {
@@ -71,23 +58,13 @@ namespace unool {
 	}
 
 	namespace string {
+		// 平台接缝：Windows 侧实现与重构前的 MultiByteToWideChar /
+		// WideCharToMultiByte 逐字等价，调用方与线上字节均不变。
 		std::wstring to_utf16(const std::string& utf8) {
-			if (utf8.empty()) return std::wstring();
-
-			int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
-			std::wstring utf16(len, '\0');
-			MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &utf16[0], len);
-			utf16.pop_back(); // 去掉结尾的空字符
-			return utf16;
+			return platform::toWide(utf8);
 		}
 		std::string to_utf8(const std::wstring& utf16) {
-			if (utf16.empty()) return std::string();
-
-			int len = WideCharToMultiByte(CP_UTF8, 0, utf16.c_str(), -1, nullptr, 0, nullptr, nullptr);
-			std::string utf8(len, '\0');
-			WideCharToMultiByte(CP_UTF8, 0, utf16.c_str(), -1, &utf8[0], len, nullptr, nullptr);
-			utf8.pop_back(); // 去掉结尾的空字符
-			return utf8;
+			return platform::fromWide(utf16);
 		}
 	}
 

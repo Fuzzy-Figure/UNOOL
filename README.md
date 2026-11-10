@@ -16,26 +16,28 @@
 | 项 | 选型 |
 |---|---|
 | 语言 | C++23（MSVC `stdc++23`，仅 x64 配置） |
-| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/domain/Card.h`、`header/domain/Character.h`），可直接放进 `{}` 占位符 |
+| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/domain/Card.h`、`header/contract/CharacterTypes.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
-| 构建 | Visual Studio 2026（`.slnx` + 7 个 `.vcxproj`：3 个可执行工程 + 4 个静态库工程），**仅 x64** |
-| 平台 | Windows 10/11 |
+| 构建 | Visual Studio 2026（`.slnx` + 5 个 `.vcxproj`：3 个可执行工程 + 2 个静态库工程），**仅 x64** |
+| 平台 | Windows 10/11；共享内核已剥离平台 API，外壳可替换（安卓客户端为待立项方向） |
 
 ## 目录结构
 
 ```
-UNOOL.slnx              解决方案：Server / Client1 / Client2 + Domain / Application / Adapters / Core
+UNOOL.slnx              解决方案：Server / Client1 / Client2 + Adapters / Core（B+ 起 5 个工程）
 UNOOL.slnLaunch.user    启动项目配置
-Projects/               7 个 VS 工程目录
+Projects/               5 个 VS 工程目录 + PlatformShell.props（3 个 exe 共用的平台实现清单）
   Server/               Server.vcxproj（服务端）
   Client1/ Client2/     Client1.vcxproj / Client2.vcxproj（同一份 ClientMain.cpp，仅 ProjectGuid 不同）
-  Domain/               UNOOL.Domain.vcxproj（纯标准库领域层，独立 pch）
-  Application/          UNOOL.Application.vcxproj（端口与服务定位，独立 pch）
-  Adapters/             UNOOL.Adapters.vcxproj（遗留实现适配层，pch 含 SFML / json）
-  Core/                 UNOOL.Core.vcxproj（共享编译单元与协议 / DTO 序列化，独立 pch）
-header/                 头文件；实体 / 端口 / 适配器 / 协议分别归 domain/ application/ adapters/ protocol/，pch.h 与 utils.h 留在根
-source/                 源文件；与 header 同按 domain/ application/ adapters/ protocol/ 四层归置，pch.cpp / utils.cpp / 两端入口留在根
+  Adapters/             UNOOL.Adapters.vcxproj（服务端适配器实现，独立 pch）
+  Core/                 UNOOL.Core.vcxproj（规则内核 + 协议 / DTO，独立 pch；不含任何平台头）
+  Domain/ Application/  已删除：各只编译 1 个 pch.cpp、0 个业务单元的占位库
+header/                 头文件；domain/ application/ adapters/ protocol/ 为历史分层目录，
+                        contract/ 为共享契约（纯标准库值类型），platform/ 为平台接缝声明；
+                        pch.h 与 utils.h 留在根
+source/                 源文件；platform/ 下为只在 exe 工程编译的平台实现，其余按历史四层归置
+tools/verify_structure.py  结构自检（无 CI 时的自动护栏）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
 docs/                   设计文档与待办清单（见「文档」一节）
@@ -46,11 +48,20 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 核心模块：`GameLogic`（回合/座次/牌堆/技能触发）、`Player`（出牌摸牌与交互）、`Card`（牌堆与手牌容器）、`Skill` 系（技能框架）、`GameRenderer` / `ImageManager` / `TextManager`（客户端渲染）、`Socket`（网络封装）、`UserDB`（账号持久化）。
 
-头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。四个分层包含目录已在 7 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
+头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。B+ 新增的 `contract/CharacterTypes.h` 与 `platform/Platform.h` 同样按 `$(SolutionDir)header` 解析，**无需新增包含目录**。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。四个分层包含目录已在 5 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
 
 源文件同样按四层归置，与头文件目录一一对应；`.cpp` 之间不互相 include，故归位 `.cpp` 不需要新增包含目录、也不需要改任何 `#include`，只由各工程 `ClCompile` 的 `..\..\source\<层>\X.cpp` 路径定位。`pch.cpp`、`utils.cpp` 与两端入口 `ClientMain.cpp` / `ServerMain.cpp` 留在 `source/` 根。新增源文件时请放入对应层目录，并同时登记到编译它的工程 `ClCompile`（3 个 exe 还需同步 `.vcxproj.filters`）。
 
-分层（六边形 / Ports and Adapters）：`Domain` 只依赖标准库，定义 `player_id`、`Key` 等领域类型；`Application` 定义端口（`IDecisionPort`、`IServerView`、`IConfigProvider`、`IUserRepository`、`IAccountSession`、`IRandom`、`IClock`、`IAssetCatalog`）与 `DomainServices` 服务定位、用例服务 `AccountService` / `ShopService`；`Adapters` 把 SFML、JSON、文件系统等遗留实现接到端口上。依赖方向恒为 `Adapters → Application → Domain`，装配在 `ServerMain.cpp` 完成。`GameLogic` 不再持有 `ServerNetwork&`，改依赖端口；线上协议字节、配置格式与对外行为均未改变。
+**当前架构（B+，2026-11-10 起）：轻量规则内核 + 单一共享契约 + 少量真实接缝。**
+`Core` 是唯一的规则内核编译单元（`GameLogic` / `Player` / 技能 / 角色表 / 用例服务 / 协议 DTO）；
+`header/contract/` 是不链接规则引擎的纯值类型契约；`header/platform/Platform.h` 是内核与操作系统之间
+唯一的显式接缝，其 Win32 实现 `source/platform/WindowsPlatform.cpp` 只在 3 个 exe 外壳编译
+（共用清单 `Projects/PlatformShell.props`）。三个 `main()` 都是组合根，显式装配 `DomainServices`，
+`services()` 不再有隐式默认回退。`Domain` / `Application` 两个占位库与四层物理边界已删除，
+目录只表达源码归属、不再是编译期屏障。规则主体（179 个技能类、96 个角色条目）为**冻结区**，零改动。
+历史六边形分层口径（依赖方向 `Adapters → Application → Domain`、Q8 纯标准库 Domain PCH、
+「零行为变化 / 线上字节不变」验收）见下文各批次记录与 `docs/UNOOL_六边形分层重构方案_确认版.md`，
+自 B+ 起仅作归档，不再是当前约束。
 
 `Core` 静态库（原名 `Protocol`，阶段 3 起为共享编译库）统一编译 20 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）、`source/protocol/` 下 `GameState.cpp` / `AccountProtocol.cpp` / `CardPacket.cpp` 三个协议与 DTO 单元、`source/application/AccountService.cpp` / `ShopService.cpp` 两个用例服务单元，以及 `source/application/Services.cpp` / `source/adapters/JsonConfig.cpp` / `LegacyBundle.cpp` 三个归位单元，使用独立的 `pch.core.h`（PCH 文件名与库名一致）。阶段 3 第十二批把默认服务定位器 `services()` 与 JSON 配置缓存门面分别从 `source/utils.cpp` 归位到前两个单元，`utils.cpp` 恢复为只含路径 / 编码 / 随机 / 数学工具、不包含任何 `adapters` 头的领域工具单元；第十三批再把默认组合的实例化（`LegacyServicesAdapter` 及其传递的 `json.hpp` / `UserDB.h`）剥离到 `source/adapters/LegacyBundle.cpp`，`Services.cpp` 因此也变成纯端口依赖，具备划入纯标准库 PCH 的 `Domain` / `Application` 库的条件。集中后 `Core.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。`MessageType` 枚举已归位到 `header/protocol/MessageType.h`（同一个 25 值枚举逐字平移，值 / 顺序 / 隐式数值 / 线上字节全不变），`AccountProtocol` 因此不再反向包含 `Socket.h`；网络收发仍留在 `Socket.*`，枚举未拆分成 `ClientCommand` / `ServerEvent` 两组。W5 第一段把账号用例（注册 / 登录 / 查重 / 准备 / 积分消费）从 `Socket.cpp` 抽到 `AccountService`，经 `IAccountSession`（由 `ServerNetwork` 实现）与 `IUserRepository` 两个端口完成，组合根在 `ServerMain.cpp` 装配；`Socket.cpp` 只保留会话状态、端口实现与薄转发，线上包内容逐字不变。W5 第二段（分段第一段）把商城展示 `sendShopData`、技能描述 `handleSkillInfoRequest`、每日签到 `handleCheckin` 约 153 行抽到 `ShopService`，与账号服务共用 `IAccountSession` / `IUserRepository` 两个端口；分段第二段把购买决策 `handleShopPurchase` 约 146 行也抽到 `ShopService`（至此 W5 第二段收官），`IUserRepository` 扩到 20 个方法、`IAccountSession` 扩到 12 个方法；`ServerNetwork` 只保留 `sendShopResult` 的纯传输端口实现、会话状态与各薄转发，`sendShopData` 保留为对外接口，`Socket.cpp` 不再含商城业务判断。`ShopData.h` 因含 `<json.hpp>` 与序列化宏，从 `header/domain/` 归位到 `header/protocol/`，`Domain` 头闭包恢复纯标准库；3 个使用点的 `#include "ShopData.h"` 靠分层包含目录解析，写法未改。
 
@@ -176,6 +187,40 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 **子技能**：任意技能可携带任意类型的子技能（构造时追加），父技能触发时会递归发动子技能。典型用法是让主技能负责「布置状态」，子技能负责在其他时机「消费状态」——例如 `地雷`（`phase_end` 选色布置）配 `地雷_引爆`（`use_card_begin`，他人打出该色时结算）与 `地雷_撤雷`（`phase_begin` 清空）；`冲撞` 本体空实现，逻辑全在 `冲撞_加速` / `冲撞_伤害` / `冲撞_清标记` 三个子技能里。子技能与主技能同级独立匹配触发条件，可用 `carrier.getSkill<父技能>()` 读写父技能状态。
 
 **日志与格式化**：新代码统一用 `std::format` 拼串，避免 `+` 拼接；`Card::Color`、`Card::Name`、`Character::Level` 已特化 `std::formatter`，可直接 `std::format("{}", card.getColor())`。
+
+## 架构决策记录（ADR · B+，Accepted）
+
+**Decision**：放弃补全完整六边形（不拆 `Domain` / `Application` 真库、不把每个外部依赖都端口化），
+采用「轻量规则内核 + 单一共享契约 + 少量真实接缝」，并删除两个占位库与隐式服务定位回退。
+
+**Context**：自有代码约 1.96 万行、1–2 人维护、3–10 年周期、0 测试 0 CI；
+规则密度高（179 技能类、96 角色，规则代码占 64.5%）但内核是同步阻塞、强连通的交互式状态机；
+11 个端口各只有 1 个实现、无替换需求；历史上每批重构靠「零函数体改写 + 线上字节不变」做机械等价证明，
+放开约束后这条安全绳消失，而没有任何自动化验证替代品。安卓客户端与多桌都是「可能」而非确定立项，
+两者真正需要的是**内核可移植 + 可多实例**，不是四层物理分层。
+
+**Consequences**：
+- 获得：改动面集中在边界；`Core` 的共享编译单元不再含 `Windows.h`；协议 DTO 不再拉入技能类头闭包；
+  组合根装配显式可见；工程数 7 → 5、双 / 三 exe 共用同一份平台清单；
+  `python tools/verify_structure.py` 提供无 CI 条件下的结构护栏。
+- 放弃：Q8「纯标准库 Domain PCH」、按层独立编译、编译期分层屏障；回归从「机械比对没变」
+  降级为人工端到端「能玩」（见 `docs/UNOOL_运行时回归核对清单.md` 第 12 节）。
+- 冻结区：179 个技能类、96 个角色条目、`GameLogic` / `Player` 判定与数值零改动 ——
+  理由不是「不许改」，而是「改了就无法证明没改坏」。
+
+**本批已落地**：平台 IO 剥离（`header/platform/` + `source/platform/WindowsPlatform.cpp`）、
+共享契约第一步（`header/contract/CharacterTypes.h`，角色 / 皮肤纯值类型解耦）、
+组合根显式装配（三 exe 的 `main()` 均 `installServices`）、
+占位库与 `LegacyBundle.cpp` 删除、工程清单去重、验收清单换轴。
+
+**留待后续单独验收**（互不依赖，不阻塞本批）：
+① 共享契约与 `Card` 值类型的彻底拆分（`GameState.h` 仍依赖 `Card.h`）；
+② 每桌实例状态 —— `MAX_PLAYERS = 2`、两槽位 `1 - id` 假设、进程级静态缓存（多桌立项时优先于任何分层动作）；
+③ 212 处 `println` 与 33 处 `ask` 收口到决策 / 呈现接缝（CI 立项时才兑现价值）；
+④ 安卓确定立项时把共享契约升为独立构建单元，并新增安卓外壳的平台实现。
+
+**改主意的门槛**：安卓确定立项 → ①；多桌确定立项 → ②（优先于任何分层动作）；
+CI 确定加入 → ③；出现第二套适配器且需独立发布 → 才重新评估完整六边形。
 
 ## 已知限制
 

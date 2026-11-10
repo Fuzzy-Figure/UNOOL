@@ -17,13 +17,13 @@ namespace unool::application {
 		IAssetCatalog& assets;
 	};
 
-	// 默认门面：供无法构造注入的入口使用（Character 的静态工具、
-	// utils 的全局随机门面）。未装配时返回与重构前逐字等价的遗留实现，
-	// 因此客户端工程不装配也不会改变任何行为。
-	// installServices 只应由 Composition Root（ServerMain）调用。
+	// B+ 组合根状态：供无法构造注入的入口使用（Character 的静态工具、
+	// utils 的全局随机门面）。三个 exe 都必须在 main() 中调用
+	// installServices() 显式装配；未装配时 services() 直接报错，
+	// 不再静默回退到一组硬编码的遗留实现。
 	// 两者定义在 source/application/Services.cpp：该单元由 UNOOL.Core 静态库
-	// 编译一次、3 个 exe 共同链接，不引入新的链接依赖。未装配时的默认组合由
-	// source/adapters/LegacyBundle.cpp 提供，端口头不认识任何具体适配器。
+	// 编译一次、3 个 exe 共同链接，不引入新的链接依赖，
+	// 端口头不认识任何具体适配器。
 	DomainServices& services();
 	void installServices(DomainServices& s);
 }

@@ -109,6 +109,8 @@
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
     <ClInclude Include="..\..\header\adapters\Socket.h" />
     <ClInclude Include="..\..\header\domain\Card.h" />
+    <ClInclude Include="..\..\header\contract\CharacterTypes.h" />
+    <ClInclude Include="..\..\header\platform\Platform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.core.cpp">
@@ -206,11 +208,6 @@
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\adapters\JsonConfig.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\adapters\LegacyBundle.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

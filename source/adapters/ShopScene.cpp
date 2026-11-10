@@ -505,12 +505,12 @@ void ShopScene::setPurchaseMsg(const std::string& msg) {
 	msgActive = true;
 }
 
-bool ShopScene::affordable(Character::price_t price) const {
+bool ShopScene::affordable(unool::contract::price_t price) const {
 	return price.has_value() && shopData.points >= 0
 		&& static_cast<std::size_t>(shopData.points) >= *price;
 }
 
-sf::Color ShopScene::stateColor(bool unlocked, Character::price_t price, bool canAfford) {
+sf::Color ShopScene::stateColor(bool unlocked, unool::contract::price_t price, bool canAfford) {
 	if (unlocked) return sf::Color::Green;
 	if (!price.has_value()) return sf::Color(170, 170, 170);
 	return canAfford ? sf::Color::Yellow : sf::Color::Red;
