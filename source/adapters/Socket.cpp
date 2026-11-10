@@ -56,9 +56,24 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 		clientSockets[clientIndex]->disconnect();
 		clientSockets[clientIndex].reset();
 	}
+	const bool wasLoggedIn = clientSlots_[clientIndex].loggedIn;
 	clientSlots_[clientIndex].loggedIn = false;
 	clientSlots_[clientIndex].disconnected = true;
+	// 匹配期间任一已登录玩家掉线：与「退出匹配」一样解散整场并广播，
+	// 否则另一方会一直挂着「对手已开始匹配」提示，或停在无人可等的匹配界面。
+	// 未登录的新连接断开不算（避免误解散一场正在进行的匹配）。
+	bool anyReady = false;
+	for (bool ready : playerReady) anyReady = anyReady || ready;
+	const bool matchInProgress = wasLoggedIn && !serverReady && anyReady;
 	playerReady[clientIndex] = false;
+	if (matchInProgress) {
+		playerReady.fill(false);
+		sf::Packet packet = unool::protocol::makeMatchmakingCancelled(clientSlots_[clientIndex].username);
+		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+			if (i != clientIndex && isClientLoggedIn(i)) sendPacketToClient(i, packet);
+		}
+		std::println("[ServerNetwork] {}掉线，匹配已解散并通知对手", clientSlots_[clientIndex].username);
+	}
 	// 保留 username，供重连时识别身份
 	//重置心跳计时，避免新连接顶替进来后因残留旧值被误判超时
 	lastRecvClocks[clientIndex].restart();
@@ -130,6 +145,19 @@ void ServerNetwork::onLoginSucceeded(std::size_t clientIdx, const std::string& u
 
 	std::println("[ServerNetwork] 客户端{} {}: {}（积分 {}）", clientIdx,
 				 (isReconnect ? "重连" : "登录"), username, points);
+	// 对手先点「开始游戏」、自己之后才登录 / 重连：补发一次匹配提示，
+	// 否则新登录的一方没收到当时那条广播，大厅里不会有任何提示。
+	if (!serverReady) {
+		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+			if (i != clientIdx && playerReady[i] && isClientLoggedIn(i)) {
+				sf::Packet notice = unool::protocol::makeMatchmakingStarted(clientSlots_[i].username);
+				sendPacketToClient(clientIdx, notice);
+				std::println("[ServerNetwork] 向 {} 补发匹配提示：对手 {} 已准备", username,
+							 clientSlots_[i].username);
+				break;
+			}
+		}
+	}
 	//重连顶替场景下 serverReady 已为 true，不需要重复发 GameStart
 	//正常开局需等双方都点"开始游戏"后才启动
 }
@@ -140,6 +168,16 @@ void ServerNetwork::onPointsSpent(std::size_t clientIdx, int amount) {
 }
 
 void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
+	// 已开局后收到迟到的 ReadyToPlay（客户端曾在商城 / 掉线重连而错过首次广播）：
+	// 补发一个 GameStart，避免它再次点「开始游戏」后永远等不到开局包。
+	if (serverReady) {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::GameStart);
+		sendPacketToClient(clientIdx, packet);
+		return;
+	}
+	// 只在「未准备 → 已准备」的跃迁上通知对手，重复包 / 重复点击不会刷屏。
+	const bool firstReady = !playerReady[clientIdx];
 	playerReady[clientIdx] = true;
 	std::println("[ServerNetwork] {}已准备开始游戏", clientSlots_[clientIdx].username);
 	//双方都点"开始游戏"后才开局
@@ -148,7 +186,39 @@ void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
 		serverReady = true;
 		sendGameStart();
 		std::println("[ServerNetwork] 双方都已准备，游戏开始");
+		return; // 已成局：对手马上会收到 GameStart，不必再提示「开始匹配」
 	}
+	// 尚未成局：告诉另一名玩家「对手已开始匹配，请点开始游戏」。
+	// 只发给其他已登录客户端；若对手尚未登录，由其 onLoginSucceeded 补发。
+	if (firstReady) {
+		sf::Packet notice = unool::protocol::makeMatchmakingStarted(clientSlots_[clientIdx].username);
+		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+			if (i != clientIdx && isClientLoggedIn(i)) sendPacketToClient(i, notice);
+		}
+		std::println("[ServerNetwork] 已通知对手：{}开始匹配", clientSlots_[clientIdx].username);
+	}
+}
+
+void ServerNetwork::onCancelMatchmaking(std::size_t clientIdx) {
+	// 已开局后 serverReady 恒为 true，匹配阶段不会再回来；此时忽略取消请求，
+	// 客户端会收到先前已发出的 GameStart 并正常进入游戏，避免两边状态分叉。
+	if (serverReady) return;
+	if (!isClientLoggedIn(clientIdx)) return;
+	// 无人处于准备状态时忽略（例如大厅里的误发），避免给对手弹出无意义的解散提示
+	bool anyReady = false;
+	for (bool ready : playerReady) anyReady = anyReady || ready;
+	if (!anyReady) return;
+
+	const std::string who = clientSlots_[clientIdx].username;
+	// 解散整场匹配：双方准备状态一并清空，避免「取消方仍被算作已准备」导致对手
+	// 一点开始就立刻开局，也让对手不再停在无人可等的匹配界面。
+	playerReady.fill(false);
+
+	sf::Packet packet = unool::protocol::makeMatchmakingCancelled(who);
+	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		if (isClientLoggedIn(i)) sendPacketToClient(i, packet);
+	}
+	std::println("[ServerNetwork] {}退出匹配，已重置双方准备状态", who);
 }
 
 void ServerNetwork::sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
@@ -271,7 +341,8 @@ void ServerNetwork::handleClientPackets() {
 					else if (msgType == static_cast<int>(MessageType::RegisterRequest) ||
 							 msgType == static_cast<int>(MessageType::LoginRequest) ||
 							 msgType == static_cast<int>(MessageType::CheckUsernameRequest) ||
-							 msgType == static_cast<int>(MessageType::ReadyToPlay)) {
+							 msgType == static_cast<int>(MessageType::ReadyToPlay) ||
+							 msgType == static_cast<int>(MessageType::CancelMatchmaking)) {
 						handleAccountPacket(i, static_cast<MessageType>(msgType), std::move(packet));
 					}
 					else if (msgType == static_cast<int>(MessageType::ShopPurchase)) {
@@ -419,6 +490,13 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 	if (!accountService_) return;
 	int discardedMsgType;
 	packet >> discardedMsgType;
+	// ReadyToPlay / CancelMatchmaking 的包体只有 int 消息号，不含 username/password。
+	// 统一走 parseAccountRequest 会因读不到两个字符串而把整包丢掉（重构后
+	// ReadyToPlay 因此一直未生效），这里按类型直接转交空请求对象。
+	if (type == MessageType::ReadyToPlay || type == MessageType::CancelMatchmaking) {
+		accountService_->get().handleAccountRequest(clientIdx, type, unool::protocol::AccountRequest{});
+		return;
+	}
 	auto req = unool::protocol::parseAccountRequest(packet);
 	if (!req) return;
 	accountService_->get().handleAccountRequest(clientIdx, type, *req);

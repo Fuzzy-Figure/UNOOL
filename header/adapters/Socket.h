@@ -139,6 +139,7 @@ public:
 						  int points, int wins, int losses) override;
 	void onPointsSpent(std::size_t clientIdx, int amount) override;
 	void onReadyToPlay(std::size_t clientIdx) override;
+	void onCancelMatchmaking(std::size_t clientIdx) override;
 	void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
 							const std::string& msg, int points, int wins, int losses) override;
 	void sendCheckUsernameResponse(std::size_t clientIdx, bool exists) override;

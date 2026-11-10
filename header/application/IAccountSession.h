@@ -35,6 +35,10 @@ namespace unool::application {
 		// 「开始游戏」：置 playerReady、双方齐备且未开局时发 GameStart 并打印日志
 		virtual void onReadyToPlay(std::size_t clientIdx) = 0;
 
+		// 「退出匹配」：未开局时清空双方准备状态、向双方广播解散事件；已开局则忽略。
+		// 由服务端按收包顺序仲裁，客户端不自行判定是否还在匹配中。
+		virtual void onCancelMatchmaking(std::size_t clientIdx) = 0;
+
 	// 回送已编码的账号响应包（适配器按既有 AccountProtocol 线格式打包，Application 不接触 sf::Packet）
 	virtual void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
 									 const std::string& msg, int points, int wins, int losses) = 0;

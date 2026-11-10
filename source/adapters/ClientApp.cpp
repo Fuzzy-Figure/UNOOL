@@ -173,15 +173,17 @@ namespace unool::adapters {
 
 		// 阶段 4 · S3a（用户 49.10 口径③A）：组合根侧的商城意图实现。
 		// 原 LoginScene::handleMouseClick 在这里同步构造并运行 ShopScene；
-		// 上移后只换调用者，构造参数（renderer / net / username）、栈上生命周期、
-		// 同步 run() 与返回后回到大厅的时序全部不变。
+		// 上移后只换调用者，栈上生命周期、同步 run() 与返回后回到大厅的时序不变；
+		// 构造参数在原 renderer / net / username 之外多一个匹配提示状态引用。
 		class ShopOpener final : public IShopOpener {
 		public:
 			ShopOpener(GameRenderer& renderer, ClientNetwork& net)
 				: renderer_{ renderer }, net_{ net } {}
 
-			void openShop(const std::string& username) override {
-				ShopScene shop(renderer_, net_, username);
+			void openShop(const std::string& username, MatchNoticeState& notice) override {
+				// 把大厅持有的匹配提示状态传给商城：商城期间收到的匹配事件
+				// 由 ShopScene 就地写回，退出商城后大厅显示的就是最新状态。
+				ShopScene shop(renderer_, net_, username, notice);
 				shop.run();
 			}
 
@@ -217,12 +219,13 @@ namespace unool::adapters {
 		LoginScene login(renderer, net_, shopOpener, titleBrackets_);
 		auto session = login.run();
 		if (!session.ok) {
-			std::println(stderr, "{} 登录未完成，退出", titleBrackets_);
+			std::println(stderr, "{} 登录未完成或连接已断开，退出", titleBrackets_);
 			system("pause");
 			return 1;
 		}
 
-		std::println("{} 已登录，等待对手登录并开始游戏...", titleBrackets_);
+		// LoginScene 现在要等到服务端 GameStart 才返回；退出匹配只是回到大厅继续等用户操作
+		std::println("{} 匹配完成，进入游戏...", titleBrackets_);
 		gamePhase(net_, renderer, titleBrackets_);
 
 		return 0;

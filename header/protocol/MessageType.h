@@ -30,5 +30,11 @@ enum class MessageType {
 	SkillInfoRequest,
 	SkillInfoResponse,
 	CheckinRequest,
-	CheckinResponse
+	CheckinResponse,
+	// 退出匹配：客户端→服务端请求取消准备；服务端→客户端广播「本场匹配已解散」。
+	// 匹配提示：服务端→客户端广播「对手已开始匹配」，让另一名玩家知道该点「开始游戏」。
+	// 只追加在末尾，既有枚举值与线上字节不变。
+	CancelMatchmaking,
+	MatchmakingCancelled,
+	MatchmakingStarted
 };

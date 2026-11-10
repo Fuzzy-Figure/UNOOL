@@ -41,6 +41,28 @@ namespace unool::protocol {
 		return packet;
 	}
 
+	// 退出匹配功能：两个包都由本层构造，View / Application 不手写消息号。
+	sf::Packet makeCancelMatchmaking() {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::CancelMatchmaking);
+		return packet;
+	}
+
+	sf::Packet makeMatchmakingCancelled(const std::string& username) {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::MatchmakingCancelled);
+		packet << username;
+		return packet;
+	}
+
+	// 与解散广播同构：只有「int 消息号 + std::string 账号名」两个字段。
+	sf::Packet makeMatchmakingStarted(const std::string& username) {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::MatchmakingStarted);
+		packet << username;
+		return packet;
+	}
+
 	sf::Packet makeAccountResponse(MessageType type, bool ok, const std::string& msg, int points, int wins, int losses) {
 		sf::Packet packet;
 		packet << static_cast<int>(type);
@@ -81,6 +103,12 @@ namespace unool::protocol {
 		bool exists;
 		if (!(packet >> exists)) return std::nullopt;
 		return exists;
+	}
+
+	std::optional<std::string> parseMatchmakingStarted(sf::Packet& packet) {
+		std::string username;
+		if (!(packet >> username)) return std::nullopt;
+		return username;
 	}
 
 	// 阶段 4 · S3b2（53.9 ②A）：4 处响应解析与 ConnectionInfo 的 packet >> pid

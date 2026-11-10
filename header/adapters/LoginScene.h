@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <chrono>
 #include <string>
 #include "adapters/IClientGateway.h"
 #include "adapters/IShopOpener.h"
@@ -24,8 +25,11 @@ public:
 	};
 
 private:
-	enum class Mode { Login, Register, Lobby } mode = Mode::Login;
-	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, WaitingCheckin, Done } status = Status::Idle;
+	// Matching：点「开始游戏」后停留的匹配等待界面，可退出匹配返回大厅。
+	enum class Mode { Login, Register, Lobby, Matching } mode = Mode::Login;
+	// WaitingMatch：已发 ReadyToPlay、等对手；WaitingCancel：已发退出请求、等服务端仲裁。
+	enum class Status { Idle, WaitingCheck, WaitingRegister, WaitingLogin, WaitingCheckin,
+	                    WaitingMatch, WaitingCancel, Done } status = Status::Idle;
 	enum class Focus { None, Username, Password } focus = Focus::Username;
 
 	GameRenderer& renderer;
@@ -47,10 +51,19 @@ private:
 	sf::FloatRect startGameBtn; // 大厅：开始游戏按钮
 	sf::FloatRect lobbyShopBtn; // 大厅：商城按钮
 	sf::FloatRect checkinBtn; // 大厅：签到按钮（位于上述两按钮上方居中）
+	sf::FloatRect cancelMatchBtn; // 匹配等待：退出匹配按钮
+
+	// 匹配计时：等待秒数展示 + 退出请求 3 秒无响应时本地兜底返回大厅
+	std::chrono::steady_clock::time_point matchStartedAt_{};
+	std::chrono::steady_clock::time_point cancelRequestedAt_{};
 
 	// 签到结果弹窗
 	bool checkinPopup = false;
 	std::string checkinMsg;
+
+	// 「对手已开始匹配」提示：大厅显示常驻横幅；商城打开期间经 IShopOpener
+	// 把同一状态的引用交给 ShopScene，退出商城后自动同步。
+	unool::adapters::MatchNoticeState matchNotice_;
 
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 
@@ -69,6 +82,9 @@ private:
 	void sendRegisterRequest();
 	void sendCheckUsername();
 	void sendCheckinRequest();
+	void sendCancelMatchmaking();
+	void backToLobby(); // 静默返回大厅，不显示退出匹配提示
+	void clearMatchNotice();
 	void drawCheckinPopup();
 	void render();
 };

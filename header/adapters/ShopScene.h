@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "adapters/IClientGateway.h"
+#include "adapters/IShopOpener.h"
 #include "ShopData.h"
 
 class GameRenderer;
@@ -14,7 +15,8 @@ class GameRenderer;
 // 参考 LoginScene 的 SFML 场景模式，run() 返回时表示用户退出商城。
 class ShopScene {
 public:
-	ShopScene(GameRenderer& r, unool::adapters::IClientGateway& n, const std::string& username);
+	ShopScene(GameRenderer& r, unool::adapters::IClientGateway& n, const std::string& username,
+	          unool::adapters::MatchNoticeState& notice);
 	// 跑商城主循环，ESC 或关窗后返回
 	void run();
 
@@ -22,6 +24,9 @@ private:
 	GameRenderer& renderer;
 	unool::adapters::IClientGateway& net;
 	const std::string username;
+	// 「对手已开始匹配」提示：引用 LoginScene 持有的同一份状态，商城期间收到的
+	// 匹配事件就地写回，退出商城后大厅无需额外同步即可显示。
+	unool::adapters::MatchNoticeState& matchNotice;
 
 	// 商城数据
 	ShopData shopData;
@@ -61,11 +66,13 @@ private:
 	// 技能描述缓存：进程级静态数据，商城退出后仍保留
 	static std::unordered_map<std::string, std::string> skillsCache;
 	std::unordered_set<std::string> pendingSkills;
-	// 处理网络包（ShopData / ShopResult / SkillInfoResponse）
+	// 处理网络包（ShopData / ShopResult / SkillInfoResponse / 匹配提示事件）
 	void handleNetwork();
 	// 渲染
 	void render();
 	void renderTopBar();
+	// 商城内的「对手已开始匹配」横幅（深色界面用浅色文字）
+	void renderMatchNotice();
 	void renderHeroView();
 	void renderItemView();
 	void renderSearchBar();

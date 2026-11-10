@@ -16,6 +16,12 @@ namespace unool::protocol {
 	sf::Packet makeCheckUsernameRequest(const std::string& username);
 	sf::Packet makeCheckinRequest();
 	sf::Packet makeReadyToPlay();
+	// 退出匹配：请求包只有 int 消息号；解散广播附带发起退出的账号名（协议字段保留，
+	// 供服务端日志 / 未来扩展）。客户端静默处理解散，不再展示提示文案。
+	sf::Packet makeCancelMatchmaking();
+	sf::Packet makeMatchmakingCancelled(const std::string& username);
+	// 对手开始匹配的广播：附带发起匹配的账号名，接收方据此展示提示（自己发起则忽略）。
+	sf::Packet makeMatchmakingStarted(const std::string& username);
 
 	// 构造响应 packet（服务端用）
 	sf::Packet makeAccountResponse(MessageType type, bool ok,
@@ -40,4 +46,6 @@ namespace unool::protocol {
 	};
 	std::optional<AccountResponse> parseAccountResponse(sf::Packet& packet);
 	std::optional<bool> parseCheckUsernameResponse(sf::Packet& packet);
+	// packet 已消费开头消息号；返回发起匹配的账号名，坏包返回 nullopt
+	std::optional<std::string> parseMatchmakingStarted(sf::Packet& packet);
 }

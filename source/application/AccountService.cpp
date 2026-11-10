@@ -71,5 +71,9 @@ namespace unool::application {
 			if (!session_.isLoggedIn(clientIdx)) return;
 			session_.onReadyToPlay(clientIdx);
 		}
+		else if (type == MessageType::CancelMatchmaking) {
+			if (!session_.isLoggedIn(clientIdx)) return;
+			session_.onCancelMatchmaking(clientIdx);
+		}
 	}
 }
