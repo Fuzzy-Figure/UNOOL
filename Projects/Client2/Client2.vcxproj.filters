@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\domain">
+      <UniqueIdentifier>{2563460C-23A4-56F8-86D1-60638978DDB8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\protocol">
+      <UniqueIdentifier>{57718106-80DB-5D3C-AEFD-7351FA66CF0C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\adapters">
+      <UniqueIdentifier>{BF12D6D3-E121-5CD9-848D-219AF17DE8D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\application">
+      <UniqueIdentifier>{693291D3-7462-57F6-B16D-C69A660FCF7F}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\adapters\GameRenderer.cpp">
@@ -48,94 +60,94 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\protocol\AccountEvent.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\MessageType.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\Card.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\Effect.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\application\GameLogic.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\application</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\GameRenderer.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\GameState.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\ImageManager.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\application\Player.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\application</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\Skill.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\Socket.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\TextManager.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\UserDB.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\InstantSkill.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\PassiveSkill.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\TransformSkill.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\domain\Character.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\domain</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\LoginScene.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopData.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\ShopScene.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\application\IClientSession.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\application</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\ClientApp.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\PacketDispatcher.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\IClientGateway.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\IShopOpener.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\InputAdapter.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\adapters</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
