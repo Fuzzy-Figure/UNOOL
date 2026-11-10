@@ -18,6 +18,7 @@
 #include "utils.h"
 #include "application/IDecisionPort.h"
 #include "application/Services.h"
+#include "domain/Types.h"
 
 class GameLogic;
 class GameRenderer;
@@ -25,7 +26,7 @@ class GameRenderer;
 class Player {
 private:
 #pragma region 成员变量 - 身份与引用
-	std::size_t id = 0;
+	unool::domain::player_id id = 0;
 	GameLogic& game;
 	// 决策通道：所有收发包/连接判定/配置读取都经此端口，Player 不再认识 ServerNetwork。
 	unool::application::IDecisionPort& decision;
@@ -102,7 +103,7 @@ public:
 		   std::unique_ptr<Character> _character)
 		:id(_id), game(_game), decision(_decision), services(_services),
 		 character(std::move(_character)) {}
-	std::size_t getId() const { return id; }
+	unool::domain::player_id getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
 	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}
 	std::string displayName() const;
