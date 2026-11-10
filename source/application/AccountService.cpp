@@ -17,7 +17,7 @@ namespace unool::application {
 		return true;
 	}
 
-	void AccountService::handleAccountRequest(std::size_t clientIdx, MessageType type, const AccountProtocol::AccountRequest& req) {
+	void AccountService::handleAccountRequest(std::size_t clientIdx, MessageType type, const unool::protocol::AccountRequest& req) {
 		if (!session_.isConnected(clientIdx)) return;
 
 		if (type == MessageType::RegisterRequest) {

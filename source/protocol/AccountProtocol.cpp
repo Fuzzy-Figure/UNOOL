@@ -2,7 +2,7 @@
 #include "AccountEvent.h"
 #include <SFML/Network.hpp>
 
-namespace AccountProtocol {
+namespace unool::protocol {
 
 	sf::Packet makeRegisterRequest(const std::string& username, const std::string& password) {
 		sf::Packet packet;

@@ -9,7 +9,7 @@
 // 完整定义由 source/protocol/AccountProtocol.cpp 提供，不把 SFML 带进 Application。
 namespace sf { class Packet; }
 
-namespace AccountProtocol {
+namespace unool::protocol {
 
 	// 5 类账号响应统一的值对象：按消息类型填充下列字段的子集。
 	// 字段顺序与线上包体逐字一致，解析规则见 parseAccountEvent()。

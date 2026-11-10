@@ -12,7 +12,7 @@
 // source/protocol/ShopProtocol.cpp 提供，不把 SFML 带进 Application。
 namespace sf { class Packet; }
 
-namespace ShopProtocol {
+namespace unool::protocol {
 
 	// 解析服务器下发的商城数据 JSON。packet 已由 PacketDispatcher 消费开头 int 消息号，
 	// 此处取已读出的 json 字符串，与 View 原「if (packet >> jsonStr)」门控保持一致：

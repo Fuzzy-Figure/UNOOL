@@ -143,7 +143,7 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 			// status = Done 仍逐字先于 ReadyToPlay 包的构造与发送。
 			status = Status::Done;
 			//通知服务器：已准备开始游戏
-			sf::Packet readyPkt = AccountProtocol::makeReadyToPlay();
+			sf::Packet readyPkt = unool::protocol::makeReadyToPlay();
 			net.send(readyPkt);
 			return;
 		}
@@ -187,7 +187,7 @@ void LoginScene::sendLoginRequest() {
 		message = "用户名和密码不能为空";
 		return;
 	}
-	sf::Packet req = AccountProtocol::makeLoginRequest(username, password);
+	sf::Packet req = unool::protocol::makeLoginRequest(username, password);
 	if (!net.send(req)) {
 		message = "发送失败，请关闭客户端的.exe文件后重试";
 		return;
@@ -202,7 +202,7 @@ void LoginScene::sendRegisterRequest() {
 		status = Status::Idle;
 		return;
 	}
-	sf::Packet req = AccountProtocol::makeRegisterRequest(username, password);
+	sf::Packet req = unool::protocol::makeRegisterRequest(username, password);
 	if (!net.send(req)) {
 		message = "发送失败，请重试";
 		status = Status::Idle;
@@ -217,7 +217,7 @@ void LoginScene::sendCheckUsername() {
 		message = "用户名不能为空";
 		return;
 	}
-	sf::Packet req = AccountProtocol::makeCheckUsernameRequest(username);
+	sf::Packet req = unool::protocol::makeCheckUsernameRequest(username);
 	if (!net.send(req)) {
 		message = "发送失败，请重试";
 		return;
@@ -227,7 +227,7 @@ void LoginScene::sendCheckUsername() {
 }
 
 void LoginScene::sendCheckinRequest() {
-	sf::Packet req = AccountProtocol::makeCheckinRequest();
+	sf::Packet req = unool::protocol::makeCheckinRequest();
 	if (!net.send(req)) {
 		message = "发送失败，请重试";
 		return;
@@ -239,7 +239,7 @@ void LoginScene::pollAccountPackets() {
 	// 阶段 4 · S2：收包动作收拢到 PacketDispatcher。订阅集与原 6 类集合等价
 	// （Heartbeat 由 dispatcher 内部统一消费并回复），「非账号包不消费、留给
 	// gamePhase」的跨阶段留包约定由 next() 逐字保留。
-	// 阶段 4 · S3b2（53.9 ②A）：响应解析上移到 AccountProtocol::parseAccountEvent()，
+	// 阶段 4 · S3b2（53.9 ②A）：响应解析上移到 unool::protocol::parseAccountEvent()，
 	// 结果以同步值对象返回；5 类订阅集、每帧顺序、continue 与链式请求
 	// （查重→注册→登录）的同帧触发点逐字保留，message / status / mode /
 	// result / checkinPopup 仍由 View 写。
@@ -253,7 +253,7 @@ void LoginScene::pollAccountPackets() {
 
 		switch (mt) {
 			case MessageType::ConnectionInfo: {
-				auto event = AccountProtocol::parseAccountEvent(mt, packet);
+				auto event = unool::protocol::parseAccountEvent(mt, packet);
 				if (event) {
 					net.setPlayerId(event->pid);
 					std::println("{} 分配到玩家: {}", titleBrackets, username);
@@ -264,7 +264,7 @@ void LoginScene::pollAccountPackets() {
 			case MessageType::CheckUsernameResponse:
 				if (status != Status::WaitingCheck) continue;
 				{
-					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					auto event = unool::protocol::parseAccountEvent(mt, packet);
 					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
 					if (event->exists) {
 						message = "该用户名已存在";
@@ -280,7 +280,7 @@ void LoginScene::pollAccountPackets() {
 			case MessageType::RegisterResponse:
 				if (status != Status::WaitingRegister) continue;
 				{
-					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					auto event = unool::protocol::parseAccountEvent(mt, packet);
 					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
 					if (event->ok) {
 						message = "注册成功，自动登录中...";
@@ -296,7 +296,7 @@ void LoginScene::pollAccountPackets() {
 			case MessageType::LoginResponse:
 				if (status != Status::WaitingLogin) continue;
 				{
-					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					auto event = unool::protocol::parseAccountEvent(mt, packet);
 					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
 					if (event->ok) {
 						result.username = username;
@@ -322,7 +322,7 @@ void LoginScene::pollAccountPackets() {
 			case MessageType::CheckinResponse:
 				if (status != Status::WaitingCheckin) continue;
 				{
-					auto event = AccountProtocol::parseAccountEvent(mt, packet);
+					auto event = unool::protocol::parseAccountEvent(mt, packet);
 					// parseAccountEvent 对该类型恒返回值对象（不检查 >> 结果），
 					// 与原 View 的 msg / points 默认值行为逐字一致。
 					checkinMsg = event ? event->msg : std::string{};

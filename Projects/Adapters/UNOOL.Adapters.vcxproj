@@ -104,7 +104,7 @@
     <ClInclude Include="..\..\header\adapters\JsonConfigProvider.h" />
     <ClInclude Include="..\..\header\adapters\JsonUserRepository.h" />
     <ClInclude Include="..\..\header\adapters\Mt19937Random.h" />
-    <ClInclude Include="..\..\header\adapters\SfmlClock.h" />
+    <ClInclude Include="..\..\header\adapters\ChronoClock.h" />
     <ClInclude Include="..\..\header\adapters\FilesystemAssetCatalog.h" />
     <ClInclude Include="..\..\header\adapters\JsonConfig.h" />
     <ClInclude Include="..\..\header\adapters\ClientApp.h" />

@@ -34,7 +34,7 @@ void ShopScene::run() {
 // ===== 网络通信 =====
 
 void ShopScene::requestShopData() {
-	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Request, "", "", ""));
+	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Request, "", "", ""));
 }
 
 void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
@@ -45,7 +45,7 @@ void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
 		pendingSkills.insert(name);
 	}
 	if (filtered.empty()) return;
-	sf::Packet req = ShopProtocol::makeSkillInfoRequestPacket(filtered);
+	sf::Packet req = unool::protocol::makeSkillInfoRequestPacket(filtered);
 	net.send(req);
 }
 
@@ -57,7 +57,7 @@ void ShopScene::handleNetwork() {
 		if (mt == MessageType::ShopData) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				if (auto parsed = ShopProtocol::parseShopData(jsonStr)) {
+				if (auto parsed = unool::protocol::parseShopData(jsonStr)) {
 					shopData = std::move(*parsed);
 					dataReady = true;
 					// 数据刷新后重建显示并夹紧导航状态
@@ -81,7 +81,7 @@ void ShopScene::handleNetwork() {
 		if (mt == MessageType::SkillInfoResponse) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				if (auto parsed = ShopProtocol::parseSkillInfoResponse(jsonStr)) {
+				if (auto parsed = unool::protocol::parseSkillInfoResponse(jsonStr)) {
 					for (auto& [name, text] : parsed->skills) {
 						skillsCache[name] = std::move(text);
 						pendingSkills.erase(name);
@@ -94,7 +94,7 @@ void ShopScene::handleNetwork() {
 		if (mt == MessageType::ShopResult) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				auto parsed = ShopProtocol::parseShopPurchaseResult(jsonStr);
+				auto parsed = unool::protocol::parseShopPurchaseResult(jsonStr);
 				if (!parsed) {
 					setPurchaseMsg("购买结果解析失败");
 					continue;
@@ -116,17 +116,17 @@ void ShopScene::handleNetwork() {
 }
 
 void ShopScene::tryBuyCharacter(const std::string& name) {
-	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Character, name, "", ""));
+	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Character, name, "", ""));
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuySkin(const std::string& charName, const std::string& skinName) {
-	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Skin, "", charName, skinName));
+	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Skin, "", charName, skinName));
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuyItem(const std::string& itemName) {
-	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Item, itemName, "", ""));
+	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Item, itemName, "", ""));
 	setPurchaseMsg("正在购买...");
 }
 

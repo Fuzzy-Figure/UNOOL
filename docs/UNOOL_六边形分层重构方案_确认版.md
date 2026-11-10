@@ -492,7 +492,7 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 
 | 阶段 | 未做内容 |
 |---|---|
-| 2 · 服务端适配器替换 | 5 个出站端口目前由**同一个** `LegacyServicesAdapter` 实现，未拆成 `JsonUserRepository` / `SfmlClock` / `Mt19937Random` / `JsonConfigProvider` / `FilesystemAssetCatalog` / `PacketCodec`；`UNOOL.Protocol` 工程未建；Server 仍链 `sfml-graphics` / `sfml-audio` |
+| 2 · 服务端适配器替换 | 5 个出站端口目前由**同一个** `LegacyServicesAdapter` 实现，未拆成 `JsonUserRepository` / `ChronoClock` / `Mt19937Random` / `JsonConfigProvider` / `FilesystemAssetCatalog` / `PacketCodec`；`UNOOL.Protocol` 工程未建；Server 仍链 `sfml-graphics` / `sfml-audio` |
 | 3 · 领域净化 | `Domain` 仅编译 `pch.domain.cpp`、`Application` 仅编译 `pch.application.cpp`（占位）；领域源码仍在 `header/` + `source/` 平铺，`GameLogic.cpp` / `Player.cpp` / `Card.cpp` 等被 3 个 exe 各编译一遍；`Card.cpp` / `GameState.cpp` 仍含 `<SFML/Network.hpp>`，`Socket.h` 仍混装 `ClientNetwork` / `ServerNetwork`，硬规则「Domain 外部头 = 0」未达成 |
 | 4 · 客户端装配 | 无 `ClientApp` / `InputAdapter` / `PacketDispatcher`，三个 Scene 不是纯 View，Client 仍编译 `GameLogic` / `Player` / `PassiveSkill` / `UserDB`；用例服务（`MatchService` / `AccountService` / `ShopService`）不存在，`ICommands.h` 仍为零引用骨架 |
 | 5 / 6 | 非阻塞决策适配器、密码哈希与原子写、长度帧 / Partial、CI、core 单测，按 Q3 / Q9 另期排期 |
@@ -519,14 +519,14 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 | `JsonConfigProvider.h` | `IConfigProvider` | 9 |
 | `JsonUserRepository.h` | `IUserRepository` | 7 |
 | `Mt19937Random.h` | `IRandom` | 5 |
-| `SfmlClock.h` | `IClock` | 1 |
+| `ChronoClock.h` | `IClock` | 1 |
 | `FilesystemAssetCatalog.h` | `IAssetCatalog` | 2 |
 
 合计 **24 个 `override`**，与 5 个端口的 **24 个纯虚函数**一一对应，签名与 `const` 一致。所有方法体都是原 `LegacyServicesAdapter` 内对应表达式的逐字平移，未改默认值、缺键异常、每局 `reload` 时机与皮肤目录扫描逻辑。
 
 - `header/adapters/LegacyServicesAdapter.h` **保留文件**，改为「默认组合门面」：不再继承任何端口，只持有 5 个独立适配器实例 + 一个 `application::DomainServices bundle{...}`。保留原类名可避免删除文件、改动工程条目，且 `utils.cpp` 的默认门面语义不变。
 - `source/utils.cpp`：`legacyBundle()` 由 `static DomainServices bundle{ adapter × 5 }` 改为返回 `adapter.bundle`；随机门面注释同步。
-- `source/ServerMain.cpp`：组合根改为显式构造 `JsonConfigProvider` / `JsonUserRepository` / `Mt19937Random` / `SfmlClock` / `FilesystemAssetCatalog` 五个对象 + `DomainServices` 聚合，`installServices()` 不变；`LegacyBlockingDecisionAdapter` 的第二参数改传 `configService`（该形参本就是 `IConfigProvider&`）。
+- `source/ServerMain.cpp`：组合根改为显式构造 `JsonConfigProvider` / `JsonUserRepository` / `Mt19937Random` / `ChronoClock` / `FilesystemAssetCatalog` 五个对象 + `DomainServices` 聚合，`installServices()` 不变；`LegacyBlockingDecisionAdapter` 的第二参数改传 `configService`（该形参本就是 `IConfigProvider&`）。
 - `Projects/Adapters/UNOOL.Adapters.vcxproj`：新增 5 条 `ClInclude`，让新头文件归 Adapters 工程管理（沿用第 15 节口径：Server 只列自己直接 include 的头）。
 
 **C5 随机引擎硬约束已落实**：`RandomEngine::operator()` 恒经 `services().random.next()`；Server 侧 `installServices` 指向含唯一 `Mt19937Random randomService` 的聚合，未装配客户端侧 `legacyBundle()` 指向默认组合里唯一的 `Mt19937Random`。两条路径都只有一份 `std::mt19937`，`random_device` 调用次数与构造时机不变，随机序列与重构前逐字等价。
@@ -545,7 +545,7 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 
 ### 17.3 例外与偏差说明
 
-- **`SfmlClock` 命名**：沿用原方案 §3.2 的端口命名，但实现与重构前逐字一致为 `std::chrono::steady_clock::now()`，**不依赖 SFML**。不擅自改名以免偏离已确认的推荐项，此处仅作事实说明。
+- **`ChronoClock` 命名**：沿用原方案 §3.2 的端口命名，但实现与重构前逐字一致为 `std::chrono::steady_clock::now()`，**不依赖 SFML**。重构收尾时已据实现由 `SfmlClock` 改名为 `ChronoClock`，名实相符。
 - **`sfml-window.lib` 保留**：Q5 明确「先保留，等编译结果再决定能否进一步去掉」。`sf::Keyboard::Scancode` 是 `Socket.h` 线上 `ClientInput.key` 的字节依赖，属 Window 模块；能否去掉必须由用户本地编译 / 链接验证，静态判断不能断言。
 - **`UNOOL.Protocol` 工程 / `PacketCodec` 未建**（W3）：会改 3 个 exe 的 include 与包含目录，与 A6 冲突，暂缓。
 - **`IServerView` 未从 `LegacyBlockingDecisionAdapter` 拆出**（W4）：涉及 `attach(GameLogic&)` 与组合根重装配，暂缓；`IDecisionPort` / `IServerView` 仍由同一对象实现。
@@ -609,7 +609,7 @@ Q4 约定的验收 = 双配置编译 + 静态依赖扫描 + 人工回归路径�
 ### 18.3 例外与偏差说明
 
 - **W3 / W5 未做**：`UNOOL.Protocol` / `PacketCodec` / DTO 归位、`AccountService` / `ShopService` 仍待办。用户已确认 W3 可解除 A6，但本批按「W4 优先」不启用。
-- **`sfml-window.lib` 继续保留**（Q5）；`SfmlClock` 名不副实的历史说明见 17.3。
+- **`sfml-window.lib` 继续保留**（Q5）；时钟适配器已由 `SfmlClock` 改名为 `ChronoClock`，名实相符（见 17.3）。
 - **协议、配置、端口、客户端源码未改**：`Socket.*`、`GameState.*`、`AccountProtocol.*`、`Card.cpp`、`Character.*`、`UserDB.*`、3 个 json、8888 / 14341、`MessageType`、长度帧 / Partial 全部未触碰。
 - `README.md` 未动：工程数量、PCH 与目录描述仍成立。
 - 本批未引入裸指针：`game_` 沿用 `opt_ref<GameLogic>`，新增成员用 `{}` 初始化。
@@ -1973,7 +1973,7 @@ A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读�
 |---|---|
 | `Projects/Domain/pch.domain.h` / `pch.application.h` | 均**纯标准库**（`<cstddef>` / `<chrono>` / `<optional>` / `<string>` / `<vector>` 等），Q8 口径明确不含 SFML / `Windows.h` / `json.hpp` |
 | 两库 `AdditionalIncludeDirectories` | `$(ProjectDir)` + `header` 及四个分层目录，**没有** `dep\nlohmann` 与 `dep\SFML\include` |
-| `header/adapters/LegacyServicesAdapter.h` 传递包含 | `JsonConfigProvider.h` / `JsonUserRepository.h` / `FilesystemAssetCatalog.h` 各带 `<json.hpp>`，`JsonUserRepository.h` 另带 `UserDB.h` / `Character.h`；`SfmlClock.h` 仅 `<chrono>`、`Mt19937Random.h` 仅标准库 |
+| `header/adapters/LegacyServicesAdapter.h` 传递包含 | `JsonConfigProvider.h` / `JsonUserRepository.h` / `FilesystemAssetCatalog.h` 各带 `<json.hpp>`，`JsonUserRepository.h` 另带 `UserDB.h` / `Character.h`；`ChronoClock.h` 仅 `<chrono>`、`Mt19937Random.h` 仅标准库 |
 | 5 个适配器实现 | 全部 **header-only**（`grep source/**/*.cpp` 无 `Xxx::` 定义），但 `JsonUserRepository` 会引用 `UserDB` 符号（`source/adapters/UserDB.cpp`，Core 库） |
 | `services()` 静态调用链 | `Character.cpp` 4 处、`utils.cpp` 随机门面 4 处，共 8 处；`ServerMain.cpp` 组合根 1 处 `installServices` |
 
@@ -2104,7 +2104,7 @@ A 的目标是让 `source/utils.cpp` 不再包含任何 `adapters` 头。只读�
 - `Core` 的 21 条 `ClCompile` = 1 个 PCH 生成单元 + 20 个业务单元，而 **20 = 11 + 9**：
   - **11 个纯标准库候选单元**：`source/domain/` 7 个 + `GameLogic.cpp` / `Player.cpp` / `Services.cpp` + `source/utils.cpp`。逐个扫描 `sf::` / `SFML/` / `nlohmann` / `json.hpp`，命中 **0**（`utils.cpp` 唯一 1 次命中是第 12 行注释里的 "json.hpp" 字样；它显式包含 `<Windows.h>`，属 MSVC SDK 系统头、不在 `dep`，无需额外包含目录）。第十四批让 `domain` / `application` / `protocol` 头闭包 `GAPS = 0`、`GameState.h` / `AccountProtocol.h` 改用 `namespace sf { class Packet; }`，所以这 11 个单元**编译期**已具备在纯标准库 PCH 下编译的条件。
   - **9 个必须依赖 `dep` 的单元**（命中数）：`AccountProtocol.cpp` 15、`Socket.cpp` 62、`ShopService.cpp` 12、`GameState.cpp` 7、`JsonConfig.cpp` 7、`CardPacket.cpp` 5、`UserDB.cpp` 4、`AccountService.cpp` 2、`LegacyBundle.cpp` 2。
-- **编译期可行 ≠ 链接期可拆**：`Services.cpp` → `defaultBundle()`（`LegacyBundle.cpp`，传递包含 `<json.hpp>` / `UserDB.h` / `SfmlClock.h`）；`utils.cpp` 4 处 → `services().random.*`；`Character.cpp` 4 处 → `services().assets / config`；`CardPacket.cpp:50` → `Card::make()`；`Socket.cpp` 9 处薄转发 → `AccountService` / `ShopService`；`ShopService.cpp` → `Character::infos` / `getCharacterPrice` / `make`。这 20 个单元构成**强连通的符号闭包**：任意单元划出 Core，都会立即产生指回 Core 的符号边。5 个默认组合适配器虽是 header-only（`JsonConfigProvider.h` 54 / `JsonUserRepository.h` 118 / `Mt19937Random.h` 42 / `SfmlClock.h` 17 / `FilesystemAssetCatalog.h` 54 行），但分别调用 `getServerConfig()`（`JsonConfig.cpp`）、`UserDB::instance()`（`UserDB.cpp`）、`paths::resourceRoot()` / `to_utf16`（`utils.cpp`），因此 `LegacyBundle.cpp` 必须有 `dep` 且需要 3 个 Core 单元的符号。
+- **编译期可行 ≠ 链接期可拆**：`Services.cpp` → `defaultBundle()`（`LegacyBundle.cpp`，传递包含 `<json.hpp>` / `UserDB.h` / `ChronoClock.h`）；`utils.cpp` 4 处 → `services().random.*`；`Character.cpp` 4 处 → `services().assets / config`；`CardPacket.cpp:50` → `Card::make()`；`Socket.cpp` 9 处薄转发 → `AccountService` / `ShopService`；`ShopService.cpp` → `Character::infos` / `getCharacterPrice` / `make`。这 20 个单元构成**强连通的符号闭包**：任意单元划出 Core，都会立即产生指回 Core 的符号边。5 个默认组合适配器虽是 header-only（`JsonConfigProvider.h` 54 / `JsonUserRepository.h` 118 / `Mt19937Random.h` 42 / `ChronoClock.h` 17 / `FilesystemAssetCatalog.h` 54 行），但分别调用 `getServerConfig()`（`JsonConfig.cpp`）、`UserDB::instance()`（`UserDB.cpp`）、`paths::resourceRoot()` / `to_utf16`（`utils.cpp`），因此 `LegacyBundle.cpp` 必须有 `dep` 且需要 3 个 Core 单元的符号。
 - **硬结论**：在「不放宽 Q8（Domain 纯标准库 PCH / 无 dep 目录）+ 不改写任何模型层函数体」两条约束下，`Domain` 库**没有任何 `.cpp` 可以实装**——7 个 `domain/*.cpp` 中 6 个 include `GameLogic.h` / `Player.h`（应用层编排器）并真实调用其符号，`Character.cpp` 另调 `services()`；`Application` 库可实装的只有 `Services.cpp`（反向依赖 `defaultBundle()`）与 `utils.cpp`（反向依赖 `services()`）。第十四批只是**编译期前置**，B1 的死锁在**链接期**，与头文件是否自足无关；44.2 的「无低风险单单元试点」判断在第十四批后依然成立。
 
 ### 45.4 三个口径落地为可点选项（44.5 的具体化）

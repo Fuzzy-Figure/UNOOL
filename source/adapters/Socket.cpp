@@ -153,12 +153,12 @@ void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
 
 void ServerNetwork::sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
 									 const std::string& msg, int points, int wins, int losses) {
-	sf::Packet p = AccountProtocol::makeAccountResponse(type, ok, msg, points, wins, losses);
+	sf::Packet p = unool::protocol::makeAccountResponse(type, ok, msg, points, wins, losses);
 	sendPacketToClient(clientIdx, p);
 }
 
 void ServerNetwork::sendCheckUsernameResponse(std::size_t clientIdx, bool exists) {
-	sf::Packet p = AccountProtocol::makeCheckUsernameResponse(exists);
+	sf::Packet p = unool::protocol::makeCheckUsernameResponse(exists);
 	sendPacketToClient(clientIdx, p);
 }
 
@@ -358,7 +358,7 @@ void ServerNetwork::handlePendingSocket() {
 					}
 					else {
 						//无匹配也无空槽位：拒绝（防止陌生人顶替）
-						auto resp = AccountProtocol::makeAccountResponse(
+						auto resp = unool::protocol::makeAccountResponse(
 							MessageType::LoginResponse, false,
 							"服务器已满，且无匹配的重连槽位");
 						if (pendingSocket->send(resp) != sf::Socket::Status::Done) {
@@ -419,7 +419,7 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 	if (!accountService_) return;
 	int discardedMsgType;
 	packet >> discardedMsgType;
-	auto req = AccountProtocol::parseAccountRequest(packet);
+	auto req = unool::protocol::parseAccountRequest(packet);
 	if (!req) return;
 	accountService_->get().handleAccountRequest(clientIdx, type, *req);
 }

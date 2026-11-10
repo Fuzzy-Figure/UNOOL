@@ -18,7 +18,7 @@ namespace unool::application {
 	public:
 		AccountService(IAccountSession& session, IUserRepository& users);
 
-		void handleAccountRequest(std::size_t clientIdx, MessageType type, const AccountProtocol::AccountRequest& req);
+		void handleAccountRequest(std::size_t clientIdx, MessageType type, const unool::protocol::AccountRequest& req);
 		bool spendPoints(std::size_t clientIdx, int amount);
 
 	private:

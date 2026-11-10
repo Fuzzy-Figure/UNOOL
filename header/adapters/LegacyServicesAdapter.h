@@ -12,7 +12,7 @@
 #include "adapters/JsonConfigProvider.h"
 #include "adapters/JsonUserRepository.h"
 #include "adapters/Mt19937Random.h"
-#include "adapters/SfmlClock.h"
+#include "adapters/ChronoClock.h"
 #include "adapters/FilesystemAssetCatalog.h"
 #include "application/Services.h"
 
@@ -23,7 +23,7 @@ namespace unool::adapters {
 		JsonConfigProvider config{};
 		JsonUserRepository users{};
 		Mt19937Random random{};
-		SfmlClock clock{};
+		ChronoClock clock{};
 		FilesystemAssetCatalog assets{};
 		// 引用成员按声明顺序绑定到上面五个实例；随机门面与 DomainServices::random
 		// 指向同一个 Mt19937Random，随机序列与重构前逐字等价。

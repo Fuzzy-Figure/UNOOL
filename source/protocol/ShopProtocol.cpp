@@ -1,7 +1,7 @@
 #include "ShopProtocol.h"
 #include <SFML/Network.hpp>
 
-namespace ShopProtocol {
+namespace unool::protocol {
 
 	// 阶段 4 · S3c（46.4 / 评估口径②A）：3 处 json::parse + get<T>() 与 4 处 dump() 上移。
 	// 解析失败统一返回 std::nullopt，由 ShopScene 保留各自的分流（成功赋值 / 静默 /

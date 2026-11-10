@@ -139,7 +139,7 @@ int main() {
 	unool::application::ShopService shopService(serverNetwork, userRepository);
 	serverNetwork.installShopService(shopService);
 	unool::adapters::Mt19937Random randomService;
-	unool::adapters::SfmlClock clockService;
+	unool::adapters::ChronoClock clockService;
 	unool::adapters::FilesystemAssetCatalog assetCatalog;
 	unool::application::DomainServices domainServices{
 		configService, userRepository, randomService, clockService, assetCatalog };

@@ -7,7 +7,7 @@
 // 各 .cpp 显式包含 <SFML/Network.hpp>，写法与 header/domain/Card.h 一致。
 namespace sf { class Packet; }
 
-namespace AccountProtocol {
+namespace unool::protocol {
 	// 构造请求 packet（客户端用）
 	// 阶段 4 · S3b2（53.9 ①A）：补齐两个原本在 View 手写包的 helper，5 个账号请求
 	// 全部由本层构造；消息号与字段顺序逐字不变。
