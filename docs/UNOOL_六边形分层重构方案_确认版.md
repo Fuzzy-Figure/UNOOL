@@ -3008,7 +3008,7 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 
 **57.4 编译与回归**
 - 首编暴露 5 处错误：① `IAccountSession.h` 缺 `MessageType.h`；② `AccountService` 漏 `AccountProtocol::` 命名空间限定；③④ `Socket.cpp` 临时对象传 `sendPacketToClient(sf::Packet&)` 非 const 引用；⑤ 上述级联误报。已修复（`git diff --check` 干净、未限定 `AccountRequest` 清零、全部 `sendPacketToClient` 调用点传局部变量）。
-- 用户本地 `Debug|x64` / `Release|x64` Rebuild 通过；随后按 `docs/UNOOL_运行时回归核对清单.md` 重跑，登录链路 / 商城三响应 / 签到全绿。已提交 `（提交号见 git log）`。
+- 用户本地 `Debug|x64` / `Release|x64` Rebuild 通过；随后按 `docs/UNOOL_运行时回归核对清单.md` 重跑，登录链路 / 商城三响应 / 签到全绿。已提交 `843458d`（9 文件，+96 / −58，工作区干净）。
 
 **57.5 Tier 0 评估结论：不需要做**
 - `utils.h` 为纯 STL 头（无 SFML、无项目层 include），但被 24 个文件 `#include`；`utils.cpp` 含 `#include "application/Services.h"`，语义上属于 **application 层**而非 domain 层。
