@@ -6,11 +6,12 @@
 #include <string>
 #include <utility>
 #include "PacketDispatcher.h"
+#include "ShopProtocol.h"
 
 // 技能描述缓存（静态成员定义）
 std::unordered_map<std::string, std::string> ShopScene::skillsCache;
 
-ShopScene::ShopScene(GameRenderer& r, ClientNetwork& n, const std::string& uname)
+ShopScene::ShopScene(GameRenderer& r, unool::adapters::IClientGateway& n, const std::string& uname)
 	: renderer(r), net(n), username(uname) {
 	rebuildDisplayedIndices();
 }
@@ -33,25 +34,19 @@ void ShopScene::run() {
 // ===== 网络通信 =====
 
 void ShopScene::requestShopData() {
-	ShopPurchaseRequest req;
-	req.type = ShopRequestType::Request;
-	nlohmann::json j = req;
-	net.sendShopPurchase(j.dump());
+	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Request, "", "", ""));
 }
 
 void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
-	SkillInfoRequestBody req;
+	std::vector<std::string> filtered;
 	for (const auto& name : names) {
 		if (pendingSkills.contains(name)) continue;
-		req.names.push_back(name);
+		filtered.push_back(name);
 		pendingSkills.insert(name);
 	}
-	if (req.names.empty()) return;
-	nlohmann::json j = req;
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::SkillInfoRequest);
-	packet << j.dump();
-	net.send(packet);
+	if (filtered.empty()) return;
+	sf::Packet req = ShopProtocol::makeSkillInfoRequestPacket(filtered);
+	net.send(req);
 }
 
 void ShopScene::handleNetwork() {
@@ -62,9 +57,8 @@ void ShopScene::handleNetwork() {
 		if (mt == MessageType::ShopData) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				try {
-					nlohmann::json j = nlohmann::json::parse(jsonStr);
-					shopData = j.get<ShopData>();
+				if (auto parsed = ShopProtocol::parseShopData(jsonStr)) {
+					shopData = std::move(*parsed);
 					dataReady = true;
 					// 数据刷新后重建显示并夹紧导航状态
 					rebuildDisplayedIndices();
@@ -77,7 +71,8 @@ void ShopScene::handleNetwork() {
 						if (!skillsCache.contains(c.name)) missing.push_back(c.name);
 					}
 					if (!missing.empty()) requestSkillInfo(missing);
-				} catch (const std::exception&) {
+				}
+				else {
 					setPurchaseMsg("商城数据解析失败");
 				}
 			}
@@ -86,28 +81,25 @@ void ShopScene::handleNetwork() {
 		if (mt == MessageType::SkillInfoResponse) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				try {
-					nlohmann::json j = nlohmann::json::parse(jsonStr);
-					SkillInfoResponseBody resp = j.get<SkillInfoResponseBody>();
-					for (auto& [name, text] : resp.skills) {
+				if (auto parsed = ShopProtocol::parseSkillInfoResponse(jsonStr)) {
+					for (auto& [name, text] : parsed->skills) {
 						skillsCache[name] = std::move(text);
 						pendingSkills.erase(name);
 					}
-				} catch (const std::exception&) {}
+				}
+				// 解析失败：静默吞掉（与原 catch(const std::exception&) {} 一致）
 			}
 			continue;
 		}
 		if (mt == MessageType::ShopResult) {
 			std::string jsonStr;
 			if (packet >> jsonStr) {
-				ShopPurchaseResult result;
-				try {
-					nlohmann::json j = nlohmann::json::parse(jsonStr);
-					result = j.get<ShopPurchaseResult>();
-				} catch (const std::exception&) {
+				auto parsed = ShopProtocol::parseShopPurchaseResult(jsonStr);
+				if (!parsed) {
 					setPurchaseMsg("购买结果解析失败");
 					continue;
 				}
+				const ShopPurchaseResult& result = *parsed;
 				if (result.ok) {
 					setPurchaseMsg("购买成功");
 				}
@@ -124,30 +116,17 @@ void ShopScene::handleNetwork() {
 }
 
 void ShopScene::tryBuyCharacter(const std::string& name) {
-	ShopPurchaseRequest req;
-	req.type = ShopRequestType::Character;
-	req.name = name;
-	nlohmann::json j = req;
-	net.sendShopPurchase(j.dump());
+	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Character, name, "", ""));
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuySkin(const std::string& charName, const std::string& skinName) {
-	ShopPurchaseRequest req;
-	req.type = ShopRequestType::Skin;
-	req.charName = charName;
-	req.skinName = skinName;
-	nlohmann::json j = req;
-	net.sendShopPurchase(j.dump());
+	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Skin, "", charName, skinName));
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuyItem(const std::string& itemName) {
-	ShopPurchaseRequest req;
-	req.type = ShopRequestType::Item;
-	req.name = itemName;
-	nlohmann::json j = req;
-	net.sendShopPurchase(j.dump());
+	net.sendShopPurchase(ShopProtocol::makeShopPurchaseJson(ShopRequestType::Item, itemName, "", ""));
 	setPurchaseMsg("正在购买...");
 }
 

@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include "Socket.h"
+#include "adapters/IClientGateway.h"
 #include "ShopData.h"
 
 class GameRenderer;
@@ -14,13 +14,13 @@ class GameRenderer;
 // 参考 LoginScene 的 SFML 场景模式，run() 返回时表示用户退出商城。
 class ShopScene {
 public:
-	ShopScene(GameRenderer& r, ClientNetwork& n, const std::string& username);
+	ShopScene(GameRenderer& r, unool::adapters::IClientGateway& n, const std::string& username);
 	// 跑商城主循环，ESC 或关窗后返回
 	void run();
 
 private:
 	GameRenderer& renderer;
-	ClientNetwork& net;
+	unool::adapters::IClientGateway& net;
 	const std::string username;
 
 	// 商城数据

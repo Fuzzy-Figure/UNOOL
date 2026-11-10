@@ -68,6 +68,7 @@
     <ClInclude Include="..\..\header\pch.h" />
     <ClInclude Include="..\..\header\protocol\AccountEvent.h" />
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
     <ClInclude Include="..\..\header\domain\Card.h" />
     <ClInclude Include="..\..\header\domain\Character.h" />

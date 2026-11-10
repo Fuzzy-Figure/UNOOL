@@ -2895,3 +2895,53 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 用户已确认本地 `Debug|x64` / `Release|x64` Rebuild **编译通过**（2026-11-09 21:59，脚本 `%TEMP%\UNOOL_Rebuild.bat`）；下列原 Rebuild 重点全部排除：`AccountEvent.h` 前向声明与 `AccountProtocol.cpp` 中 `sf::Packet` 完整定义共存、`switch` 中 `case` 内 `{}` 块的变量作用域、`std::optional<AccountEvent>` 跨 Core.lib 链接（`LNK2019`）、两处新 helper 的重载解析、`LoginScene.cpp` 新增 include 的传递依赖。运行时按 52.8 / 49.7 清单实跑（任务 #73 仍 pending）：**链式请求同帧时序（查重→注册→登录）**、`status=Done` 先于 `ReadyToPlay` 发包、跨阶段留包、三处心跳与 3 秒超时、签到弹窗与积分同步、登录 / 注册 / 查重全部文案。
 
 编译通过后由助手生成结构化提交消息、提交 **16 个文件**（按用户 21:59 口径，`UNOOL.slnx` 不再排除、一并提交）；之后按 46.4 顺序推进 **S3c `ShopScene`（980 行，`skillsCache` / `pendingSkills` 归属）→ S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。
+
+## 55. 第二十四批 S3c：`ShopScene` 纯 View 化 + 商城协议构造/解析上移（2026-11-10，口径确认后）
+
+第二十三批提交 `4543897` 后，按 46.4 与 37.6「障碍 3 顺延到 S3c 前再判」做只读评估（任务 #76），用户一次点选 **①A + ②A + ③A**（与 53.9 同构）。本批零未确认前不写代码；确认后直接开工，改完由用户本地 Rebuild 验证（助手侧 MSBuild 仍被 LOLBin 黑名单拦截、未绕过）。
+
+### 55.1 口径（①A + ②A + ③A）
+
+- **①A 解耦**：`ShopScene` 的 `ClientNetwork& net` 改 `IClientGateway& net`，与 `LoginScene` 对称（S3b1 已切端口）。
+- **②A 协议上移**：新建 `header/protocol/ShopProtocol.h` + `source/protocol/ShopProtocol.cpp`，收拢 `parseShopData` / `parseSkillInfoResponse` / `parseShopPurchaseResult`（均返回 `std::optional<T>`）+ `makeShopPurchaseJson` / `makeSkillInfoRequestPacket`；实现并入既有 `UNOOL.Core` 编译单元。
+- **③A 业务状态**：`skillsCache` 进程级 static、`pendingSkills` 实例级集合均保留在 `ShopScene`，本批只上移包解析、不动状态语义。
+
+### 55.2 改动清单（11 个文件：2 新增 + 9 修改）
+
+- 新增 `header/protocol/ShopProtocol.h`（纯声明 + `sf::Packet` 前向声明，不把 SFML 带进 Application）。
+- 新增 `source/protocol/ShopProtocol.cpp`（3 处 `json::parse` + `get<T>()`、4 处 `dump()` 等价平移，并入 Core，含 `<SFML/Network.hpp>`）。
+- 修改 `header/adapters/ShopScene.h`：`#include "Socket.h"` → `#include "IClientGateway.h"`；构造参数与 `net` 成员 `ClientNetwork&` → `IClientGateway&`。
+- 修改 `source/adapters/ShopScene.cpp`：构造切端口；`requestShopData` / `requestSkillInfo` / `handleNetwork` 三分支 / `tryBuyCharacter|S車Skin|Item` 改用 `ShopProtocol` helper。
+- 修改 `Projects/Core/UNOOL.Core.vcxproj`：`+ShopProtocol.h` ClInclude、`+ShopProtocol.cpp` ClCompile（同 `pch.core.h`，与 `AccountProtocol.cpp` 同库）。
+- 修改 `Projects/Client1|Client2|Server/*.vcxproj`：各 `+ShopProtocol.h` ClInclude。
+- 修改 `Projects/Client1|Client2|Server/*.vcxproj.filters`：各 `+ShopProtocol.h`（Core 无 filters 文件，与 S3b2 一致）。
+
+### 55.3 逐段等价性证据
+
+- **①A 解耦零改动面**：`ClientApp.cpp` 商城构造点 `ShopScene(renderer_, net_, username)` 因 `net_` 是 `ClientNetwork&`、派生→基类隐式转换**零改动**；`run()` 的 `net.update()` / `net.isConnected()`（继承自 `IClientSession`）+ `handleNetwork` 的 `PacketDispatcher::next(net)`（已对 `IClientGateway&` 重载）全部逐字不变。
+- **②A 解析上移**：原 View 的 `try/catch` 分流逐字上移为 `std::optional<T>` 的「成功赋值 / 静默 / 提示」三态：
+  - `ShopData`：原 `if (packet >> jsonStr) { try { parse; shopData=…; 刷新+批量补请求 } catch { setPurchaseMsg("商城数据解析失败") } }`。新保持 `if (packet >> jsonStr)` **门控不动**（提取失败仍静默，与原一致），成功则 `shopData = move(*parsed)` 并保留全部刷新 / 补请求副作用，失败则 `setPurchaseMsg("商城数据解析失败")` —— 与旧 `catch` 分支一一对应。
+  - `SkillInfoResponse`：原 `catch (const std::exception&) {}` 空，新 `if (auto parsed = …) { … }` 失败分支留注释「静默吞掉，与原一致」；`skillsCache[name]=move(text)` / `pendingSkills.erase(name)` 逐字保留。
+  - `ShopResult`：原 `ShopPurchaseResult result; try { parse } catch { setPurchaseMsg("购买结果解析失败"); continue; }`，新 `if (!parsed) { setPurchaseMsg("购买结果解析失败"); continue; }` 后 `const ShopPurchaseResult& result = *parsed`，后续 `result.ok` → "购买成功" / `result.msg.empty()?"积分不足！":result.msg` 逐字保留。
+- **②A 构造上移**：`makeShopPurchaseJson(type, name, charName, skinName)` 覆盖 4 处 `dump()`（Request/Character/Skin/Item），`makeSkillInfoRequestPacket(names)` 平移原手写 `SkillInfoRequest` 包（消息号 + `dump`）；`requestSkillInfo` 的 `pendingSkills` 去重集合**保留在 View**、仅把去重后的 names 交给 helper 构造 packet —— 与原「先 dedup 再 send」语义逐字一致。四个购买/请求函数仅剩一行 helper 调用 + `setPurchaseMsg("正在购买...")`。
+- **零改动文件**：`MessageType.h`、`client_config.json` / `server_config.json`（8888 / 14341）、`PacketDispatcher` / `IClientGateway` / `IClientSession` / `ICommands.h`、`ShopData.h`、`LoginScene`、`ClientApp.cpp`（商城构造点隐式转换零改动）、双客户端入口。
+
+### 55.4 ③A 业务状态归属
+
+`skillsCache`（进程级 static）与 `pendingSkills`（实例级集合）均保留在 `ShopScene` 原处，本批只上移包解析、不碰这两块状态。「退出商城再进入仍命中缓存、省一次请求」的线上行为完全不变。未选 ③B（上移 `ShopService`、跨实例缓存语义需重证）/ ③C（改场景级 static 会丢缓存、属行为变化）。
+
+### 55.5 层与工程条目取舍
+
+`ShopProtocol.cpp` 是**新增** `ClCompile`（归 `UNOOL.Core` 库，与 `AccountProtocol.cpp` 同库、同 `pch.core.h`）；本批**无新静态库工程 / 无 `ProjectReference` 变更 / 无包含目录或链接项变更**（Core 仍是 20 单元、`Application` 仍 Q8 占位库）。`ShopProtocol.h` 纯头，按 S3a / S3b2 先例补 7 个工程文件 `ClInclude`（含 Server：`ServerNetwork` 也 include `ShopData.h` 协议头族）；`ClInclude` 仅 IDE 显示、不改编译集合。Core 无 `.filters` 文件（仅 Client1/Client2/Server 提供），与 S3b2 一致。
+
+### 55.6 静态验证（助手侧只读，未本地编译）
+
+- 10 个 `.vcxproj` / `.filters` 全量 `[xml]` 解析成功；**275 条带 `Include` 属性的条目路径 0 缺失**（本批 +8 条 `ShopProtocol.h` 显示 + 1 条 `ShopProtocol.cpp` ClCompile）。
+- `Client1` / `Client2` 的 `.vcxproj` 与 `.filters` 条目集合 `Compare-Object` 差异均为 **0**；`ShopProtocol.h` 在 7 个工程文件中登记，`ShopProtocol.cpp` 仅在 Core 登记。
+- `git diff --check` 干净；11 个改动 / 新增文件统一复位 UTF-8 无 BOM + CRLF（3 个 `.filters` 保留 UTF-8 BOM）。
+- 新增代码裸指针 0；所有新变量 / 成员一律 `{}` 初始化（`ShopPurchaseRequest req{}` 等经 helper 内部构造）。
+- 编译能力再确认：PowerShell + `dangerouslyDisableSandbox: true` 调用 MSBuild 仍被命令行静态校验黑名单拦截，助手按安全规则未换等价命令重试；编译由用户本地执行。
+
+### 55.7 提交闭环
+
+用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **14 个文件**（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆 —— `ShopProtocol.h` / `ShopProtocol.cpp` 2 新增 + `ShopScene.h` / `ShopScene.cpp`、4 个 `.vcxproj`、3 个 `.filters` 共 9 修改 + 方案第 55 节 / README / 工作记忆 3 个文档修改）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入本次提交。编译中 `ShopScene.cpp:48` 把 `makeSkillInfoRequestPacket` 的临时返回值直接传给 `send(sf::Packet&)` 非 const 引用触发 `C2664`，已局部变量化（`sf::Packet req = ...; net.send(req);`，接口签名对齐 SFML `Socket::send`、其余调用点本就是局部变量）修复。之后按 46.4 顺序推进 **S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。提交号随本提交记录、由下批文档回填（git log 可见）。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案（"购买成功" / "积分不足！" / "商城数据解析失败" / "购买结果解析失败"）。
