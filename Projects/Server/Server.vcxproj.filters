@@ -101,6 +101,9 @@
     <ClCompile Include="pch.server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\server_config.json">

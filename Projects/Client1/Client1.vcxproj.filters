@@ -57,6 +57,9 @@
     <ClCompile Include="..\..\source\adapters\InputAdapter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\utils.h">
