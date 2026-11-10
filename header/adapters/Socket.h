@@ -9,6 +9,7 @@
 #include <SFML/Network.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include "utils.h"
+#include "contract/TableConfig.h"
 #include "MessageType.h"
 #include "application/IAccountSession.h"
 #include "adapters/IClientGateway.h"
@@ -47,17 +48,17 @@ public:
 
 private:
 	std::unique_ptr<sf::TcpListener> listener;
-	std::array<std::unique_ptr<sf::TcpSocket>, unool::MAX_PLAYERS> clientSockets;
-	std::array<ClientSlot, unool::MAX_PLAYERS> clientSlots_;
+	std::array<std::unique_ptr<sf::TcpSocket>, unool::contract::TableConfig::seatCount> clientSockets;
+	std::array<ClientSlot, unool::contract::TableConfig::seatCount> clientSlots_;
 	sf::SocketSelector selector;
 	bool serverReady = false;
-	std::array<bool, unool::MAX_PLAYERS> playerReady{};  //玩家点"开始游戏"后置 true
+	std::array<bool, unool::contract::TableConfig::seatCount> playerReady{};  //玩家点"开始游戏"后置 true
 	std::queue<sf::Packet> receivedPackets;
 	//槽位已满时收下的待登录 socket，用于识别重连意图后顶替旧连接
 	std::unique_ptr<sf::TcpSocket> pendingSocket;
 	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat，超过 3 秒未收到任何回包则视为掉线
 	sf::Clock heartbeatClock;
-	std::array<sf::Clock, unool::MAX_PLAYERS> lastRecvClocks;
+	std::array<sf::Clock, unool::contract::TableConfig::seatCount> lastRecvClocks;
 	// W5 第一段：账号用例服务由组合根注入，本类只保留会话状态与薄转发
 	// 注意：ref / opt_ref 是 utils.h 定义在全局命名空间的别名，不能加 unool:: 限定
 	opt_ref<unool::application::AccountService> accountService_{};
@@ -114,7 +115,7 @@ public:
 	std::size_t getClientCount() const;
 	bool isClientConnected(std::size_t clientIndex) const;
 	bool isClientLoggedIn(std::size_t clientIndex) const;
-	const std::array<ClientSlot, unool::MAX_PLAYERS>& getClientSlots() const { return clientSlots_; }
+	const std::array<ClientSlot, unool::contract::TableConfig::seatCount>& getClientSlots() const { return clientSlots_; }
 	// 尝试消耗指定客户端 amount 积分，成功则同步更新 ClientSlot.points
 	// （W5 第一段起为薄转发，业务判断在 AccountService）
 	bool trySpendPoints(std::size_t clientIndex, int amount);

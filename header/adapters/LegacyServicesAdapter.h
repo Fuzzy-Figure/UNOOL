@@ -10,6 +10,7 @@
 // 因此进程里「谁实现了端口」只有组合根一处决定，不存在隐藏的默认回退。
 // services() / installServices() 的定义仍在 source/application/Services.cpp。
 #include "adapters/JsonConfigProvider.h"
+#include "adapters/UserDB.h"
 #include "adapters/JsonUserRepository.h"
 #include "adapters/Mt19937Random.h"
 #include "adapters/ChronoClock.h"
@@ -21,7 +22,10 @@ namespace unool::adapters {
 	class LegacyServicesAdapter final {
 	public:
 		JsonConfigProvider config{};
-		JsonUserRepository users{};
+		// B+：UserDB 改为组合根显式构造。声明顺序必须早于 users，
+		// 因为 users 持有它的引用；全进程只有这一份账号数据。
+		UserDB db{};
+		JsonUserRepository users{ db };
 		Mt19937Random random{};
 		ChronoClock clock{};
 		FilesystemAssetCatalog assets{};

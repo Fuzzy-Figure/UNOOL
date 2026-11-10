@@ -29,11 +29,11 @@ namespace unool::application {
 		int points = 0;
 	};
 
-	// 用户数据出站端口。方法与原 UserDB::instance() 调用点一一对应。
+	// 用户数据出站端口。方法由 JsonUserRepository 转发到组合根注入的 UserDB 实例。
 	// 端口只用标准库类型：角色档位与皮肤品质以底层整数透传
 	// （与 Character::Level / Character::SkinQuality 数值一致），由适配器还原。
 	// 阶段 3 第九批补入 4 个账号方法（注册 / 登录 / 查重 / 扣积分），
-	// 使 AccountService 不再直接依赖 UserDB::instance()。
+	// 使 AccountService 不依赖具体存储实现。
 	class IUserRepository {
 	public:
 		virtual ~IUserRepository() = default;

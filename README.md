@@ -48,7 +48,7 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 核心模块：`GameLogic`（回合/座次/牌堆/技能触发）、`Player`（出牌摸牌与交互）、`Card`（牌堆与手牌容器）、`Skill` 系（技能框架）、`GameRenderer` / `ImageManager` / `TextManager`（客户端渲染）、`Socket`（网络封装）、`UserDB`（账号持久化）。
 
-头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。B+ 新增的 `contract/CharacterTypes.h` 与 `platform/Platform.h` 同样按 `$(SolutionDir)header` 解析，**无需新增包含目录**。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。四个分层包含目录已在 5 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
+头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。B+ 新增的 `contract/`（`CharacterTypes.h`、`TableConfig.h`）与 `platform/Platform.h` 同样按 `$(SolutionDir)header` 解析，**无需新增包含目录**。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。四个分层包含目录已在 5 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
 
 源文件同样按四层归置，与头文件目录一一对应；`.cpp` 之间不互相 include，故归位 `.cpp` 不需要新增包含目录、也不需要改任何 `#include`，只由各工程 `ClCompile` 的 `..\..\source\<层>\X.cpp` 路径定位。`pch.cpp`、`utils.cpp` 与两端入口 `ClientMain.cpp` / `ServerMain.cpp` 留在 `source/` 根。新增源文件时请放入对应层目录，并同时登记到编译它的工程 `ClCompile`（3 个 exe 还需同步 `.vcxproj.filters`）。
 
@@ -213,9 +213,25 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 组合根显式装配（三 exe 的 `main()` 均 `installServices`）、
 占位库与 `LegacyBundle.cpp` 删除、工程清单去重、验收清单换轴。
 
+**第二批（状态归属显式化，2026-11-10）**：
+- 口径修正：`MAX_PLAYERS = 2` 是「一桌两个座位」的**玩法规则**，不是「进程能开几桌」；
+  出牌、Ban/Pick、`1 - clientIdx` 对手判定、胜负结算都按两座位桌编写。把它改成运行期可变容量
+  等于改玩法，因此本批**不改它的值**，只把常量归属从 `utils.h` 全局环境移进
+  `header/contract/TableConfig.h` 的 `TableConfig::seatCount`（编译期常量，仍为 2）。
+- 已改：`AccountService` 的座位容量由组合根构造注入，用例服务不再读全局常量；
+  删除 `UserDB::instance()` 惰性单例，改由 `ServerMain` / `LegacyServicesAdapter` 显式构造，
+  `JsonUserRepository` 只持有引用；客户端控制台编码设置前移到服务组合构造之前
+  （`UserDB::load()` 会打印中文日志）；`tools/verify_structure.py` 增加对应不变量检查。
+- 刻意保留的全局状态（拆开反而错）：`IUserRepository` 账号积分跨桌共享、全进程一份；
+  `DomainServices` 的 config / assets / clock 与 `services()` 是进程级共享基础设施；
+  `Card` 牌池缓存、`Character::infos`、scoreboard 是只读常量或记忆化缓存；
+  `ShopScene` / `GameRenderer` / `ImageManager` 缓存只在客户端进程，与服务端开几桌无关。
+  真正支持多桌需要的是 N 个 `ServerNetwork` / `GameLogic` 实例并存 + 按桌分发连接与输入，
+  属于组合根与调度层的工作，不是「去全局常量」。
+
 **留待后续单独验收**（互不依赖，不阻塞本批）：
 ① 共享契约与 `Card` 值类型的彻底拆分（`GameState.h` 仍依赖 `Card.h`）；
-② 每桌实例状态 —— `MAX_PLAYERS = 2`、两槽位 `1 - id` 假设、进程级静态缓存（多桌立项时优先于任何分层动作）；
+② 多桌本身 —— `ServerMain` 单循环单桌改为 N 桌实例集合 + 连接 / 输入分发（立项时优先于任何分层动作）；
 ③ 212 处 `println` 与 33 处 `ask` 收口到决策 / 呈现接缝（CI 立项时才兑现价值）；
 ④ 安卓确定立项时把共享契约升为独立构建单元，并新增安卓外壳的平台实现。
 

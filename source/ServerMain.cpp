@@ -7,6 +7,8 @@
 #include "adapters/LegacyBlockingDecisionAdapter.h"
 #include "adapters/LegacyServicesAdapter.h"
 #include "adapters/NetworkServerView.h"
+#include "adapters/UserDB.h"
+#include "contract/TableConfig.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -132,11 +134,16 @@ int main() {
 	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
 	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
 	unool::adapters::JsonConfigProvider configService;
-	unool::adapters::JsonUserRepository userRepository;
+	// B+：账号数据由组合根显式构造，进程级共享一份；JsonUserRepository 只持有引用。
+	// 不要每桌各建一份 UserDB，否则积分与存档会分叉。
+	UserDB userDatabase;
+	unool::adapters::JsonUserRepository userRepository(userDatabase);
 	// W5 第一段：账号用例服务。ServerNetwork 实现 IAccountSession 端口，
 	// 注册 / 登录 / 查重 / 准备 / 积分消费经 AccountService 与 IUserRepository 完成。
+	// 座位容量由组合根显式注入，用例服务不再读取进程级全局常量。
 	// serverNetwork 在装配前只监听、未调用 update()，不存在「未装配」窗口。
-	unool::application::AccountService accountService(serverNetwork, userRepository);
+	unool::application::AccountService accountService(
+		serverNetwork, userRepository, unool::contract::TableConfig::seatCount);
 	serverNetwork.installAccountService(accountService);
 	// W5 第二段（分段第一段）：商城展示 / 技能描述 / 签到用例服务，
 	// 与账号服务共用 IAccountSession（由 ServerNetwork 实现）与 IUserRepository。

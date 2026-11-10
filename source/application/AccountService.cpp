@@ -6,11 +6,12 @@
 
 namespace unool::application {
 
-	AccountService::AccountService(IAccountSession& session, IUserRepository& users)
-		: session_(session), users_(users) {}
+	AccountService::AccountService(IAccountSession& session, IUserRepository& users,
+								   std::size_t seatCount)
+		: session_(session), users_(users), seatCount_(seatCount) {}
 
 	bool AccountService::spendPoints(std::size_t clientIdx, int amount) {
-		if (clientIdx >= unool::MAX_PLAYERS) return false;
+		if (clientIdx >= seatCount_) return false;
 		std::string username = session_.usernameOf(clientIdx);
 		if (!users_.trySpendPoints(username, amount)) return false;
 		session_.onPointsSpent(clientIdx, amount);
@@ -41,10 +42,13 @@ namespace unool::application {
 				session_.dropConnection(clientIdx);
 			}
 
-			// 检查另一端是否已用同一账号登录
+			// 检查另一端是否已用同一账号登录。
+			// B+：1 - clientIdx 是「两座位桌的对手槽位」这一玩法规则，不是可开桌数；
+			// 若将来改座位数，对手判定必须随玩法一起重定，不能只把它换成
+			// seatCount_ - 1 - clientIdx（那会假装支持 N 人桌而语义并不成立）。
 			if (ok) {
-				std::size_t other = 1 - clientIdx;
-				if (other < unool::MAX_PLAYERS
+				const std::size_t other = 1 - clientIdx;
+				if (other < seatCount_
 					&& session_.isLoggedIn(other)
 					&& session_.usernameOf(other) == req.username) {
 					ok = false;

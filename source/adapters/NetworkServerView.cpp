@@ -4,6 +4,7 @@
 #include "GameState.h"
 #include "Player.h"
 #include "utils.h"
+#include "contract/TableConfig.h"
 
 namespace unool::adapters {
 
@@ -15,7 +16,7 @@ namespace unool::adapters {
 	// 仅把 network 成员换成适配器持有的 network_、把 players 换成 getPlayers()。
 
 	void NetworkServerView::onState() {
-		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (!network_.isClientConnected(i)) continue;
 			GameState state = game_->get().packStateForPlayer(i);
 			bool ok = network_.sendGameStateToClient(i, state);

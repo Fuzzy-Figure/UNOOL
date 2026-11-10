@@ -10,7 +10,7 @@
   4. 源码里每个 #include "..." 都能在工程的包含目录中解析
   5. B+ 不变量：Core 的共享编译单元不含 Windows.h；
      协议头不直接 include Character.h；平台接口只在 exe 外壳实现
-  6. 已删除的占位库 / 死符号没有残留引用
+  6. 已删除的占位库 / 单例 / 全局容量常量没有残留引用；桌座位数仍为 2
 """
 import os
 import re
@@ -116,10 +116,17 @@ print('[5c] 平台头分布检查完成')
 all_text = ''
 for f in srcs:
     all_text += read_code(f)
-for sym in ('defaultBundle(', 'LegacyBundle'):
+for sym in ('defaultBundle(', 'LegacyBundle', 'UserDB::instance(', 'unool::MAX_PLAYERS'):
     if sym in all_text:
-        problems.append('已删除的默认组合仍有残留引用: %s' % sym)
-print('[6] 死符号残留检查完成')
+        problems.append('已删除的符号仍有残留引用: %s' % sym)
+
+# 一桌两个座位是玩法规则，不是可开桌数；改动它等于改玩法，需单独评审。
+table_cfg = 'header/contract/TableConfig.h'
+if not os.path.exists(table_cfg):
+    problems.append('缺少共享契约层桌配置: %s' % table_cfg)
+elif not re.search(r'seatCount\s*=\s*2\s*;', read_code(table_cfg)):
+    problems.append('桌配置 seatCount 不再是 2：这属于改玩法，需单独评审')
+print('[6] 死符号与桌配置检查完成')
 
 print('\n=== 问题清单 ===')
 if problems:

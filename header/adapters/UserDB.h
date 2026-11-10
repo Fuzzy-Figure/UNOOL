@@ -36,7 +36,10 @@ struct CheckinResult {
 
 class UserDB {
 public:
-	static UserDB& instance();
+	// B+：账号 / 积分是跨桌共享的持久状态，全进程只应存在一份。
+	// 原先的 instance() 惰性单例已移除，改由组合根显式构造、以引用注入所有使用者。
+	// 构造时机提前到 main()，但共享性不变；不要每桌各建一份，否则积分与存档会分叉。
+	UserDB() { load(); }
 
 	// 注册：成功返回 true；失败返回 false 并通过 errorMessage 输出原因
 	bool registerUser(const std::string& username, const std::string& password, std::string& errorMessage);
@@ -99,7 +102,6 @@ public:
 	CheckinResult checkin(const std::string& username);
 
 private:
-	UserDB() { load(); }
 	UserDB(const UserDB&) = delete;
 	UserDB& operator=(const UserDB&) = delete;
 

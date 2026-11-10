@@ -1,4 +1,5 @@
 #include "Socket.h"
+#include "contract/TableConfig.h"
 #include "AccountProtocol.h"
 #include <SFML/Network.hpp>
 #include "UserDB.h"
@@ -32,7 +33,7 @@ bool ServerNetwork::start(unsigned short port) {
 }
 
 void ServerNetwork::disconnect() {
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 		removeClient(i);
 	}
 	if (pendingSocket) {
@@ -50,7 +51,7 @@ void ServerNetwork::disconnect() {
 }
 
 void ServerNetwork::removeClient(std::size_t clientIndex) {
-	if (clientIndex >= unool::MAX_PLAYERS) return;
+	if (clientIndex >= unool::contract::TableConfig::seatCount) return;
 	if (clientSockets[clientIndex]) {
 		selector.remove(*clientSockets[clientIndex]);
 		clientSockets[clientIndex]->disconnect();
@@ -69,7 +70,7 @@ void ServerNetwork::removeClient(std::size_t clientIndex) {
 	if (matchInProgress) {
 		playerReady.fill(false);
 		sf::Packet packet = unool::protocol::makeMatchmakingCancelled(clientSlots_[clientIndex].username);
-		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (i != clientIndex && isClientLoggedIn(i)) sendPacketToClient(i, packet);
 		}
 		std::println("[ServerNetwork] {}掉线，匹配已解散并通知对手", clientSlots_[clientIndex].username);
@@ -88,7 +89,7 @@ std::size_t ServerNetwork::getClientCount() const {
 }
 
 bool ServerNetwork::isClientConnected(std::size_t clientIndex) const {
-	return clientIndex < unool::MAX_PLAYERS && clientSockets[clientIndex] != nullptr;
+	return clientIndex < unool::contract::TableConfig::seatCount && clientSockets[clientIndex] != nullptr;
 }
 
 bool ServerNetwork::isClientLoggedIn(std::size_t clientIndex) const {
@@ -148,7 +149,7 @@ void ServerNetwork::onLoginSucceeded(std::size_t clientIdx, const std::string& u
 	// 对手先点「开始游戏」、自己之后才登录 / 重连：补发一次匹配提示，
 	// 否则新登录的一方没收到当时那条广播，大厅里不会有任何提示。
 	if (!serverReady) {
-		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (i != clientIdx && playerReady[i] && isClientLoggedIn(i)) {
 				sf::Packet notice = unool::protocol::makeMatchmakingStarted(clientSlots_[i].username);
 				sendPacketToClient(clientIdx, notice);
@@ -192,7 +193,7 @@ void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
 	// 只发给其他已登录客户端；若对手尚未登录，由其 onLoginSucceeded 补发。
 	if (firstReady) {
 		sf::Packet notice = unool::protocol::makeMatchmakingStarted(clientSlots_[clientIdx].username);
-		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (i != clientIdx && isClientLoggedIn(i)) sendPacketToClient(i, notice);
 		}
 		std::println("[ServerNetwork] 已通知对手：{}开始匹配", clientSlots_[clientIdx].username);
@@ -215,7 +216,7 @@ void ServerNetwork::onCancelMatchmaking(std::size_t clientIdx) {
 	playerReady.fill(false);
 
 	sf::Packet packet = unool::protocol::makeMatchmakingCancelled(who);
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 		if (isClientLoggedIn(i)) sendPacketToClient(i, packet);
 	}
 	std::println("[ServerNetwork] {}退出匹配，已重置双方准备状态", who);
@@ -270,7 +271,7 @@ void ServerNetwork::handleNewConnections() {
 		if (listener->accept(*newSocket) == sf::Socket::Status::Done) {
 			//检查是否有 disconnected 槽位（等待重连）
 			bool hasDisconnectedSlot = false;
-			for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+			for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 				if (clientSlots_[i].disconnected) {
 					hasDisconnectedSlot = true;
 					break;
@@ -286,15 +287,15 @@ void ServerNetwork::handleNewConnections() {
 			}
 			else {
 				//无掉线槽位或 pendingSocket 已被占用：按原逻辑分配第一个空槽位
-				std::size_t newPlayerId = unool::MAX_PLAYERS;
-				for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+				std::size_t newPlayerId = unool::contract::TableConfig::seatCount;
+				for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 					if (!clientSockets[i]) {
 						newPlayerId = i;
 						break;
 					}
 				}
 
-				if (newPlayerId < unool::MAX_PLAYERS) {
+				if (newPlayerId < unool::contract::TableConfig::seatCount) {
 					newSocket->setBlocking(false);
 					selector.add(*newSocket);
 					clientSockets[newPlayerId] = std::move(newSocket);
@@ -321,7 +322,7 @@ void ServerNetwork::handleNewConnections() {
 }
 
 void ServerNetwork::handleClientPackets() {
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 		if (!clientSockets[i]) continue;
 
 		sf::TcpSocket& socket = *clientSockets[i];
@@ -391,15 +392,15 @@ void ServerNetwork::handlePendingSocket() {
 				&& msgType == static_cast<int>(MessageType::LoginRequest)
 				&& peek >> reqUsername >> reqPassword) {
 				//找匹配的 loggedIn 或 disconnected 槽位（同账号）
-				std::size_t targetIdx = unool::MAX_PLAYERS;
-				for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+				std::size_t targetIdx = unool::contract::TableConfig::seatCount;
+				for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 					if ((clientSlots_[i].loggedIn || clientSlots_[i].disconnected)
 						&& clientSlots_[i].username == reqUsername) {
 						targetIdx = i;
 						break;
 					}
 				}
-				if (targetIdx < unool::MAX_PLAYERS) {
+				if (targetIdx < unool::contract::TableConfig::seatCount) {
 					if (clientSlots_[targetIdx].loggedIn) {
 						//旧连接还活着：踢旧让新顶替
 						std::println("[ServerNetwork] 检测到重连意图：踢掉旧连接 {}（账号 {}），让新连接顶替",
@@ -414,14 +415,14 @@ void ServerNetwork::handlePendingSocket() {
 				}
 				else {
 					//没找到匹配的 loggedIn/disconnected 槽位：尝试找空槽位（非 disconnected）分配之
-					std::size_t emptyIdx = unool::MAX_PLAYERS;
-					for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+					std::size_t emptyIdx = unool::contract::TableConfig::seatCount;
+					for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 						if (!clientSockets[i] && !clientSlots_[i].disconnected) {
 							emptyIdx = i;
 							break;
 						}
 					}
-					if (emptyIdx < unool::MAX_PLAYERS) {
+					if (emptyIdx < unool::contract::TableConfig::seatCount) {
 						//有非 disconnected 的空槽位：分配之（覆盖首次登录新账号场景）
 						clientSockets[emptyIdx] = std::move(pendingSocket);
 						sendConnectionInfo(emptyIdx);
@@ -465,7 +466,7 @@ void ServerNetwork::sendHeartbeat() {
 		heartbeatClock.restart();
 		sf::Packet hb;
 		hb << static_cast<int>(MessageType::Heartbeat);
-		for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (isClientLoggedIn(i)) {
 				sendPacketToClient(i, hb);
 			}
@@ -475,7 +476,7 @@ void ServerNetwork::sendHeartbeat() {
 
 void ServerNetwork::checkTimeouts() {
 	//超时检测：loggedIn 客户端连续 3 秒未收到任何回包视为掉线
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 		if (isClientLoggedIn(i) && lastRecvClocks[i].getElapsedTime().asSeconds() >= 3.0f) {
 			std::println("[ServerNetwork] 客户端{}（账号 {}）已 3 秒未响应，判定为掉线，主动断开",
 						 i, clientSlots_[i].username);
@@ -601,7 +602,7 @@ bool ServerNetwork::clearPlayerChoice(std::size_t clientIndex) {
 
 bool ServerNetwork::sendPacketToAll(sf::Packet& packet) {
 	bool allOk = true;
-	for (std::size_t i = 0; i < unool::MAX_PLAYERS; ++i) {
+	for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 		if (clientSockets[i] && !sendPacketToClient(i, packet)) {
 			allOk = false;
 		}

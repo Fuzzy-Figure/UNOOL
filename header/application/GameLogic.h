@@ -13,6 +13,7 @@
 #include "Player.h"
 #include "GameState.h"
 #include "utils.h"
+#include "contract/TableConfig.h"
 #include "application/IDecisionPort.h"
 #include "application/IServerView.h"
 #include "application/Services.h"
@@ -43,7 +44,7 @@ private:
 	std::size_t gameCount = 0;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
-	std::array<bool, unool::MAX_PLAYERS> bonusCardUsed{};
+	std::array<bool, unool::contract::TableConfig::seatCount> bonusCardUsed{};
 #pragma endregion
 
 #pragma region 私有辅助方法

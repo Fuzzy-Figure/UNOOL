@@ -25,11 +25,6 @@ namespace {
 	}
 }
 
-UserDB& UserDB::instance() {
-	static UserDB instance;
-	return instance;
-}
-
 bool UserDB::registerUser(const std::string& username, const std::string& password, std::string& errorMessage) {
 	if (username.empty()) {
 		errorMessage = "用户名不能为空";

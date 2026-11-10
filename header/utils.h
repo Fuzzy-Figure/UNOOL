@@ -24,7 +24,9 @@ template<typename T>
 using opt_ref = std::optional<ref<T>>;
 
 namespace unool {
-	constexpr std::size_t MAX_PLAYERS = 2;
+	// B+：一桌的座位数已移入共享契约层 contract/TableConfig.h 的
+	// TableConfig::seatCount（每桌配置，不再放在进程级工具头里）。
+	// 需要容量判断的编译单元请显式包含该头；值仍为 2，玩法不变。
 
 	namespace paths {
 		// 当前可执行文件所在目录（绝对路径）。不依赖进程工作目录，
