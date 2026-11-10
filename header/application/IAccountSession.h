@@ -1,8 +1,8 @@
 #pragma once
 #include <cstddef>
 #include <string>
+#include "MessageType.h"
 
-namespace sf { class Packet; }
 
 namespace unool::application {
 
@@ -35,17 +35,20 @@ namespace unool::application {
 		// 「开始游戏」：置 playerReady、双方齐备且未开局时发 GameStart 并打印日志
 		virtual void onReadyToPlay(std::size_t clientIdx) = 0;
 
-		// 回送已编码的账号响应包
-		virtual void sendResponse(std::size_t clientIdx, sf::Packet& packet) = 0;
+	// 回送已编码的账号响应包（适配器按既有 AccountProtocol 线格式打包，Application 不接触 sf::Packet）
+	virtual void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
+									 const std::string& msg, int points, int wins, int losses) = 0;
+	virtual void sendCheckUsernameResponse(std::size_t clientIdx, bool exists) = 0;
 
 		// === 商城展示 / 签到用例（W5 第二段）===
 		// 把槽位积分同步为绝对值；与 onPointsSpent 的「减 amount」语义不同
 		// （签到返回签到后积分、商城购买返回购买后积分，都是全量值）。
 		virtual void onPointsChanged(std::size_t clientIdx, int points) = 0;
 
-		// 回送商城 / 技能描述 / 签到响应包，返回是否发送成功；
-		// 供 sendShopData 保持原 bool 返回值，其余调用点忽略返回值。
-		virtual bool sendPayload(std::size_t clientIdx, sf::Packet& packet) = 0;
+	// 回送商城 / 技能描述响应包：jsonPayload 为已序列化 JSON 字符串，消息号由适配器封装，
+	// 保持原 bool 返回值（调用点忽略）。签到响应字段较多，单独方法保证线格式一致。
+	virtual bool sendPayload(std::size_t clientIdx, MessageType type, const std::string& jsonPayload) = 0;
+	virtual void sendCheckinResponse(std::size_t clientIdx, const std::string& msg, bool ok, int points) = 0;
 
 		// === 购买决策用例（W5 第二段第二段）===
 		// 回送已序列化为 JSON 字符串的购买结果。MessageType::ShopResult 消息号

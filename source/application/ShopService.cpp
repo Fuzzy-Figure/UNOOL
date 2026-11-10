@@ -16,7 +16,6 @@
 #include <utility>
 
 #include <json.hpp>
-#include <SFML/Network.hpp>
 
 namespace unool::application {
 
@@ -117,18 +116,14 @@ namespace unool::application {
 			shopData.items.push_back(std::move(itemInfo));
 		}
 
-		// 序列化 ShopData 为 JSON 并通过 sf::Packet 发送
+		// 序列化 ShopData 为 JSON，交由适配器按既有线格式发包
 		nlohmann::json j = shopData;
 		std::string jsonStr = j.dump();
-
-		sf::Packet packet;
-		packet << static_cast<int>(MessageType::ShopData);
-		packet << jsonStr;
 
 		std::println("[ServerNetwork] 发送商城数据给客户端{}（账号 {}）：积分{}，角色{}个，道具{}个",
 					 clientIndex, username, shopData.points, shopData.characters.size(), shopData.items.size());
 
-		return session_.sendPayload(clientIndex, packet);
+		return session_.sendPayload(clientIndex, MessageType::ShopData, jsonStr);
 	}
 
 	void ShopService::handleSkillInfoRequest(std::size_t clientIndex, const std::string& requestData) {
@@ -153,10 +148,7 @@ namespace unool::application {
 		}
 
 		nlohmann::json j = resp;
-		sf::Packet packet;
-		packet << static_cast<int>(MessageType::SkillInfoResponse);
-		packet << j.dump();
-		session_.sendPayload(clientIndex, packet);
+		session_.sendPayload(clientIndex, MessageType::SkillInfoResponse, j.dump());
 	}
 
 	void ShopService::handleCheckin(std::size_t clientIndex) {
@@ -167,12 +159,7 @@ namespace unool::application {
 
 		const CheckinOutcome result = users_.checkin(username);
 
-		sf::Packet packet;
-		packet << static_cast<int>(MessageType::CheckinResponse);
-		packet << result.msg;
-		packet << result.ok;
-		packet << result.points;
-		session_.sendPayload(clientIndex, packet);
+		session_.sendCheckinResponse(clientIndex, result.msg, result.ok, result.points);
 
 		//同步积分
 		session_.onPointsChanged(clientIndex, result.points);

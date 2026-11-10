@@ -1,8 +1,7 @@
 #pragma once
 #include <cstddef>
 #include "MessageType.h"
-
-namespace sf { class Packet; }
+#include "AccountProtocol.h"
 
 namespace unool::application {
 
@@ -19,7 +18,7 @@ namespace unool::application {
 	public:
 		AccountService(IAccountSession& session, IUserRepository& users);
 
-		void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
+		void handleAccountRequest(std::size_t clientIdx, MessageType type, const AccountProtocol::AccountRequest& req);
 		bool spendPoints(std::size_t clientIdx, int amount);
 
 	private:

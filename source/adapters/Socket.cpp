@@ -151,8 +151,15 @@ void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
 	}
 }
 
-void ServerNetwork::sendResponse(std::size_t clientIdx, sf::Packet& packet) {
-	sendPacketToClient(clientIdx, packet);
+void ServerNetwork::sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
+									 const std::string& msg, int points, int wins, int losses) {
+	sf::Packet p = AccountProtocol::makeAccountResponse(type, ok, msg, points, wins, losses);
+	sendPacketToClient(clientIdx, p);
+}
+
+void ServerNetwork::sendCheckUsernameResponse(std::size_t clientIdx, bool exists) {
+	sf::Packet p = AccountProtocol::makeCheckUsernameResponse(exists);
+	sendPacketToClient(clientIdx, p);
 }
 
 // === W5 第二段（分段第一段）：商城展示 / 签到用例的会话端口实现 ===
@@ -161,8 +168,20 @@ void ServerNetwork::onPointsChanged(std::size_t clientIdx, int points) {
 	clientSlots_[clientIdx].points = points;
 }
 
-bool ServerNetwork::sendPayload(std::size_t clientIdx, sf::Packet& packet) {
+bool ServerNetwork::sendPayload(std::size_t clientIdx, MessageType type, const std::string& jsonPayload) {
+	sf::Packet packet;
+	packet << static_cast<int>(type);
+	packet << jsonPayload;
 	return sendPacketToClient(clientIdx, packet);
+}
+
+void ServerNetwork::sendCheckinResponse(std::size_t clientIdx, const std::string& msg, bool ok, int points) {
+	sf::Packet packet;
+	packet << static_cast<int>(MessageType::CheckinResponse);
+	packet << msg;
+	packet << ok;
+	packet << points;
+	sendPacketToClient(clientIdx, packet);
 }
 
 void ServerNetwork::update() {
@@ -395,10 +414,14 @@ void ServerNetwork::checkTimeouts() {
 }
 
 void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet) {
-	// W5 第一段：业务判断已平移到 AccountService；此处保留原调用点的薄转发，
-	// 使 handleClientPackets / handlePendingSocket 三处调用与对外接口不变。
+	// W5 第一段：业务判断已平移到 AccountService；此处先按原逻辑跳过开头的消息号、
+	// 用 AccountProtocol 解析请求，再把领域请求对象转交服务，对外接口不变。
 	if (!accountService_) return;
-	accountService_->get().handleAccountPacket(clientIdx, type, std::move(packet));
+	int discardedMsgType;
+	packet >> discardedMsgType;
+	auto req = AccountProtocol::parseAccountRequest(packet);
+	if (!req) return;
+	accountService_->get().handleAccountRequest(clientIdx, type, *req);
 }
 
 std::optional<ClientInput> ServerNetwork::receiveClientInput() {

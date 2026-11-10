@@ -139,10 +139,13 @@ public:
 						  int points, int wins, int losses) override;
 	void onPointsSpent(std::size_t clientIdx, int amount) override;
 	void onReadyToPlay(std::size_t clientIdx) override;
-	void sendResponse(std::size_t clientIdx, sf::Packet& packet) override;
+	void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
+							const std::string& msg, int points, int wins, int losses) override;
+	void sendCheckUsernameResponse(std::size_t clientIdx, bool exists) override;
 	// W5 第二段：绝对值积分同步与可判成败的响应包发送
 	void onPointsChanged(std::size_t clientIdx, int points) override;
-	bool sendPayload(std::size_t clientIdx, sf::Packet& packet) override;
+	bool sendPayload(std::size_t clientIdx, MessageType type, const std::string& jsonPayload) override;
+	void sendCheckinResponse(std::size_t clientIdx, const std::string& msg, bool ok, int points) override;
 	// W5 第二段第二段：购买结果回送（IAccountSession 端口实现）。
 	// 实现体保留原 7 行纯传输逻辑（连接早退 + MessageType::ShopResult + JSON 字符串）。
 	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson) override;

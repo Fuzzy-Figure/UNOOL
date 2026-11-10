@@ -2986,3 +2986,36 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 ### 56.6 提交闭环
 
 用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **11 个文件**（2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入。已提交 `37cd2ae`（11 文件，+149 / −31，工作区干净）。阶段 4 客户端装配（S1 组合根 / S2 收包 / S3a 端口 / S3b1 类型解耦 / S3b2 协议上移 / S3c 商城纯 View / S4 输入适配）至此全收官；剩余阶段 5 `IGameCommands` 零引用骨架（已满足），六边形重构方案整体收尾。任务 #73（52.8 / 49.7 运行时与线上字节回归）**已通过（2026-11-10 用户按 `docs/UNOOL_运行时回归核对清单.md` 实跑确认，全部分区绿灯；核对清单一并入库）**。
+
+### 57. Domain 净化 Tier 1（路线 B/C 推荐子集）
+
+**背景**：阶段 4 收官后，按用户要求评估 Domain 净化（路线 B/C）。核查发现 4 处真实 SFML 耦合（`Card.h` 序列化运算符、`IAccountSession.h` 端口收 `sf::Packet&`、`AccountService`/`ShopService` 直接 `sf::Packet` 打包解析），以及 Domain↔Application 循环依赖死结（domain `.cpp` 普遍 `#include "GameLogic.h"`/`application/Services.h`）。据此给出三档：Tier 0（utils 归位、近零风险）、Tier 1（SFML 解耦不拆库、推荐）、Tier 2（完整 B/C 库拆分、含破环、高风险）。用户确认 **Tier 1**。
+
+**57.1 范围与口径（①A+②A+③A）**
+- ①A：4 个耦合点中只做 spots 2/3/4（应用层去除 `sf::Packet`）；spot 1（`Card.h` 序列化运算符）刻意 deferred——需解决 `Hand` 私有成员访问，属更侵扰子步，留作独立批次。
+- ②A：把"打包/解析"彻底留在 adapter + protocol 层，应用层只传领域数据；端口类型从 `sf::Packet&` 改为结构化入参（`sendAccountResponse(type,ok,msg,pts,w,l)` / `sendCheckUsernameResponse(exists)` / `sendPayload(type,json)` / `sendCheckinResponse(msg,ok,pts)` / `handleAccountRequest(const AccountProtocol::AccountRequest&)`）。
+- ③A：代码 + 文档单批提交，不拆库（Core 仍编译这些单元）。
+
+**57.2 改动文件（6 个）**
+- `header/application/IAccountSession.h`：删 `namespace sf{class Packet;}` 前向声明，端口方法结构化；加 `#include "MessageType.h"`。
+- `header/application/AccountService.h` / `source/application/AccountService.cpp`：`handleAccountPacket(sf::Packet)` → `handleAccountRequest(const AccountProtocol::AccountRequest&)`；去 `<SFML/Network.hpp>`；内部直接调结构化端口方法。
+- `source/application/ShopService.cpp`：删 `<SFML/Network.hpp>`；`ShopData`/`SkillInfoResponse`/`CheckinResponse` 三处改传 JSON/字段，不再 `sf::Packet packet;`。
+- `header/adapters/Socket.h` / `source/adapters/Socket.cpp`：`ServerNetwork` 重写实现——入站先 `parseAccountRequest` 再转交领域对象；出站用既有 `AccountProtocol::make*` 复刻线格式发包（局部 `sf::Packet p` 规避临时对象传非 const 引用）。
+
+**57.3 等价性证据（对外零变化 + 字节逐字）**
+- 出站响应全部由 `ServerNetwork` 调用原 `AccountProtocol::makeAccountResponse` / `makeCheckUsernameResponse` 或按 `packet << (int)type << json` / `<< msg << ok << points` 原样打包，与重构前 `AccountService`/`ShopService` 内打包语句逐字节等价；入站跳过 msgType + `parseAccountRequest` 与原逻辑一致。
+- 应用层（header/application + source/application）已无任何 `sf::Packet` 真实引用（仅 2 处注释提及）。
+
+**57.4 编译与回归**
+- 首编暴露 5 处错误：① `IAccountSession.h` 缺 `MessageType.h`；② `AccountService` 漏 `AccountProtocol::` 命名空间限定；③④ `Socket.cpp` 临时对象传 `sendPacketToClient(sf::Packet&)` 非 const 引用；⑤ 上述级联误报。已修复（`git diff --check` 干净、未限定 `AccountRequest` 清零、全部 `sendPacketToClient` 调用点传局部变量）。
+- 用户本地 `Debug|x64` / `Release|x64` Rebuild 通过；随后按 `docs/UNOOL_运行时回归核对清单.md` 重跑，登录链路 / 商城三响应 / 签到全绿。已提交 `（提交号见 git log）`。
+
+**57.5 Tier 0 评估结论：不需要做**
+- `utils.h` 为纯 STL 头（无 SFML、无项目层 include），但被 24 个文件 `#include`；`utils.cpp` 含 `#include "application/Services.h"`，语义上属于 **application 层**而非 domain 层。
+- 若按原 Tier 0 描述"归位到 `domain/`"，会使 `domain/` 文件依赖 `application/Services.h` —— 即 domain→application **向上依赖**，正好是 Tier 1 刻意规避的循环依赖死结方向，属分层**倒退**。
+- 即便改归位到 `application/`，也只是目录对称性的纯 cosmetic 改动，需更新 24 处 `#include` + 双 vcxproj/filters 登记，对"对外行为 / 依赖 / SFML 暴露"零改善。
+- 综上，Tier 1 已达成 B/C 路线实质目标（Application/Domain 零 SFML 类型），Tier 0 无必要；如仅追求目录整洁可另议，但非阻塞项。
+
+**57.6 路线 B/C 状态**
+- Tier 1（SFML 解耦）：✅ 完成。
+- Tier 2（完整库拆分：破 Domain↔Application 环 + 建 Domain/Application .lib）：仍属可选/排除项，仅在用户确认要"真·六边形"纯度时再做，需先解 `GameLogic.h`/`Services.h` 向上引用死结。
