@@ -505,12 +505,12 @@ void ShopScene::setPurchaseMsg(const std::string& msg) {
 	msgActive = true;
 }
 
-bool ShopScene::affordable(std::optional<Character::price_t> price) const {
+bool ShopScene::affordable(Character::price_t price) const {
 	return price.has_value() && shopData.points >= 0
-		&& static_cast<Character::price_t>(shopData.points) >= *price;
+		&& static_cast<std::size_t>(shopData.points) >= *price;
 }
 
-sf::Color ShopScene::stateColor(bool unlocked, std::optional<Character::price_t> price, bool canAfford) {
+sf::Color ShopScene::stateColor(bool unlocked, Character::price_t price, bool canAfford) {
 	if (unlocked) return sf::Color::Green;
 	if (!price.has_value()) return sf::Color(170, 170, 170);
 	return canAfford ? sf::Color::Yellow : sf::Color::Red;
@@ -778,7 +778,7 @@ void ShopScene::renderItemView() {
 		const std::string line = std::format("{}  (当前数量：{})", item.name, item.count);
 		textMgr.displayText(line, { boxPos.x + 16.f, y + 6.f }, { 22, 44 }, stateCol);
 
-		const std::string priceStr = std::format("售价 {}", item.price);
+		const std::string priceStr = std::format("售价 {}", item.price.value_or(0));
 		textMgr.displayText(priceStr, { boxPos.x + listW - 170.f, y + 6.f }, { 20, 40 }, stateCol);
 	}
 }
@@ -861,7 +861,7 @@ void ShopScene::renderItemDetailPanel() {
 
 	// 数量 / 售价分两行，避免长文案超出面板宽度；第二行只有服务端下发了
 	// 购买上限的道具才有内容，但位置固定占位，保证各道具「效果说明」起始高度一致。
-	textMgr.displayText(std::format("当前数量：{}    售价 {}", item.count, item.price),
+	textMgr.displayText(std::format("当前数量：{}    售价 {}", item.count, item.price.value_or(0)),
 	                    { textX, textY }, { 20, 40 }, sf::Color(190, 200, 220));
 	textY += 44.f;
 	if (presentation.maxCount.has_value()) {

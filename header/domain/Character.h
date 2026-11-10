@@ -18,8 +18,9 @@ class Character {
 #pragma region 类型定义
 public:
 	using hp_t = int;
-	//价格类型：不可购买统一用 std::optional<price_t> 的 nullopt 表示
-	using price_t = std::size_t;
+	// 价格类型自带「不可购买」语义：std::nullopt 表示不可购买（S 档角色、饮料限定皮肤等），
+	// 因此各处价格统一用 price_t，不再额外套一层 std::optional
+	using price_t = std::optional<std::size_t>;
 
 	enum class Level { F, D, C, B, A, S };
 	//皮肤品质
@@ -114,13 +115,13 @@ public:
 	// 获取皮肤品质（根据角色名和皮肤名）
 	static SkinQuality getSkinQuality(const std::string& charName, const std::string& skinName);
 	// 获取皮肤售价（不可购买返回 std::nullopt）
-	static std::optional<price_t> getSkinPrice(const std::string& charName, const std::string& skinName);
+	static price_t getSkinPrice(const std::string& charName, const std::string& skinName);
 	// 获取皮肤品质售价（不可购买返回 std::nullopt）
-	static std::optional<price_t> getSkinPriceByQuality(SkinQuality quality);
+	static price_t getSkinPriceByQuality(SkinQuality quality);
 	// 皮肤品质转中文字符串
 	static std::string to_string(SkinQuality quality);
 	// 获取角色售价（按等级和角色名；不可购买/不存在返回 std::nullopt）
-	static std::optional<price_t> getCharacterPrice(const std::string& name);
+	static price_t getCharacterPrice(const std::string& name);
 #pragma endregion
 
 #pragma region 技能管理

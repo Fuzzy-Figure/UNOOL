@@ -339,7 +339,7 @@ Character::SkinQuality Character::getSkinQuality(const std::string& charName, co
 	return SkinQuality::normal;
 }
 
-std::optional<Character::price_t> Character::getSkinPriceByQuality(SkinQuality quality) {
+Character::price_t Character::getSkinPriceByQuality(SkinQuality quality) {
 	switch (quality) {
 		case SkinQuality::normal:  return 8;
 		case SkinQuality::fine:    return 28;
@@ -351,7 +351,7 @@ std::optional<Character::price_t> Character::getSkinPriceByQuality(SkinQuality q
 	}
 }
 
-std::optional<Character::price_t> Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
+Character::price_t Character::getSkinPrice(const std::string& charName, const std::string& skinName) {
 	return getSkinPriceByQuality(getSkinQuality(charName, skinName));
 }
 
@@ -368,7 +368,7 @@ std::string Character::to_string(SkinQuality quality) {
 }
 
 // ---- 角色售价 ----
-std::optional<Character::price_t> Character::getCharacterPrice(const std::string& name) {
+Character::price_t Character::getCharacterPrice(const std::string& name) {
 	auto it = infos.find(name);
 	if (it == infos.end()) return std::nullopt;	//角色不存在
 	const Level lv = it->second.level;

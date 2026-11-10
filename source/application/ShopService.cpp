@@ -68,7 +68,7 @@ namespace unool::application {
 			charInfo.price = Character::getCharacterPrice(name);
 			// S 档角色：集齐 ABCDF 后售价 488，否则不可购买（nullopt）
 			if (info.level == Character::Level::S && allNonSCollected) {
-				charInfo.price = static_cast<Character::price_t>(488);
+				charInfo.price = 488;
 			}
 
 			// 获取皮肤列表，跳过"默认"皮肤
@@ -103,8 +103,8 @@ namespace unool::application {
 			itemInfo.name = "选将扩充卡";
 			itemInfo.count = users_.getItemCount(username, "选将扩充卡");
 			itemInfo.price = (itemInfo.count < kExpandCardMaxCount)
-				? static_cast<Character::price_t>(88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2)
-				: Character::price_t{ 0 };
+				? static_cast<std::size_t>(88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2)
+				: std::size_t{ 0 };
 			itemInfo.available = itemInfo.count < kExpandCardMaxCount;
 			itemInfo.description = std::string(itemDescription(itemInfo.name));
 			itemInfo.maxCount = itemMaxCount(itemInfo.name);
@@ -238,7 +238,7 @@ namespace unool::application {
 			const bool isSRank = (charIt != Character::infos.end()
 								 && charIt->second.level == Character::Level::S);
 
-			std::optional<Character::price_t> price;
+			Character::price_t price;
 			if (isSRank) {
 				// S 档角色：需集齐 ABCDF 所有角色，售价 488
 				if (users_.hasAllNonSRank(username)) {
@@ -281,7 +281,7 @@ namespace unool::application {
 			}
 		}
 		else if (req.type == ShopRequestType::Skin) {
-			const std::optional<Character::price_t> price = Character::getSkinPrice(req.charName, req.skinName);
+			const Character::price_t price = Character::getSkinPrice(req.charName, req.skinName);
 			if (!price.has_value()) {
 				errMsg = "该皮肤不可购买";
 			}
