@@ -63,6 +63,11 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\adapters\InputAdapter.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\pch.h" />
@@ -94,6 +99,7 @@
     <ClInclude Include="..\..\header\adapters\PacketDispatcher.h" />
     <ClInclude Include="..\..\header\adapters\IClientGateway.h" />
     <ClInclude Include="..\..\header\adapters\IShopOpener.h" />
+    <ClInclude Include="..\..\header\adapters\InputAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\client_config.json" />

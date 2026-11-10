@@ -2944,4 +2944,45 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 
 ### 55.7 提交闭环
 
-用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **14 个文件**（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆 —— `ShopProtocol.h` / `ShopProtocol.cpp` 2 新增 + `ShopScene.h` / `ShopScene.cpp`、4 个 `.vcxproj`、3 个 `.filters` 共 9 修改 + 方案第 55 节 / README / 工作记忆 3 个文档修改）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入本次提交。编译中 `ShopScene.cpp:48` 把 `makeSkillInfoRequestPacket` 的临时返回值直接传给 `send(sf::Packet&)` 非 const 引用触发 `C2664`，已局部变量化（`sf::Packet req = ...; net.send(req);`，接口签名对齐 SFML `Socket::send`、其余调用点本就是局部变量）修复。之后按 46.4 顺序推进 **S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。提交号随本提交记录、由下批文档回填（git log 可见）。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案（"购买成功" / "积分不足！" / "商城数据解析失败" / "购买结果解析失败"）。
+用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **14 个文件**（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆 —— `ShopProtocol.h` / `ShopProtocol.cpp` 2 新增 + `ShopScene.h` / `ShopScene.cpp`、4 个 `.vcxproj`、3 个 `.filters` 共 9 修改 + 方案第 55 节 / README / 工作记忆 3 个文档修改）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入本次提交。编译中 `ShopScene.cpp:48` 把 `makeSkillInfoRequestPacket` 的临时返回值直接传给 `send(sf::Packet&)` 非 const 引用触发 `C2664`，已局部变量化（`sf::Packet req = ...; net.send(req);`，接口签名对齐 SFML `Socket::send`、其余调用点本就是局部变量）修复。之后按 46.4 顺序推进 **S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。已提交 `6fd96e9`（14 文件，+200 / −46，工作区干净）。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案（"购买成功" / "积分不足！" / "商城数据解析失败" / "购买结果解析失败"）。
+
+## 56. 第二十五批 S4 `InputAdapter`：输入循环提取为适配器（2026-11-10，口径 ①A + ②A + ③A）
+
+第二十四批提交 `6fd96e9` 后，按 46.4 做只读评估 `ClientApp::gamePhase()` 的事件 `for` 循环（第 85–112 行，全工程唯一 `pollEvent` 消费点），用户一次点选 **①A + ②A + ③A**（与 53.9 / 55.3 同构）。本批零未确认前不写代码；确认后直接开工，改完由用户本地 Rebuild 验证。
+
+### 56.1 口径（①A + ②A + ③A）
+
+- **①A 提取范围**：把 `gamePhase` 第 85–112 行整个事件循环原样搬入 `InputAdapter::pollAndDispatch()`（返回 `bool`，`Closed` 时 `return false`），`gamePhase` 以 `unool::adapters::InputAdapter input(net, renderer); if (!input.pollAndDispatch()) return;` 取代；`GameRenderer` 公开方法面不变、零行为变化。
+- **②A 依赖边界**：持 `ClientNetwork&`（与 `ShopOpener` 同构）、具体类落 `adapters/`，不新增端口接口（`sendClientInput` 是 `ClientNetwork` 专属方法，不在 `IClientGateway` 端口内，见 `Socket.h:180`）。
+- **③A 文件与提交**：新增 `header/adapters/InputAdapter.h` + `source/adapters/InputAdapter.cpp`（同 `ClientApp.cpp` 编译进 Client1 / Client2，用 `pch.h`），Client1 / Client2 的 `.vcxproj` + `.filters` 与 `UNOOL.Adapters` 的 `.vcxproj` 补登记；代码 + 文档一并单批提交。
+
+### 56.2 改动清单（11 个文件：2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆）
+
+| 类别 | 文件 |
+|---|---|
+| 新增 | `header/adapters/InputAdapter.h`、`source/adapters/InputAdapter.cpp` |
+| 修改·代码 | `source/adapters/ClientApp.cpp`（`gamePhase` 删事件循环、改调 `InputAdapter`） |
+| 修改·工程 | `Client1.vcxproj` / `Client1.vcxproj.filters` / `Client2.vcxproj` / `Client2.vcxproj.filters`（登记 `InputAdapter.cpp` ClCompile `pch.h` + `InputAdapter.h` ClInclude）、`UNOOL.Adapters.vcxproj`（登记 `InputAdapter.h` ClInclude） |
+| 修改·文档 | 方案第 56 节 / README / 工作记忆 |
+
+### 56.3 逐段等价性证据（对外零变化）
+
+- **线上字节逐字一致**：`ClientInput.key` 字节由 `ClientNetwork::sendClientInput`（`Socket.cpp:617`：`packet << static_cast<int>(key) << playerId << selectedIndex`，其中 `key = keyEvent->scancode`）产生；提取后该行**原样不动**，故 `ClientInput.key` 线上字节逐字一致。
+- **事件分支平移**：`Closed → renderer.closeWindow(); return false`、`KeyPressed` 且 `canSelectLocal()` 时 `Left`/`A` → `movePointerLeft`、`Right`/`D` → `movePointerRight`、其他键 → `net.sendClientInput(sc, renderer.getSelectedIndex(net.getPlayerId()))`、`MouseButtonPressed` + `Left` → `renderer.handleMouseClick(static_cast<sf::Vector2f>(position))`，逻辑与判定全部逐字对应。
+- **时序不变**：该循环原本是 `gamePhase` 每帧首条语句，重构后每帧仍只 `pollAndDispatch()` 一次；`Closed` 退出语义由 `return false` 驱动、与原 `return` 等价。
+- **`sf::Clock` / `restart()` 与输入无关**，留 `gamePhase` 不动。
+
+### 56.4 层与工程条目取舍
+
+`InputAdapter.cpp` 同 `ClientApp.cpp` 编译进 **Client1 / Client2**（不在共享库），用 `pch.h`；`.h` 登记面同 `ClientApp.h`（5 处：`UNOOL.Adapters` + Client1/Client2 的 `.vcxproj` + `.filters`）。`ClInclude` 仅 IDE 显示、不改编译集合；无新静态库 / `ProjectReference` / 包含目录 / 链接项变更。
+
+### 56.5 静态验证（助手侧只读，未本地编译）
+
+- 5 个 `.vcxproj` / `.filters` 全量 `[xml]` 解析成功；`InputAdapter` 在 5 个工程文件登记引用、双客户端条目集合 diff 0。
+- `git diff --check` 干净；11 个文件统一 UTF-8 无 BOM + CRLF（`.filters` 保留 BOM）。
+- 主动修掉编译隐患：`gamePhase` 处于全局命名空间而 `InputAdapter` 在 `unool::adapters` 内，未限定会报「未声明」，已显式 `unool::adapters::InputAdapter`（与同文件 `PacketDispatcher` 写法一致）。
+- 编译能力再确认：PowerShell + `dangerouslyDisableSandbox: true` 调用 MSBuild 仍被命令行静态校验黑名单拦截，助手按安全规则未换等价命令重试；编译由用户本地执行。
+
+### 56.6 提交闭环
+
+用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **11 个文件**（2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入。已提交闭环（提交号见 git log）。阶段 4 客户端装配（S1 组合根 / S2 收包 / S3a 端口 / S3b1 类型解耦 / S3b2 协议上移 / S3c 商城纯 View / S4 输入适配）至此全收官；剩余阶段 5 `IGameCommands` 零引用骨架（已满足），六边形重构方案整体收尾。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案。

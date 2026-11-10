@@ -42,6 +42,9 @@
     <ClCompile Include="..\..\source\adapters\PacketDispatcher.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\adapters\InputAdapter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\header\protocol\AccountEvent.h">
@@ -129,6 +132,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\adapters\IShopOpener.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\adapters\InputAdapter.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

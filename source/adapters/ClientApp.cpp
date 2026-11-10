@@ -6,6 +6,7 @@
 #include "ShopScene.h"
 #include "Socket.h"
 #include "adapters/IShopOpener.h"
+#include "adapters/InputAdapter.h"
 #include "utils.h"
 #include "adapters/JsonConfig.h"
 #include "AccountProtocol.h"
@@ -79,37 +80,11 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::string& titleBrackets) {
 	renderer.setLocalPlayerId(net.getPlayerId());
 	sf::Clock clock;
+	unool::adapters::InputAdapter input(net, renderer);
 	while (renderer.windowIsOpen()) {
 		sf::Time elapsed = clock.restart();
 
-		for (auto event = renderer.pollEvent(); event; event = renderer.pollEvent()) {
-			if (event->is<sf::Event::Closed>()) {
-				renderer.closeWindow();
-				return;
-			}
-			if (event->is<sf::Event::KeyPressed>()) {
-				auto keyEvent = event->getIf<sf::Event::KeyPressed>();
-				if (keyEvent) {
-					auto sc = keyEvent->scancode;
-					if (renderer.canSelectLocal() && (sc == sf::Keyboard::Scancode::Left || sc == sf::Keyboard::Scancode::A)) {
-						renderer.movePointerLeft(net.getPlayerId());
-					}
-					else if (renderer.canSelectLocal() && (sc == sf::Keyboard::Scancode::Right || sc == sf::Keyboard::Scancode::D)) {
-						renderer.movePointerRight(net.getPlayerId());
-					}
-					else {
-						net.sendClientInput(sc, renderer.getSelectedIndex(net.getPlayerId()));
-					}
-				}
-			}
-			if (event->is<sf::Event::MouseButtonPressed>()) {
-				auto mouseEvent = event->getIf<sf::Event::MouseButtonPressed>();
-				if (mouseEvent && mouseEvent->button == sf::Mouse::Button::Left) {
-					sf::Vector2f mousePos = static_cast<sf::Vector2f>(mouseEvent->position);
-					renderer.handleMouseClick(mousePos);
-				}
-			}
-		}
+		if (!input.pollAndDispatch()) return;
 
 		net.update();
 
