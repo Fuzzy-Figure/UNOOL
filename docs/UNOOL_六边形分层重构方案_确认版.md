@@ -2944,7 +2944,7 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 
 ### 55.7 提交闭环
 
-用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **14 个文件**（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆 —— `ShopProtocol.h` / `ShopProtocol.cpp` 2 新增 + `ShopScene.h` / `ShopScene.cpp`、4 个 `.vcxproj`、3 个 `.filters` 共 9 修改 + 方案第 55 节 / README / 工作记忆 3 个文档修改）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入本次提交。编译中 `ShopScene.cpp:48` 把 `makeSkillInfoRequestPacket` 的临时返回值直接传给 `send(sf::Packet&)` 非 const 引用触发 `C2664`，已局部变量化（`sf::Packet req = ...; net.send(req);`，接口签名对齐 SFML `Socket::send`、其余调用点本就是局部变量）修复。之后按 46.4 顺序推进 **S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。已提交 `6fd96e9`（14 文件，+200 / −46，工作区干净）。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案（"购买成功" / "积分不足！" / "商城数据解析失败" / "购买结果解析失败"）。
+用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **14 个文件**（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆 —— `ShopProtocol.h` / `ShopProtocol.cpp` 2 新增 + `ShopScene.h` / `ShopScene.cpp`、4 个 `.vcxproj`、3 个 `.filters` 共 9 修改 + 方案第 55 节 / README / 工作记忆 3 个文档修改）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入本次提交。编译中 `ShopScene.cpp:48` 把 `makeSkillInfoRequestPacket` 的临时返回值直接传给 `send(sf::Packet&)` 非 const 引用触发 `C2664`，已局部变量化（`sf::Packet req = ...; net.send(req);`，接口签名对齐 SFML `Socket::send`、其余调用点本就是局部变量）修复。之后按 46.4 顺序推进 **S4 `InputAdapter`**，`ClientInput.key` 字节仍逐字不动。已提交 `6fd96e9`（14 文件，+200 / −46，工作区干净）。任务 #73（52.8 / 49.7 运行时与线上字节回归）**已通过（2026-11-10 用户按 `docs/UNOOL_运行时回归核对清单.md` 实跑确认，全部分区绿灯；核对清单一并入库）**。
 
 ## 56. 第二十五批 S4 `InputAdapter`：输入循环提取为适配器（2026-11-10，口径 ①A + ②A + ③A）
 
@@ -2985,4 +2985,4 @@ Filtered 重载「非订阅包 peek 不消费、留给 `gamePhase`」；心跳�
 
 ### 56.6 提交闭环
 
-用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **11 个文件**（2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入。已提交 `37cd2ae`（11 文件，+149 / −31，工作区干净）。阶段 4 客户端装配（S1 组合根 / S2 收包 / S3a 端口 / S3b1 类型解耦 / S3b2 协议上移 / S3c 商城纯 View / S4 输入适配）至此全收官；剩余阶段 5 `IGameCommands` 零引用骨架（已满足），六边形重构方案整体收尾。任务 #73（52.8 / 49.7 运行时与线上字节回归）仍 pending：跨阶段留包、三处心跳与 3 秒超时、商城数据刷新时序、技能描述缓存命中 / 补请求、`pendingSkills` 去重、购买结果提示文案。
+用户本地 `Debug|x64` / `Release|x64` Rebuild 编译通过后，由助手生成结构化提交消息、提交 **11 个文件**（2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆）；`UNOOL.slnx` 本批未改、按用户 21:59 口径不纳入。已提交 `37cd2ae`（11 文件，+149 / −31，工作区干净）。阶段 4 客户端装配（S1 组合根 / S2 收包 / S3a 端口 / S3b1 类型解耦 / S3b2 协议上移 / S3c 商城纯 View / S4 输入适配）至此全收官；剩余阶段 5 `IGameCommands` 零引用骨架（已满足），六边形重构方案整体收尾。任务 #73（52.8 / 49.7 运行时与线上字节回归）**已通过（2026-11-10 用户按 `docs/UNOOL_运行时回归核对清单.md` 实跑确认，全部分区绿灯；核对清单一并入库）**。
