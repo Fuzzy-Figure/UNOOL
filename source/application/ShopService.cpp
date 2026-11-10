@@ -13,11 +13,31 @@
 #include <print>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <json.hpp>
 
 namespace unool::application {
+
+	namespace {
+		// 道具展示元数据由服务端统管，随 ShopData 下发给客户端（客户端只缓存、不内置文案）。
+		// 购买上限同时用于本处的售价 / 可购买性计算，保证两处口径一致。
+		constexpr int kExpandCardMaxCount = 5;
+
+		std::string_view itemDescription(std::string_view name) {
+			if (name == "选将扩充卡") return "购买后选将环节可选英雄数量+1，至多购买五次";
+			if (name == "增分卡")     return "游戏前使用，若本场胜利则获得积分翻倍，可与满血翻倍叠加";
+			if (name == "不死图腾")   return "游戏前使用，使用后本场游戏首次受到致命伤害时，消耗道具使体力值至少保留1点，消耗后若未触发道具不会返还";
+			if (name == "炸弹卡")     return "在对局中按B使用，对一名其他角色造成5点伤害";
+			return {};
+		}
+
+		std::optional<int> itemMaxCount(std::string_view name) {
+			if (name == "选将扩充卡") return kExpandCardMaxCount;
+			return std::nullopt;
+		}
+	}
 
 	ShopService::ShopService(IAccountSession& session, IUserRepository& users)
 		: session_(session), users_(users) {}
@@ -82,8 +102,12 @@ namespace unool::application {
 			ShopItemInfo itemInfo;
 			itemInfo.name = "选将扩充卡";
 			itemInfo.count = users_.getItemCount(username, "选将扩充卡");
-			itemInfo.price = (itemInfo.count < 5) ? static_cast<Character::price_t>(88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2) : Character::price_t{ 0 };
-			itemInfo.available = itemInfo.count < 5;
+			itemInfo.price = (itemInfo.count < kExpandCardMaxCount)
+				? static_cast<Character::price_t>(88 + 100 * itemInfo.count * (itemInfo.count + 1) / 2)
+				: Character::price_t{ 0 };
+			itemInfo.available = itemInfo.count < kExpandCardMaxCount;
+			itemInfo.description = std::string(itemDescription(itemInfo.name));
+			itemInfo.maxCount = itemMaxCount(itemInfo.name);
 			shopData.items.push_back(std::move(itemInfo));
 		}
 		// 增分卡
@@ -93,6 +117,8 @@ namespace unool::application {
 			itemInfo.count = users_.getItemCount(username, "增分卡");
 			itemInfo.price = 10;
 			itemInfo.available = true;
+			itemInfo.description = std::string(itemDescription(itemInfo.name));
+			itemInfo.maxCount = itemMaxCount(itemInfo.name);
 			shopData.items.push_back(std::move(itemInfo));
 		}
 
@@ -103,6 +129,8 @@ namespace unool::application {
 			itemInfo.count = users_.getItemCount(username, "不死图腾");
 			itemInfo.price = 10;
 			itemInfo.available = true;
+			itemInfo.description = std::string(itemDescription(itemInfo.name));
+			itemInfo.maxCount = itemMaxCount(itemInfo.name);
 			shopData.items.push_back(std::move(itemInfo));
 		}
 
@@ -113,6 +141,8 @@ namespace unool::application {
 			itemInfo.count = users_.getItemCount(username, "炸弹卡");
 			itemInfo.price = 5;
 			itemInfo.available = true;
+			itemInfo.description = std::string(itemDescription(itemInfo.name));
+			itemInfo.maxCount = itemMaxCount(itemInfo.name);
 			shopData.items.push_back(std::move(itemInfo));
 		}
 

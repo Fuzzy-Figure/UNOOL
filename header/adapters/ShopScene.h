@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -8,6 +9,15 @@
 #include "adapters/IClientGateway.h"
 #include "adapters/IShopOpener.h"
 #include "ShopData.h"
+
+namespace unool::adapters {
+	// 道具展示元数据（服务端随 ShopData 下发）：客户端缓存的只是这两项展示信息，
+	// 数量 / 售价 / 可购买状态始终以每次下发的 ShopData 为准，不进缓存。
+	struct ShopItemPresentation {
+		std::string description;
+		std::optional<int> maxCount;
+	};
+}
 
 class GameRenderer;
 
@@ -66,6 +76,9 @@ private:
 	// 技能描述缓存：进程级静态数据，商城退出后仍保留
 	static std::unordered_map<std::string, std::string> skillsCache;
 	std::unordered_set<std::string> pendingSkills;
+	// 道具展示元数据缓存：服务端随 ShopData 下发的效果说明 / 购买上限，进程级保留，
+	// 退出商城后仍在；每次收到新版 ShopData 会刷新，不会像技能文案那样永不失效。
+	static std::unordered_map<std::string, unool::adapters::ShopItemPresentation> itemPresentationCache;
 	// 处理网络包（ShopData / ShopResult / SkillInfoResponse / 匹配提示事件）
 	void handleNetwork();
 	// 渲染
@@ -78,6 +91,8 @@ private:
 	void renderSearchBar();
 	void renderBuyButton();
 	void renderDetailPanel();
+	// 道具视图：右侧显示当前选中道具的名称、数量/售价与效果说明
+	void renderItemDetailPanel();
 	// 购买按钮矩形（渲染与点击检测共用；英雄视图在详情面板右上角，道具视图在列表右侧）
 	sf::FloatRect buyButtonRect() const;
 	// 事件处理

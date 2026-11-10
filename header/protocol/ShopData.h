@@ -43,8 +43,13 @@ struct ShopItemInfo {
 	int count = 0;              // 当前数量
 	Character::price_t price = 0;  // 当前售价
 	bool available = true;      // 是否可购买
+	// 展示元数据由服务端随 ShopData 下发，客户端只缓存、不写死文案与上限。
+	// 前后端同版本部署，这两个字段按协议必填。
+	std::string description;    // 效果说明（空串 = 该道具暂无说明）
+	std::optional<int> maxCount;// 购买上限；nullopt = 无上限
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopItemInfo, name, count, price, available)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopItemInfo, name, count, price,
+	                               available, description, maxCount)
 };
 
 // 完整商城数据

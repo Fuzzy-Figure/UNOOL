@@ -11,6 +11,9 @@
 
 // 技能描述缓存（静态成员定义）
 std::unordered_map<std::string, std::string> ShopScene::skillsCache;
+// 道具展示元数据缓存（静态成员定义）：文案与购买上限均由服务端随 ShopData 下发，
+// 客户端不内置任何道具文案；进程级保留，退出商城后仍在，每次下发都会刷新。
+std::unordered_map<std::string, unool::adapters::ShopItemPresentation> ShopScene::itemPresentationCache;
 
 ShopScene::ShopScene(GameRenderer& r, unool::adapters::IClientGateway& n, const std::string& uname,
                      unool::adapters::MatchNoticeState& notice)
@@ -80,6 +83,12 @@ void ShopScene::handleNetwork() {
 				if (auto parsed = unool::protocol::parseShopData(jsonStr)) {
 					shopData = std::move(*parsed);
 					dataReady = true;
+					// 每次 ShopData 到达都用服务端下发的展示元数据全量刷新进程级缓存：
+					// 服务端改了文案 / 上限，客户端下一帧就能显示新值。
+					for (const auto& item : shopData.items) {
+						itemPresentationCache[item.name] =
+							unool::adapters::ShopItemPresentation{ item.description, item.maxCount };
+					}
 					// 数据刷新后重建显示并夹紧导航状态
 					rebuildDisplayedIndices();
 					clampPage();
@@ -439,7 +448,7 @@ void ShopScene::rebuildRows() {
 	rows.clear();
 	if (currentView == View::Item) {
 		for (std::size_t i = 0; i < shopData.items.size(); ++i) {
-			// 选将扩充卡购买5次后（available=false）从列表消失
+			// 达到服务端下发的购买上限后（available=false）从列表消失
 			if (!shopData.items[i].available) continue;
 			Row r;
 			r.type = Row::Type::ItemEntry;
@@ -532,6 +541,7 @@ void ShopScene::render() {
 	else renderItemView();
 
 	if (currentView == View::Hero) renderDetailPanel();
+	else renderItemDetailPanel();
 
 	renderBuyButton();
 
@@ -568,7 +578,7 @@ void ShopScene::render() {
 			hint = "W/S 导航 | Enter 展开 | A/D 翻页 | 点击搜索框搜索 | E 道具 | ESC 退出";
 		}
 		else {
-			hint = "W/S 导航 | H 英雄 | ESC 退出";
+			hint = "W/S 导航 | H 英雄 | 右侧查看道具说明 | ESC 退出";
 		}
 		sf::Vector2f hintSize = { 16, 32 };
 		sf::Vector2f measured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
@@ -779,14 +789,11 @@ sf::FloatRect ShopScene::buyButtonRect() const {
 	constexpr float btnH = 44.f;
 	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
 	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
-	if (currentView == View::Hero) {
-		//英雄视图：详情面板内右上角（面板 panelX=listX+listW+20, panelY=140, panelW=窗口宽-panelX-20）
-		const float panelX = listX + listW + 20.f;
-		const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
-		return { { panelX + panelW - btnW - 12.f, 140.f + 12.f }, { btnW, btnH } };
-	}
-	//道具视图：列表右侧原位
-	return { { listX + listW + 20.f, 140.f }, { btnW, btnH } };
+	// 两个视图的详情面板尺寸相同，购买按钮统一放在面板右上角：道具视图原先压在
+	// 面板左上角，新增标题 / 说明后会互相遮挡，故与英雄视图对齐。
+	const float panelX = listX + listW + 20.f;
+	const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
+	return { { panelX + panelW - btnW - 12.f, 140.f + 12.f }, { btnW, btnH } };
 }
 
 void ShopScene::renderBuyButton() {
@@ -812,6 +819,72 @@ void ShopScene::renderBuyButton() {
 		{ rect.position.x + (rect.size.x - textSize.x) / 2.f,
 		  rect.position.y + (rect.size.y - textSize.y) / 2.f },
 		{ 22, 44 }, textColor);
+}
+
+void ShopScene::renderItemDetailPanel() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const auto& cfg = renderer.getConfig();
+
+	const float listX = static_cast<float>(cfg.windowSize.x) * 0.06f;
+	const float listW = static_cast<float>(cfg.windowSize.x) * 0.5f;
+	const float panelX = listX + listW + 20.f;
+	const float panelW = static_cast<float>(cfg.windowSize.x) - panelX - 20.f;
+	const float panelY = 140.f;
+	const float panelH = static_cast<float>(cfg.windowSize.y) - panelY - 80.f;
+
+	// 与英雄视图详情面板同款背景，保证两个视图右侧观感一致
+	sf::RectangleShape bg({ panelW, panelH });
+	bg.setPosition({ panelX, panelY });
+	bg.setFillColor(sf::Color(28, 30, 42));
+	bg.setOutlineThickness(2.f);
+	bg.setOutlineColor(sf::Color(80, 90, 120));
+	window.draw(bg);
+
+	const float textX = panelX + 24.f;
+	if (!dataReady || rows.empty() || cursor >= rows.size()
+		|| rows[cursor].type != Row::Type::ItemEntry) {
+		textMgr.displayText(dataReady ? "暂无可购买的道具" : "正在加载商城数据...",
+		                    { textX, panelY + 24.f }, { 20, 40 }, sf::Color(160, 160, 180));
+		return;
+	}
+	const auto& item = shopData.items[rows[cursor].itemIdx];
+
+	// 展示元数据一律读进程级缓存（每次 ShopData 到达时刷新，跨商城会话保留）；
+	// 缓存里没有该道具时得到空值，由下方显示占位文案。
+	const auto& presentation = itemPresentationCache[item.name];
+
+	// 道具名
+	float textY = panelY + 24.f;
+	textMgr.displayText(item.name, { textX, textY }, { 28, 56 }, sf::Color(255, 215, 90));
+	textY += 68.f;
+
+	// 数量 / 售价分两行，避免长文案超出面板宽度；第二行只有服务端下发了
+	// 购买上限的道具才有内容，但位置固定占位，保证各道具「效果说明」起始高度一致。
+	textMgr.displayText(std::format("当前数量：{}    售价 {}", item.count, item.price),
+	                    { textX, textY }, { 20, 40 }, sf::Color(190, 200, 220));
+	textY += 44.f;
+	if (presentation.maxCount.has_value()) {
+		textMgr.displayText(std::format("购买上限 {} 次，已购 {} 次", *presentation.maxCount, item.count),
+		                    { textX, textY }, { 18, 36 }, sf::Color(160, 175, 205));
+	}
+	textY += 40.f;
+	textY += 14.f;
+
+	sf::RectangleShape divider({ panelW - 48.f, 2.f });
+	divider.setPosition({ textX, textY });
+	divider.setFillColor(sf::Color(80, 90, 120));
+	window.draw(divider);
+	textY += 24.f;
+
+	textMgr.displayText("效果说明", { textX, textY }, { 18, 36 }, sf::Color(140, 170, 230));
+	textY += 48.f;
+
+	// 服务端下发的效果说明按面板宽度自动折行（长文案不会溢出）
+	const std::string text = presentation.description.empty()
+		? std::string("该道具暂无说明") : presentation.description;
+	const std::string wrapped = textMgr.wrapText(text, panelW - 48.f, { 22, 44 });
+	textMgr.displayText(wrapped, { textX, textY }, { 22, 44 }, sf::Color(225, 225, 235));
 }
 
 void ShopScene::renderDetailPanel() {
