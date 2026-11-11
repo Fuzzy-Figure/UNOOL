@@ -82,16 +82,14 @@
     <ClInclude Include="..\..\header\shell\GameRenderer.h" />
     <ClInclude Include="..\..\header\protocol\GameState.h" />
     <ClInclude Include="..\..\header\shell\ImageManager.h" />
-    <ClInclude Include="..\..\header\core\InstantSkill.h" />
+    <ClInclude Include="..\..\header\core\skills\Skills.h" />
     <ClInclude Include="..\..\header\shell\LoginScene.h" />
-    <ClInclude Include="..\..\header\core\PassiveSkill.h" />
     <ClInclude Include="..\..\header\core\Player.h" />
     <ClInclude Include="..\..\header\core\Skill.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\shell\ShopScene.h" />
     <ClInclude Include="..\..\header\shell\TextManager.h" />
-    <ClInclude Include="..\..\header\core\TransformSkill.h" />
     <ClInclude Include="..\..\header\shell\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
     <ClInclude Include="..\..\header\core\IClientSession.h" />

@@ -1,0 +1,9 @@
+#pragma once
+#include "skills/元首/Skills.h"
+#include "skills/网络/Skills.h"
+#include "skills/实验/Skills.h"
+#include "skills/原神/Skills.h"
+#include "skills/山海经/Skills.h"
+#include "skills/新三国/Skills.h"
+#include "skills/荒野乱斗/Skills.h"
+#include "skills/希腊神话/Skills.h"

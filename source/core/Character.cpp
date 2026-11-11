@@ -1,7 +1,5 @@
 #include "Character.h"
-#include "PassiveSkill.h"
-#include "InstantSkill.h"
-#include "TransformSkill.h"
+#include "skills/Skills.h"
 #include "utils.h"
 #include "core/Services.h"
 #include <algorithm>

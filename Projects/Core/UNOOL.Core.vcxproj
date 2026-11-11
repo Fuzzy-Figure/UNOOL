@@ -111,6 +111,15 @@
     <ClInclude Include="..\..\header\core\Card.h" />
     <ClInclude Include="..\..\header\contract\CharacterTypes.h" />
     <ClInclude Include="..\..\header\platform\Platform.h" />
+    <ClInclude Include="..\..\header\core\skills\元首\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\网络\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\实验\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\原神\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\山海经\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\新三国\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\Skills.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.core.cpp">
@@ -157,16 +166,6 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\..\source\core\InstantSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\core\PassiveSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
     <ClCompile Include="..\..\source\core\Player.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
@@ -192,11 +191,6 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\..\source\core\TransformSkill.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
     <ClCompile Include="..\..\source\shell\UserDB.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
@@ -216,6 +210,114 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\元首\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\元首\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\元首\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\元首\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\网络\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\网络\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Transform.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\网络\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\实验\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\实验\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\实验\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\实验\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\原神\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\原神\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\山海经\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\山海经\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Transform.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\山海经\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\新三国\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\新三国\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\新三国\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\新三国\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\荒野乱斗\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\荒野乱斗\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Transform.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\荒野乱斗\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\希腊神话\Passive.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\希腊神话\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\希腊神话\Instant.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ObjectFileName>$(IntDir)skills\希腊神话\</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

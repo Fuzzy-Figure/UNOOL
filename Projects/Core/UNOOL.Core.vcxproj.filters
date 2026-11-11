@@ -31,11 +31,65 @@
     <Filter Include="源文件\core">
       <UniqueIdentifier>{397E7E3E-ACCE-59D3-94F5-57C0E2252EF5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\core\skills">
+      <UniqueIdentifier>{732AE043-BA6E-5771-A04E-26B03E56882F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="源文件\shell">
       <UniqueIdentifier>{585B3392-20E9-5081-A23F-B19395B8E7CE}</UniqueIdentifier>
     </Filter>
     <Filter Include="源文件\protocol">
       <UniqueIdentifier>{40355DB1-53E7-5C71-AE44-0AD2608D73B0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\元首">
+      <UniqueIdentifier>{AE67731F-95EA-5F1A-80D0-3095AFEFA824}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\网络">
+      <UniqueIdentifier>{BABBA657-09C1-536C-87DB-44013DA839CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\实验">
+      <UniqueIdentifier>{941A7355-6ED2-52FD-9DD2-08907BE84B8D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\原神">
+      <UniqueIdentifier>{39C4FD3E-D4B1-5FBD-9E1F-3AEC4FDDC65D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\山海经">
+      <UniqueIdentifier>{F158D34F-108A-5012-89F9-289C0FBF8F1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\新三国">
+      <UniqueIdentifier>{AF61A642-BD4C-5E92-9EF2-4BEF5C52BA24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\荒野乱斗">
+      <UniqueIdentifier>{6E60755D-03E4-574F-931B-55512C555D64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core\skills\希腊神话">
+      <UniqueIdentifier>{B16EED6B-6643-5DD9-9A65-A830D357EF5B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills">
+      <UniqueIdentifier>{AB9BC076-4FFC-5DA6-819D-3E050EFFFD5E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\元首">
+      <UniqueIdentifier>{5E8EE4C4-5069-5AD0-8DEA-9CA9FEA1C5D5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\网络">
+      <UniqueIdentifier>{3F6DC4D2-A884-5A02-A99E-1103F29D30B2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\实验">
+      <UniqueIdentifier>{79A0C282-3B83-531D-9EF9-E4E8DB5B832F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\原神">
+      <UniqueIdentifier>{26FA4F35-FD67-554D-8F0B-BDC0B91C3F5E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\山海经">
+      <UniqueIdentifier>{961FD3C4-0D36-5908-ADD8-BBC78E1CF0E8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\新三国">
+      <UniqueIdentifier>{EF0876C3-4AD2-579F-A9BC-63DCDC484548}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\荒野乱斗">
+      <UniqueIdentifier>{0D597DD3-CE29-5DDE-823D-6C53E705C577}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\core\skills\希腊神话">
+      <UniqueIdentifier>{776CC97A-9C67-5469-BFF9-B1E08AD84C64}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -66,12 +120,6 @@
     <ClCompile Include="..\..\source\core\GameLogic.cpp">
       <Filter>源文件\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\core\InstantSkill.cpp">
-      <Filter>源文件\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\core\PassiveSkill.cpp">
-      <Filter>源文件\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\core\Player.cpp">
       <Filter>源文件\core</Filter>
     </ClCompile>
@@ -87,9 +135,6 @@
     <ClCompile Include="..\..\source\shell\Socket.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\core\TransformSkill.cpp">
-      <Filter>源文件\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\shell\UserDB.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
@@ -101,6 +146,60 @@
     </ClCompile>
     <ClCompile Include="..\..\source\utils.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\元首\Passive.cpp">
+      <Filter>源文件\core\skills\元首</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\元首\Instant.cpp">
+      <Filter>源文件\core\skills\元首</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Passive.cpp">
+      <Filter>源文件\core\skills\网络</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Instant.cpp">
+      <Filter>源文件\core\skills\网络</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\网络\Transform.cpp">
+      <Filter>源文件\core\skills\网络</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\实验\Passive.cpp">
+      <Filter>源文件\core\skills\实验</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\实验\Instant.cpp">
+      <Filter>源文件\core\skills\实验</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\原神\Passive.cpp">
+      <Filter>源文件\core\skills\原神</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Passive.cpp">
+      <Filter>源文件\core\skills\山海经</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Instant.cpp">
+      <Filter>源文件\core\skills\山海经</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\山海经\Transform.cpp">
+      <Filter>源文件\core\skills\山海经</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\新三国\Passive.cpp">
+      <Filter>源文件\core\skills\新三国</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\新三国\Instant.cpp">
+      <Filter>源文件\core\skills\新三国</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Passive.cpp">
+      <Filter>源文件\core\skills\荒野乱斗</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Instant.cpp">
+      <Filter>源文件\core\skills\荒野乱斗</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\荒野乱斗\Transform.cpp">
+      <Filter>源文件\core\skills\荒野乱斗</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\希腊神话\Passive.cpp">
+      <Filter>源文件\core\skills\希腊神话</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\skills\希腊神话\Instant.cpp">
+      <Filter>源文件\core\skills\希腊神话</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -133,6 +232,33 @@
     </ClInclude>
     <ClInclude Include="..\..\header\platform\Platform.h">
       <Filter>头文件\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\元首\Skills.h">
+      <Filter>头文件\core\skills\元首</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\网络\Skills.h">
+      <Filter>头文件\core\skills\网络</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\实验\Skills.h">
+      <Filter>头文件\core\skills\实验</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\原神\Skills.h">
+      <Filter>头文件\core\skills\原神</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\山海经\Skills.h">
+      <Filter>头文件\core\skills\山海经</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\新三国\Skills.h">
+      <Filter>头文件\core\skills\新三国</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Skills.h">
+      <Filter>头文件\core\skills\荒野乱斗</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Skills.h">
+      <Filter>头文件\core\skills\希腊神话</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\Skills.h">
+      <Filter>头文件\core\skills</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

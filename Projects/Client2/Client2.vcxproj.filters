@@ -16,6 +16,9 @@
     <Filter Include="头文件\core">
       <UniqueIdentifier>{2563460C-23A4-56F8-86D1-60638978DDB8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\core\skills">
+      <UniqueIdentifier>{D89D892E-5D15-5FB5-9B94-4B2466759F4B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="头文件\protocol">
       <UniqueIdentifier>{57718106-80DB-5D3C-AEFD-7351FA66CF0C}</UniqueIdentifier>
     </Filter>
@@ -107,14 +110,8 @@
     <ClInclude Include="..\..\header\utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\InstantSkill.h">
-      <Filter>头文件\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\header\core\PassiveSkill.h">
-      <Filter>头文件\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\header\core\TransformSkill.h">
-      <Filter>头文件\core</Filter>
+    <ClInclude Include="..\..\header\core\skills\Skills.h">
+      <Filter>头文件\core\skills</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\core\Character.h">
       <Filter>头文件\core</Filter>
