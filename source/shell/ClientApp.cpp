@@ -228,10 +228,10 @@ namespace unool::shell {
 	} // namespace
 
 	ClientApp::ClientApp(ClientNetwork& net, const std::string& windowTitle,
-	                     const std::string& titleBrackets, const std::string& ipAddress,
-	                     unsigned short port)
+						 const std::string& titleBrackets, const std::string& ipAddress,
+						 unsigned short port)
 		: net_{ net }, session_{ net }, windowTitle_{ windowTitle },
-		  titleBrackets_{ titleBrackets }, ipAddress_{ ipAddress }, port_{ port } {}
+		titleBrackets_{ titleBrackets }, ipAddress_{ ipAddress }, port_{ port } {}
 
 	int ClientApp::run() {
 		// 与原 ClientMain.cpp::main 的装配顺序逐字一致：连接 → 渲染器 → 登录场景 → 游戏阶段。

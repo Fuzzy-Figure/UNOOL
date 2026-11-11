@@ -16,7 +16,7 @@ std::unordered_map<std::string, std::string> ShopScene::skillsCache;
 std::unordered_map<std::string, unool::shell::ShopItemPresentation> ShopScene::itemPresentationCache;
 
 ShopScene::ShopScene(GameRenderer& r, unool::shell::IClientGateway& n, const std::string& uname,
-                     unool::shell::MatchNoticeState& notice)
+					 unool::shell::MatchNoticeState& notice)
 	: renderer(r), net(n), username(uname), matchNotice(notice) {
 	rebuildDisplayedIndices();
 }
@@ -597,7 +597,7 @@ void ShopScene::renderMatchNotice() {
 	const auto& cfg = renderer.getConfig();
 
 	const std::string text = std::format("对手「{}」已开始匹配，请退出商城并点击「开始游戏」加入",
-	                                     matchNotice.opponentName);
+										 matchNotice.opponentName);
 	const sf::Vector2f textSize = { 20, 40 };
 	const auto measured = textMgr.measureText(text, static_cast<unsigned int>(textSize.y));
 	const float panelW = measured.x + 80.f > 900.f ? measured.x + 80.f : 900.f;
@@ -613,9 +613,9 @@ void ShopScene::renderMatchNotice() {
 	window.draw(panel);
 
 	textMgr.displayText(text,
-	                    { panelX + (panelW - measured.x) / 2.f,
-	                      panelY + (panelH - measured.y) / 2.f },
-	                    textSize, sf::Color(255, 228, 150));
+						{ panelX + (panelW - measured.x) / 2.f,
+						  panelY + (panelH - measured.y) / 2.f },
+						textSize, sf::Color(255, 228, 150));
 }
 
 void ShopScene::renderTopBar() {
@@ -816,9 +816,9 @@ void ShopScene::renderBuyButton() {
 
 	const sf::Vector2f textSize = textMgr.measureText("购买", 44);
 	textMgr.displayText("购买",
-		{ rect.position.x + (rect.size.x - textSize.x) / 2.f,
-		  rect.position.y + (rect.size.y - textSize.y) / 2.f },
-		{ 22, 44 }, textColor);
+						{ rect.position.x + (rect.size.x - textSize.x) / 2.f,
+						  rect.position.y + (rect.size.y - textSize.y) / 2.f },
+						{ 22, 44 }, textColor);
 }
 
 void ShopScene::renderItemDetailPanel() {
@@ -845,7 +845,7 @@ void ShopScene::renderItemDetailPanel() {
 	if (!dataReady || rows.empty() || cursor >= rows.size()
 		|| rows[cursor].type != Row::Type::ItemEntry) {
 		textMgr.displayText(dataReady ? "暂无可购买的道具" : "正在加载商城数据...",
-		                    { textX, panelY + 24.f }, { 20, 40 }, sf::Color(160, 160, 180));
+							{ textX, panelY + 24.f }, { 20, 40 }, sf::Color(160, 160, 180));
 		return;
 	}
 	const auto& item = shopData.items[rows[cursor].itemIdx];
@@ -862,11 +862,11 @@ void ShopScene::renderItemDetailPanel() {
 	// 数量 / 售价分两行，避免长文案超出面板宽度；第二行只有服务端下发了
 	// 购买上限的道具才有内容，但位置固定占位，保证各道具「效果说明」起始高度一致。
 	textMgr.displayText(std::format("当前数量：{}    售价 {}", item.count, item.price.value_or(0)),
-	                    { textX, textY }, { 20, 40 }, sf::Color(190, 200, 220));
+						{ textX, textY }, { 20, 40 }, sf::Color(190, 200, 220));
 	textY += 44.f;
 	if (presentation.maxCount.has_value()) {
 		textMgr.displayText(std::format("购买上限 {} 次，已购 {} 次", *presentation.maxCount, item.count),
-		                    { textX, textY }, { 18, 36 }, sf::Color(160, 175, 205));
+							{ textX, textY }, { 18, 36 }, sf::Color(160, 175, 205));
 	}
 	textY += 40.f;
 	textY += 14.f;

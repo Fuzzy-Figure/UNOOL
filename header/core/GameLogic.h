@@ -36,7 +36,7 @@ private:
 	Direction direction = Direction::increase;
 	// 出站端口：状态广播/角色信息/会话查询与决策 I/O 全部经此转发，
 	// GameLogic 不再持有 ServerNetwork&（技能签名仍以 GameLogic& 为门面，零改动）。
-	unool::core::IServerView&  view;
+	unool::core::IServerView& view;
 	unool::core::IDecisionPort& decision;
 	// 出站端口聚合：配置 / 用户数据 / 随机源 / 时钟 / 资产目录统一注入，
 	// 领域层不再直读 server_config.json、UserDB 单例与具体随机引擎。
@@ -59,8 +59,8 @@ private:
 	static std::string formatCharacterLabel(const Character::Entry& entry);
 	//从角色池随机抽取 n 个候选：跳过 exclude 中的角色名与 infos 中不存在的名字
 	static std::vector<Character::Entry> pickEntriesFromPool(const std::vector<std::string>& pool,
-															  std::size_t n,
-															  const std::unordered_set<std::string>& exclude);
+															 std::size_t n,
+															 const std::unordered_set<std::string>& exclude);
 	std::size_t getSeatPlayerId(std::size_t seat) const;
 	std::optional<std::string> banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state);
 	void selectCharacter(std::size_t playerId, const SelectionState& state);
@@ -84,7 +84,7 @@ public:
 	// BP 选项预览元数据：服务端从 Character::infos 读取等级 / 体力并拼好立绘相对路径。
 	// 客户端不查角色表，只按 imagePath 从 images/ 读取图片文件。
 	static unool::core::ChoiceOptionMeta makeChoiceMeta(const std::string& charName,
-	                                                   const std::string& skinName = "默认");
+														const std::string& skinName = "默认");
 	std::size_t getFirstPlayerId() const { return getSeatPlayerId(0); }
 #pragma region 构造与析构
 	GameLogic(unool::core::IServerView& _view,

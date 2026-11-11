@@ -85,8 +85,8 @@ private:
 	bool waitForReconnect();
 	//处理翻页键：命中时更新 currentPage + 清空 errorMsg 并返回 true，否则返回 false
 	bool handlePagingKey(unool::contract::Key input, bool usePaging,
-						  std::size_t& currentPage, std::size_t totalPages,
-						  std::string& errorMsg);
+						 std::size_t& currentPage, std::size_t totalPages,
+						 std::string& errorMsg);
 	//解析数字键为最终选择（1-based，0=取消），非法时设置 errorMsg 并返回 nullopt
 	std::optional<std::size_t> resolveChoice(unool::contract::Key input,
 											 const std::vector<std::string>& options,
@@ -102,7 +102,7 @@ public:
 		   unool::core::DomainServices& _services,
 		   std::unique_ptr<Character> _character)
 		:id(_id), game(_game), decision(_decision), services(_services),
-		 character(std::move(_character)) {}
+		character(std::move(_character)) {}
 	unool::contract::player_id getId() const { return id; }
 	bool operator==(const Player& other) const { return id == other.id; }
 	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}

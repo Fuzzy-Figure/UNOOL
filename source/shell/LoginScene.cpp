@@ -9,7 +9,7 @@
 
 
 LoginScene::LoginScene(GameRenderer& r, unool::shell::IClientGateway& n,
-	                       unool::shell::IShopOpener& opener, const std::string& title)
+					   unool::shell::IShopOpener& opener, const std::string& title)
 	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
 }
@@ -72,7 +72,7 @@ LoginScene::Result LoginScene::run() {
 				result.ok = false;
 			}
 			else if (status == Status::WaitingCancel
-				&& std::chrono::steady_clock::now() - cancelRequestedAt_ >= std::chrono::seconds(3)) {
+					 && std::chrono::steady_clock::now() - cancelRequestedAt_ >= std::chrono::seconds(3)) {
 				backToLobby(); // 超时兜底：静默回大厅，不显示文字提示
 			}
 		}
@@ -194,7 +194,7 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 			// 此处仅发意图；断线与关窗判定仍在原位置，行为等价）。
 		// 匹配提示状态随意图一起交给商城：商城期间对手开始 / 退出匹配时
 		// ShopScene 就地写回，退出商城后大厅横幅自动同步（无需回传文案）。
-		shopOpener.openShop(username, matchNotice_);
+			shopOpener.openShop(username, matchNotice_);
 			if (!net.isConnected() || !renderer.windowIsOpen()) {
 				status = Status::Done;
 				result.ok = false;
@@ -312,13 +312,13 @@ void LoginScene::pollAccountPackets() {
 	// （查重→注册→登录）的同帧触发点逐字保留，message / status / mode /
 	// result / checkinPopup 仍由 View 写。
 	while (auto next = unool::shell::PacketDispatcher::next(net, {
-		       MessageType::ConnectionInfo,
-		       MessageType::CheckUsernameResponse,
-		       MessageType::RegisterResponse,
-		       MessageType::LoginResponse,
-		       MessageType::CheckinResponse,
-		       MessageType::MatchmakingCancelled,
-		       MessageType::MatchmakingStarted })) {
+			   MessageType::ConnectionInfo,
+			   MessageType::CheckUsernameResponse,
+			   MessageType::RegisterResponse,
+			   MessageType::LoginResponse,
+			   MessageType::CheckinResponse,
+			   MessageType::MatchmakingCancelled,
+			   MessageType::MatchmakingStarted })) {
 		auto [mt, packet] = std::move(*next);
 
 		switch (mt) {
@@ -388,7 +388,7 @@ void LoginScene::pollAccountPackets() {
 				}
 				continue;
 
-			// 签到结果：弹出结果框，同步最新积分
+				// 签到结果：弹出结果框，同步最新积分
 			case MessageType::CheckinResponse:
 				if (status != Status::WaitingCheckin) continue;
 				{
@@ -402,9 +402,9 @@ void LoginScene::pollAccountPackets() {
 				}
 				continue;
 
-			// 对手开始匹配：大厅显示常驻横幅，直到对手退出 / 掉线或自己点开始游戏。
-			// 不检查 status —— 该广播可能「先于 LoginResponse」到达（对手已准备、
-			// 自己才刚登录），服务端也会在 onLoginSucceeded 里补发一次。
+				// 对手开始匹配：大厅显示常驻横幅，直到对手退出 / 掉线或自己点开始游戏。
+				// 不检查 status —— 该广播可能「先于 LoginResponse」到达（对手已准备、
+				// 自己才刚登录），服务端也会在 onLoginSucceeded 里补发一次。
 			case MessageType::MatchmakingStarted: {
 				auto who = unool::protocol::parseMatchmakingStarted(packet);
 				const std::string whoName = who.value_or(std::string{});
@@ -415,9 +415,9 @@ void LoginScene::pollAccountPackets() {
 				continue;
 			}
 
-			// 匹配解散事件由服务端广播给双方：清掉「对手已开始匹配」横幅，
-			// 处于匹配等待的一方静默回到大厅（不再显示退出匹配的文字提示）；
-			// 若此时 GameStart 已在队列中，run() 会优先让游戏开始。
+												// 匹配解散事件由服务端广播给双方：清掉「对手已开始匹配」横幅，
+												// 处于匹配等待的一方静默回到大厅（不再显示退出匹配的文字提示）；
+												// 若此时 GameStart 已在队列中，run() 会优先让游戏开始。
 			case MessageType::MatchmakingCancelled: {
 				clearMatchNotice();
 				if (mode == Mode::Matching) backToLobby();
@@ -543,7 +543,7 @@ void LoginScene::render() {
 	};
 
 	auto drawButton = [&](const sf::FloatRect& r, const std::string& label,
-	                      const sf::Color& fill = sf::Color(220, 230, 240)) {
+						  const sf::Color& fill = sf::Color(220, 230, 240)) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
 		shape.setPosition({ r.position.x, r.position.y });
 		shape.setFillColor(fill);
@@ -577,8 +577,8 @@ void LoginScene::render() {
 		const std::string sub = cancelling
 			? "正在等待服务器确认，请稍候"
 			: std::format("已准备，等待另一名玩家点击开始游戏（已等待 {} 秒）",
-			              std::chrono::duration_cast<std::chrono::seconds>(
-			                  std::chrono::steady_clock::now() - matchStartedAt_).count());
+						  std::chrono::duration_cast<std::chrono::seconds>(
+							  std::chrono::steady_clock::now() - matchStartedAt_).count());
 		const sf::Vector2f subSize = { 22, 44 };
 		const auto subMeasured = textMgr.measureText(sub, static_cast<unsigned int>(subSize.y));
 		textMgr.displayText(sub,
@@ -587,7 +587,7 @@ void LoginScene::render() {
 							subSize, sf::Color(90, 90, 90));
 
 		drawButton(cancelMatchBtn, cancelling ? "退出中..." : "退出匹配",
-		           cancelling ? sf::Color(210, 210, 210) : sf::Color(245, 205, 205));
+				   cancelling ? sf::Color(210, 210, 210) : sf::Color(245, 205, 205));
 
 		const std::string hint = cancelling
 			? "正在等待服务器确认..."
@@ -612,7 +612,7 @@ void LoginScene::render() {
 		// 与底部的一次性 message 互不遮挡。
 		if (matchNotice_.opponentMatching) {
 			const std::string notice = std::format("对手「{}」已开始匹配，请点击「开始游戏」加入",
-			                                      matchNotice_.opponentName);
+												   matchNotice_.opponentName);
 			const sf::Vector2f noticeSize = { 26, 52 };
 			const auto noticeMeasured = textMgr.measureText(notice, static_cast<unsigned int>(noticeSize.y));
 			const float panelW = noticeMeasured.x + 100.f > 880.f ? noticeMeasured.x + 100.f : 880.f;
@@ -628,9 +628,9 @@ void LoginScene::render() {
 			window.draw(panel);
 
 			textMgr.displayText(notice,
-			                    { panelX + (panelW - noticeMeasured.x) / 2.f,
-			                      panelY + (panelH - noticeMeasured.y) / 2.f },
-			                    noticeSize, sf::Color(130, 85, 10));
+								{ panelX + (panelW - noticeMeasured.x) / 2.f,
+								  panelY + (panelH - noticeMeasured.y) / 2.f },
+								noticeSize, sf::Color(130, 85, 10));
 		}
 
 		// 签到按钮（金色系，突出显示）

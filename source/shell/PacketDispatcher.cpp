@@ -33,7 +33,7 @@ namespace unool::shell {
 	}
 
 	std::optional<InboundPacket> PacketDispatcher::next(IClientGateway& net,
-	                                                    std::initializer_list<MessageType> subscription) {
+														std::initializer_list<MessageType> subscription) {
 		while (auto peek = net.peekMessageType()) {
 			// 队列空或队首包读不出消息号：原 LoginScene 直接 break，坏包留在队列，这里保持一致
 			auto mt = static_cast<MessageType>(*peek);

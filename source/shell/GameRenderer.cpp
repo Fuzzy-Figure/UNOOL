@@ -606,7 +606,7 @@ void GameRenderer::renderBpPreview() {
 		if (sy + descLineH > maxY) { truncated = true; break; }
 		const std::size_t end = wrapped.find('\n', start);
 		const std::string line = wrapped.substr(start,
-			end == std::string::npos ? std::string::npos : end - start);
+												end == std::string::npos ? std::string::npos : end - start);
 		displayText(line, { panelX + pad, sy }, descSize);
 		sy += descLineH;
 		if (end == std::string::npos) break;
