@@ -355,10 +355,9 @@ unool::core::ChoiceOptionMeta GameLogic::makeChoiceMeta(const std::string& charN
 
 std::string GameLogic::formatCharacterLabel(const Character::Entry& entry) {
 	const Character::Info info = entry.second;
-	std::string label = std::format(
+	return std::format(
 		"{}（{}）", entry.first, info.level
 	);
-	return label;
 }
 
 
