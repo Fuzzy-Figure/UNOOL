@@ -1,13 +1,13 @@
 #include "GameLogic.h"
 #include "Socket.h"
 #include "utils.h"
-#include "application/Services.h"
-#include "application/AccountService.h"
-#include "application/ShopService.h"
-#include "adapters/LegacyBlockingDecisionAdapter.h"
-#include "adapters/LegacyServicesAdapter.h"
-#include "adapters/NetworkServerView.h"
-#include "adapters/UserDB.h"
+#include "core/Services.h"
+#include "core/AccountService.h"
+#include "core/ShopService.h"
+#include "shell/LegacyBlockingDecisionAdapter.h"
+#include "shell/LegacyServicesAdapter.h"
+#include "shell/NetworkServerView.h"
+#include "shell/UserDB.h"
 #include "contract/TableConfig.h"
 #ifdef _WIN32
 #include <Windows.h>
@@ -18,7 +18,7 @@
 
 // 根据 server_config.json 初始化角色（指定或随机）
 static void initCharacters(GameLogic& gameLogic,
-						   unool::application::IConfigProvider& config) {
+						   unool::core::IConfigProvider& config) {
 	if (auto chars = config.assignedCharacters(); chars.has_value()) {
 		//角色数量由 GameLogic::initPlayers(vector) 按 mode 校验
 		gameLogic.initPlayers(*chars);
@@ -51,7 +51,7 @@ static Character::SkinQuality bestSkinQuality(const Player& p) {
 
 // 处理游戏结束：发送 GameEnd 包、按角色等级加分、打印日志
 static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic,
-						   unool::application::IUserRepository& users) {
+						   unool::core::IUserRepository& users) {
 	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
 	serverNetwork.sendGameEnd(winnerId);
 	gameLogic.clearGameCount();
@@ -82,7 +82,7 @@ static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic,
 
 // 游戏主循环
 static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic,
-					 unool::application::IUserRepository& users) {
+					 unool::core::IUserRepository& users) {
 	while (!gameLogic.isGameOver()) {
 		bool roundEnded = gameLogic.runTurn();
 
@@ -133,32 +133,32 @@ int main() {
 	// 显式完成，services() 不再有隐式默认回退。
 	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
 	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
-	unool::adapters::JsonConfigProvider configService;
+	unool::shell::JsonConfigProvider configService;
 	// B+：账号数据由组合根显式构造，进程级共享一份；JsonUserRepository 只持有引用。
 	// 不要每桌各建一份 UserDB，否则积分与存档会分叉。
 	UserDB userDatabase;
-	unool::adapters::JsonUserRepository userRepository(userDatabase);
+	unool::shell::JsonUserRepository userRepository(userDatabase);
 	// W5 第一段：账号用例服务。ServerNetwork 实现 IAccountSession 端口，
 	// 注册 / 登录 / 查重 / 准备 / 积分消费经 AccountService 与 IUserRepository 完成。
 	// 座位容量由组合根显式注入，用例服务不再读取进程级全局常量。
 	// serverNetwork 在装配前只监听、未调用 update()，不存在「未装配」窗口。
-	unool::application::AccountService accountService(
+	unool::core::AccountService accountService(
 		serverNetwork, userRepository, unool::contract::TableConfig::seatCount);
 	serverNetwork.installAccountService(accountService);
 	// W5 第二段（分段第一段）：商城展示 / 技能描述 / 签到用例服务，
 	// 与账号服务共用 IAccountSession（由 ServerNetwork 实现）与 IUserRepository。
 	// 同样在首次 update() 之前装配，不存在「未装配」窗口。
-	unool::application::ShopService shopService(serverNetwork, userRepository);
+	unool::core::ShopService shopService(serverNetwork, userRepository);
 	serverNetwork.installShopService(shopService);
-	unool::adapters::Mt19937Random randomService;
-	unool::adapters::ChronoClock clockService;
-	unool::adapters::FilesystemAssetCatalog assetCatalog;
-	unool::application::DomainServices domainServices{
+	unool::shell::Mt19937Random randomService;
+	unool::shell::ChronoClock clockService;
+	unool::shell::FilesystemAssetCatalog assetCatalog;
+	unool::core::DomainServices domainServices{
 		configService, userRepository, randomService, clockService, assetCatalog };
-	unool::application::installServices(domainServices);
+	unool::core::installServices(domainServices);
 
-	unool::adapters::NetworkServerView serverView(serverNetwork);
-	unool::adapters::LegacyBlockingDecisionAdapter decisionAdapter(serverNetwork, configService);
+	unool::shell::NetworkServerView serverView(serverNetwork);
+	unool::shell::LegacyBlockingDecisionAdapter decisionAdapter(serverNetwork, configService);
 	GameLogic gameLogic(serverView, decisionAdapter, domainServices);
 	serverView.attach(gameLogic);
 

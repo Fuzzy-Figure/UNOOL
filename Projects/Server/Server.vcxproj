@@ -82,7 +82,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -101,7 +101,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,7 +120,7 @@
       <LanguageStandard>stdcpp23</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /we4715 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -142,7 +142,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -161,23 +161,23 @@
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
-    <ClInclude Include="..\..\header\domain\Character.h" />
-    <ClInclude Include="..\..\header\domain\InstantSkill.h" />
-    <ClInclude Include="..\..\header\domain\Card.h" />
-    <ClInclude Include="..\..\header\domain\Effect.h" />
-    <ClInclude Include="..\..\header\application\GameLogic.h" />
+    <ClInclude Include="..\..\header\core\Character.h" />
+    <ClInclude Include="..\..\header\core\InstantSkill.h" />
+    <ClInclude Include="..\..\header\core\Card.h" />
+    <ClInclude Include="..\..\header\core\Effect.h" />
+    <ClInclude Include="..\..\header\core\GameLogic.h" />
     <ClInclude Include="..\..\header\protocol\GameState.h" />
-    <ClInclude Include="..\..\header\application\Player.h" />
-    <ClInclude Include="..\..\header\domain\PassiveSkill.h" />
-    <ClInclude Include="..\..\header\domain\Skill.h" />
-    <ClInclude Include="..\..\header\adapters\Socket.h" />
+    <ClInclude Include="..\..\header\core\Player.h" />
+    <ClInclude Include="..\..\header\core\PassiveSkill.h" />
+    <ClInclude Include="..\..\header\core\Skill.h" />
+    <ClInclude Include="..\..\header\shell\Socket.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
-    <ClInclude Include="..\..\header\domain\TransformSkill.h" />
-    <ClInclude Include="..\..\header\adapters\UserDB.h" />
+    <ClInclude Include="..\..\header\core\TransformSkill.h" />
+    <ClInclude Include="..\..\header\shell\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />
-    <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\..\header\adapters\NetworkServerView.h" />
-    <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.server.cpp">

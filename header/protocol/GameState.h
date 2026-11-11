@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <optional>
 
-// 与 header/domain/Card.h 一致：friend 声明只需 sf::Packet 的类型声明，
+// 与 header/core/Card.h 一致：friend 声明只需 sf::Packet 的类型声明，
 // 不引入 SFML 头，使本头可由纯标准库 PCH 的编译单元包含。
 namespace sf { class Packet; }
 

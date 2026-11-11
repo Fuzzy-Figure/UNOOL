@@ -11,6 +11,8 @@
   5. B+ 不变量：Core 的共享编译单元不含 Windows.h；
      协议头不直接 include Character.h；平台接口只在 exe 外壳实现
   6. 已删除的占位库 / 单例 / 全局容量常量没有残留引用；桌座位数仍为 2
+  7. B+ 语义命名：旧四层目录名与旧命名空间不得残留
+     （domain/application/adapters -> core/shell/contract）
 """
 import os
 import re
@@ -32,8 +34,8 @@ def read_code(path):
     return code_only(open(path, encoding='utf-8', errors='ignore').read())
 
 INCLUDE_DIRS = [
-    'header', 'header/domain', 'header/application', 'header/adapters',
-    'header/protocol', 'dep/nlohmann', 'dep/SFML/include', 'source',
+    'header', 'header/core', 'header/shell', 'header/protocol',
+    'dep/nlohmann', 'dep/SFML/include', 'source',
     'Projects/Core', 'Projects/Server', 'Projects/Adapters',
     'Projects/Client1', 'Projects/Client2',
 ]
@@ -105,7 +107,7 @@ for f in glob.glob('header/protocol/*.h'):
 print('[5b] 协议头闭包检查完成')
 
 shell_units = ('source/ClientMain.cpp', 'source/ServerMain.cpp',
-               'source/adapters/ClientApp.cpp')
+               'source/shell/ClientApp.cpp')
 for f in glob.glob('source/**/*.cpp', recursive=True) + glob.glob('header/**/*.h', recursive=True):
     norm = f.replace('\\', '/')
     if win_include.search(read_code(f)) and not (norm.startswith('source/platform/') or norm in shell_units):
@@ -127,6 +129,41 @@ if not os.path.exists(table_cfg):
 elif not re.search(r'seatCount\s*=\s*2\s*;', read_code(table_cfg)):
     problems.append('桌配置 seatCount 不再是 2：这属于改玩法，需单独评审')
 print('[6] 死符号与桌配置检查完成')
+
+# --- 7. B+ 语义命名不变量 ---
+# 目录名 domain/ application/ adapters/ 是六边形四层叙事的遗留，B+ 改名后
+# 分别归并为 core/（规则内核）、shell/（IO 外壳）、contract/（共享值类型）。
+OLD_DIRS = ('header/domain', 'header/application', 'header/adapters',
+            'source/domain', 'source/application', 'source/adapters')
+for d in OLD_DIRS:
+    if os.path.isdir(d):
+        problems.append('旧分层目录仍存在: %s' % d)
+NEW_DIRS = ('header/core', 'header/shell', 'header/contract',
+            'source/core', 'source/shell', 'source/platform')
+for d in NEW_DIRS:
+    if not os.path.isdir(d):
+        problems.append('B+ 目录缺失: %s' % d)
+
+old_ns = ('unool::domain', 'unool::application', 'unool::adapters')
+short_ns = re.compile(r'(?<![:\w])(?:domain|application|adapters)::')
+for f in srcs:
+    t = read_code(f)
+    for ns in old_ns:
+        if ns in t:
+            problems.append('%s: 旧命名空间残留 %s' % (f, ns))
+    if short_ns.search(t):
+        problems.append('%s: 旧命名空间简写残留' % f)
+
+for f in (glob.glob('Projects/*/*.vcxproj') + glob.glob('Projects/*/*.filters')
+          + glob.glob('Projects/*.props')):
+    t = open(f, encoding='utf-8-sig', errors='ignore').read()
+    for seg in ('header\\domain\\', 'header\\application\\', 'header\\adapters\\',
+                'source\\domain\\', 'source\\application\\', 'source\\adapters\\'):
+        if seg in t:
+            problems.append('%s: 工程条目仍指向旧目录 %s' % (f, seg))
+    if r'$(SolutionDir)header\domain' in t or r'$(SolutionDir)header\application' in t:
+        problems.append('%s: 包含目录仍指向旧分层目录' % f)
+print('[7] B+ 语义命名不变量检查完成')
 
 print('\n=== 问题清单 ===')
 if problems:

@@ -1,9 +1,9 @@
-#include "adapters/ClientApp.h"
+#include "shell/ClientApp.h"
 #include "Socket.h"
 #include "utils.h"
-#include "adapters/JsonConfig.h"
-#include "adapters/LegacyServicesAdapter.h"
-#include "application/Services.h"
+#include "shell/JsonConfig.h"
+#include "shell/LegacyServicesAdapter.h"
+#include "core/Services.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -22,18 +22,18 @@ int main() {
 #endif
 
 	// 生命周期覆盖 app.run()：必须在任何代码首次调用 services() 之前装配完成。
-	unool::adapters::LegacyServicesAdapter defaultServices{};
-	unool::application::installServices(defaultServices.bundle);
+	unool::shell::LegacyServicesAdapter defaultServices{};
+	unool::core::installServices(defaultServices.bundle);
 
 	const std::string windowTitle = "Client";
 	const std::string windowTitleWithBrackets = "[Client]";
 	std::println("{} 启动客户端...", windowTitleWithBrackets);
 
 	ClientNetwork clientNetwork;
-	const auto& config = unool::getClientConfig();
+	const auto& config = unool::shell::getClientConfig();
 	std::string ipAddress = config["server"]["ip"];
 	unsigned short port = config["server"]["port"];
 
-	unool::adapters::ClientApp app(clientNetwork, windowTitle, windowTitleWithBrackets, ipAddress, port);
+	unool::shell::ClientApp app(clientNetwork, windowTitle, windowTitleWithBrackets, ipAddress, port);
 	return app.run();
 }

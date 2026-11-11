@@ -7,8 +7,8 @@
 - 账号注册/登录 + 按双方角色等级差查表的积分系统
 
 > 角色、技能的具体数量与完整列表以代码为准<br>
-角色表见 `source/domain/Character.cpp` 的 `Character::infos`<br>
-技能实现见 `header/domain/` 下的 `PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及 `source/domain/` 下对应的 .cpp 文件。
+角色表见 `source/core/Character.cpp` 的 `Character::infos`<br>
+技能实现见 `header/core/` 下的 `PassiveSkill.h`（被动技）/ `InstantSkill.h`（即时技）/ `TransformSkill.h`（转换技）及 `source/core/` 下对应的 .cpp 文件。
 
 
 ## 技术栈
@@ -16,7 +16,7 @@
 | 项 | 选型 |
 |---|---|
 | 语言 | C++23（MSVC `stdc++23`，仅 x64 配置） |
-| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/domain/Card.h`、`header/contract/CharacterTypes.h`），可直接放进 `{}` 占位符 |
+| 格式化 | `std::format` / `std::println` 全面替代字符串拼接；<br>已为 `Card::Color`、`Card::Name`、`Card`、`Cards`、`Hand`、`Character::Level` 提供 `std::formatter` 特化<br>（见 `header/core/Card.h`、`header/contract/CharacterTypes.h`），可直接放进 `{}` 占位符 |
 | 图形 / 网络 | SFML 3.1.0（Graphics / Network / Window / System / Audio） |
 | JSON | nlohmann/json（单头文件） |
 | 构建 | Visual Studio 2026（`.slnx` + 5 个 `.vcxproj`：3 个可执行工程 + 2 个静态库工程），**仅 x64** |
@@ -33,10 +33,9 @@ Projects/               5 个 VS 工程目录 + PlatformShell.props（3 个 exe 
   Adapters/             UNOOL.Adapters.vcxproj（服务端适配器实现，独立 pch）
   Core/                 UNOOL.Core.vcxproj（规则内核 + 协议 / DTO，独立 pch；不含任何平台头）
   Domain/ Application/  已删除：各只编译 1 个 pch.cpp、0 个业务单元的占位库
-header/                 头文件；domain/ application/ adapters/ protocol/ 为历史分层目录，
-                        contract/ 为共享契约（纯标准库值类型），platform/ 为平台接缝声明；
-                        pch.h 与 utils.h 留在根
-source/                 源文件；platform/ 下为只在 exe 工程编译的平台实现，其余按历史四层归置
+header/                 头文件；core/ 规则内核、shell/ IO 外壳、contract/ 共享契约（纯标准库值类型）、
+                        protocol/ 协议 DTO、platform/ 平台接缝声明；pch.h 与 utils.h 留在根
+source/                 源文件；与 header/ 同名归置，platform/ 下为只在 exe 工程编译的平台实现
 tools/verify_structure.py  结构自检（无 CI 时的自动护栏）
 dep/                    外部依赖，包括 SFML 3.1.0（include + lib + bin）和 nlohmann/json
 images/                 图片资源：cards / characters / marks
@@ -48,9 +47,9 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 
 核心模块：`GameLogic`（回合/座次/牌堆/技能触发）、`Player`（出牌摸牌与交互）、`Card`（牌堆与手牌容器）、`Skill` 系（技能框架）、`GameRenderer` / `ImageManager` / `TextManager`（客户端渲染）、`Socket`（网络封装）、`UserDB`（账号持久化）。
 
-头文件按四层归置后，源码中的 `#include "Card.h"` 等写法保持不变，由各工程的 `$(SolutionDir)header\domain` / `application` / `adapters` / `protocol` 包含目录解析；带前缀的 `#include "application/Services.h"` 仍按 `$(SolutionDir)header` 解析。B+ 新增的 `contract/`（`CharacterTypes.h`、`TableConfig.h`）与 `platform/Platform.h` 同样按 `$(SolutionDir)header` 解析，**无需新增包含目录**。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。四个分层包含目录已在 5 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
+源码中的 `#include "Card.h"` 等不带前缀写法保持不变，由各工程的 `$(SolutionDir)header\core` / `shell` / `protocol` 三个包含目录解析；带前缀的 `#include "core/Services.h"`、`#include "contract/Types.h"`、`#include "platform/Platform.h"` 按 `$(SolutionDir)header` 解析。`pch.h` 与 `utils.h` 属构建基础设施，留在 `header/` 根。三个包含目录已在 5 个工程的全部 Debug / Release 配置登记（含 `Server` 的 Win32 两条）；项目实际只构建 x64，Win32 仅保持包含目录一致，链接项与语言标准沿用既有配置。
 
-源文件同样按四层归置，与头文件目录一一对应；`.cpp` 之间不互相 include，故归位 `.cpp` 不需要新增包含目录、也不需要改任何 `#include`，只由各工程 `ClCompile` 的 `..\..\source\<层>\X.cpp` 路径定位。`pch.cpp`、`utils.cpp` 与两端入口 `ClientMain.cpp` / `ServerMain.cpp` 留在 `source/` 根。新增源文件时请放入对应层目录，并同时登记到编译它的工程 `ClCompile`（3 个 exe 还需同步 `.vcxproj.filters`）。
+源文件与头文件目录一一对应；`.cpp` 之间不互相 include，故 `.cpp` 不需要包含目录、也不需要改任何 `#include`，只由各工程 `ClCompile` 的 `..\..\source\<归属>\X.cpp` 路径定位。`pch.cpp`、`utils.cpp` 与两端入口 `ClientMain.cpp` / `ServerMain.cpp` 留在 `source/` 根。新增源文件时请按「规则内核 / IO 外壳 / 共享契约 / 协议」归入对应目录，并同时登记到编译它的工程 `ClCompile`（3 个 exe 还需同步 `.vcxproj.filters`）。
 
 **当前架构（B+，2026-11-10 起）：轻量规则内核 + 单一共享契约 + 少量真实接缝。**
 `Core` 是唯一的规则内核编译单元（`GameLogic` / `Player` / 技能 / 角色表 / 用例服务 / 协议 DTO）；
@@ -62,6 +61,16 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
 历史六边形分层口径（依赖方向 `Adapters → Application → Domain`、Q8 纯标准库 Domain PCH、
 「零行为变化 / 线上字节不变」验收）见下文各批次记录与 `docs/UNOOL_六边形分层重构方案_确认版.md`，
 自 B+ 起仅作归档，不再是当前约束。
+
+> **命名语义声明（2026-11-11 改名后）**：`header/` 与 `source/` 下现行为
+> `core/`（规则内核）、`shell/`（IO 外壳）、`contract/`（共享值类型）、`protocol/`（协议 DTO）、
+> `platform/`（平台接缝）；命名空间对应 `unool::core` / `unool::shell` / `unool::contract` /
+> `unool::protocol` / `unool::platform`，`namespace unool` 只装 `utils` 等跨层工具。
+> **目录名与命名空间都不代表架构层**，只是源码归属；`core/` 里的 179 个技能类、`Character`、
+> `Card`、`Effect`、`GameLogic`、`Player` 仍是全局类（未加命名空间，以降低改动面）。
+> `Projects/` 下的工程目录名（`Adapters/` 等）是构建产物标识，保持历史名不改。
+> 下文各批次记录与 `docs/UNOOL_六边形分层重构方案_确认版.md` 中出现的
+> `domain/` `application/` `adapters/` 及旧命名空间，**均为改名前的历史路径**，不代表现状。
 
 `Core` 静态库（原名 `Protocol`，阶段 3 起为共享编译库）统一编译 20 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）、`source/protocol/` 下 `GameState.cpp` / `AccountProtocol.cpp` / `CardPacket.cpp` 三个协议与 DTO 单元、`source/application/AccountService.cpp` / `ShopService.cpp` 两个用例服务单元，以及 `source/application/Services.cpp` / `source/adapters/JsonConfig.cpp` / `LegacyBundle.cpp` 三个归位单元，使用独立的 `pch.core.h`（PCH 文件名与库名一致）。阶段 3 第十二批把默认服务定位器 `services()` 与 JSON 配置缓存门面分别从 `source/utils.cpp` 归位到前两个单元，`utils.cpp` 恢复为只含路径 / 编码 / 随机 / 数学工具、不包含任何 `adapters` 头的领域工具单元；第十三批再把默认组合的实例化（`LegacyServicesAdapter` 及其传递的 `json.hpp` / `UserDB.h`）剥离到 `source/adapters/LegacyBundle.cpp`，`Services.cpp` 因此也变成纯端口依赖，具备划入纯标准库 PCH 的 `Domain` / `Application` 库的条件。集中后 `Core.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。`MessageType` 枚举已归位到 `header/protocol/MessageType.h`（同一个 25 值枚举逐字平移，值 / 顺序 / 隐式数值 / 线上字节全不变），`AccountProtocol` 因此不再反向包含 `Socket.h`；网络收发仍留在 `Socket.*`，枚举未拆分成 `ClientCommand` / `ServerEvent` 两组。W5 第一段把账号用例（注册 / 登录 / 查重 / 准备 / 积分消费）从 `Socket.cpp` 抽到 `AccountService`，经 `IAccountSession`（由 `ServerNetwork` 实现）与 `IUserRepository` 两个端口完成，组合根在 `ServerMain.cpp` 装配；`Socket.cpp` 只保留会话状态、端口实现与薄转发，线上包内容逐字不变。W5 第二段（分段第一段）把商城展示 `sendShopData`、技能描述 `handleSkillInfoRequest`、每日签到 `handleCheckin` 约 153 行抽到 `ShopService`，与账号服务共用 `IAccountSession` / `IUserRepository` 两个端口；分段第二段把购买决策 `handleShopPurchase` 约 146 行也抽到 `ShopService`（至此 W5 第二段收官），`IUserRepository` 扩到 20 个方法、`IAccountSession` 扩到 12 个方法；`ServerNetwork` 只保留 `sendShopResult` 的纯传输端口实现、会话状态与各薄转发，`sendShopData` 保留为对外接口，`Socket.cpp` 不再含商城业务判断。`ShopData.h` 因含 `<json.hpp>` 与序列化宏，从 `header/domain/` 归位到 `header/protocol/`，`Domain` 头闭包恢复纯标准库；3 个使用点的 `#include "ShopData.h"` 靠分层包含目录解析，写法未改。
 
@@ -228,6 +237,27 @@ userDatas.json          运行时生成的账号数据（密码明文，已 giti
   `ShopScene` / `GameRenderer` / `ImageManager` 缓存只在客户端进程，与服务端开几桌无关。
   真正支持多桌需要的是 N 个 `ServerNetwork` / `GameLogic` 实例并存 + 按桌分发连接与输入，
   属于组合根与调度层的工作，不是「去全局常量」。
+
+**第三批（B+ 语义命名对齐，2026-11-11）**：
+- **Decision**：把仍指向六边形四层的目录名 / 命名空间一次性对齐到 B+ 的实际结构，
+  并让 `JsonConfig` 门面从裸 `namespace unool` 归入 `unool::shell`；
+  **不给全局类加命名空间**（4414 处 / 77 文件、formatter / ADL / JSON 宏 / `bit_cast` 静默失效风险）。
+- 映射：`domain/` + `application/` → `core/`，`adapters/` → `shell/`，
+  `domain/Types.h` + `Keys.h` → `contract/`；命名空间 `unool::application` → `unool::core`、
+  `unool::adapters` → `unool::shell`、`unool::domain` → `unool::contract`。
+  `protocol/` `contract/` `platform/` 及 5 个工程名保持不变。
+- 规模：69 个源码文件移动、57 个源码文件改写（含 40 处简写命名空间）、190 条工程条目、
+  14 个包含目录配置块、3 个 `.filters` 虚拟分组（domain/application 合并为单一 `core` 分组）、
+  61 处 `#include` 前缀、11 处 `unool::shell::getXxxConfig()` 全限定调用；
+  `tools/verify_structure.py` 新增第 7 类「旧目录 / 旧命名空间无残留」不变量。
+- **Context**：改名本身不产生架构能力，原判断是「叙事一致 ≠ 收益，成本是几百处机械替换」；
+  模型限免把**生成侧成本**降为约 0，且全部错误均为编译期可发现（路径 / 命名空间 / include
+  解析失败），合并后 0 重名、无静默错位，因此净收益转正。验证侧成本（两套 Rebuild + 端到端实跑）
+  不因限免下降，仍由人工完成。
+- **Consequences**：消除「`domain` 一词三义」（已删占位库 / 历史目录 / 只有 2 个值类型的命名空间）
+  与后续「该放哪一层」的口径困惑；`header/contract/` 成为完整纯值类型目录，安卓立项时可直接升为
+  独立编译单元。放弃的是历史批次记录与现行目录的路径字面一致性 —— 由上方「命名语义声明」兜住，
+  不改写 3028 行归档文档。README 与 ADR 之外，历史段落保持原样。
 
 **留待后续单独验收**（互不依赖，不阻塞本批）：
 ① 共享契约与 `Card` 值类型的彻底拆分（`GameState.h` 仍依赖 `Card.h`）；

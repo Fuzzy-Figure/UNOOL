@@ -1,0 +1,345 @@
+#pragma once
+// 头文件自足化（第十四批）：显式包含本头直接使用的标准库类型，不依赖 PCH 的传递包含。
+#include <chrono>
+#include <memory>
+#include <utility>
+
+#include <cstddef>
+#include <functional>
+
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include "contract/Keys.h"
+#include "Character.h"
+#include "Card.h"
+#include "utils.h"
+#include "core/IDecisionPort.h"
+#include "core/Services.h"
+#include "contract/Types.h"
+
+class GameLogic;
+class GameRenderer;
+
+class Player {
+private:
+#pragma region 成员变量 - 身份与引用
+	unool::contract::player_id id = 0;
+	GameLogic& game;
+	// 决策通道：所有收发包/连接判定/配置读取都经此端口，Player 不再认识 ServerNetwork。
+	unool::core::IDecisionPort& decision;
+	// 出站端口聚合：用户数据 / 时钟 / 随机源统一注入，Player 不再认识 UserDB 与 sf::Clock。
+	unool::core::DomainServices& services;
+#pragma endregion
+
+#pragma region 成员变量 - 角色与手牌
+	std::unique_ptr<Character> character{};
+	std::unique_ptr<Hand> hand = std::make_unique<Hand>();
+#pragma endregion
+
+#pragma region 成员变量 - 状态标志
+	bool banned = false;
+	std::size_t sealed = 0;  //封印剩余轮数，0表示未封印
+	bool hasUsed = false;
+	bool unrestrictedPlay = false;  //出牌不受限制：忽略当前牌的颜色/牌名限制
+	bool cancelDrawRequested = false;  //本次摸牌是否已被技能取消（由技能置位，摸牌时消费）
+	std::size_t totemCount = 0;  //本场已使用的不死图腾数量（每个抵挡一次致命伤害）
+	std::size_t bombUsed = 0;  //本局已使用的炸弹卡次数
+	std::size_t shield = 0;  //护盾（本局内有效）
+	std::size_t lifesteal = 0;  //吸血率（百分比，本局内有效）
+	bool noWinByEmptyHand = false;  //本回合内手牌为空也不判负（如炼石重铸光所有牌）
+	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
+#pragma endregion
+
+#pragma region 成员变量 - 输入
+	unool::contract::Key currentInput = unool::contract::Key::Unknown;
+#pragma endregion
+
+#pragma region 私有方法 - 输入
+	void setInput(unool::contract::Key input) { currentInput = input; }
+	unool::contract::Key getInput() const { return currentInput; }
+	//数字键扫描码转 0-9，非数字键返回 nullopt
+	static std::optional<std::size_t> digitFromScancode(unool::contract::Key input);
+#pragma endregion
+
+#pragma region 私有方法 - 技能选择辅助
+	opt_ref<Card> chooseToUse(ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
+	//收集当前阶段可发动的即时技与转换技
+	void collectAvailableSkills(ActiveSkill::TriggerTime phase,
+								std::vector<ref<InstantSkill>>& instantRefs,
+								std::vector<ref<TransformSkill>>& transformRefs);
+	//处理数字键1-9：即时技发动 / 转换技切换；返回true表示已处理（continue）
+	bool handleDigitKey(unool::contract::Key input,
+						const std::vector<ref<InstantSkill>>& instantRefs,
+						const std::vector<ref<TransformSkill>>& transformRefs,
+						opt_ref<TransformSkill>& activeMode);
+	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
+	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
+											 const opt_ref<TransformSkill>& activeMode);
+#pragma endregion
+
+#pragma region 私有方法 - ask 辅助
+	//玩家掉线时最多等 reconnectTimeoutSec 秒重连，返回是否重连成功；重连成功后由 caller 负责广播状态与重发页面
+	bool waitForReconnect();
+	//处理翻页键：命中时更新 currentPage + 清空 errorMsg 并返回 true，否则返回 false
+	bool handlePagingKey(unool::contract::Key input, bool usePaging,
+						  std::size_t& currentPage, std::size_t totalPages,
+						  std::string& errorMsg);
+	//解析数字键为最终选择（1-based，0=取消），非法时设置 errorMsg 并返回 nullopt
+	std::optional<std::size_t> resolveChoice(unool::contract::Key input,
+											 const std::vector<std::string>& options,
+											 bool forced, bool usePaging,
+											 std::size_t currentPage,
+											 std::string& errorMsg);
+#pragma endregion
+
+public:
+#pragma region 构造与身份
+	Player(const std::size_t _id, GameLogic& _game,
+		   unool::core::IDecisionPort& _decision,
+		   unool::core::DomainServices& _services,
+		   std::unique_ptr<Character> _character)
+		:id(_id), game(_game), decision(_decision), services(_services),
+		 character(std::move(_character)) {}
+	unool::contract::player_id getId() const { return id; }
+	bool operator==(const Player& other) const { return id == other.id; }
+	//日志用显示名：能确定账号时为账号名；角色已确定（非白板）时为 账号名（角色名）；无法确定账号时兜底 玩家{id}
+	std::string displayName() const;
+#pragma endregion
+
+#pragma region 角色属性 - 委托到 Character
+	void setCharacter(std::unique_ptr<Character> c) { character = std::move(c); markCharInfoDirty(); }
+	std::string characterName() const { return character->getName(); }
+	const std::vector<std::string>& getNames() const { return character->getNames(); }
+	const std::vector<std::string>& getSkins() const { return character->getSkins(); }
+	bool isCombined() const { return character->isCombined(); }
+	Character::Level characterLevel() const { return character->getLevel(); }
+	std::vector<Character::Level> getLevels() const { return character->getLevels(); }
+	Character::Level getMaxLevel() const { return character->getMaxLevel(); }
+	Character::Level getMinLevel() const { return character->getMinLevel(); }
+	std::vector<std::string> getImagePaths() const { return character->getImagePaths(); }
+	Character::hp_t getHp() const { return character->getHp(); }
+	Character::hp_t getMaxHp() const { return character->getMaxHp(); }
+	std::size_t damage(std::size_t damage, opt_ref<Player> source);
+	//失去体力：不经过伤害结算（不触发伤害相关技能、不被护盾抵消、不受倍率影响）
+	std::size_t loseHp(std::size_t num);
+	void recover(std::size_t num);
+	bool isDead() const { return character->isDead(); }
+	double getDamageMultiplier() const { return character->getDamageMultiplier(); }
+	void setDamageMultiplier(double m) { character->setDamageMultiplier(m); }
+	void addDamageMultiplier(double delta) { character->addDamageMultiplier(delta); }
+	//护盾：优先抵消伤害，仅在本局内有效
+	std::size_t getShield() const { return shield; }
+	void setShield(std::size_t v) { shield = v; }
+	void addShield(std::size_t v) { shield += v; }
+	//吸血：造成伤害后按百分比回复体力（仅在本局内有效）
+	std::size_t getLifesteal() const { return lifesteal; }
+	void setLifesteal(std::size_t v) { lifesteal = v; }
+	void addLifesteal(std::size_t v) { lifesteal = (lifesteal + v > 50) ? 50 : lifesteal + v; }
+	//每局开始时重置：炸弹卡次数、护盾、吸血
+	void resetRoundState() { bombUsed = 0; shield = 0; lifesteal = 0; }
+	//禁止因手牌为空而获胜（本回合有效，下一回合自动解除）
+	bool getNoWinByEmptyHand() const { return noWinByEmptyHand; }
+	void setNoWinByEmptyHand(bool v) { noWinByEmptyHand = v; }
+#pragma endregion
+
+#pragma region 胜负 - 委托到 Character
+	std::size_t getWins() const { return character->getWins(); }
+	std::size_t getLosses() const { return character->getLosses(); }
+	void incrementWins() { character->incrementWins(); }
+	void incrementLosses() { character->incrementLosses(); }
+#pragma endregion
+
+#pragma region 标记 - 委托到 Character
+	bool hasMark(const std::string& m) const { return character->hasMark(m); }
+	std::size_t getMarkCount(const std::string& m) const { return character->getMarkCount(m); }
+	void addMark(const std::string& m, std::size_t count = 1);
+	void setMark(const std::string& m, std::size_t count);
+	void removeMark(const std::string& m, std::size_t count = 1);
+	const std::unordered_map<std::string, std::size_t>& getMarks() const { return character->getMarks(); }
+	void clearMark(const std::string& m) { character->clearMark(m); markCharInfoDirty(); }
+	void clearAllMarks() { character->clearAllMarks(); markCharInfoDirty(); }
+#pragma endregion
+
+#pragma region 技能 - 委托到 Character
+	std::string skillsName() const { return character->skillsName(); }
+	template<SpecificSkill T> bool hasSkill() const { return character->hasSkill<T>(); }
+	template<SpecificSkill T> opt_ref<T> findSkill() const { return character->findSkill<T>(); }
+	template<SpecificSkill T> T& getSkill() { return character->getSkill<T>(); }
+	template<SpecificSkill T> const T& getSkill() const { return character->getSkill<T>(); }
+	std::string getSkillsText() const {
+		std::string text = character->getSkillsText();
+		//被封印时，在技能描述第一行名字右侧标记（✡）
+		if (!text.empty() && isSealed()) {
+			const std::size_t pos = text.find('\n');
+			text.insert(pos == std::string::npos ? text.size() : pos, "（✡）");
+		}
+		return text;
+	}
+	std::list<std::unique_ptr<PassiveSkill>>& getPassiveSkills() { return character->getPassiveSkills(); }
+	std::list<std::unique_ptr<InstantSkill>>& getInstantSkills() { return character->getInstantSkills(); }
+	std::list<std::unique_ptr<TransformSkill>>& getTransformSkills() { return character->getTransformSkills(); }
+	void addSkill(std::unique_ptr<InstantSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	void addSkill(std::unique_ptr<TransformSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	void addSkill(std::unique_ptr<PassiveSkill> skill) { character->addSkill(std::move(skill)); markCharInfoDirty(); }
+	template<SpecificSkill T>
+	bool removeSkill() { if (character->removeSkill<T>()) { markCharInfoDirty(); return true; } return false; }
+	void resetSkills() { character->resetSkills(); }
+	void launchPassiveSkills(const PassiveSkill::TriggerTime& currentTriggerTime, GameLogic& game, Player& carrier, PassiveSkill::Trigger& trigger) {
+		character->launchPassiveSkills(currentTriggerTime, game, carrier, trigger);
+	}
+#pragma endregion
+
+#pragma region 手牌查询 - 委托到 Hand
+	std::size_t handCount() const { return hand->count(); }
+	bool handEmpty() const { return hand->empty(); }
+	std::size_t handSelectedIndex() const { return hand->getSelectedIndex(); }
+	const Card& handSelectedCard() const { return hand->getSelectedCard(); }
+	std::size_t handValue() const { return hand->value(); }
+	bool handSatisfy(const std::function<bool(const Cards&)>& condition) const { return hand->satisfy(condition); }
+	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
+	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }
+#pragma endregion
+
+#pragma region 手牌操作 - 委托到 Hand
+	const Hand& getHand() const { return *hand; }
+	Hand& getHand() { return *hand; }
+	void clearHand() { hand->clear(); hand->resetSelectedIndex(); }
+	void handSelectLeft() { hand->selectLeft(); }
+	void handSelectRight() { hand->selectRight(); }
+	void handSelectLast() { hand->selectLast(); }
+	void sortHand() { hand->sort(); }
+	void gainCard(std::unique_ptr<Card> card);
+	Card& getCardByIndex(const std::size_t index) { return hand->getCardByIndex(index); }
+	void printHand() const { hand->print(); }
+#pragma endregion
+
+#pragma region 游戏逻辑 - 摸牌与出牌
+	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown,
+								const DrawPosition position = DrawPosition::top);
+	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
+	Card& useCardByIndex(const std::size_t cardIndex);
+	//把指定索引的手牌放进弃牌堆（触发lose_card事件），reason标识进弃牌堆的原因
+	Card& putCardToDiscardPileByIndex(const std::size_t cardIndex, Card::DiscardReason reason);
+	//弃置指定索引的手牌（reason固定为discard）
+	Card& discardByIndex(const std::size_t cardIndex);
+	//重铸一张：以 recast 原因放入弃牌堆并摸1张，触发 recast_begin/end
+	Card& recastByIndex(const std::size_t cardIndex);
+	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t cardIndex);
+	bool canUse(const Card& card);
+	void give(Player& other, std::unique_ptr<Card> card) { other.gainCard(std::move(card)); }
+	std::optional<std::size_t> chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
+										  bool forced, ActiveSkill::TriggerTime phase = ActiveSkill::TriggerTime::never);
+#pragma endregion
+
+#pragma region 状态控制
+	bool getHasUsed() const { return hasUsed; }
+	void ban(Player& source, Card& card);
+	void ban() { banned = true; }
+	void unban() { banned = false; }
+	//是否处于被封禁状态（该角色本回合会被跳过）
+	bool isBanned() const { return banned; }
+	void seal(std::size_t duration);
+	bool isSealed() const { return sealed > 0; }
+	std::size_t getSealed() const { return sealed; }
+	//出牌不受限制：忽略当前牌的颜色/牌名限制，可打出任意牌
+	bool isUnrestrictedPlay() const { return unrestrictedPlay; }
+	void setUnrestrictedPlay(const bool v) { unrestrictedPlay = v; }
+	//取消本次摸牌（在draw_begin时机调用，摸牌时生效并自动复位）
+	void cancelNextDraw() { cancelDrawRequested = true; }
+	//不死图腾：本场持有数量
+	void addTotemCount(std::size_t n = 1) { totemCount += n; }
+	std::size_t getTotemCount() const { return totemCount; }
+	//炸弹卡：本局使用次数
+	std::size_t getBombUsed() const { return bombUsed; }
+	void resetBombUsage() { bombUsed = 0; }
+	//尝试使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
+	bool tryUseBombCard();
+	void markCharInfoDirty() const { charInfoDirty = true; }
+	bool isCharInfoDirty() const { return charInfoDirty; }
+	void clearCharInfoDirty() { charInfoDirty = false; }
+#pragma endregion
+
+#pragma region 导航
+	Player& next() const;
+	Player& prev() const;
+#pragma endregion
+
+#pragma region 初始化
+	std::string chooseSkin(const std::string& charName);
+	void chooseSkinAndSet(const std::string& charName);
+#pragma endregion
+
+#pragma region 交互 - 选牌
+	//选num张符合条件的牌放进弃牌堆，reason标识原因
+	std::vector<ref<Card>> chooseCardsToDiscardPile(const std::string& title,
+													std::size_t num, const bool forced,
+													const std::function<bool(const Card&)>& condition
+													= unool::alwaysTrue,
+													Card::DiscardReason reason = Card::DiscardReason::discard);
+	//弃置num张符合条件的牌（reason固定为discard）
+	std::vector<ref<Card>> chooseToDiscard(const std::string& title,
+										   std::size_t num, const bool forced,
+										   const std::function<bool(const Card&)>& condition
+										   = unool::alwaysTrue);
+	struct RecastResult {
+		std::vector<ref<Card>> discarded;
+		std::vector<ref<Card>> drawn;
+	};
+	RecastResult chooseToRecast(const std::string& title,
+								const std::size_t num, const bool forced,
+								const std::function<bool(const Card&)>& condition
+								= unool::alwaysTrue);
+	void decree(const std::string& title,
+				const std::size_t num, const bool forced,
+				const std::function<bool(const Card&)>& condition
+				= unool::alwaysTrue);
+	void inherit(std::unique_ptr<Card>& card);
+	opt_ref<Card> chooseToOperate(const std::string& title, bool forced,
+								  const std::function<bool(const Card&)>& condition,
+								  const std::function<void(Card&)>& operation);
+	opt_ref<Card> chooseToGive(const std::string& title, Player& target,
+							   bool forced, const std::function<bool(const Card&)>& condition
+							   = unool::alwaysTrue);
+	opt_ref<Card> chooseToShow(const std::string& title, bool forced,
+							   const std::function<bool(const Card&)>& condition);
+#pragma endregion
+
+#pragma region 交互 - 选玩家与选项
+	[[nodiscard]] opt_ref<Player> choosePlayer(const std::string& title, bool forced,
+											   const std::function<bool(const Player&)>& condition
+											   = unool::alwaysTrue);
+	[[nodiscard]] opt_ref<Player> chooseOtherPlayer(const std::string& title, bool forced,
+													const std::function<bool(const Player&)>& condition
+													= unool::alwaysTrue);
+	[[nodiscard]] std::optional<Card::Color> chooseCardColor(const std::string& title, bool forced,
+															 const std::vector<Card::Color>& colors
+															 = { Card::Color::blue, Card::Color::green, Card::Color::red, Card::Color::yellow });
+	[[nodiscard]] std::optional<Card::Name> chooseCardName(const std::string& title, bool forced,
+														   const std::vector<Card::Name>& names);
+	[[nodiscard]] std::size_t ask(const std::string& title, const std::vector<std::string>& options,
+								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
+	void hint(const std::string& message);
+#pragma endregion
+
+#pragma region 交互 - 判定与拼点
+	[[nodiscard]] Card& judge();
+	void showCard(const Card& card);
+	//拼点结果
+	enum class CompareResult { win, lose, draw };
+	//拼点：双方秘密选一张数字牌比点数；发起者无数字牌返回nullopt（不能发动），目标无数字牌判其输
+	[[nodiscard]] std::optional<CompareResult> comparePoint(Player& target, bool forced);
+#pragma endregion
+
+#pragma region 回合流程
+	void phaseBegin();
+	bool phaseUse1();
+	void phaseDraw();
+	void phaseUse2();
+	void phaseEnd();
+	bool turn();
+#pragma endregion
+
+};

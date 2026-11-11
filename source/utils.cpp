@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "application/Services.h"
+#include "core/Services.h"
 #include "platform/Platform.h"
 #include <cmath>
 #include <filesystem>
@@ -72,17 +72,17 @@ namespace unool {
 		// 真正的 mt19937 已移入适配器的 Mt19937Random；这里只留无状态的端口门面，
 		// 使 shuffle / sample / distribution 的所有既有调用点保持源码不变。
 		RandomEngine::result_type RandomEngine::operator()() {
-			return unool::application::services().random.next();
+			return unool::core::services().random.next();
 		}
 		RandomEngine rng;
 		int randomInt(const int begin, const int end) {
-			return unool::application::services().random.intIn(begin, end);
+			return unool::core::services().random.intIn(begin, end);
 		}
 		std::size_t randomSize_t(const std::size_t begin, const std::size_t end) {
-			return unool::application::services().random.sizeIn(begin, end);
+			return unool::core::services().random.sizeIn(begin, end);
 		}
 		bool probability(const double p) {
-			return unool::application::services().random.probability(p);
+			return unool::core::services().random.probability(p);
 		}
 	}
 

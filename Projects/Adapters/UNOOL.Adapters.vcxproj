@@ -84,7 +84,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -92,47 +92,47 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\domain;$(SolutionDir)header\application;$(SolutionDir)header\adapters;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.adapters.h" />
-    <ClInclude Include="..\..\header\adapters\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\..\header\adapters\NetworkServerView.h" />
-    <ClInclude Include="..\..\header\adapters\LegacyServicesAdapter.h" />
-    <ClInclude Include="..\..\header\adapters\JsonConfigProvider.h" />
-    <ClInclude Include="..\..\header\adapters\JsonUserRepository.h" />
-    <ClInclude Include="..\..\header\adapters\Mt19937Random.h" />
-    <ClInclude Include="..\..\header\adapters\ChronoClock.h" />
-    <ClInclude Include="..\..\header\adapters\FilesystemAssetCatalog.h" />
-    <ClInclude Include="..\..\header\adapters\JsonConfig.h" />
-    <ClInclude Include="..\..\header\adapters\ClientApp.h" />
-    <ClInclude Include="..\..\header\adapters\PacketDispatcher.h" />
-    <ClInclude Include="..\..\header\adapters\IClientGateway.h" />
-    <ClInclude Include="..\..\header\adapters\IShopOpener.h" />
-    <ClInclude Include="..\..\header\adapters\InputAdapter.h" />
-    <ClInclude Include="..\..\header\application\IDecisionPort.h" />
-    <ClInclude Include="..\..\header\application\IServerView.h" />
-    <ClInclude Include="..\..\header\application\IConfigProvider.h" />
-    <ClInclude Include="..\..\header\application\IUserRepository.h" />
-    <ClInclude Include="..\..\header\application\IRandom.h" />
-    <ClInclude Include="..\..\header\application\IAssetCatalog.h" />
-    <ClInclude Include="..\..\header\application\Services.h" />
-    <ClInclude Include="..\..\header\domain\Types.h" />
-    <ClInclude Include="..\..\header\domain\Keys.h" />
+    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\shell\JsonConfigProvider.h" />
+    <ClInclude Include="..\..\header\shell\JsonUserRepository.h" />
+    <ClInclude Include="..\..\header\shell\Mt19937Random.h" />
+    <ClInclude Include="..\..\header\shell\ChronoClock.h" />
+    <ClInclude Include="..\..\header\shell\FilesystemAssetCatalog.h" />
+    <ClInclude Include="..\..\header\shell\JsonConfig.h" />
+    <ClInclude Include="..\..\header\shell\ClientApp.h" />
+    <ClInclude Include="..\..\header\shell\PacketDispatcher.h" />
+    <ClInclude Include="..\..\header\shell\IClientGateway.h" />
+    <ClInclude Include="..\..\header\shell\IShopOpener.h" />
+    <ClInclude Include="..\..\header\shell\InputAdapter.h" />
+    <ClInclude Include="..\..\header\core\IDecisionPort.h" />
+    <ClInclude Include="..\..\header\core\IServerView.h" />
+    <ClInclude Include="..\..\header\core\IConfigProvider.h" />
+    <ClInclude Include="..\..\header\core\IUserRepository.h" />
+    <ClInclude Include="..\..\header\core\IRandom.h" />
+    <ClInclude Include="..\..\header\core\IAssetCatalog.h" />
+    <ClInclude Include="..\..\header\core\Services.h" />
+    <ClInclude Include="..\..\header\contract\Types.h" />
+    <ClInclude Include="..\..\header\contract\Keys.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.adapters.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\..\source\adapters\LegacyBlockingDecisionAdapter.cpp">
+    <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\..\source\adapters\NetworkServerView.cpp">
+    <ClCompile Include="..\..\source\shell\NetworkServerView.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
