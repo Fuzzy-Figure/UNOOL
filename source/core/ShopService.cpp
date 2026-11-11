@@ -61,9 +61,10 @@ namespace unool::core {
 		for (const auto& [name, info] : Character::infos) {
 			if (name == "白板") continue;
 
-			ShopCharacterInfo charInfo;
-			charInfo.name = name;
-			charInfo.level = info.level;
+		ShopCharacterInfo charInfo;
+		charInfo.name = name;
+		charInfo.level = info.level;
+		charInfo.defaultImagePath = Character::getImagePath(name, "默认");
 			charInfo.unlocked = userInfo.ownedCharacters.contains(name);
 			charInfo.price = Character::getCharacterPrice(name);
 			// S 档角色：集齐 ABCDF 后售价 488，否则不可购买（nullopt）
@@ -78,6 +79,7 @@ namespace unool::core {
 
 				ShopSkinInfo skinInfo;
 				skinInfo.name = skinName;
+				skinInfo.imagePath = Character::getImagePath(name, skinName);
 				// 检查皮肤是否已解锁（从 ownedCharacters[charName] 的皮肤集合中查找）
 				auto charIt = userInfo.ownedCharacters.find(name);
 				if (charIt != userInfo.ownedCharacters.end()) {

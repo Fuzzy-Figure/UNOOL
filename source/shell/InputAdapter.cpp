@@ -32,13 +32,20 @@ namespace unool::shell {
 					}
 				}
 			}
-			if (event->is<sf::Event::MouseButtonPressed>()) {
-				auto mouseEvent = event->getIf<sf::Event::MouseButtonPressed>();
-				if (mouseEvent && mouseEvent->button == sf::Mouse::Button::Left) {
-					sf::Vector2f mousePos = static_cast<sf::Vector2f>(mouseEvent->position);
-					renderer_.handleMouseClick(mousePos);
-				}
+		//BP 预览：鼠标悬停选项行切换角色详情；纯本地事件，不发任何 ClientInput
+		if (event->is<sf::Event::MouseMoved>()) {
+			auto moveEvent = event->getIf<sf::Event::MouseMoved>();
+			if (moveEvent) {
+				renderer_.handleMouseMove(static_cast<sf::Vector2f>(moveEvent->position));
 			}
+		}
+		if (event->is<sf::Event::MouseButtonPressed>()) {
+			auto mouseEvent = event->getIf<sf::Event::MouseButtonPressed>();
+			if (mouseEvent && mouseEvent->button == sf::Mouse::Button::Left) {
+				sf::Vector2f mousePos = static_cast<sf::Vector2f>(mouseEvent->position);
+				renderer_.handleMouseClick(mousePos);
+			}
+		}
 		}
 		return true;
 	}

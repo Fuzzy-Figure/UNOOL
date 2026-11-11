@@ -320,7 +320,8 @@ public:
 	[[nodiscard]] std::optional<Card::Name> chooseCardName(const std::string& title, bool forced,
 														   const std::vector<Card::Name>& names);
 	[[nodiscard]] std::size_t ask(const std::string& title, const std::vector<std::string>& options,
-								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt);
+								  bool forced, std::optional<std::chrono::milliseconds> timeoutMs = std::nullopt,
+								  const std::vector<unool::core::ChoiceOptionMeta>& optionMeta = {});
 	void hint(const std::string& message);
 #pragma endregion
 

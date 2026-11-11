@@ -17,6 +17,8 @@ struct PlayerState {
 	Hand hand;
 	std::vector<std::string> characterNames;
 	std::vector<std::string> skins;
+	//立绘相对路径由服务端下发，客户端不查本地角色表；与 characterNames / skins 一一对应
+	std::vector<std::string> characterImagePaths;
 	unool::contract::hp_t hp = 0;
 	unool::contract::hp_t maxHp = 0;
 	std::size_t shield = 0;  //护盾值（显示为“体力：(+护盾)/最大体力”）
@@ -28,6 +30,7 @@ struct PlayerState {
 	PlayerState() = default;
 	PlayerState(const PlayerState& other)
 		: id(other.id), characterNames(other.characterNames), skins(other.skins),
+		  characterImagePaths(other.characterImagePaths),
 		  hp(other.hp), maxHp(other.maxHp), shield(other.shield), marks(other.marks),
 		  wins(other.wins), losses(other.losses) {
 		for (std::size_t i = 0; i < other.hand.count(); ++i) {

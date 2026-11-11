@@ -81,6 +81,10 @@ private:
 #pragma endregion
 
 public:
+	// BP 选项预览元数据：服务端从 Character::infos 读取等级 / 体力并拼好立绘相对路径。
+	// 客户端不查角色表，只按 imagePath 从 images/ 读取图片文件。
+	static unool::core::ChoiceOptionMeta makeChoiceMeta(const std::string& charName,
+	                                                   const std::string& skinName = "默认");
 	std::size_t getFirstPlayerId() const { return getSeatPlayerId(0); }
 #pragma region 构造与析构
 	GameLogic(unool::core::IServerView& _view,

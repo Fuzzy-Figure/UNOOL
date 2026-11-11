@@ -573,7 +573,8 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 									 const std::string& errorMsg,
 									 std::optional<std::size_t> timeoutMs,
 									 std::size_t currentPage,
-									 std::size_t totalPages) {
+									 std::size_t totalPages,
+									 const std::vector<unool::core::ChoiceOptionMeta>& optionMeta) {
 	if (!isClientConnected(clientIndex)) return false;
 
 	sf::Packet packet;
@@ -592,6 +593,11 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 	}
 	packet << currentPage;
 	packet << totalPages;
+	// BP 预览元数据：只追加在包尾，既有字段与字节不变。
+	packet << optionMeta.size();
+	for (const auto& meta : optionMeta) {
+		packet << meta.characterName << meta.level << meta.hp << meta.skinName << meta.imagePath;
+	}
 
 	return sendPacketToClient(clientIndex, packet);
 }

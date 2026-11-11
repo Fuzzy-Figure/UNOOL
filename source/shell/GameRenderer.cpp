@@ -99,6 +99,7 @@ void GameRenderer::display() {
 	renderPlayers();
 	renderDiscardPile();
 	renderChoice();
+	renderBpPreview();
 	renderInfoBox();
 	renderGameInfo();
 	window->display();
@@ -113,9 +114,10 @@ void GameRenderer::renderPlayers() {
 		const std::size_t imgCount = playerState.characterNames.size();
 		for (std::size_t i = 0; i < imgCount; ++i) {
 			sf::Vector2f imgPos = { charPos.x + i * config.characterSize.x, charPos.y };
-			displayImage(
-				Character::getImagePath(playerState.characterNames[i], playerState.skins[i]),
-				imgPos, config.characterSize);
+			//立绘路径由服务端随 GameState 下发，客户端不查本地角色表
+			if (i < playerState.characterImagePaths.size() && !playerState.characterImagePaths[i].empty()) {
+				displayImage(playerState.characterImagePaths[i], imgPos, config.characterSize);
+			}
 		}
 		const float charTotalWidth = static_cast<float>(imgCount) * config.characterSize.x;
 
@@ -226,37 +228,46 @@ void GameRenderer::renderDiscardPile() {
 }
 
 void GameRenderer::renderChoice() {
+	choiceRows.clear();
 	if (!choice.has_value()) return;
 
 	std::string choiceText;
+	//每行对应的选项下标；nullopt 表示标题 / 提示 / 错误 / 倒计时等非选项行。
+	//同时保留原始文本，用于按"实际绘制行号"映射命中矩形（标题含 \n 时也占多行）。
+	std::vector<std::pair<std::string, std::optional<std::size_t>>> lines;
+	auto addLine = [&](const std::string& line, std::optional<std::size_t> optionIndex = std::nullopt) {
+		choiceText += line;
+		choiceText += "\n";
+		lines.push_back({ line, optionIndex });
+	};
 	if (!choice->title.empty()) {
-		choiceText += std::format("{}\n", choice->title);
+		addLine(choice->title);
 	}
 	for (const auto& [i, option] : choice->options | std::views::enumerate) {
-		choiceText += std::format("[{}] {}\n", i + 1, option);
+		addLine(std::format("[{}] {}", i + 1, option), static_cast<std::size_t>(i));
 	}
 	if (!choice->options.empty()) {
 		if (choice->forced) {
 			if (choice->totalPages > 1) {
-				choiceText += std::format("第 {}/{}页，<-->翻页\n", choice->currentPage + 1, choice->totalPages);
-				choiceText += std::format("输入数字1-{}选择（必须选择）\n", choice->options.size());
+				addLine(std::format("第 {}/{}页，<-->翻页", choice->currentPage + 1, choice->totalPages));
+				addLine(std::format("输入数字1-{}选择（必须选择）", choice->options.size()));
 			}
 			else {
-				choiceText += std::format("输入数字1-{}选择（必须选择）\n", choice->options.size());
+				addLine(std::format("输入数字1-{}选择（必须选择）", choice->options.size()));
 			}
 		}
 		else {
 			if (choice->totalPages > 1) {
-				choiceText += std::format("第 {}/{}页，<-->翻页\n", choice->currentPage + 1, choice->totalPages);
-				choiceText += std::format("输入数字0-{}选择（0表示不选择）\n", choice->options.size());
+				addLine(std::format("第 {}/{}页，<-->翻页", choice->currentPage + 1, choice->totalPages));
+				addLine(std::format("输入数字0-{}选择（0表示不选择）", choice->options.size()));
 			}
 			else {
-				choiceText += std::format("输入数字0-{}选择（0表示不选择）\n", choice->options.size());
+				addLine(std::format("输入数字0-{}选择（0表示不选择）", choice->options.size()));
 			}
 		}
 	}
 	if (!choice->errorMsg.empty()) {
-		choiceText += std::format("{}\n", choice->errorMsg);
+		addLine(choice->errorMsg);
 	}
 	if (choice->timeoutMs.has_value()) {
 		float elapsedMs = static_cast<float>(countdownClock.getElapsedTime().asMilliseconds());
@@ -265,8 +276,41 @@ void GameRenderer::renderChoice() {
 		float remainingSec = remainingMs / 1000.f;
 		int intPart = static_cast<int>(remainingSec);
 		int decPart = static_cast<int>((remainingSec - intPart) * 10.f);
-		choiceText += std::format("剩余时间：{}.{} 秒\n", intPart, decPart);
+		addLine(std::format("剩余时间：{}.{} 秒", intPart, decPart));
 	}
+
+	//只有 BP 选项（带元数据）才需要命中矩形与悬停高亮；普通 ask 保持原样绘制
+	if (!choice->optionMeta.empty()) {
+		const unsigned int charSize = 40u;
+		const sf::Vector2f measured = textMgr.measureText(choiceText, charSize);
+		const float lineHeight = textMgr.getLineSpacing(charSize);
+		const float rowX = std::max(0.f, static_cast<float>(config.windowSize.x) - measured.x);
+		const float startY = std::max(0.f, (static_cast<float>(config.windowSize.y) - measured.y) / 2.f);
+		//按"实际绘制行号"映射：标题内部的 \n 也会占行，若用逻辑行下标会导致整体错位
+		std::size_t drawIndex = 0;
+		for (const auto& [text, optIdx] : lines) {
+			const std::size_t internalNL = static_cast<std::size_t>(
+				std::count(text.begin(), text.end(), '\n'));
+			const std::size_t drawRows = internalNL + 1;
+			if (optIdx.has_value()) {
+				choiceRows.push_back({ *optIdx,
+					sf::FloatRect({ rowX, startY + static_cast<float>(drawIndex) * lineHeight },
+						{ measured.x, static_cast<float>(drawRows) * lineHeight }) });
+			}
+			drawIndex += drawRows;
+		}
+		if (bpHoverIndex.has_value()) {
+			for (const auto& row : choiceRows) {
+				if (row.optionIndex != *bpHoverIndex) continue;
+				sf::RectangleShape highlight(row.bounds.size);
+				highlight.setPosition(row.bounds.position);
+				highlight.setFillColor(sf::Color(190, 220, 255, 150));
+				window->draw(highlight);
+				break;
+			}
+		}
+	}
+
 	displayTextInRight(choiceText);
 }
 
@@ -434,6 +478,7 @@ void GameRenderer::setChoicePrompt(const Choice& prompt) {
 		choice->currentPage = prompt.currentPage;
 		choice->totalPages = prompt.totalPages;
 		choice->errorMsg = prompt.errorMsg;
+		choice->optionMeta = prompt.optionMeta;
 		// timeoutMs / title / forced 保持不变
 	}
 	else {
@@ -441,10 +486,15 @@ void GameRenderer::setChoicePrompt(const Choice& prompt) {
 		choice = prompt;
 		countdownClock.restart();
 	}
+	//换页 / 换一批后旧悬停位置失效，重新排队技能描述请求
+	bpHoverIndex = std::nullopt;
+	queueSkillRequests();
 }
 
 void GameRenderer::clearChoicePrompt() {
 	choice = std::nullopt;
+	bpHoverIndex = std::nullopt;
+	choiceRows.clear();
 }
 
 void GameRenderer::handleMouseClick(const sf::Vector2f& mousePos) {
@@ -470,5 +520,137 @@ void GameRenderer::handleMouseClick(const sf::Vector2f& mousePos) {
 	}
 	//点击角色图片外区域则关闭
 	infoBoxPlayerId = std::nullopt;
+}
+
+// ===== BP 阶段候选角色预览 =====
+
+void GameRenderer::renderBpPreview() {
+	if (!choice.has_value() || !bpHoverIndex.has_value()) return;
+	const auto& metas = choice->optionMeta;
+	if (*bpHoverIndex >= metas.size()) return;
+	const auto& meta = metas[*bpHoverIndex];
+	if (meta.characterName.empty()) return;
+
+	// ===== 布局参数 =====
+	const float pad = 20.f;          // 面板内边距
+	const float gap = 8.f;           // 文本行间距
+	const float imgW = 210.f;
+	const float imgH = 290.f;
+	const float infoX = pad + imgW + 26.f;   // 基础信息相对面板的起始 x
+	const float infoW = 360.f;               // 基础信息/技能文本宽度
+	const float contentW = imgW + 26.f + infoW;
+	const float panelW = pad * 2.f + contentW;
+
+	// 字号（相比初版调大）
+	const float baseChar = 22.f, baseCharH = 40.f;   // 基础信息
+	const unsigned int descChar = 18, descCharH = 32;   // 技能全文
+
+	const float infoLineH = baseCharH + gap;
+	const float infoBlockH = 4.f * infoLineH;        // 角色/等级/体力/皮肤 四行
+
+	const float topH = pad + std::max(imgH, infoBlockH);   // 立绘区 + 信息区高度
+	const float descTop = topH + 16.f;                     // 技能区顶部（相对面板）
+	const float descTitleH = baseCharH + gap;
+
+	// 技能全文：服务端 SkillInfoResponse 生成，按内容宽度整段折行后逐行绘制
+	const auto cached = bpSkillsCache.find(meta.characterName);
+	const std::string rawSkills = (cached != bpSkillsCache.end())
+		? cached->second : std::string("技能描述加载中...");
+	const sf::Vector2f descSize = { descChar, descCharH };
+	const std::string wrapped = textMgr.wrapText(rawSkills, contentW, descSize);
+	const std::size_t descLines = 1u + static_cast<std::size_t>(
+		std::count(wrapped.begin(), wrapped.end(), '\n'));
+
+	// 技能行距：在字体默认行距基础上额外增大，便于阅读
+	const float descLineH = textMgr.getLineSpacing(descChar) + 10.f;
+
+	// 面板高度与信息量匹配：内容所需高度，封顶到窗口高度的一部分，避免空旷或溢出
+	const float contentH = descTop + descTitleH
+		+ static_cast<float>(descLines) * descLineH + pad;
+	const float maxH = static_cast<float>(config.windowSize.y) * 0.82f;
+	const float panelH = std::min(contentH, maxH);
+	// 居中
+	const float panelX = (static_cast<float>(config.windowSize.x) - panelW) / 2.f;
+	const float panelY = (static_cast<float>(config.windowSize.y) - panelH) / 2.f;
+
+	// 面板背景
+	sf::RectangleShape panel({ panelW, panelH });
+	panel.setPosition({ panelX, panelY });
+	panel.setFillColor(sf::Color(255, 255, 255, 248));
+	panel.setOutlineColor(sf::Color::Black);
+	panel.setOutlineThickness(2.f);
+	window->draw(panel);
+
+	// 立绘：路径由服务端下发，客户端只读 images/ 图片文件
+	if (!meta.imagePath.empty()) {
+		displayImage(meta.imagePath, { panelX + pad, panelY + pad }, { imgW, imgH });
+	}
+
+	// 基础信息：全部来自服务端元数据，客户端不查本地角色表
+	const sf::Vector2f baseSize = { baseChar, baseCharH };
+	float ty = panelY + pad;
+	const float tx = panelX + infoX;
+	displayText(std::format("{}（{}）", meta.characterName, meta.level), { tx, ty }, baseSize);
+	ty += infoLineH;
+	displayText(std::format("体力：{}", meta.hp), { tx, ty }, baseSize);
+
+	// 技能全文：逐行绘制，超出面板高度则截断（行距 descLineH 已增大）
+	const float maxY = panelY + panelH - pad;
+	float sy = panelY + descTop;
+	displayText("技能：", { panelX + pad, sy }, { baseChar, baseCharH });
+	sy += descTitleH;
+
+	bool truncated = false;
+	std::size_t start = 0;
+	while (start < wrapped.size()) {
+		if (sy + descLineH > maxY) { truncated = true; break; }
+		const std::size_t end = wrapped.find('\n', start);
+		const std::string line = wrapped.substr(start,
+			end == std::string::npos ? std::string::npos : end - start);
+		displayText(line, { panelX + pad, sy }, descSize);
+		sy += descLineH;
+		if (end == std::string::npos) break;
+		start = end + 1;
+	}
+	if (truncated) {
+		const float noteY = (sy + descLineH > maxY) ? maxY - descLineH : sy;
+		displayText("…（技能描述过长，已截断）", { panelX + pad, noteY }, descSize);
+	}
+}
+
+void GameRenderer::handleMouseMove(const sf::Vector2f& mousePos) {
+	std::optional<std::size_t> hit;
+	for (const auto& row : choiceRows) {
+		if (row.bounds.contains(mousePos)) {
+			hit = row.optionIndex;
+			break;
+		}
+	}
+	bpHoverIndex = hit;
+}
+
+void GameRenderer::setSkillInfo(const std::string& name, const std::string& text) {
+	bpSkillsCache[name] = text;
+	bpPendingSkills.erase(name);
+}
+
+std::vector<std::string> GameRenderer::takePendingSkillNames() {
+	std::vector<std::string> names;
+	for (const auto& name : bpSkillRequestQueue) {
+		if (bpSkillsCache.contains(name) || bpPendingSkills.contains(name)) continue;
+		bpPendingSkills.insert(name);
+		names.push_back(name);
+	}
+	bpSkillRequestQueue.clear();
+	return names;
+}
+
+void GameRenderer::queueSkillRequests() {
+	if (!choice.has_value()) return;
+	for (const auto& meta : choice->optionMeta) {
+		if (meta.characterName.empty()) continue;
+		if (bpSkillsCache.contains(meta.characterName) || bpPendingSkills.contains(meta.characterName)) continue;
+		bpSkillRequestQueue.push_back(meta.characterName);
+	}
 }
 

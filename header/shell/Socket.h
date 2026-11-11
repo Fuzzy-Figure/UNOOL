@@ -15,6 +15,7 @@
 #include "shell/IClientGateway.h"
 #include "core/AccountService.h"
 #include "core/ShopService.h"
+#include "core/IDecisionPort.h"
 
 
 struct GameState;
@@ -98,7 +99,8 @@ public:
 						  const std::string& errorMsg = "",
 						  std::optional<std::size_t> timeoutMs = std::nullopt,
 						  std::size_t currentPage = 0,
-						  std::size_t totalPages = 1);
+						  std::size_t totalPages = 1,
+						  const std::vector<unool::core::ChoiceOptionMeta>& optionMeta = {});
 	bool clearPlayerChoice(std::size_t clientIndex);
 	bool sendCharInfo(const CharInfo& info);
 

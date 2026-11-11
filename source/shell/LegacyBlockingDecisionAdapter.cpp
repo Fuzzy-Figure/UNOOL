@@ -74,7 +74,8 @@ namespace unool::shell {
 												   const core::ChoicePrompt& prompt) {
 		network_.sendPlayerChoice(id, prompt.title, prompt.options, prompt.forced,
 								  prompt.errorMsg, prompt.timeoutMs,
-								  prompt.currentPage, prompt.totalPages);
+								  prompt.currentPage, prompt.totalPages,
+								  prompt.optionMeta);
 	}
 
 	void LegacyBlockingDecisionAdapter::clearChoice(contract::player_id id) {

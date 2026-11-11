@@ -20,8 +20,20 @@ namespace unool::core {
 		std::size_t   selectedIndex{};
 	};
 
+	// BP 阶段候选项的展示元数据（服务端权威下发）。
+	// 客户端不读本地角色表：角色名 / 等级 / 体力 / 皮肤名 / 立绘相对路径
+	// 全部由服务端给出，客户端只按 imagePath 从 images/ 读取图片文件。
+	// 非 BP 的 ask 传空 vector，既有包内容不变。
+	struct ChoiceOptionMeta {
+		std::string characterName; // 角色名
+		std::string level;         // 等级文本（F/D/C/B/A/S）
+		std::string hp;            // 体力文本（"175" 或 "100/200"）
+		std::string skinName;      // 皮肤名（默认「默认」）
+		std::string imagePath;     // 立绘相对路径，客户端本地读取
+	};
+
 	// 一次选项页面。字段与 ServerNetwork::sendPlayerChoice 的形参一一对应，
-	// 默认值也与其一致，保证包内容逐字节不变。
+	// 默认值也与其一致；optionMeta 只追加在包尾，既有字段字节不变。
 	struct ChoicePrompt {
 		std::string                title;
 		std::vector<std::string>   options;
@@ -30,6 +42,7 @@ namespace unool::core {
 		std::optional<std::size_t> timeoutMs;
 		std::size_t                currentPage = 0;
 		std::size_t                totalPages = 1;
+		std::vector<ChoiceOptionMeta> optionMeta; // 与 options 一一对应；空 = 非 BP 选项
 	};
 
 	// 决策通道（出站端口）。

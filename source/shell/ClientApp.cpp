@@ -10,6 +10,8 @@
 #include "utils.h"
 #include "shell/JsonConfig.h"
 #include "AccountProtocol.h"
+#include "ShopProtocol.h"
+#include "core/IDecisionPort.h"
 #include <SFML/Network.hpp>
 #include "ShopData.h"
 #include <Windows.h>
@@ -60,6 +62,18 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 	std::size_t totalPages;
 	packet >> totalPages;
 
+	//BP 预览元数据追加在 Choice 包尾部；旧服务端没有该字段时读失败即按空处理。
+	std::vector<unool::core::ChoiceOptionMeta> optionMeta;
+	std::size_t metaCount = 0;
+	if (packet >> metaCount) {
+		optionMeta.reserve(metaCount);
+		for (std::size_t i = 0; i < metaCount; ++i) {
+			unool::core::ChoiceOptionMeta meta;
+			if (!(packet >> meta.characterName >> meta.level >> meta.hp >> meta.skinName >> meta.imagePath)) break;
+			optionMeta.push_back(std::move(meta));
+		}
+	}
+
 	if (title.empty() && options.empty()) {
 		renderer.clearChoicePrompt();
 	}
@@ -72,6 +86,7 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 		prompt.timeoutMs = timeoutMs;
 		prompt.currentPage = currentPage;
 		prompt.totalPages = totalPages;
+		prompt.optionMeta = std::move(optionMeta);
 		renderer.setChoicePrompt(prompt);
 	}
 }
@@ -155,12 +170,30 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 				case MessageType::Choice:
 					handleChoicePacket(packet, renderer);
 					break;
+				case MessageType::SkillInfoResponse: {
+					//BP 预览的技能全文：服务端按角色名生成，写入渲染器缓存供面板显示
+					std::string jsonStr;
+					if (packet >> jsonStr) {
+						if (auto parsed = unool::protocol::parseSkillInfoResponse(jsonStr)) {
+							for (const auto& [name, text] : parsed->skills) {
+								renderer.setSkillInfo(name, text);
+							}
+						}
+					}
+					break;
+				}
 				case MessageType::ShopPurchase:
 					//客户端不接收此类型（客户端→服务器的购买请求），忽略
 					break;
 				default:
 					break;
 			}
+		}
+
+		//BP 预览：把本次候选项中缺失的技能描述批量取回（服务端内联处理，不进输入队列）
+		if (auto names = renderer.takePendingSkillNames(); !names.empty()) {
+			sf::Packet req = unool::protocol::makeSkillInfoRequestPacket(names);
+			net.send(req);
 		}
 
 		renderer.display();

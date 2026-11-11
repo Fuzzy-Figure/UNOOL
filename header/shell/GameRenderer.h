@@ -4,11 +4,14 @@
 #include <vector>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include "TextManager.h"
 #include "ImageManager.h"
 #include "GameState.h"
 #include "utils.h"
 #include "shell/JsonConfig.h"
+#include "core/IDecisionPort.h"
 
 //游戏渲染器
 class GameRenderer {
@@ -37,6 +40,8 @@ public:
 		std::optional<std::size_t> timeoutMs;
 		std::size_t currentPage = 0;
 		std::size_t totalPages = 1;
+		//BP 阶段每个选项对应的角色展示信息（服务端下发）；空 = 普通选项
+		std::vector<unool::core::ChoiceOptionMeta> optionMeta;
 	};
 
 private:
@@ -60,10 +65,23 @@ private:
 	std::array<std::string, 2> charInfoCache;
 	sf::Clock countdownClock;
 
+	//BP 预览：悬停的选项行、技能描述缓存与按需请求队列
+	std::optional<std::size_t> bpHoverIndex;
+	std::unordered_map<std::string, std::string> bpSkillsCache;
+	std::unordered_set<std::string> bpPendingSkills;
+	std::vector<std::string> bpSkillRequestQueue;
+	struct ChoiceRow {
+		std::size_t optionIndex = 0;
+		sf::FloatRect bounds;
+	};
+	std::vector<ChoiceRow> choiceRows;
+	void queueSkillRequests();
+
 	//渲染子模块
 	void renderPlayers();
 	void renderDiscardPile();
 	void renderChoice();
+	void renderBpPreview();
 	void renderInfoBox();
 	//右上角：第X局 + 本地玩家局胜负
 	void renderGameInfo();
@@ -86,6 +104,11 @@ public:
 	void updateCharInfo(std::size_t playerIndex, const std::string& fullText);
 	void display();
 	void handleMouseClick(const sf::Vector2f& mousePos);
+	//BP 预览：鼠标悬停切换候选详情；技能描述走服务端 SkillInfoResponse
+	void handleMouseMove(const sf::Vector2f& mousePos);
+	void setSkillInfo(const std::string& name, const std::string& text);
+	//取出本次需要向服务端请求的技能描述角色名（已去重、已标记 pending）
+	std::vector<std::string> takePendingSkillNames();
 
 	//显示文字
 	void displayText(const std::string& text,

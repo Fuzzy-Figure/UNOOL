@@ -333,16 +333,31 @@ std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
 	throw std::logic_error("座位号无效");
 }
 
+unool::core::ChoiceOptionMeta GameLogic::makeChoiceMeta(const std::string& charName,
+														const std::string& skinName) {
+	unool::core::ChoiceOptionMeta meta;
+	meta.characterName = charName;
+	meta.skinName = skinName;
+	const auto it = Character::infos.find(charName);
+	if (it == Character::infos.end()) return meta;
+	const Character::Info& info = it->second;
+	meta.level = std::format("{}", info.level);
+	meta.hp = (info.maxHp != info.hp)
+		? std::format("{}/{}", info.hp, info.maxHp)
+		: std::to_string(info.hp);
+	try {
+		meta.imagePath = Character::getImagePath(charName, skinName);
+	} catch (const std::exception&) {
+		meta.imagePath.clear();
+	}
+	return meta;
+}
+
 std::string GameLogic::formatCharacterLabel(const Character::Entry& entry) {
 	const Character::Info info = entry.second;
 	std::string label = std::format(
-		"{}（{}）体力：{}",
-		entry.first,
-		info.level, info.hp
+		"{}（{}）", entry.first, info.level
 	);
-	if (info.maxHp != info.hp) {
-		label += std::format("/{}", info.maxHp);
-	}
 	return label;
 }
 
@@ -350,17 +365,19 @@ std::string GameLogic::formatCharacterLabel(const Character::Entry& entry) {
 
 std::optional<std::string> GameLogic::banPhase(std::size_t bannerId, std::size_t targetId, std::size_t banIndex, std::size_t banCount, SelectionState& state) {
 	std::vector<std::string> banOpts;
+	std::vector<unool::core::ChoiceOptionMeta> banMeta;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[targetId].size(); ++i) {
 		const bool alreadyBanned = std::ranges::contains(state.bannedIdx[targetId], i);
 		if (alreadyBanned) continue;
 		banOpts.push_back(formatCharacterLabel(state.cands[targetId][i]));
+		banMeta.push_back(makeChoiceMeta(state.cands[targetId][i].first));
 		validIndices.push_back(i);
 	}
 	//候选池<=1时无需再ban
 	if (validIndices.size() <= 1) return std::nullopt;
 	const std::string title = std::format("禁用对方的角色（{}/{}）：", banIndex + 1, banCount);
-	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, std::chrono::seconds(60));
+	std::size_t banChoice = players[bannerId]->ask(title, banOpts, false, std::chrono::seconds(60), banMeta);
 	if (banChoice > 0 && banChoice <= validIndices.size()) {
 		const std::size_t targetIdx = validIndices[banChoice - 1];
 		state.bannedIdx[targetId].push_back(targetIdx);
@@ -375,19 +392,21 @@ void GameLogic::selectCharacter(std::size_t playerId, const SelectionState& stat
 	const auto& owned = services.users.getOwnedCharacters(username);
 
 	std::vector<std::string> opts;
+	std::vector<unool::core::ChoiceOptionMeta> optsMeta;
 	std::vector<std::size_t> validIndices;
 	for (std::size_t i = 0; i < state.cands[playerId].size(); ++i) {
 		if (std::ranges::contains(state.bannedIdx[playerId], i)) continue;
 		const std::string& charName = state.cands[playerId][i].first;
 		if (!owned.contains(charName)) continue; //未解锁的角色不可选
 		opts.push_back(formatCharacterLabel(state.cands[playerId][i]));
+		optsMeta.push_back(makeChoiceMeta(charName));
 		validIndices.push_back(i);
 	}
 	//角色池为空或候选均未解锁时直接抛异常
 	if (opts.empty()) {
 		throw std::runtime_error(std::format("玩家{}未拥有任何候选角色，请先在商城购买角色", username));
 	}
-	std::size_t choice = players[playerId]->ask("选择你的角色：", opts, true);
+	std::size_t choice = players[playerId]->ask("选择你的角色：", opts, true, std::nullopt, optsMeta);
 	std::string charName = state.cands[playerId][validIndices[choice - 1]].first;
 	players[playerId]->chooseSkinAndSet(charName);
 	broadcastState();
@@ -436,11 +455,15 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 		//第一轮：N选1
 		if (!round1Done) {
 			std::vector<std::string> opts1;
-			for (const auto& e : cands) opts1.push_back(formatCharacterLabel(e));
+			std::vector<unool::core::ChoiceOptionMeta> meta1;
+			for (const auto& e : cands) {
+				opts1.push_back(formatCharacterLabel(e));
+				meta1.push_back(makeChoiceMeta(e.first));
+			}
 			const std::string title1 = hasSwapped
 				? std::format("选择你的第1个角色（{}选1）：", opts1.size())
 				: std::format("选择你的第1个角色（{}选1）：\n（按0消耗5积分换一批，仅一次）", opts1.size());
-			const std::size_t choice1 = player.ask(title1, opts1, false);
+			const std::size_t choice1 = player.ask(title1, opts1, false, std::nullopt, meta1);
 			if (choice1 == 0) {
 				doSwap();
 				continue;
@@ -453,9 +476,13 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 
 		//第二轮：M选1（已选过一个角色，不能再换一批）
 		std::vector<std::string> opts2;
-		for (const auto& e : cands) opts2.push_back(formatCharacterLabel(e));
+		std::vector<unool::core::ChoiceOptionMeta> meta2;
+		for (const auto& e : cands) {
+			opts2.push_back(formatCharacterLabel(e));
+			meta2.push_back(makeChoiceMeta(e.first));
+		}
 		const std::string title2 = std::format("选择你的第2个角色（{}选1）：", opts2.size());
-		const std::size_t choice2 = player.ask(title2, opts2, false);
+		const std::size_t choice2 = player.ask(title2, opts2, false, std::nullopt, meta2);
 		if (choice2 == 0) {
 			player.hint("已选角色，无法换一批");
 			continue;
@@ -471,8 +498,8 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 }
 
 std::vector<Character::Entry> GameLogic::pickEntriesFromPool(const std::vector<std::string>& pool,
-															  std::size_t n,
-															  const std::unordered_set<std::string>& exclude) {
+															 std::size_t n,
+															 const std::unordered_set<std::string>& exclude) {
 	std::vector<std::string> available;
 	for (const auto& name : pool) {
 		if (exclude.contains(name)) continue;
@@ -554,6 +581,18 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 		state.players[i].id = pl->getId();
 		state.players[i].characterNames = pl->getNames();
 		state.players[i].skins = pl->getSkins();
+		//立绘相对路径由服务端生成后下发，客户端不再查 Character::infos
+		state.players[i].characterImagePaths.clear();
+		for (std::size_t k = 0; k < state.players[i].characterNames.size()
+			 && k < state.players[i].skins.size(); ++k) {
+			std::string path;
+			try {
+				path = Character::getImagePath(state.players[i].characterNames[k], state.players[i].skins[k]);
+			} catch (const std::exception&) {
+				path.clear();
+			}
+			state.players[i].characterImagePaths.push_back(std::move(path));
+		}
 		state.players[i].hp = pl->getHp();
 		state.players[i].maxHp = pl->getMaxHp();
 		state.players[i].shield = pl->getShield();

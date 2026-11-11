@@ -497,7 +497,10 @@ std::string Player::chooseSkin(const std::string& charName) {
 		if (owned.contains(s)) skinOpts.push_back(s);
 	}
 	if (skinOpts.size() > 1) {
-		std::size_t skinChoice = ask("选择皮肤：", skinOpts, true);
+		std::vector<unool::core::ChoiceOptionMeta> skinMeta;
+		skinMeta.reserve(skinOpts.size());
+		for (const auto& s : skinOpts) skinMeta.push_back(GameLogic::makeChoiceMeta(charName, s));
+		std::size_t skinChoice = ask("选择皮肤：", skinOpts, true, std::nullopt, skinMeta);
 		skin = skinOpts[skinChoice - 1];
 	}
 	else if (skinOpts.size() == 1) {
@@ -873,7 +876,8 @@ std::optional<Card::Name> Player::chooseCardName(const std::string& title, bool 
 
 
 std::size_t Player::ask(const std::string& title, const std::vector<std::string>& options,
-						bool forced, std::optional<std::chrono::milliseconds> timeoutMs) {
+						bool forced, std::optional<std::chrono::milliseconds> timeoutMs,
+						const std::vector<unool::core::ChoiceOptionMeta>& optionMeta) {
 	std::string errorMsg;
 
 	//RAII: 进入/退出操作锁
@@ -898,16 +902,22 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 
 	auto sendPage = [&]() {
 		if (!usePaging) {
-			decision.showChoice(id, { title, options, forced, errorMsg, toTimeoutMs(), 0, 1 });
+			decision.showChoice(id, { title, options, forced, errorMsg, toTimeoutMs(), 0, 1, optionMeta });
 			return;
 		}
 		std::vector<std::string> pageOptions;
+		std::vector<unool::core::ChoiceOptionMeta> pageMeta;
 		const std::size_t start = currentPage * PER_PAGE;
 		const std::size_t end = std::min(start + PER_PAGE, options.size());
 		for (std::size_t i = start; i < end; ++i) {
 			pageOptions.push_back(options[i]);
 		}
-		decision.showChoice(id, { title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages });
+		//元数据与选项等长时才切片，避免非 BP 的空元数据干扰分页
+		if (optionMeta.size() == options.size()) {
+			pageMeta.reserve(end - start);
+			for (std::size_t i = start; i < end; ++i) pageMeta.push_back(optionMeta[i]);
+		}
+		decision.showChoice(id, { title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages, pageMeta });
 	};
 
 	sendPage();

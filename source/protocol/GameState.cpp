@@ -6,6 +6,7 @@ PlayerState& PlayerState::operator=(const PlayerState& other) {
 		id = other.id;
 		characterNames = other.characterNames;
 		skins = other.skins;
+		characterImagePaths = other.characterImagePaths;
 		hp = other.hp;
 		maxHp = other.maxHp;
 		shield = other.shield;
@@ -43,6 +44,11 @@ sf::Packet& operator>>(sf::Packet& packet, PlayerState& state) {
 	}
 	//局胜负
 	packet >> state.wins >> state.losses;
+	//立绘路径数组：只追加在 PlayerState 包尾，既有字段顺序与字节不变
+	std::size_t imagePathCount;
+	packet >> imagePathCount;
+	state.characterImagePaths.resize(imagePathCount);
+	for (std::size_t i = 0; i < imagePathCount; ++i) packet >> state.characterImagePaths[i];
 	return packet;
 }
 
@@ -61,6 +67,9 @@ sf::Packet& operator<<(sf::Packet& packet, const PlayerState& state) {
 	for (const auto& [m, c] : state.marks) packet << m << c;
 	//局胜负
 	packet << state.wins << state.losses;
+	//立绘路径数组：只追加在 PlayerState 包尾，既有字段顺序与字节不变
+	packet << state.characterImagePaths.size();
+	for (const std::string& p : state.characterImagePaths) packet << p;
 	return packet;
 }
 

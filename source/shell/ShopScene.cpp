@@ -910,25 +910,28 @@ void ShopScene::renderDetailPanel() {
 	if (rows.empty()) return;
 	const auto& row = rows[cursor];
 
-	// 确定角色名和皮肤名
-	std::string charName, skinName;
+	// 确定角色名、皮肤名与立绘路径（全部来自服务端 ShopData，客户端不查角色表）
+	std::string charName, skinName, imgPath;
 	if (row.type == Row::Type::HeroCollapsed) {
 		charName = shopData.characters[row.heroIdx].name;
 		skinName = "默认";
+		imgPath = shopData.characters[row.heroIdx].defaultImagePath;
 	}
 	else if (row.type == Row::Type::SkinEntry) {
 		charName = shopData.characters[row.heroIdx].name;
 		skinName = shopData.characters[row.heroIdx].skins[row.skinIdx].name;
+		imgPath = shopData.characters[row.heroIdx].skins[row.skinIdx].imagePath;
 	}
 	else {
 		return;
 	}
 
 	// 显示皮肤图片
-	std::string imgPath = Character::getImagePath(charName, skinName);
 	const float imgW = std::min(panelW - 24.f, 200.f);
 	const float imgH = imgW * 1.4f;  // 竖向比例
-	renderer.displayImage(imgPath, { panelX + 12.f, panelY + 12.f }, { imgW, imgH });
+	if (!imgPath.empty()) {
+		renderer.displayImage(imgPath, { panelX + 12.f, panelY + 12.f }, { imgW, imgH });
+	}
 
 	// 显示角色名
 	float textX = panelX + imgW + 24.f;

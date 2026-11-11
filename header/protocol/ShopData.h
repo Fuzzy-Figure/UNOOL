@@ -29,8 +29,9 @@ struct ShopSkinInfo {
 	bool unlocked = false;      // 是否已解锁
 	ShopPrice price;           // 售价（std::nullopt=不可购买）
 	std::string quality;        // 品质中文名
+	std::string imagePath;      // 该皮肤立绘相对路径（服务端下发，客户端本地读取）
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopSkinInfo, name, unlocked, price, quality)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopSkinInfo, name, unlocked, price, quality, imagePath)
 };
 
 // 角色信息（商城展示用）
@@ -40,8 +41,9 @@ struct ShopCharacterInfo {
 	bool unlocked = false;          // 是否已解锁英雄
 	ShopPrice price;             // 英雄售价（std::nullopt=不可购买如S档）
 	std::vector<ShopSkinInfo> skins; // 皮肤列表（不含默认皮肤）
+	std::string defaultImagePath;   // 默认皮肤立绘相对路径（服务端下发）
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopCharacterInfo, name, level, unlocked, price, skins)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShopCharacterInfo, name, level, unlocked, price, skins, defaultImagePath)
 };
 
 // 道具信息（商城展示用）
