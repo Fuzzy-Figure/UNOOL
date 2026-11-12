@@ -37,16 +37,13 @@ std::string Skill::formatInfo() const {
 			else if (key == "count") {
 				result += std::to_string(count);
 			}
+			//交给子类处理特有占位符
+			else if (auto extra = extraPlaceholders(key)) {
+				result += extra.value();
+			}
+			//未知占位符，原样输出
 			else {
-				//交给子类处理特有占位符
-				auto extra = extraPlaceholders(key);
-				if (extra.has_value()) {
-					result += extra.value();
-				}
-				else {
-					//未知占位符，原样输出
-					result += info.substr(i, end - i + 1);
-				}
+				result += info.substr(i, end - i + 1);
 			}
 			i = end + 1;
 		}
