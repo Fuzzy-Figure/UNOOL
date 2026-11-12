@@ -66,22 +66,6 @@ bool 伪政::content(GameLogic& game, Player& carrier) {
 	return true;
 }
 
-// ==================== 技能：伪政_计数 ====================
-bool 伪政_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	++totalDiscarded;
-	//每有十张牌进入弃牌堆，伪政本局可用次数+1
-	if (totalDiscarded % 10 == 0) {
-		if (auto skill = carrier.findSkill<伪政>(); skill.has_value()) {
-			skill->get().increaseLimit(1);
-			carrier.markCharInfoDirty();
-			std::println("<技能> {}的伪政可用次数+1（当前{}次）",
-						 carrier.displayName(), skill->get().getLimit().value());
-		}
-	}
-	return true;
-}
-
-
 // ==================== 技能：改革 ====================
 bool 改革::content(GameLogic& game, Player& carrier) {
 	//先选目标，取消则不失去体力
@@ -98,39 +82,6 @@ bool 改革::content(GameLogic& game, Player& carrier) {
 	std::println("<技能> {}发动改革，令{}摸1张牌", carrier.displayName(), target.displayName());
 
 	carrier.markCharInfoDirty();
-	game.broadcastState();
-	return true;
-}
-
-
-// ==================== 技能：改革_摸牌替代 ====================
-bool 改革_摸牌替代::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	//仅在其他角色摸牌阶段外摸牌时触发（摸牌阶段与开局初始手牌除外）
-	if (!trigger.hasDrawReason()) return false;
-	if (trigger.getDrawReason() == DrawReason::phase_draw) return false;
-	if (trigger.getDrawReason() == DrawReason::init) return false;
-	if (!trigger.hasNumber() || trigger.getNumber() == 0) return false;
-	return trigger.getPlayer().getId() != carrier.getId();
-}
-
-bool 改革_摸牌替代::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	Player& target = trigger.getPlayer();
-	const std::size_t drawCount = trigger.getNumber();
-	//X为摸牌数，失去2X%最大体力（向上取整）
-	const std::size_t loss = unool::math::ceil(static_cast<double>(drawCount) * target.getMaxHp() * 0.02);
-
-	const std::size_t choice = carrier.ask(
-		std::format("【改革】是否将{}的{}张摸牌改为失去{}点体力？", target.characterName(), drawCount, loss),
-		{ "发动", "不发动" }, false);
-	if (choice != 1) return false;
-
-	//获取摸牌数并取消摸牌
-	trigger.getNumber() = 0;
-	target.cancelNextDraw();
-	target.damage(loss, std::nullopt);
-
-	std::println("<技能> {}发动改革，将{}的{}张摸牌改为失去{}点体力",
-				 carrier.displayName(), target.displayName(), drawCount, loss);
 	game.broadcastState();
 	return true;
 }

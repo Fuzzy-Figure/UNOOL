@@ -421,3 +421,21 @@ bool 通天::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	return true;
 }
 
+// ==================== 技能：无礼_计数 ====================
+bool 无礼_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<无礼>();
+	if (!opt.has_value()) return false;
+	无礼& skill = opt.value().get();
+
+	const Card::Type type = trigger.getCard().getType();
+	if (!skill.usedTypes.contains(type)) {
+		skill.usedTypes.insert(type);
+		skill.increaseLimit(1);
+		std::println("<技能> {}打出了新类型的牌，无礼可用次数+1", carrier.displayName());
+		carrier.hint(std::format("【无礼】可用次数+1（当前剩余{}次）",
+								 skill.getLimit().value() - skill.getCount()));
+		carrier.markCharInfoDirty();
+	}
+	return true;
+}
+

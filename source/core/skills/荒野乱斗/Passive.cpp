@@ -626,3 +626,52 @@ bool 分身::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 }
 
 
+// ==================== 技能：飞手_整轮 ====================
+bool 飞手_整轮::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<飞手>();
+	if (!opt.has_value()) return false;
+	飞手& skill = opt.value().get();
+	skill.usedLastRound = skill.usedThisRound;
+	skill.usedThisRound = false;
+	return true;
+}
+
+// ==================== 技能：筑丛_摸牌 ====================
+std::vector<ref<Card>> 筑丛_摸牌::drawUntilGreen(GameLogic& game, Player& carrier) {
+	std::vector<ref<Card>> result;
+	while (true) {
+		auto drawn = carrier.draw(1, DrawReason::skill);
+		if (drawn.empty()) break;  //牌堆耗尽或摸牌被技能取消
+		result.insert(result.end(), drawn.begin(), drawn.end());
+		if (drawn.back().get().is(Card::Color::green)) break;
+	}
+	return result;
+}
+
+// ==================== 技能：筑丛_累计 ====================
+bool 筑丛_累计::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
+	auto opt = carrier.findSkill<筑丛>();
+	return opt.has_value() && opt.value().get().isAccumulating();
+}
+
+bool 筑丛_累计::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	auto opt = carrier.findSkill<筑丛>();
+	if (!opt.has_value()) return false;
+	筑丛& skill = opt.value().get();
+
+	//绿色牌不计入累计
+	if (trigger.getCard().is(Card::Color::green)) return true;
+
+	skill.setNonGreenCount(skill.getNonGreenCount() + 1);
+	if (skill.getNonGreenCount() >= 10) {
+		skill.setNonGreenCount(0);
+		skill.setAccumulating(false);
+		skill.resetCount();  //视为未发动过，技能恢复可用
+		std::println("<技能> {}累计打出十张非绿色牌，筑丛视为未发动过", carrier.displayName());
+		carrier.hint("【筑丛】已累计十张非绿色牌，技能恢复可用");
+	}
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+

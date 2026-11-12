@@ -79,23 +79,6 @@ bool 修正::content(GameLogic& game, Player& carrier) {
 }
 
 // ==================== 技能：无礼 ====================
-bool 无礼_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	auto opt = carrier.findSkill<无礼>();
-	if (!opt.has_value()) return false;
-	无礼& skill = opt.value().get();
-
-	const Card::Type type = trigger.getCard().getType();
-	if (!skill.usedTypes.contains(type)) {
-		skill.usedTypes.insert(type);
-		skill.increaseLimit(1);
-		std::println("<技能> {}打出了新类型的牌，无礼可用次数+1", carrier.displayName());
-		carrier.hint(std::format("【无礼】可用次数+1（当前剩余{}次）",
-								 skill.getLimit().value() - skill.getCount()));
-		carrier.markCharInfoDirty();
-	}
-	return true;
-}
-
 bool 无礼::filter(const GameLogic& game, const Player& carrier) const {
 	//至少有一名角色手牌≥2才能弃置半数
 	return carrier.handCount() >= 2 || carrier.next().handCount() >= 2;

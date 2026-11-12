@@ -159,37 +159,3 @@ void 炼石::reset() {
 }
 
 
-// ==================== 技能：成金 ====================
-bool 成金::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
-	auto opt = carrier.findSkill<炼石>();
-	return opt.has_value() && opt.value().get().usedThisTurn;
-}
-
-bool 成金::content(GameLogic& game, Player& carrier, Trigger& trigger) {
-	auto opt = carrier.findSkill<炼石>();
-	if (!opt.has_value()) return false;
-	炼石& skill = opt.value().get();
-
-	//弃置本回合获得的所有黄色牌（仍在手牌中的）
-	std::size_t discarded = 0;
-	for (const ref<Card>& cp : skill.yellowGained) {
-		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
-			if (&carrier.getCardByIndex(i) == &cp.get()) {
-				carrier.putCardToDiscardPileByIndex(i, Card::DiscardReason::discard);
-				++discarded;
-				break;
-			}
-		}
-	}
-
-	std::println("<技能> {}发动成金，弃置本回合获得的{}张黄色牌", carrier.displayName(), discarded);
-	//重置炼石本回合状态
-	skill.usedThisTurn = false;
-	skill.yellowGained.clear();
-
-	carrier.markCharInfoDirty();
-	game.broadcastState();
-	return true;
-}
-
-
