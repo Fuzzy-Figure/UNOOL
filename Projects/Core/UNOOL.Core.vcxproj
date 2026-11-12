@@ -111,14 +111,24 @@
     <ClInclude Include="..\..\header\core\Card.h" />
     <ClInclude Include="..\..\header\contract\CharacterTypes.h" />
     <ClInclude Include="..\..\header\platform\Platform.h" />
-    <ClInclude Include="..\..\header\core\skills\元首\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\网络\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\实验\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\原神\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\山海经\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\新三国\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Skills.h" />
-    <ClInclude Include="..\..\header\core\skills\希腊神话\Skills.h" />
+    <ClInclude Include="..\..\header\core\skills\元首\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\元首\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\网络\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\网络\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\网络\Transform.h" />
+    <ClInclude Include="..\..\header\core\skills\实验\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\实验\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\原神\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\山海经\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\山海经\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\山海经\Transform.h" />
+    <ClInclude Include="..\..\header\core\skills\新三国\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\新三国\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Instant.h" />
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Transform.h" />
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Passive.h" />
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Instant.h" />
     <ClInclude Include="..\..\header\core\skills\Skills.h" />
   </ItemGroup>
   <ItemGroup>

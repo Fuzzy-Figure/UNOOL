@@ -233,28 +233,58 @@
     <ClInclude Include="..\..\header\platform\Platform.h">
       <Filter>头文件\platform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\元首\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\元首\Passive.h">
       <Filter>头文件\core\skills\元首</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\网络\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\元首\Instant.h">
+      <Filter>头文件\core\skills\元首</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\网络\Passive.h">
       <Filter>头文件\core\skills\网络</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\实验\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\网络\Instant.h">
+      <Filter>头文件\core\skills\网络</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\网络\Transform.h">
+      <Filter>头文件\core\skills\网络</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\实验\Passive.h">
       <Filter>头文件\core\skills\实验</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\原神\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\实验\Instant.h">
+      <Filter>头文件\core\skills\实验</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\原神\Passive.h">
       <Filter>头文件\core\skills\原神</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\山海经\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\山海经\Passive.h">
       <Filter>头文件\core\skills\山海经</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\新三国\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\山海经\Instant.h">
+      <Filter>头文件\core\skills\山海经</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\山海经\Transform.h">
+      <Filter>头文件\core\skills\山海经</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\新三国\Passive.h">
       <Filter>头文件\core\skills\新三国</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\新三国\Instant.h">
+      <Filter>头文件\core\skills\新三国</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Passive.h">
       <Filter>头文件\core\skills\荒野乱斗</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\core\skills\希腊神话\Skills.h">
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Instant.h">
+      <Filter>头文件\core\skills\荒野乱斗</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\荒野乱斗\Transform.h">
+      <Filter>头文件\core\skills\荒野乱斗</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Passive.h">
+      <Filter>头文件\core\skills\希腊神话</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\core\skills\希腊神话\Instant.h">
       <Filter>头文件\core\skills\希腊神话</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\core\skills\Skills.h">

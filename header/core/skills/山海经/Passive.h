@@ -126,30 +126,3 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-class 装弹 final : public InstantSkillImpl<装弹> {
-public:
-	装弹() : InstantSkillImpl<装弹>(
-		"装弹",
-		"限定技，出牌阶段，若你手中没有封禁类牌且手牌数≤9，\n"
-		"你可以将一半手牌变为随机的非数字牌（向下取整）。",
-		1, unlimited,
-		TriggerTime::phase_use
-	) {}
-	bool filter(const GameLogic& game, const Player& carrier) const override;
-	bool content(GameLogic& game, Player& carrier) override;
-};
-class 八爪 final : public TransformSkillImpl<八爪> {
-public:
-	八爪() : TransformSkillImpl<八爪>(
-		"八爪",
-		"你可以将一张数字牌当作蓝【8】打出。",
-		unlimited, unlimited,
-		TriggerTime::phase_use
-	) {}
-	std::size_t getCardCount() const override;
-	bool canSelect(const Card& c) const override;
-	bool transform(GameLogic& game, Player& carrier, std::vector<ref<Card>> cards) const override;
-	std::string getPrompt() const override;
-};
-
-
