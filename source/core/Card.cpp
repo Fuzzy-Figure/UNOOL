@@ -71,6 +71,24 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::black, Name::wild_pal},   "images/cards/black/wild_pal.jpg"},
 	{{Color::black, Name::wild_draw4}, "images/cards/black/wild_draw4.jpg"},
 
+	// 紫色牌（由角色技能加入牌堆；图片资源后补，缺失时客户端回退默认图）
+	{{Color::purple, Name::number_0},     "images/cards/purple/number_0.jpg"},
+	{{Color::purple, Name::number_1},     "images/cards/purple/number_1.jpg"},
+	{{Color::purple, Name::number_2},     "images/cards/purple/number_2.jpg"},
+	{{Color::purple, Name::number_3},     "images/cards/purple/number_3.jpg"},
+	{{Color::purple, Name::number_4},     "images/cards/purple/number_4.jpg"},
+	{{Color::purple, Name::number_5},     "images/cards/purple/number_5.jpg"},
+	{{Color::purple, Name::number_6},     "images/cards/purple/number_6.jpg"},
+	{{Color::purple, Name::number_7},     "images/cards/purple/number_7.jpg"},
+	{{Color::purple, Name::number_8},     "images/cards/purple/number_8.jpg"},
+	{{Color::purple, Name::number_9},     "images/cards/purple/number_9.jpg"},
+	{{Color::purple, Name::action_rev},   "images/cards/purple/action_rev.jpg"},
+	{{Color::purple, Name::action_skip},  "images/cards/purple/action_skip.jpg"},
+	{{Color::purple, Name::action_draw2}, "images/cards/purple/action_draw2.jpg"},
+	// 被「变为紫色」的万能牌：牌名仍是万能牌，沿用黑色万能牌卡图
+	{{Color::purple, Name::wild_pal},     "images/cards/black/wild_pal.jpg"},
+	{{Color::purple, Name::wild_draw4},   "images/cards/black/wild_draw4.jpg"},
+
 	// 背面牌
 	{{Color::no, Name::back}, "images/cards/back.jpg"}
 };

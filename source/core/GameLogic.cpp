@@ -730,6 +730,8 @@ void GameLogic::resetGame() {
 	// 重置牌堆
 	pile = Pile::standard(*this);
 	discardPile->clear();
+	// 发牌前时机：技能可在此往牌堆加入额外套牌（Trigger 为空， TriggerPlayer 请用 anybody）
+	launchPassiveSkills(PassiveSkill::TriggerTime::before_deal, PassiveSkill::Trigger{});
 
 	// 重置玩家
 	for (auto& player : players) {

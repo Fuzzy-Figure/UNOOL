@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "GameLogic.h"
+#include <ranges>
 #include <thread>
 
 std::string Player::displayName() const {
@@ -329,6 +330,10 @@ std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 bool Player::canUse(const Card& card) {
 	//出牌不受限制：任意牌均可打出
 	if (unrestrictedPlay) return true;
+	//其他角色安装的禁打钩子（如【圣权】【圣柄】）
+	for (const auto& veto : playVetoes | std::views::values) {
+		if (veto(card)) return false;
+	}
 	if (game.getCurrentColor() == Card::Color::no) return true;
 	if (card.is(game.getCurrentColor())
 		|| card.is(game.getCurrentName())

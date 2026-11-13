@@ -160,7 +160,9 @@ public:
 		card_discard_begin, card_discard_end,
 		recycle_discardPile_begin, recycle_discardPile_end,
 		add_mark, remove_mark,
-		round_begin, round_end
+		round_begin, round_end,
+		//新增：发初始手牌前（resetGame() 中牌堆重建后、发牌前触发，Trigger 为空）
+		before_deal
 	};
 	struct Trigger {
 		opt_ref<Player> player = std::nullopt;

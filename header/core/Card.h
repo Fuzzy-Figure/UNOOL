@@ -25,7 +25,11 @@ class Card {
 public:
 #pragma region 类型定义
 	enum class Color {
-		no, blue, green, red, yellow, black
+		no, blue, green, red, yellow, black,
+		//新增：紫色牌只由角色技能加入牌堆，不属于 fourColors/fiveColors，
+		//因此既不进标准牌堆，也不进 Card::getAllCards() 的随机牌池。
+		//追加在末尾以保证既有颜色的线上序列化数值不变。
+		purple
 	};
 	enum class Name {
 		no,
@@ -148,6 +152,7 @@ public:
 			case Color::red:    return "红";
 			case Color::yellow: return "黄";
 			case Color::black:  return "黑";
+			case Color::purple: return "紫";
 			case Color::no:     return "无";
 			default:            return "";
 		}
