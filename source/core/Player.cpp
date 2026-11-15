@@ -198,7 +198,7 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	//发动卡牌效果
 	Player& cardTarget = next();
 	card->applyEffect(game, *this, cardTarget);
-	//牌自带的附加伤害（如【爆破】强化的【+2】）：随牌流转，任何人打出都结算
+	//牌自带的附加伤害（如【雷管】强化的【+2】）：随牌流转，任何人打出都结算
 	if (const std::size_t extra = card->getExtraDamage(); extra > 0) {
 		std::println("<附加效果> {}对{}额外造成{}点伤害",
 					 displayName(), cardTarget.displayName(), extra);

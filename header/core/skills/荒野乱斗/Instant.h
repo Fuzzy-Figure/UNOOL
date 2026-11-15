@@ -332,3 +332,54 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier) const override;
 	bool content(GameLogic& game, Player& carrier) override;
 };
+
+
+// ==================== 新增荒野乱斗角色技能（第四批） ====================
+
+// ---------- 科莱特【收税】 ----------
+//限定技，出牌阶段，目标选择交出一张万能牌（自己随后弃一张牌）或受到1点伤害；
+//目标没有万能牌时只能选受伤
+class 收税 final : public InstantSkillImpl<收税> {
+public:
+	收税() : InstantSkillImpl<收税>(
+		"收税",
+		"限定技，出牌阶段，选择一名其他角色，其选择：\n"
+		"1.交给你一张万能牌，然后你弃置一张牌；\n"
+		"2.受到你的1点伤害。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+// ---------- 罗莎【生草】 ----------
+//生草_连续：隐藏子技能，回合结束时结算本回合是否发动过，未发动则清零连续回合数
+class 生草_连续 final : public PassiveSkillImpl<生草_连续> {
+public:
+	生草_连续() : PassiveSkillImpl<生草_连续>(
+		"生草_连续", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//生草：每回合限一次，重铸一张绿色牌并回复X点体力（X为连续发动此技能的回合数）
+class 生草 final : public InstantSkillImpl<生草> {
+	friend class 生草_连续;
+	std::size_t streak{};
+	bool usedThisTurn{};
+public:
+	生草() : InstantSkillImpl<生草>(
+		"生草",
+		"每回合限一次，出牌阶段，你可以重铸一张绿色牌，并回复X点体力（X为你连续发动此技能的回合数）。",
+		unlimited, 1,
+		TriggerTime::phase_use,
+		生草_连续::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override { InstantSkill::reset(); streak = 0; usedThisTurn = false; }
+};

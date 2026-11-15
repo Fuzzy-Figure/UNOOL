@@ -514,18 +514,17 @@ public:
 // 共用口径：
 //  · 秘技牌【毒酒】【药酒】= Card::Name::secret_毒酒 / secret_药酒，牌色为绿，
 //    由【掷酒】在 game_begin 发放，效果在 Effect::毒酒/药酒 结算，按普通牌循环；
-//  · 【爆破】强化过的【+2】把附加伤害写在 Card::extraDamage 上，随牌流转，
+//  · 【雷管】强化过的【+2】把附加伤害写在 Card::extraDamage 上，随牌流转，
 //    任何人打出都由 Player::useCardByIndex 对牌目标结算；
 //  · 【+2】/【+4】摸牌用 DrawReason::card_draw2 / card_draw4 标识；
 //  · 每局重置的状态一律重写 reset() 清空（Skill::reset() 只清 count/limit）；
 //  · 隐藏子技能一律用空 info，由父技能携带完整描述文字。
 
-// ---------- 麦克【爆破】 ----------
-// 注：C++ 类名避让山海经已有的 class 爆破；两者技能显示名都是「爆破」。
-class 麦克爆破 final : public PassiveSkillImpl<麦克爆破> {
+// ---------- 麦克【雷管】 ----------
+class 雷管 final : public PassiveSkillImpl<雷管> {
 public:
-	麦克爆破() : PassiveSkillImpl<麦克爆破>(
-		"爆破",
+	雷管() : PassiveSkillImpl<雷管>(
+		"雷管",
 		"你打出万能牌后，可获得一张随机颜色的【+2】，此牌额外对目标造成5点伤害。",
 		unlimited, true,
 		TriggerPlayer::self,
@@ -808,6 +807,75 @@ public:
 		unlimited, true,
 		TriggerPlayer::anybody,
 		TriggerTime::round_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ==================== 新增荒野乱斗角色技能（第四批） ====================
+// 共用口径：
+//  · 「炮台」用角色标记表示，addMark/clearMark 维护，销毁炮台即 clearMark("炮台")；
+//  · 连续出牌回合用 phase_end 读 getHasUsed()（空过或被封禁的回合恒为 false，中断即清零）；
+//  · 万能牌无效沿用引擎标准做法：use_card_begin 时 Card::cancelEffect()；
+//  · 科莱特技能名为「征讨」，与博尔特的 class 冲撞（速度标记）是不同技能。
+
+// ---------- 杰西【炮台】 ----------
+//炮台_轰击：隐藏子技能，有「炮台」时回合开始选择一名其他角色，随机造成2-3次1点伤害
+class 炮台_轰击 final : public PassiveSkillImpl<炮台_轰击> {
+public:
+	炮台_轰击() : PassiveSkillImpl<炮台_轰击>(
+		"炮台_轰击", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//炮台_无效：隐藏子技能，其他角色打出万能牌时，由打牌者选择是否令此牌无效并销毁「炮台」
+class 炮台_无效 final : public PassiveSkillImpl<炮台_无效> {
+public:
+	炮台_无效() : PassiveSkillImpl<炮台_无效>(
+		"炮台_无效", "",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//炮台：每连续五回合出牌后，若没有「炮台」则获得一个
+class 炮台 final : public PassiveSkillImpl<炮台> {
+	std::size_t streak{};
+public:
+	炮台() : PassiveSkillImpl<炮台>(
+		"炮台",
+		"你每连续五回合出牌后，若你没有\"炮台\"，获得一个\"炮台\"：\n"
+		"回合开始时，选择一名其他角色，随机对其造成2-3次1点伤害。\n"
+		"其他角色打出万能牌时，其可选择令此牌无效并销毁\"炮台\"。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		炮台_轰击::make(),
+		炮台_无效::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); streak = 0; }
+};
+
+// ---------- 科莱特【征讨】 ----------
+//每局首次造成伤害时，先对目标造成其当前体力33%的伤害（向上取整），并回复此值50%（向上取整）
+class 征讨 final : public PassiveSkillImpl<征讨> {
+public:
+	征讨() : PassiveSkillImpl<征讨>(
+		"征讨",
+		"锁定技，每局游戏首次造成伤害时，先对目标造成一次其当前生命值33%的伤害（向上取整），"
+		"并回复此伤害值50%的体力（向上取整）。",
+		1, true,
+		TriggerPlayer::anybody,
+		TriggerTime::damage_begin
 	) {}
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;

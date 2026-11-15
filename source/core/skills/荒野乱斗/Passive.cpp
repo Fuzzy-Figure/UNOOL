@@ -694,21 +694,21 @@ namespace {
 	}
 }
 
-// ==================== 麦克【爆破】 ====================
-bool 麦克爆破::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+// ==================== 麦克【雷管】 ====================
+bool 雷管::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
 	return trigger.hasCards() && trigger.getCard().isWild();
 }
 
-bool 麦克爆破::content(GameLogic& game, Player& carrier, Trigger&) {
+bool 雷管::content(GameLogic& game, Player& carrier, Trigger&) {
 	//「可获得」沿用上一批口径：弹确认，取消则不拿牌
 	const std::size_t choice = carrier.ask(
-		"【爆破】是否获得一张随机颜色的【+2】（额外对目标造成5点伤害）？",
+		"【雷管】是否获得一张随机颜色的【+2】（额外对目标造成5点伤害）？",
 		{ "获得", "不获得" }, false);
 	if (choice != 1) return true;
 
 	auto card = Card::make(randomPlainColor(), Card::Name::action_draw2);
 	card->setExtraDamage(5);
-	std::println("<技能> {}发动爆破，获得{}（附加5点伤害）", carrier.displayName(), *card);
+	std::println("<技能> {}发动雷管，获得{}（附加5点伤害）", carrier.displayName(), *card);
 	carrier.gainCard(std::move(card));
 	game.broadcastState();
 	return true;
@@ -841,7 +841,7 @@ bool 烧炉::content(GameLogic& game, Player& carrier, Trigger&) {
 bool 飞弹::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
 	//只放大以自己为来源的伤害；trigger.number 在 damage_begin 绑定到实际伤害值
 	return trigger.hasSource() && trigger.hasNumber()
-		&& trigger.getSource().getId() == carrier.getId();
+		&& trigger.getSource() == carrier;
 }
 
 bool 飞弹::content(GameLogic&, Player& carrier, Trigger& trigger) {
@@ -1059,6 +1059,89 @@ bool 旋转::content(GameLogic& game, Player& carrier, Trigger&) {
 	carrier.hint(std::format("【旋转】第{}轮，【镐机】可发动次数+1", game.getRoundCount()));
 	std::println("<技能> {}在第{}轮发动旋转，【镐机】次数+1",
 				 carrier.displayName(), game.getRoundCount());
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 新增荒野乱斗角色技能（第四批） ====================
+
+// ==================== 技能：炮台_轰击 ====================
+bool 炮台_轰击::filter(const GameLogic& game, const Player& carrier, const Trigger&) const {
+	return carrier.hasMark("炮台") && !game.getPlayersExcludeId(carrier.getId()).empty();
+}
+
+bool 炮台_轰击::content(GameLogic& game, Player& carrier, Trigger&) {
+	auto targetOpt = carrier.chooseOtherPlayer("【炮台】选择一名其他角色开火", true);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+	const std::size_t times{static_cast<std::size_t>(unool::random::randomInt(2, 3))};
+	for (std::size_t i = 0; i < times; ++i) target.damage(1, carrier);
+	std::println("<技能> {}的炮台对{}造成{}次1点伤害",
+				 carrier.displayName(), target.displayName(), times);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：炮台_无效 ====================
+bool 炮台_无效::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	if (!carrier.hasMark("炮台") || !trigger.hasCards()) return false;
+	return trigger.getCard().isWild();
+}
+
+bool 炮台_无效::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& player = trigger.getPlayer();
+	const std::size_t choice{player.ask(
+		std::format("{}拥有\"炮台\"，是否令此万能牌无效并销毁\"炮台\"？", carrier.displayName()),
+		{ "令此牌无效并销毁炮台", "正常结算" },
+		true
+	)};
+	if (choice != 1) return false;
+	trigger.getCard().cancelEffect();
+	carrier.clearMark("炮台");
+	carrier.hint("【炮台】已被销毁");
+	std::println("<技能> {}选择令自己打出的万能牌无效，并销毁{}的炮台",
+				 player.displayName(), carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：炮台 ====================
+bool 炮台::content(GameLogic& game, Player& carrier, Trigger&) {
+	if (!carrier.getHasUsed()) {
+		streak = 0;
+		return false;
+	}
+	++streak;
+	if (streak < 5) return false;
+	streak = 0;
+	if (carrier.hasMark("炮台")) return false;
+	carrier.addMark("炮台");
+	carrier.hint("【炮台】已部署：回合开始时开火，他人可用万能牌将其销毁");
+	std::println("<技能> {}连续五回合出牌，获得一个\"炮台\"", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：征讨 ====================
+bool 征讨::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	return trigger.hasSource() && trigger.hasNumber()
+		&& trigger.getSource() == carrier
+		&& trigger.getNumber() > 0;
+}
+
+bool 征讨::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	const int hp{target.getHp()};
+	const std::size_t currentHp{hp > 0 ? static_cast<std::size_t>(hp) : 0};
+	const std::size_t dmg{(currentHp * 33 + 99) / 100};   //当前体力33%，向上取整
+	const std::size_t heal{(dmg + 1) / 2};                //此伤害50%，向上取整
+	//先结算额外伤害；本技能 limit=1，嵌套的 damage_begin 因已达次数不会再次触发
+	target.damage(dmg, carrier);
+	carrier.recover(heal);
+	carrier.hint(std::format("【征讨】额外造成{}点伤害并回复{}点体力", dmg, heal));
+	std::println("<技能> {}发动征讨，先对{}造成{}点伤害并回复{}点体力",
+				 carrier.displayName(), target.displayName(), dmg, heal);
 	game.broadcastState();
 	return true;
 }

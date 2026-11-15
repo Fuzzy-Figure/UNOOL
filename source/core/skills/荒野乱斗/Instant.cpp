@@ -571,16 +571,16 @@ bool 蝙蝠::content(GameLogic& game, Player& carrier) {
 	const auto players = game.getPlayers();
 	std::size_t selfIndex = players.size();
 	for (std::size_t i = 0; i < players.size(); ++i) {
-		if (players[i].get().getId() == carrier.getId()) selfIndex = i;
+		if (players[i].get() == carrier) selfIndex = i;
 	}
 	if (selfIndex == players.size()) return false;
 
 	const auto startOpt = carrier.chooseOtherPlayer("【蝙蝠】选择座位连续区间的起点", false);
 	if (!startOpt.has_value()) return false;
-	const std::size_t startId = startOpt.value().get().getId();
+	Player& startPlayer{startOpt.value().get()};
 	std::size_t startIndex = players.size();
 	for (std::size_t i = 0; i < players.size(); ++i) {
-		if (players[i].get().getId() == startId) startIndex = i;
+		if (players[i].get() == startPlayer) startIndex = i;
 	}
 	if (startIndex == players.size()) return false;
 
@@ -607,6 +607,86 @@ bool 蝙蝠::content(GameLogic& game, Player& carrier) {
 	carrier.hint(std::format("【蝙蝠】吸取{}名角色各5点体力，自己回复{}点体力", choice, 5 * choice));
 	std::println("<技能> {}发动蝙蝠，吸取{}名座位连续角色各5点体力，回复{}点体力",
 				 carrier.displayName(), choice, 5 * choice);
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 新增荒野乱斗角色技能（第四批） ====================
+
+// ==================== 技能：收税 ====================
+bool 收税::filter(const GameLogic& game, const Player& carrier) const {
+	return !game.getPlayersExcludeId(carrier.getId()).empty();
+}
+
+bool 收税::content(GameLogic& game, Player& carrier) {
+	auto targetOpt = carrier.chooseOtherPlayer("【收税】选择一名其他角色", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	const bool hasWild{target.handInclude([](const Card& c) { return c.isWild(); })};
+	std::size_t choice{2};
+	if (hasWild) {
+		choice = target.ask(
+			std::format("【收税】{}令你选择：", carrier.displayName()),
+			{ "交出一张万能牌（其须弃置一张牌）", "受到1点伤害" },
+			true
+		);
+		if (choice == 0) choice = 2;
+	}
+	else {
+		target.hint("【收税】你手中没有万能牌，只能受到1点伤害");
+	}
+
+	if (choice == 1) {
+		auto gave = target.chooseToGive("【收税】交出一张万能牌", carrier, true,
+			[](const Card& c) { return c.isWild(); });
+		if (!gave.has_value()) {
+			target.damage(1, carrier);
+			std::println("<技能> {}发动收税，{}未能交出万能牌，受到1点伤害",
+						 carrier.displayName(), target.displayName());
+		}
+		else {
+			carrier.chooseToDiscard("【收税】弃置一张牌", 1, true);
+			std::println("<技能> {}发动收税，{}交出一张万能牌，{}弃置一张牌",
+						 carrier.displayName(), target.displayName(), carrier.displayName());
+		}
+	}
+	else {
+		target.damage(1, carrier);
+		std::println("<技能> {}发动收税，{}选择受到1点伤害",
+					 carrier.displayName(), target.displayName());
+	}
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：生草_连续 ====================
+bool 生草_连续::content(GameLogic&, Player& carrier, Trigger&) {
+	auto skillOpt = carrier.findSkill<生草>();
+	if (!skillOpt.has_value()) return false;
+	生草& skill = skillOpt.value().get();
+	if (!skill.usedThisTurn) skill.streak = 0;
+	skill.usedThisTurn = false;
+	return true;
+}
+
+// ==================== 技能：生草 ====================
+bool 生草::filter(const GameLogic&, const Player& carrier) const {
+	return carrier.handInclude([](const Card& c) { return c.is(Card::Color::green); });
+}
+
+bool 生草::content(GameLogic& game, Player& carrier) {
+	auto index = carrier.chooseCard("【生草】选择一张绿色牌重铸",
+		[](const Card& c) { return c.is(Card::Color::green); }, false);
+	if (!index.has_value()) return false;
+	carrier.recastByIndex(index.value());
+	++streak;
+	usedThisTurn = true;
+	carrier.recover(streak);
+	carrier.hint(std::format("【生草】连续第{}回合发动，回复{}点体力", streak, streak));
+	std::println("<技能> {}发动生草，重铸一张绿色牌并回复{}点体力",
+				 carrier.displayName(), streak);
 	game.broadcastState();
 	return true;
 }
