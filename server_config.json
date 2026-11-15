@@ -1,7 +1,7 @@
 {
   "mode": "normal",
   "characters": {
-    //"assign": [ "白板", "白板" ],
+    "assign": [ "妮塔", "巴利" ],
     "shielded": {
       "characters": [],
       "groups": [ "实验" ]

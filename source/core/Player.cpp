@@ -155,6 +155,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		trigger.player = *this;
 		trigger.cards = drawnCards;
 		trigger.number = number;
+		trigger.drawReason = reason;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_end, trigger);
 	}
 	{
@@ -162,6 +163,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		trigger.player = *this;
 		trigger.cards = drawnCards;
 		trigger.number = number;
+		trigger.drawReason = reason;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::gain_card_end, trigger);
 	}
 	return drawnCards;
@@ -194,7 +196,14 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	}
 
 	//发动卡牌效果
-	card->applyEffect(game, *this, next());
+	Player& cardTarget = next();
+	card->applyEffect(game, *this, cardTarget);
+	//牌自带的附加伤害（如【爆破】强化的【+2】）：随牌流转，任何人打出都结算
+	if (const std::size_t extra = card->getExtraDamage(); extra > 0) {
+		std::println("<附加效果> {}对{}额外造成{}点伤害",
+					 displayName(), cardTarget.displayName(), extra);
+		cardTarget.damage(extra, std::ref(*this));
+	}
 
 	//更改当前颜色
 	if (!card->isWild()) game.setCurrentColor(card->getColor());
@@ -334,6 +343,8 @@ bool Player::canUse(const Card& card) {
 	for (const auto& veto : playVetoes | std::views::values) {
 		if (veto(card)) return false;
 	}
+	//秘技牌：可跟任意数字牌；牌本身为绿色，当前颜色为绿时由通用规则放行
+	if (card.isSecret() && Card::is_number(game.getCurrentName())) return true;
 	if (game.getCurrentColor() == Card::Color::no) return true;
 	if (card.is(game.getCurrentColor())
 		|| card.is(game.getCurrentName())

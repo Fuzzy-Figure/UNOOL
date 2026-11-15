@@ -509,3 +509,107 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+
+// ==================== 新增荒野乱斗角色技能 ====================
+// 共用口径：
+//  · 秘技牌【毒酒】【药酒】= Card::Name::secret_poison / secret_heal，牌色为绿，
+//    由【掷酒】在 game_begin 发放，效果在 Effect::poison/heal 结算，按普通牌循环；
+//  · 【爆破】强化过的【+2】把附加伤害写在 Card::extraDamage 上，随牌流转，
+//    任何人打出都由 Player::useCardByIndex 对牌目标结算；
+//  · 【+2】/【+4】摸牌用 DrawReason::card_draw2 / card_draw4 标识；
+//  · 每局重置的状态一律重写 reset() 清空（Skill::reset() 只清 count/limit）；
+//  · 隐藏子技能一律用空 info，由父技能携带完整描述文字。
+
+// ---------- 麦克【爆破】 ----------
+// 注：C++ 类名避让山海经已有的 class 爆破；两者技能显示名都是「爆破」。
+class 麦克爆破 final : public PassiveSkillImpl<麦克爆破> {
+public:
+	麦克爆破() : PassiveSkillImpl<麦克爆破>(
+		"爆破",
+		"你打出万能牌后，可获得一张随机颜色的【+2】，此牌额外对目标造成5点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 妮塔【熊灵】 ----------
+//熊灵_摸前：因【+2】/【+4】摸牌前，护盾已达上限则本次摸牌数减半
+class 熊灵_摸前 final : public PassiveSkillImpl<熊灵_摸前> {
+public:
+	熊灵_摸前() : PassiveSkillImpl<熊灵_摸前>(
+		"熊灵_摸前", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//熊灵_摸后：因【+2】/【+4】摸牌后获得护盾（上限30）
+class 熊灵_摸后 final : public PassiveSkillImpl<熊灵_摸后> {
+public:
+	熊灵_摸后() : PassiveSkillImpl<熊灵_摸后>(
+		"熊灵_摸后", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+class 熊灵 final : public PassiveSkillImpl<熊灵> {
+	friend class 熊灵_摸前;
+	friend class 熊灵_摸后;
+private:
+	//本局每次因【+2】/【+4】摸牌获得的护盾量，初始1，每打出一张功能牌+1
+	std::size_t shieldGain = 1;
+public:
+	熊灵() : PassiveSkillImpl<熊灵>(
+		"熊灵",
+		"你因【+2】/【+4】摸牌后，获得1点护盾（上限30点），已达上限则此次摸牌数减半；\n"
+		"你每次打出功能牌，使本局此技能护盾值+1。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end,
+		熊灵_摸前::make(), 熊灵_摸后::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override {
+		PassiveSkillImpl<熊灵>::reset();
+		shieldGain = 1;
+	}
+};
+
+// ---------- 布洛克【火箭】 ----------
+class 火箭 final : public PassiveSkillImpl<火箭> {
+public:
+	火箭() : PassiveSkillImpl<火箭>(
+		"火箭",
+		"锁定技，每局游戏开始后第十轮结束时，获得两张【变色】和两张随机颜色的【封禁】。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 巴利【掷酒】 ----------
+class 掷酒 final : public PassiveSkillImpl<掷酒> {
+public:
+	掷酒() : PassiveSkillImpl<掷酒>(
+		"掷酒",
+		"锁定技，每局游戏开始时，获得秘技牌【毒酒】和【药酒】各一张。\n"
+		"【毒酒】：可跟任意数字牌且视为绿色，打出后对一名其他角色造成10点伤害。\n"
+		"【药酒】：可跟任意数字牌且视为绿色，打出后回复10点体力。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::game_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+

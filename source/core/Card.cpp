@@ -89,6 +89,10 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{{Color::purple, Name::wild_pal},     "images/cards/black/wild_pal.jpg"},
 	{{Color::purple, Name::wild_draw4},   "images/cards/black/wild_draw4.jpg"},
 
+	// 秘技牌（由角色技能发放，视为绿色；卡图统一放在 cards/secret/，缺失时客户端回退默认图）
+	{{Color::green, Name::secret_poison}, "images/cards/secret/secret_poison.jpg"},
+	{{Color::green, Name::secret_heal},   "images/cards/secret/secret_heal.jpg"},
+
 	// 背面牌
 	{{Color::no, Name::back}, "images/cards/back.jpg"}
 };
@@ -108,6 +112,7 @@ std::unique_ptr<Card> Card::make(const Color _color, const Name _name) {
 std::unique_ptr<Card> Card::make(const Card& other) {
 	auto c = std::make_unique<Card>(other.getColor(), other.getName());
 	c->setDiscardReason(other.getDiscardReason());
+	c->setExtraDamage(other.getExtraDamage());
 	return c;
 }
 std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
@@ -254,6 +259,9 @@ std::size_t Card::value() const {
 			//万能
 		case Name::wild_pal:
 		case Name::wild_draw4: return 50;
+			//秘技牌：不计入手牌价值，避免败者伤害被它们放大
+		case Name::secret_poison:
+		case Name::secret_heal: return 0;
 			//其他
 		default: throw std::invalid_argument("无法计算背面/未知牌的价值");
 	}
@@ -280,6 +288,7 @@ void Card::set(const Card& other) {
 	setColor(other.getColor());
 	setName(other.getName());
 	setDiscardReason(other.getDiscardReason());
+	setExtraDamage(other.getExtraDamage());
 }
 void Card::set(const Color color, const Name name) {
 	setColor(color);
@@ -297,8 +306,10 @@ void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 			case Name::action_skip:   Effect::ban(*this, source, target); break;
 			case Name::action_rev:   Effect::rev(*this, game); break;
 			case Name::action_draw2: Effect::draw2(*this, source, target); break;
-			case Name::wild_pal:     Effect::pal(*this, game, source); break;
-			case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
+		case Name::wild_pal:     Effect::pal(*this, game, source); break;
+		case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
+		case Name::secret_poison: Effect::poison(source); break;
+		case Name::secret_heal:   Effect::heal(source); break;
 		}
 	}
 }

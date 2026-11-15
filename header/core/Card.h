@@ -36,7 +36,10 @@ public:
 		number_0, number_1, number_2, number_3, number_4,
 		number_5, number_6, number_7, number_8, number_9,
 		action_rev, action_skip, action_draw2, wild_pal, wild_draw4,
-		back
+		back,
+		//新增：秘技牌只由角色技能发放，不进标准牌堆与 getAllCards() 随机牌池。
+		//追加在末尾以保证既有牌名的线上序列化数值不变。
+		secret_poison, secret_heal
 	};
 	enum class Type {
 		unknown, number, action, wild
@@ -62,6 +65,8 @@ private:
 	Name name = Name::no;
 	bool effective = true;
 	DiscardReason discardReason = DiscardReason::none;
+	//牌自带的附加伤害（由角色技能写入，随牌在牌堆/弃牌堆间流转），打出时对目标结算
+	std::size_t extraDamage = 0;
 
 public:
 #pragma region 构造 / 静态工厂
@@ -94,6 +99,8 @@ public:
 	Type getType() const;
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
+	std::size_t getExtraDamage() const { return extraDamage; }
+	bool isSecret() const { return is_secret(name); }
 
 	bool sameColorAs(const Card& other) const;
 	bool sameNameAs(const Card& other) const;
@@ -132,6 +139,7 @@ public:
 	void setColor(const Color newColor);
 	void setName(const Name newName);
 	void setDiscardReason(DiscardReason r) { discardReason = r; }
+	void setExtraDamage(std::size_t v) { extraDamage = v; }
 	void set(const Card& other);
 	void set(const Color color, const Name name);
 	void set(const ColorName& cn);
@@ -179,6 +187,9 @@ public:
 			case Name::wild_draw4:   return "+4";
 				//其他
 			case Name::back:         return "背面";
+			//秘技牌
+			case Name::secret_poison: return "毒酒";
+			case Name::secret_heal:   return "药酒";
 			case Name::no:           return "无";
 			default:                 return "未知";
 		}
@@ -217,6 +228,9 @@ public:
 	}
 	static constexpr bool is_wild(const Card::Name name) {
 		return name == Name::wild_pal || name == Name::wild_draw4;
+	}
+	static constexpr bool is_secret(const Card::Name name) {
+		return name == Name::secret_poison || name == Name::secret_heal;
 	}
 #pragma endregion
 

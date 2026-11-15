@@ -544,17 +544,26 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 }
 
 bool GameLogic::runTurn() {
-	// 一号位回合开始前触发轮开始
+	// 一号位回合开始前触发轮开始（每轮恰好一次），并累计本局轮数
 	if (getCurrentPlayerId() == getFirstPlayerId()) {
+		++roundCount;
 		PassiveSkill::Trigger trigger;
 		trigger.player = *players[currentPlayerIndex];
 		launchPassiveSkills(PassiveSkill::TriggerTime::round_begin, trigger);
 	}
 	std::println("{}的回合", currentPlayer().displayName());
+	//记录本回合玩家：轮末触发时 currentPlayerIndex 已被 altPlayer() 推进
+	Player& roundFinisher = currentPlayer();
 	bool gameEnded = currentPlayerTurn();
 
 	if (!gameEnded) {
 		altPlayer();
+		//回到一号位说明刚结束的是本轮最后一个回合
+		if (getCurrentPlayerId() == getFirstPlayerId()) {
+			PassiveSkill::Trigger trigger;
+			trigger.player = roundFinisher;
+			launchPassiveSkills(PassiveSkill::TriggerTime::round_end, trigger);
+		}
 	}
 
 	broadcastState();
@@ -727,6 +736,7 @@ void GameLogic::checkRoundEnd() {
 
 void GameLogic::resetGame() {
 	++gameCount;
+	roundCount = 0;
 	// 重置牌堆
 	pile = Pile::standard(*this);
 	discardPile->clear();

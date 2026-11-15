@@ -675,3 +675,109 @@ bool 筑丛_累计::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 	return true;
 }
 
+
+// ==================== 新增荒野乱斗角色技能 ====================
+namespace {
+	//随机四色之一：Card::fourColors 是 constexpr 数组，randomGet 需要非 const 引用，故用下标取
+	Card::Color randomPlainColor() {
+		return Card::fourColors[unool::random::randomSize_t(0, Card::fourColors.size() - 1)];
+	}
+
+	//本次摸牌是否因【+2】/【+4】效果
+	bool isPenaltyDraw(const PassiveSkill::Trigger& trigger) {
+		return trigger.hasDrawReason()
+			&& (trigger.getDrawReason() == DrawReason::card_draw2
+				|| trigger.getDrawReason() == DrawReason::card_draw4);
+	}
+}
+
+// ==================== 麦克【爆破】 ====================
+bool 麦克爆破::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	return trigger.hasCards() && trigger.getCard().isWild();
+}
+
+bool 麦克爆破::content(GameLogic& game, Player& carrier, Trigger&) {
+	//「可获得」沿用上一批口径：弹确认，取消则不拿牌
+	const std::size_t choice = carrier.ask(
+		"【爆破】是否获得一张随机颜色的【+2】（额外对目标造成5点伤害）？",
+		{ "获得", "不获得" }, false);
+	if (choice != 1) return true;
+
+	auto card = Card::make(randomPlainColor(), Card::Name::action_draw2);
+	card->setExtraDamage(5);
+	std::println("<技能> {}发动爆破，获得{}（附加5点伤害）", carrier.displayName(), *card);
+	carrier.gainCard(std::move(card));
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 妮塔【熊灵】 ====================
+bool 熊灵_摸前::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	return isPenaltyDraw(trigger)
+		&& trigger.hasNumber()
+		&& carrier.getShield() >= 30;
+}
+
+bool 熊灵_摸前::content(GameLogic&, Player& carrier, Trigger& trigger) {
+	std::size_t& number = trigger.getNumber();
+	const std::size_t halved = number / 2;
+	std::println("<技能> {}的熊灵护盾已满，本次摸牌数由{}减半为{}",
+				 carrier.displayName(), number, halved);
+	number = halved;
+	return true;
+}
+
+bool 熊灵_摸后::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	return isPenaltyDraw(trigger) && carrier.getShield() < 30;
+}
+
+bool 熊灵_摸后::content(GameLogic& game, Player& carrier, Trigger&) {
+	const std::size_t gain = carrier.getSkill<熊灵>().shieldGain;
+	const std::size_t before = carrier.getShield();
+	carrier.setShield(std::min<std::size_t>(30, before + gain));
+	carrier.markCharInfoDirty();
+	std::println("<技能> {}的熊灵获得{}点护盾（{} -> {}）",
+				 carrier.displayName(), gain, before, carrier.getShield());
+	game.broadcastState();
+	return true;
+}
+
+bool 熊灵::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	return trigger.hasCards() && trigger.getCard().is(Card::Type::action);
+}
+
+bool 熊灵::content(GameLogic&, Player& carrier, Trigger&) {
+	++shieldGain;
+	carrier.markCharInfoDirty();
+	std::println("<技能> {}打出功能牌，熊灵本局每次摸牌护盾量提升为{}点",
+				 carrier.displayName(), shieldGain);
+	return true;
+}
+
+// ==================== 布洛克【火箭】 ====================
+bool 火箭::filter(const GameLogic& game, const Player&, const Trigger&) const {
+	return game.getRoundCount() == 10;
+}
+
+bool 火箭::content(GameLogic& game, Player& carrier, Trigger&) {
+	//凭空生成，不从牌堆取：第十轮时牌堆可能已无足够的【变色】
+	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+	carrier.gainCard(Card::make(Card::Color::black, Card::Name::wild_pal));
+	carrier.gainCard(Card::make(randomPlainColor(), Card::Name::action_skip));
+	carrier.gainCard(Card::make(randomPlainColor(), Card::Name::action_skip));
+	std::println("<技能> 第十轮结束，{}发动火箭，获得两张【变色】与两张随机颜色的【封禁】",
+				 carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 巴利【掷酒】 ====================
+bool 掷酒::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_poison));
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_heal));
+	std::println("<技能> {}发动掷酒，获得秘技牌【毒酒】和【药酒】各一张",
+				 carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+

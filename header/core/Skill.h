@@ -20,7 +20,10 @@ enum class DrawReason {
 	unknown,
 	init,        //开局初始手牌
 	phase_draw,
-	skill
+	skill,
+	//新增：因【+2】/【+4】效果摸牌（供技能识别，数值追加在末尾不影响既有判断）
+	card_draw2,
+	card_draw4
 };
 enum class DrawPosition {
 	top,
