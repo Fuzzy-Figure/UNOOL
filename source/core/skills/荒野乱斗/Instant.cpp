@@ -498,3 +498,115 @@ bool 爆汽::content(GameLogic& game, Player& carrier) {
 }
 
 
+// ==================== 新增荒野乱斗角色技能（第三批） ====================
+
+// ==================== 技能：蝙蝠_计数 ====================
+bool 蝙蝠_计数::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	if (trigger.hasDrawReason() && trigger.getDrawReason() == DrawReason::init) return false;
+	return trigger.hasCards() && !trigger.getCards().empty();
+}
+
+bool 蝙蝠_计数::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	gained += trigger.getCards().size();
+	while (gained >= (awarded + 1) * 5) {
+		++awarded;
+		carrier.getSkill<蝙蝠>().increaseLimit(1);
+		carrier.hint(std::format("【蝙蝠】累计获得{}张牌，可发动次数+1", gained));
+		std::println("<技能> {}累计获得{}张牌，【蝙蝠】次数+1", carrier.displayName(), gained);
+	}
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：突击 ====================
+bool 突击::filter(const GameLogic& game, const Player& carrier) const {
+	for (const auto& other : game.getPlayersExcludeId(carrier.getId())) {
+		if (other.get().handCount() > 0) return true;
+	}
+	return false;
+}
+
+bool 突击::content(GameLogic& game, Player& carrier) {
+	std::vector<ref<Player>> candidates{};
+	for (const auto& other : game.getPlayersExcludeId(carrier.getId())) {
+		if (other.get().handCount() > 0) candidates.push_back(other);
+	}
+	if (candidates.empty()) return false;
+	Player& target = unool::random::randomGet(candidates).get();
+	const std::size_t index = unool::random::randomSize_t(0, target.handCount() - 1);
+	const Card::Name name = target.getCardByIndex(index).getName();
+	carrier.hint(std::format("【突击】观看了{}的一张牌：{}",
+							  target.displayName(), Card::to_string(name)));
+	std::println("<技能> {}发动突击，观看{}的{}",
+				 carrier.displayName(), target.displayName(), Card::to_string(name));
+
+	const bool same = carrier.handInclude([name](const Card& c) { return c.getName() == name; });
+	if (!same) {
+		carrier.gainCard(target.takeCardByIndex(index));
+		std::println("<技能> {}手中无此牌名，获得{}的{}",
+					 carrier.displayName(), target.displayName(), Card::to_string(name));
+	}
+	else {
+		target.damage(3, carrier);
+		for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+			if (carrier.getCardByIndex(i).getName() == name) {
+				carrier.discardByIndex(i);
+				break;
+			}
+		}
+		std::println("<技能> {}手中已有{}，对{}造成3点伤害并弃置一张同名牌",
+					 carrier.displayName(), Card::to_string(name), target.displayName());
+	}
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：蝙蝠 ====================
+bool 蝙蝠::filter(const GameLogic& game, const Player& carrier) const {
+	return !game.getPlayersExcludeId(carrier.getId()).empty();
+}
+
+bool 蝙蝠::content(GameLogic& game, Player& carrier) {
+	const auto players = game.getPlayers();
+	std::size_t selfIndex = players.size();
+	for (std::size_t i = 0; i < players.size(); ++i) {
+		if (players[i].get().getId() == carrier.getId()) selfIndex = i;
+	}
+	if (selfIndex == players.size()) return false;
+
+	const auto startOpt = carrier.chooseOtherPlayer("【蝙蝠】选择座位连续区间的起点", false);
+	if (!startOpt.has_value()) return false;
+	const std::size_t startId = startOpt.value().get().getId();
+	std::size_t startIndex = players.size();
+	for (std::size_t i = 0; i < players.size(); ++i) {
+		if (players[i].get().getId() == startId) startIndex = i;
+	}
+	if (startIndex == players.size()) return false;
+
+	//从起点按座位顺序取连续的一段，遇到自己即止（区间内不含自己）
+	std::size_t maxCount = 0;
+	for (std::size_t k = 0; k < players.size(); ++k) {
+		if ((startIndex + k) % players.size() == selfIndex) break;
+		++maxCount;
+	}
+	if (maxCount == 0) return false;
+
+	std::vector<std::string> options{};
+	for (std::size_t n = 1; n <= maxCount; ++n) {
+		options.push_back(std::format("{}名（吸取{}点体力）", n, 5 * n));
+	}
+	const std::size_t choice = carrier.ask("【蝙蝠】选择吸取人数", options, true);
+	if (choice == 0 || choice > maxCount) return false;
+
+	for (std::size_t k = 0; k < choice; ++k) {
+		Player& victim = players[(startIndex + k) % players.size()].get();
+		victim.loseHp(5);
+	}
+	carrier.recover(5 * choice);
+	carrier.hint(std::format("【蝙蝠】吸取{}名角色各5点体力，自己回复{}点体力", choice, 5 * choice));
+	std::println("<技能> {}发动蝙蝠，吸取{}名座位连续角色各5点体力，回复{}点体力",
+				 carrier.displayName(), choice, 5 * choice);
+	game.broadcastState();
+	return true;
+}

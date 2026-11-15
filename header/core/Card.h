@@ -40,7 +40,7 @@ public:
 		//新增：秘技牌只由角色技能发放，不进标准牌堆与 getAllCards() 随机牌池。
 		//追加在末尾以保证既有牌名的线上序列化数值不变。
 		//命名约定：secret_中文名，与 images/cards/secret/中文名.jpg 对应。
-		secret_毒酒, secret_药酒, secret_过载
+		secret_毒酒, secret_药酒, secret_过载, secret_指虎
 	};
 	enum class Type {
 		unknown, number, action, wild,
@@ -195,6 +195,7 @@ public:
 			case Name::secret_毒酒:  return "毒酒";
 			case Name::secret_药酒:  return "药酒";
 			case Name::secret_过载:  return "过载";
+			case Name::secret_指虎:  return "指虎";
 			case Name::no:           return "无";
 			default:                 return "未知";
 		}
@@ -237,7 +238,7 @@ public:
 	}
 	static constexpr bool is_secret(const Card::Name name) {
 		return name == Name::secret_毒酒 || name == Name::secret_药酒
-			|| name == Name::secret_过载;
+			|| name == Name::secret_过载 || name == Name::secret_指虎;
 	}
 #pragma endregion
 

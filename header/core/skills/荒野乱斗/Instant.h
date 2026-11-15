@@ -284,3 +284,51 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 };
 
+
+// ==================== 新增荒野乱斗角色技能（第三批） ====================
+
+//蝙蝠_计数：隐藏子技能，统计本局获得的手牌（不含 DrawReason::init 的初始手牌），每累计5张令蝙蝠次数+1
+class 蝙蝠_计数 final : public PassiveSkillImpl<蝙蝠_计数> {
+public:
+	std::size_t gained{};    //本局累计获得牌数
+	std::size_t awarded{};   //本局已发放的次数
+	蝙蝠_计数() : PassiveSkillImpl<蝙蝠_计数>(
+		"蝙蝠_计数", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::gain_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); gained = 0; awarded = 0; }
+};
+
+// ---------- 莫提斯【突击】【蝙蝠】 ----------
+//突击：每回合限一次，出牌阶段，随机观看一名其他角色一张牌；手中无同名则获得此牌，
+//有同名则对其造成3点伤害并弃置自己手中一张同名牌
+class 突击 final : public InstantSkillImpl<突击> {
+public:
+	突击() : InstantSkillImpl<突击>(
+		"突击",
+		"每回合限一次，出牌阶段，你可随机观看一名其他角色一张牌，若你手中没有此牌名的牌，你获得此牌；若有，你对其造成3点伤害并弃置手中此牌。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};
+
+//蝙蝠：每局游戏限零次，出牌阶段，吸取任意名座位连续的其他角色各5点体力（非伤害），自己回复等量体力
+class 蝙蝠 final : public InstantSkillImpl<蝙蝠> {
+public:
+	蝙蝠() : InstantSkillImpl<蝙蝠>(
+		"蝙蝠",
+		"每局游戏限{limit}次（剩余{remaining}次），出牌阶段，你可吸取任意名座位连续的其他角色各5点体力（非伤害）。\n"
+		"你每累计获得五张牌，此技能可发动次数+1。",
+		0, unlimited,
+		TriggerTime::phase_use,
+		蝙蝠_计数::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};

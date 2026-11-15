@@ -1,6 +1,9 @@
 #include "skills/Skills.h"
 #include "GameLogic.h"
+#include "utils.h"
 #include <algorithm>
+#include <functional>
+#include <map>
 #include <numeric>
 #include <optional>
 
@@ -970,3 +973,92 @@ bool 蛮冲_结算::content(GameLogic& game, Player& carrier, Trigger&) {
 	return true;
 }
 
+
+// ==================== 新增荒野乱斗角色技能（第三批） ====================
+
+// ==================== 技能：指虎_弃牌 ====================
+bool 指虎_弃牌::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	if (!trigger.hasCards()) return false;
+	const Card& card = trigger.getCard();
+	return card.getName() == Card::Name::secret_指虎 || card.isWild();
+}
+
+bool 指虎_弃牌::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Card& card = trigger.getCard();
+	auto& main = carrier.getSkill<指虎>();
+	if (card.getName() == Card::Name::secret_指虎) {
+		main.unlocked = true;
+		carrier.hint("【指虎】已解锁：本局每打出一张万能牌可弃置一张手牌（最多3张）");
+		std::println("<技能> {}打出【指虎】，解锁万能牌弃牌效果", carrier.displayName());
+		game.broadcastState();
+		return true;
+	}
+	if (!main.unlocked || main.discarded >= 3 || carrier.handCount() == 0) return false;
+	const auto index = carrier.chooseCard(
+		std::format("【指虎】选择一张手牌弃置（↓取消），本局还可弃{}张", 3 - main.discarded),
+		[](const Card&) { return true; }, false);
+	if (!index.has_value()) {
+		std::println("<技能> {}取消【指虎】弃牌", carrier.displayName());
+		return false;
+	}
+	carrier.discardByIndex(index.value());
+	++main.discarded;
+	std::println("<技能> {}因【指虎】弃置一张牌（本局{}/3）", carrier.displayName(), main.discarded);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：指虎 ====================
+bool 指虎::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_指虎));
+	std::println("<技能> {}发动指虎，获得一张秘技牌【指虎】", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：镐机 ====================
+bool 镐机::content(GameLogic& game, Player& carrier, Trigger&) {
+	setForced(true);  //契定技：发动一次后变为锁定技
+	std::map<Card::Color, std::vector<std::size_t>> byColor{};
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		byColor[carrier.getCardByIndex(i).getColor()].push_back(i);
+	}
+	if (byColor.size() <= 1) {
+		const std::size_t count = carrier.handCount();
+		for (std::size_t k = count; k > 0; --k) {
+			carrier.recastByIndex(k - 1);
+		}
+		carrier.recover(5);
+		std::println("<技能> {}发动镐机：仅剩一种颜色，重铸全部{}张手牌并回复5点体力",
+					 carrier.displayName(), count);
+	}
+	else {
+		std::vector<Card::Color> colors{};
+		for (const auto& [color, indices] : byColor) colors.push_back(color);
+		const auto picked = unool::random::randomGet(colors, 2);
+		const std::size_t first = unool::random::randomGet(byColor[picked[0].get()]);
+		const std::size_t second = unool::random::randomGet(byColor[picked[1].get()]);
+		std::vector<std::size_t> indices{first, second};
+		std::ranges::sort(indices, std::greater{});
+		for (const std::size_t idx : indices) carrier.recastByIndex(idx);
+		std::println("<技能> {}发动镐机：随机重铸两张颜色不同的牌", carrier.displayName());
+	}
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：旋转 ====================
+bool 旋转::filter(const GameLogic& game, const Player&, const Trigger&) const {
+	const std::size_t round{game.getRoundCount()};
+	return round == 3 || round == 4 || round == 5;
+}
+
+bool 旋转::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.getSkill<镐机>().increaseLimit(1);
+	carrier.markCharInfoDirty();
+	carrier.hint(std::format("【旋转】第{}轮，【镐机】可发动次数+1", game.getRoundCount()));
+	std::println("<技能> {}在第{}轮发动旋转，【镐机】次数+1",
+				 carrier.displayName(), game.getRoundCount());
+	game.broadcastState();
+	return true;
+}

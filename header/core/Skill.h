@@ -402,9 +402,12 @@ struct HybridSkills {
 
 	template<class... Xs>
 	HybridSkills(Xs... xs) {
-		static_assert((0 + ... + (std::is_base_of_v<PassiveSkillTag, Xs> ? 1 : 0)) <= 1, "被动<> 只能出现一次");
-		static_assert((0 + ... + (std::is_base_of_v<InstantSkillTag, Xs> ? 1 : 0)) <= 1, "即时<> 只能出现一次");
-		static_assert((0 + ... + (std::is_base_of_v<TransformSkillTag, Xs> ? 1 : 0)) <= 1, "转换<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<PassiveSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，被动<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<InstantSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，即时<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<TransformSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，转换<> 只能出现一次");
 		([&](auto x) {
 			using X = decltype(x);
 			if      constexpr (std::is_base_of_v<PassiveSkillTag, X>) passive = x;

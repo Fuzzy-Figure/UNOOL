@@ -93,6 +93,7 @@ const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::im
 	{ { Color::green, Name::secret_毒酒 }, "images/cards/secret/毒酒.jpg" },
 	{ { Color::green, Name::secret_药酒 }, "images/cards/secret/药酒.jpg" },
 	{ { Color::green, Name::secret_过载 }, "images/cards/secret/过载.jpg" },
+	{ { Color::green, Name::secret_指虎 }, "images/cards/secret/指虎.jpg" },
 
 	// 背面牌
 	{ { Color::no, Name::back }, "images/cards/back.jpg" }
@@ -270,7 +271,8 @@ std::size_t Card::value() const {
 			//秘技牌统一按 10 点计入手牌价值
 		case Name::secret_毒酒:
 		case Name::secret_药酒:
-		case Name::secret_过载: return 10;
+		case Name::secret_过载:
+		case Name::secret_指虎: return 10;
 			//其他
 		default: throw std::invalid_argument("无法计算背面/未知牌的价值");
 	}
@@ -321,6 +323,8 @@ void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 			case Name::secret_药酒: Effect::药酒(source); break;
 				//【过载】不可打出，也没有打出时的效果
 			case Name::secret_过载: break;
+			//【指虎】的效果由山姆的技能实现
+			case Name::secret_指虎: break;
 		}
 	}
 }

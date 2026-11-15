@@ -740,3 +740,75 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
+
+// ==================== 新增荒野乱斗角色技能（第三批） ====================
+// 共用口径：
+//  · 秘技牌【指虎】= Card::Name::secret_指虎，牌色绿、可跟任意数字牌（canUse 统一特判），
+//    效果由山姆的隐藏子技能实现，不进标准牌堆与随机牌池；
+//  · 【蝙蝠】limit=0（每局限零次），由其隐藏子技能统计 gain_card_end（排除 DrawReason::init），
+//    每累计 5 张调用 increaseLimit(1)；Skill::reset() 每局把 limit 恢复为 0；
+//  · 【镐机】是契定技：构造 forced=false，content 里 setForced(true)，reset 里 setForced(false)；
+//  · 座位顺序 = game.getPlayers() 的数组顺序（nextPlayerIndex 按该数组推进）。
+
+// ---------- 山姆【指虎】 ----------
+//指虎_弃牌：隐藏子技能，打出【指虎】后解锁；此后每次打出万能牌可弃置一张手牌（↓取消），本局上限3张
+class 指虎_弃牌 final : public PassiveSkillImpl<指虎_弃牌> {
+public:
+	指虎_弃牌() : PassiveSkillImpl<指虎_弃牌>(
+		"指虎_弃牌", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//指虎：锁定技，每局游戏开始时，获得一张秘技牌【指虎】
+class 指虎 final : public PassiveSkillImpl<指虎> {
+public:
+	bool unlocked{};          //本局是否已打出【指虎】
+	std::size_t discarded{};  //本局因万能牌弃置的牌数（上限3）
+	指虎() : PassiveSkillImpl<指虎>(
+		"指虎",
+		"锁定技，每局游戏开始时，获得一张秘技牌【指虎】。\n"
+		"【指虎】：可跟任意数字牌，打出后山姆本局每打出一张万能牌可弃置一张牌（每局最多因此弃置三张牌）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin,
+		指虎_弃牌::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); unlocked = false; discarded = 0; }
+};
+
+// ---------- 卡尔【镐机】【旋转】 ----------
+//镐机：契定技，每局游戏限一次，回合开始时随机重铸两张颜色不同的牌；
+//若手牌颜色种类≤1（含空手/单张），改为重铸所有手牌并回复5点体力
+class 镐机 final : public PassiveSkillImpl<镐机> {
+public:
+	镐机() : PassiveSkillImpl<镐机>(
+		"镐机",
+		"契定技，每局游戏限{limit}次，回合开始时，随机重铸两张颜色不同的牌，若仅剩一种颜色的牌改为重铸所有手牌并回复5点体力。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); setForced(false); }
+};
+
+//旋转：锁定技，第3/4/5轮末各令【镐机】可发动次数+1
+class 旋转 final : public PassiveSkillImpl<旋转> {
+public:
+	旋转() : PassiveSkillImpl<旋转>(
+		"旋转",
+		"锁定技，每经过3/4/5轮，【镐机】可发动次数+1。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
