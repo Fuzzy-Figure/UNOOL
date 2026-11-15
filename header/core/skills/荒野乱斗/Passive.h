@@ -764,22 +764,52 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
-//指虎：锁定技，每局游戏开始时，获得一张秘技牌【指虎】
+// ---------- 山姆【指虎】专属牌补充 ----------
+//指虎_销毁：隐藏子技能，【指虎】进入弃牌堆后移出销毁
+class 指虎_销毁 final : public PassiveSkillImpl<指虎_销毁> {
+public:
+	指虎_销毁() : PassiveSkillImpl<指虎_销毁>(
+		"指虎_销毁", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::card_discard_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//指虎_专属：隐藏子技能，【指虎】被其他角色获得后销毁
+class 指虎_专属 final : public PassiveSkillImpl<指虎_专属> {
+public:
+	指虎_专属() : PassiveSkillImpl<指虎_专属>(
+		"指虎_专属", "",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::gain_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//指虎：锁定技，每局游戏开始时，获得一张专属牌【指虎】
 class 指虎 final : public PassiveSkillImpl<指虎> {
 public:
 	bool unlocked{};          //本局是否已打出【指虎】
 	std::size_t discarded{};  //本局因万能牌弃置的牌数（上限3）
+	std::vector<std::unique_ptr<Card>> destroyed{};  //已销毁的【指虎】对象（寄存以保持引用有效）
 	指虎() : PassiveSkillImpl<指虎>(
 		"指虎",
-		"锁定技，每局游戏开始时，获得一张秘技牌【指虎】。\n"
-		"【指虎】：可跟任意数字牌，打出后山姆本局每打出一张万能牌可弃置一张牌（每局最多因此弃置三张牌）。",
+		"锁定技，每局游戏开始时，获得一张\"指虎\"牌（专属卡牌，被其他角色获得或进入弃牌堆后销毁）。\n"
+		"【指虎】：可跟任意数字牌，打出后山姆本局每打出一张万能牌可弃置一张牌（最多弃置三张）。",
 		unlimited, true,
 		TriggerPlayer::self,
 		TriggerTime::game_begin,
-		指虎_弃牌::make()
+		指虎_弃牌::make(),
+		指虎_销毁::make(),
+		指虎_专属::make()
 	) {}
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
-	void reset() override { PassiveSkill::reset(); unlocked = false; discarded = 0; }
+	void reset() override { PassiveSkill::reset(); unlocked = false; discarded = 0; destroyed.clear(); }
 };
 
 // ---------- 卡尔【镐机】【旋转】 ----------
@@ -880,3 +910,30 @@ public:
 	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
+
+// ==================== 新增荒野乱斗角色技能（第五批） ====================
+// 共用口径：
+//  · 弃牌堆里每张牌记录「进堆来源玩家 id」（Card::discardSourceId），由 putCardToDiscardPile 写入，
+//    回收进牌堆时清空；【溯流】据此筛掉来源为自己的牌；
+//  · 额外回合由 GameLogic::requestExtraTurn() 在 phase_end 请求，下次 runTurn 不推进玩家、
+//    不重复触发 round_begin / 累计轮数；每轮一次由技能自己用 getRoundCount() 限制；
+//  · 专属牌【指虎】进弃牌堆或被其他角色获得时移出游戏，对象暂存于 指虎::destroyed，
+//    保证 putCardToDiscardPile 返回的引用与后续 use_card_end 不悬空。
+
+// ---------- 芬克斯【溯流】 ----------
+//溯流：每累计打出两张牌，可从弃牌堆选一张「非弃置进堆、来源非己」的牌获得，然后弃置一张牌
+class 溯流 final : public PassiveSkillImpl<溯流> {
+public:
+	std::size_t played{};   //本局累计打出的牌数（每满2张给一次机会）
+	溯流() : PassiveSkillImpl<溯流>(
+		"溯流",
+		"你每打出两张牌后，可从弃牌堆中选择一张不因弃置进入弃牌堆且来源不是你的牌获得，然后弃置一张牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); played = 0; }
+};
+

@@ -9,6 +9,7 @@
 #include <functional>
 #include <iosfwd>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -70,6 +71,8 @@ private:
 	DiscardReason discardReason = DiscardReason::none;
 	//牌自带的附加伤害（由角色技能写入，随牌在牌堆/弃牌堆间流转），打出时对目标结算
 	std::size_t extraDamage = 0;
+	//牌进入弃牌堆时的来源玩家 id（putCardToDiscardPile 写入，回收进牌堆时清空）
+	std::optional<std::size_t> discardSourceId{};
 
 public:
 #pragma region 构造 / 静态工厂
@@ -103,6 +106,7 @@ public:
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
 	std::size_t getExtraDamage() const { return extraDamage; }
+	std::optional<std::size_t> getDiscardSourceId() const { return discardSourceId; }
 
 	bool sameColorAs(const Card& other) const;
 	bool sameNameAs(const Card& other) const;
@@ -144,6 +148,7 @@ public:
 	void setName(const Name newName);
 	void setDiscardReason(DiscardReason r) { discardReason = r; }
 	void setExtraDamage(std::size_t v) { extraDamage = v; }
+	void setDiscardSourceId(std::optional<std::size_t> id) { discardSourceId = id; }
 	void set(const Card& other);
 	void set(const Color color, const Name name);
 	void set(const ColorName& cn);

@@ -1011,7 +1011,7 @@ bool 指虎_弃牌::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 // ==================== 技能：指虎 ====================
 bool 指虎::content(GameLogic& game, Player& carrier, Trigger&) {
 	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_指虎));
-	std::println("<技能> {}发动指虎，获得一张秘技牌【指虎】", carrier.displayName());
+	std::println("<技能> {}发动指虎，获得一张专属牌【指虎】", carrier.displayName());
 	game.broadcastState();
 	return true;
 }
@@ -1144,4 +1144,93 @@ bool 征讨::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 				 carrier.displayName(), target.displayName(), dmg, heal);
 	game.broadcastState();
 	return true;
+}
+
+// ==================== 新增荒野乱斗角色技能（第五批） ====================
+
+// ==================== 技能：溯流 ====================
+bool 溯流::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	return trigger.hasCards();
+}
+
+bool 溯流::content(GameLogic& game, Player& carrier, Trigger&) {
+	++played;
+	if (played < 2) return false;
+	played -= 2;   //每累计两张牌给一次机会
+
+	const auto players = game.getPlayers();
+	Pile& discardPile = game.getDiscardPile();
+	std::vector<std::string> options{};
+	std::vector<std::size_t> indices{};
+	for (std::size_t i = 0; i < discardPile.count(); ++i) {
+		const Card& card = discardPile.getCardByIndex(i);
+		if (card.getDiscardReason() == Card::DiscardReason::discard) continue;
+		const auto source = card.getDiscardSourceId();
+		if (source.has_value() && *source < players.size()
+			&& players[*source].get() == carrier) continue;   //来源是自己
+		options.push_back(card.toString());
+		indices.push_back(i);
+	}
+	if (options.empty()) return false;
+
+	const std::size_t choice = carrier.ask(
+		"【溯流】选择弃牌堆中一张牌获得（↓取消）", options, false);
+	if (choice == 0 || choice > indices.size()) return false;
+
+	auto card = discardPile.takeCardByIndex(indices[choice - 1]);
+	const std::string obtained = card->toString();
+	carrier.gainCard(std::move(card));
+	//获得后必须弃置一张牌（不可取消）
+	carrier.chooseToDiscard("【溯流】弃置一张手牌", 1, true);
+	carrier.hint(std::format("【溯流】获得{}并弃置一张牌", obtained));
+	std::println("<技能> {}发动溯流，从弃牌堆获得{}并弃置一张牌", carrier.displayName(), obtained);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：指虎_销毁 ====================
+bool 指虎_销毁::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	return trigger.hasCards() && trigger.getCard().getName() == Card::Name::secret_指虎;
+}
+
+bool 指虎_销毁::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Card& card = trigger.getCard();
+	Pile& pile = game.getDiscardPile();
+	for (std::size_t i = 0; i < pile.count(); ++i) {
+		if (&pile.getCardByIndex(i) != &card) continue;
+		//不直接释放：putCardToDiscardPile 返回的引用与后续 use_card_end 仍指向此对象，
+		//先移出弃牌堆并寄存在主技能里，每局 reset 时统一释放。
+		carrier.getSkill<指虎>().destroyed.push_back(pile.takeCardByIndex(i));
+		std::println("<技能> 专属牌【指虎】进入弃牌堆后销毁");
+		game.broadcastState();
+		return true;
+	}
+	return false;
+}
+
+// ==================== 技能：指虎_专属 ====================
+bool 指虎_专属::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	if (!trigger.hasCards() || !trigger.hasPlayer()) return false;
+	for (const auto& rc : trigger.getCards()) {
+		if (rc.get().getName() == Card::Name::secret_指虎) return true;
+	}
+	return false;
+}
+
+bool 指虎_专属::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	std::optional<ref<Card>> found{};
+	for (const auto& rc : trigger.getCards()) {
+		if (rc.get().getName() == Card::Name::secret_指虎) { found = rc; break; }
+	}
+	if (!found.has_value()) return false;
+	Card& target = found->get();
+	Player& owner = trigger.getPlayer();
+	for (std::size_t i = 0; i < owner.handCount(); ++i) {
+		if (&owner.getCardByIndex(i) != &target) continue;
+		carrier.getSkill<指虎>().destroyed.push_back(owner.takeCardByIndex(i));
+		std::println("<技能> 专属牌【指虎】被{}获得后销毁", owner.displayName());
+		game.broadcastState();
+		return true;
+	}
+	return false;
 }

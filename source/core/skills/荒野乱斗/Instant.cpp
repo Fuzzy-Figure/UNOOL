@@ -690,3 +690,62 @@ bool 生草::content(GameLogic& game, Player& carrier) {
 	game.broadcastState();
 	return true;
 }
+
+// ==================== 新增荒野乱斗角色技能（第五批） ====================
+
+// ==================== 技能：时匡_回合 ====================
+bool 时匡_回合::filter(const GameLogic& game, const Player& carrier, const Trigger&) const {
+	return carrier.hasMark("神速")
+		&& game.getRoundCount() != carrier.getSkill<时匡>().lastExtraRound;
+}
+
+bool 时匡_回合::content(GameLogic& game, Player& carrier, Trigger&) {
+	if (carrier.ask("【时匡】是否于回合结束后额外执行一个回合？", { "执行", "不执行" }, false) != 1) return false;
+	auto& main = carrier.getSkill<时匡>();
+	main.lastExtraRound = game.getRoundCount();
+	game.requestExtraTurn(carrier);
+	carrier.hint("【时匡】本轮获得一个额外回合");
+	std::println("<技能> {}发动时匡，第{}轮回合结束后额外执行一个回合",
+				 carrier.displayName(), main.lastExtraRound);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：时匡_摸牌 ====================
+bool 时匡_摸牌::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	return carrier.hasMark("神速");
+}
+
+bool 时匡_摸牌::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.clearMark("神速");
+	carrier.hint("【时匡】执行摸牌阶段，移去\"神速\"标记");
+	std::println("<技能> {}执行摸牌阶段，移去\"神速\"标记", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：时匡_万能牌 ====================
+bool 时匡_万能牌::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	return carrier.hasMark("神速") && trigger.hasCards() && trigger.getCard().isWild();
+}
+
+bool 时匡_万能牌::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.clearMark("神速");
+	carrier.hint("【时匡】打出万能牌，移去\"神速\"标记");
+	std::println("<技能> {}打出万能牌，移去\"神速\"标记", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：时匡 ====================
+bool 时匡::filter(const GameLogic&, const Player& carrier) const {
+	return !carrier.hasMark("神速");
+}
+
+bool 时匡::content(GameLogic& game, Player& carrier) {
+	carrier.addMark("神速");
+	carrier.hint("【时匡】获得\"神速\"：每轮回合结束可额外执行一个回合；执行摸牌阶段或打出万能牌后移去");
+	std::println("<技能> {}发动时匡，获得\"神速\"标记", carrier.displayName());
+	game.broadcastState();
+	return true;
+}

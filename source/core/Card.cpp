@@ -115,6 +115,7 @@ std::unique_ptr<Card> Card::make(const Card& other) {
 	auto c = std::make_unique<Card>(other.getColor(), other.getName());
 	c->setDiscardReason(other.getDiscardReason());
 	c->setExtraDamage(other.getExtraDamage());
+	c->setDiscardSourceId(other.getDiscardSourceId());
 	return c;
 }
 std::unique_ptr<Card> Card::make(const std::unique_ptr<Card>& otherPtr) {
@@ -300,6 +301,7 @@ void Card::set(const Card& other) {
 	setName(other.getName());
 	setDiscardReason(other.getDiscardReason());
 	setExtraDamage(other.getExtraDamage());
+	setDiscardSourceId(other.getDiscardSourceId());
 }
 void Card::set(const Color color, const Name name) {
 	setColor(color);
@@ -571,6 +573,7 @@ void Pile::recycle(Pile& other) {
 	//回收进牌堆，重置入弃牌堆的原因
 	for (auto& card : cards) {
 		card->setDiscardReason(Card::DiscardReason::none);
+		card->setDiscardSourceId(std::nullopt);
 	}
 	shuffle();
 

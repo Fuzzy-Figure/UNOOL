@@ -45,6 +45,10 @@ std::size_t GameLogic::getCurrentPlayerId() const {
 	return currentPlayer().getId();
 }
 
+void GameLogic::requestExtraTurn(const Player& player) {
+	extraTurnPlayerId = player.getId();
+}
+
 bool GameLogic::playersSatisfy(const std::function<bool(std::vector<std::unique_ptr<Player>>&)>& condition) {
 	return condition(players);
 }
@@ -544,8 +548,11 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 }
 
 bool GameLogic::runTurn() {
+	//额外回合不推进玩家、不重复触发轮开始，也不重复累计轮数
+	const bool skipRoundBegin = inExtraTurn;
+	inExtraTurn = false;
 	// 一号位回合开始前触发轮开始（每轮恰好一次），并累计本局轮数
-	if (getCurrentPlayerId() == getFirstPlayerId()) {
+	if (!skipRoundBegin && getCurrentPlayerId() == getFirstPlayerId()) {
 		++roundCount;
 		PassiveSkill::Trigger trigger;
 		trigger.player = *players[currentPlayerIndex];
@@ -557,12 +564,19 @@ bool GameLogic::runTurn() {
 	bool gameEnded = currentPlayerTurn();
 
 	if (!gameEnded) {
-		altPlayer();
-		//回到一号位说明刚结束的是本轮最后一个回合
-		if (getCurrentPlayerId() == getFirstPlayerId()) {
-			PassiveSkill::Trigger trigger;
-			trigger.player = roundFinisher;
-			launchPassiveSkills(PassiveSkill::TriggerTime::round_end, trigger);
+		//技能请求了额外回合：当前玩家再行动一次（本轮尚未结束）
+		if (extraTurnPlayerId.has_value() && *extraTurnPlayerId == getCurrentPlayerId()) {
+			extraTurnPlayerId.reset();
+			inExtraTurn = true;
+		}
+		else {
+			altPlayer();
+			//回到一号位说明刚结束的是本轮最后一个回合
+			if (getCurrentPlayerId() == getFirstPlayerId()) {
+				PassiveSkill::Trigger trigger;
+				trigger.player = roundFinisher;
+				launchPassiveSkills(PassiveSkill::TriggerTime::round_end, trigger);
+			}
 		}
 	}
 
@@ -686,6 +700,7 @@ void GameLogic::launchPassiveSkills(const PassiveSkill::TriggerTime& triggerTime
 //返回置入弃牌堆的牌的引用
 Card& GameLogic::putCardToDiscardPile(std::unique_ptr<Card> card, Card::DiscardReason reason, Player& player) {
 	card->setDiscardReason(reason);
+	card->setDiscardSourceId(player.getId());
 	std::println("[{}]({}) 进入了弃牌堆", *card, reason);
 	discardPile->push_front(std::move(card));
 	Card& cardRef = discardPile->front();
@@ -737,6 +752,8 @@ void GameLogic::checkRoundEnd() {
 void GameLogic::resetGame() {
 	++gameCount;
 	roundCount = 0;
+	extraTurnPlayerId.reset();
+	inExtraTurn = false;
 	// 重置牌堆
 	pile = Pile::standard(*this);
 	discardPile->clear();

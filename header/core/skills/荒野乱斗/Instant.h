@@ -383,3 +383,64 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 	void reset() override { InstantSkill::reset(); streak = 0; usedThisTurn = false; }
 };
+
+// ==================== 新增荒野乱斗角色技能（第五批） ====================
+
+// ---------- 芬克斯【时匡】 ----------
+//时匡_回合：隐藏子技能，「神速」存在时每轮回合结束可请求一个额外回合
+class 时匡_回合 final : public PassiveSkillImpl<时匡_回合> {
+public:
+	时匡_回合() : PassiveSkillImpl<时匡_回合>(
+		"时匡_回合", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//时匡_摸牌：隐藏子技能，执行摸牌阶段后移去「神速」
+class 时匡_摸牌 final : public PassiveSkillImpl<时匡_摸牌> {
+public:
+	时匡_摸牌() : PassiveSkillImpl<时匡_摸牌>(
+		"时匡_摸牌", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//时匡_万能牌：隐藏子技能，打出万能牌后移去「神速」
+class 时匡_万能牌 final : public PassiveSkillImpl<时匡_万能牌> {
+public:
+	时匡_万能牌() : PassiveSkillImpl<时匡_万能牌>(
+		"时匡_万能牌", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//时匡：限定技，出牌阶段获得「神速」标记
+class 时匡 final : public InstantSkillImpl<时匡> {
+public:
+	std::size_t lastExtraRound{};   //上一次请求额外回合的轮数（每轮限一次）
+	时匡() : InstantSkillImpl<时匡>(
+		"时匡",
+		"限定技，出牌阶段，你获得\"神速\"标记；标记存在时每轮你于回合结束时可额外执行一个回合，"
+		"你执行摸牌阶段或打出万能牌后，移去\"神速\"标记。",
+		1, unlimited,
+		TriggerTime::phase_use,
+		时匡_回合::make(),
+		时匡_摸牌::make(),
+		时匡_万能牌::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override { InstantSkill::reset(); lastExtraRound = 0; }
+};

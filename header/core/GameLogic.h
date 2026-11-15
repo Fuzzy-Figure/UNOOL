@@ -43,6 +43,9 @@ private:
 	unool::core::DomainServices& services;
 	std::size_t gameCount = 0;
 	std::size_t roundCount = 0;  //本局轮数，resetGame() 清零
+	//额外回合：技能在 phase_end 请求后，下一次 runTurn 不推进玩家、不重复触发轮开始/计轮
+	std::optional<std::size_t> extraTurnPlayerId{};
+	bool inExtraTurn{};
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家
 	//增分卡使用状态：每局开始时重置，结算时判定胜者是否使用了增分卡
 	std::array<bool, unool::contract::TableConfig::seatCount> bonusCardUsed{};
@@ -108,6 +111,8 @@ public:
 	void clearGameCount() { gameCount = 0; }
 	//本局已进行的轮数：一号位回合开始时 +1，每局重置
 	std::size_t getRoundCount() const { return roundCount; }
+	//请求在当前回合结束后由同一玩家额外执行一个回合（每轮次数由技能自行限制）
+	void requestExtraTurn(const Player& player);
 	//设置/清除当前正在操作的玩家，并广播状态
 	void setOperatingPlayer(std::size_t playerId);
 	void clearOperatingPlayer();
