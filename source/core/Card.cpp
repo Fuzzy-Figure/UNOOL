@@ -231,6 +231,12 @@ bool Card::isWild() const {
 bool Card::isNotWild() const {
 	return !is_wild(name);
 }
+bool Card::isSecret() const {
+	return is_secret(name);
+}
+bool Card::isNotSecret() const {
+	return !is_secret(name);
+}
 
 bool Card::isTargeted() const {
 	return is(Name::action_skip, Name::action_draw2, Name::wild_draw4);

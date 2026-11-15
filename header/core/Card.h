@@ -103,7 +103,6 @@ public:
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
 	std::size_t getExtraDamage() const { return extraDamage; }
-	bool isSecret() const { return is_secret(name); }
 
 	bool sameColorAs(const Card& other) const;
 	bool sameNameAs(const Card& other) const;
@@ -129,6 +128,8 @@ public:
 	bool isNotAction() const;
 	bool isWild() const;
 	bool isNotWild() const;
+	bool isSecret() const;
+	bool isNotSecret() const;
 	bool isTargeted() const;
 	bool isNotTargeted() const;
 	std::size_t value() const;
