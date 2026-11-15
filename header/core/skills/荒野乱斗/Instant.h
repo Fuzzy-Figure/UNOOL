@@ -242,3 +242,45 @@ public:
 	std::optional<std::string> extraPlaceholders(const std::string& key) const override;
 };
 
+
+// ==================== 新增荒野乱斗角色技能（第二批） ====================
+
+// ---------- 公牛【蛮冲】 ----------
+//限定技，出牌阶段发动后开始记录；接下来四个自己的回合若都出过牌且未被封禁，
+//摸四张牌、对一名其他角色造成 10X 点伤害（X 为本局累计发动次数），并令此技能视为未发动过。
+//注：X 用独立的 activationCount 累计，不随 resetCount() 清零。
+class 蛮冲 final : public InstantSkillImpl<蛮冲> {
+	friend class 蛮冲_记录;
+	friend class 蛮冲_结算;
+	bool recording{};
+	bool bannedThisTurn{};
+	std::size_t turnsLeft{};
+	std::size_t activationCount{};
+public:
+	蛮冲() : InstantSkillImpl<蛮冲>(
+		"蛮冲",
+		"限定技，出牌阶段，发动此技能开始记录，若你接下来四个回合没有空过或被封禁，"
+		"你摸四张牌，对一名其他角色造成10X点伤害（X为此技能本局发动次数）且此技能视为未发动过。",
+		1, unlimited,
+		TriggerTime::phase_use,
+		蛮冲_记录::make(),
+		蛮冲_结算::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override;
+};
+
+// ---------- 珀尔【爆汽】 ----------
+//限定技，出牌阶段，逐张选万能牌弃置（↓结束），获得等量【过载】；
+//弃置牌数>2 时回复10%已损体力；一张未弃则不消耗限定技。
+class 爆汽 final : public InstantSkillImpl<爆汽> {
+public:
+	爆汽() : InstantSkillImpl<爆汽>(
+		"爆汽",
+		"限定技，出牌阶段，弃置任意张万能牌并获得等量张【过载】，弃置牌数>2时回复10%已损体力值。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool content(GameLogic& game, Player& carrier) override;
+};
+

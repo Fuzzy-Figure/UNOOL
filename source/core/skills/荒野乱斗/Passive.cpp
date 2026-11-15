@@ -773,10 +773,199 @@ bool 火箭::content(GameLogic& game, Player& carrier, Trigger&) {
 
 // ==================== 巴利【掷酒】 ====================
 bool 掷酒::content(GameLogic& game, Player& carrier, Trigger&) {
-	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_poison));
-	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_heal));
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_毒酒));
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_药酒));
 	std::println("<技能> {}发动掷酒，获得秘技牌【毒酒】和【药酒】各一张",
 				 carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 新增荒野乱斗角色技能（第二批） ====================
+
+// ==================== 技能：烧炉_过载判定 ====================
+bool 烧炉_过载判定::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	const std::size_t total{carrier.handCount()};
+	std::size_t overloads{};
+	carrier.getHand().forEach([&](Card& c) {
+		if (c.getName() == Card::Name::secret_过载) ++overloads;
+	});
+	//「此类牌」=【过载】：至少有一张可弃，且其数量不少于手中其他牌
+	return overloads > 0 && overloads >= total - overloads;
+}
+
+bool 烧炉_过载判定::content(GameLogic& game, Player& carrier, Trigger&) {
+	std::optional<std::size_t> index{};
+	for (std::size_t i = 0; i < carrier.handCount(); ++i) {
+		if (carrier.getHand().getCardByIndex(i).getName() == Card::Name::secret_过载) {
+			index = i;
+			break;
+		}
+	}
+	if (!index.has_value()) return false;
+	carrier.discardByIndex(index.value());
+	std::println("<技能> {}弃置一张【过载】", carrier.displayName());
+
+	auto targetOpt = carrier.chooseOtherPlayer("【过载】选择一名其他角色", false);
+	if (!targetOpt.has_value()) {
+		std::println("<技能> {}未选择【过载】目标，不造成伤害", carrier.displayName());
+		game.broadcastState();
+		return true;
+	}
+	Player& target = targetOpt.value().get();
+	target.damage(10, carrier);
+	std::println("<技能> {}的【过载】对{}造成10点伤害", carrier.displayName(), target.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：烧炉 ====================
+bool 烧炉::filter(const GameLogic& game, const Player&, const Trigger&) const {
+	const std::size_t round{game.getRoundCount()};
+	return round > 0 && round % 5 == 0;
+}
+
+bool 烧炉::content(GameLogic& game, Player& carrier, Trigger&) {
+	carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_过载));
+	std::println("<技能> {}发动烧炉（第{}轮），获得一张秘技牌【过载】",
+				 carrier.displayName(), game.getRoundCount());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：飞弹 ====================
+bool 飞弹::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	//只放大以自己为来源的伤害；trigger.number 在 damage_begin 绑定到实际伤害值
+	return trigger.hasSource() && trigger.hasNumber()
+		&& trigger.getSource().getId() == carrier.getId();
+}
+
+bool 飞弹::content(GameLogic&, Player& carrier, Trigger& trigger) {
+	trigger.getNumber() += 1;
+	std::println("<技能> {}的飞弹令此伤害+1", carrier.displayName());
+	return true;
+}
+
+// ==================== 技能：冲爆 ====================
+bool 冲爆::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	if (!trigger.hasCards()) return false;
+	for (const auto& cardRef : trigger.getCards()) {
+		if (cardRef.get().isNumber()) return true;
+	}
+	return false;
+}
+
+bool 冲爆::content(GameLogic& game, Player& carrier, Trigger&) {
+	auto others = game.getPlayersExcludeId(carrier.getId());
+	if (others.empty()) return false;
+	Player& target = unool::random::randomGet(others).get();
+	target.damage(1, carrier);
+	std::println("<技能> {}发动冲爆，随机对{}造成1点伤害", carrier.displayName(), target.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：功夫 ====================
+bool 功夫::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	if (!trigger.hasCards()) return false;
+	if (!trigger.getCard().is(Card::Color::red)) return false;
+	//打出红牌之后手牌数>10 时整个技能不触发
+	return carrier.handCount() <= 10;
+}
+
+bool 功夫::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Card& played = trigger.getCard();
+	Player& down = carrier.next();
+	down.ban(carrier, played);
+	carrier.draw(1, DrawReason::skill);
+	std::println("<技能> {}发动功夫，红牌附带封禁封住{}并摸一张牌",
+				 carrier.displayName(), down.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：连踢 ====================
+bool 连踢::content(GameLogic& game, Player& carrier, Trigger&) {
+	if (!carrier.getHasUsed()) {
+		streak = 0;
+		return false;
+	}
+	++streak;
+	if (streak < 4) return false;
+	streak = 0;
+
+	//「可」字效果：满足条件时才弹确认
+	const std::size_t choice{carrier.ask("是否发动 [连踢]？", { "发动", "不发动" }, true)};
+	if (choice == 2) return false;
+	auto targetOpt = carrier.chooseOtherPlayer("【连踢】选择一名其他角色", false);
+	if (!targetOpt.has_value()) return false;
+	Player& target = targetOpt.value().get();
+
+	carrier.draw(2, DrawReason::skill);
+	for (std::size_t i = 0; i < 4; ++i) target.damage(2, carrier);
+	std::println("<技能> {}发动连踢，摸两张牌并对{}造成4次2点伤害",
+				 carrier.displayName(), target.displayName());
+	game.broadcastState();
+	return true;
+}
+
+void 连踢::reset() {
+	PassiveSkill::reset();
+	streak = 0;
+}
+
+// ==================== 技能：蛮冲_记录 ====================
+bool 蛮冲_记录::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	const auto skill = carrier.findSkill<蛮冲>();
+	return skill.has_value() && skill.value().get().recording;
+}
+
+bool 蛮冲_记录::content(GameLogic&, Player& carrier, Trigger&) {
+	const auto skill = carrier.findSkill<蛮冲>();
+	if (!skill.has_value()) return false;
+	//phase_begin 时 ban() 造成的封禁尚未被 turn() 的 unban() 清除
+	skill.value().get().bannedThisTurn = carrier.isBanned();
+	return true;
+}
+
+// ==================== 技能：蛮冲_结算 ====================
+bool 蛮冲_结算::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	const auto skill = carrier.findSkill<蛮冲>();
+	return skill.has_value() && skill.value().get().recording;
+}
+
+bool 蛮冲_结算::content(GameLogic& game, Player& carrier, Trigger&) {
+	auto skillOpt = carrier.findSkill<蛮冲>();
+	if (!skillOpt.has_value()) return false;
+	蛮冲& skill = skillOpt.value().get();
+
+	//空过（本回合未出牌）或被封禁：记录作废，限定技保持已消耗
+	if (skill.bannedThisTurn || !carrier.getHasUsed()) {
+		skill.recording = false;
+		std::println("<技能> {}的蛮冲记录中断（空过或被封禁），本局限定技已消耗", carrier.displayName());
+		return true;
+	}
+
+	if (skill.turnsLeft > 0) --skill.turnsLeft;
+	if (skill.turnsLeft > 0) {
+		std::println("<技能> {}的蛮冲累计{}回合，还需{}回合", carrier.displayName(),
+					 4 - skill.turnsLeft, skill.turnsLeft);
+		return true;
+	}
+
+	//四个回合全部达标
+	carrier.draw(4, DrawReason::skill);
+	auto targetOpt = carrier.chooseOtherPlayer("【蛮冲】选择一名其他角色", false);
+	if (targetOpt.has_value()) {
+		const std::size_t dmg{10 * skill.activationCount};
+		Player& target = targetOpt.value().get();
+		target.damage(dmg, carrier);
+		std::println("<技能> {}的蛮冲对{}造成{}点伤害", carrier.displayName(), target.displayName(), dmg);
+	}
+	skill.resetCount();  //视为未发动过，本局可再次发动；X 单独累计不清零
+	skill.recording = false;
+	std::println("<技能> {}的蛮冲结算完成，此技能视为未发动过", carrier.displayName());
 	game.broadcastState();
 	return true;
 }

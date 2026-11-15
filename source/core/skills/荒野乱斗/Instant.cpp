@@ -438,3 +438,63 @@ std::optional<std::string> 筑丛::extraPlaceholders(const std::string& key) con
 }
 
 
+// ==================== 新增荒野乱斗角色技能（第二批） ====================
+
+// ==================== 技能：蛮冲 ====================
+bool 蛮冲::content(GameLogic& game, Player& carrier) {
+	recording = true;
+	bannedThisTurn = false;
+	turnsLeft = 4;
+	++activationCount;
+	std::println("<技能> {}发动蛮冲（本局第{}次），开始记录接下来四个回合",
+				 carrier.displayName(), activationCount);
+	game.broadcastState();
+	return true;
+}
+
+void 蛮冲::reset() {
+	ActiveSkill::reset();
+	recording = false;
+	bannedThisTurn = false;
+	turnsLeft = 0;
+	activationCount = 0;
+}
+
+// ==================== 技能：爆汽 ====================
+bool 爆汽::content(GameLogic& game, Player& carrier) {
+	if (!carrier.getHand().include(&Card::isWild)) {
+		std::println("<技能> {}手中没有万能牌，爆汽不发动", carrier.displayName());
+		return false;
+	}
+
+	//逐张选万能牌，↓ 结束；一张未弃则 content 返回 false，tryActivate 回滚次数
+	std::size_t discarded{};
+	while (carrier.getHand().include(&Card::isWild)) {
+		auto index = carrier.chooseCard(
+			std::format("【爆汽】选择要弃置的万能牌（已弃{}张，↓结束）", discarded),
+			&Card::isWild, false);
+		if (!index.has_value()) break;
+		carrier.discardByIndex(index.value());
+		++discarded;
+	}
+	if (discarded == 0) {
+		std::println("<技能> {}未弃置万能牌，爆汽不发动（不消耗限定技）", carrier.displayName());
+		return false;
+	}
+
+	for (std::size_t i = 0; i < discarded; ++i)
+		carrier.gainCard(Card::make(Card::Color::green, Card::Name::secret_过载));
+
+	std::size_t healed{};
+	if (discarded > 2) {
+		healed = unool::math::floor((carrier.getMaxHp() - carrier.getHp()) * 0.1);
+		carrier.recover(healed);
+	}
+	std::println("<技能> {}发动爆汽，弃置{}张万能牌获得{}张【过载】，回复{}点体力",
+				 carrier.displayName(), discarded, discarded, healed);
+	carrier.markCharInfoDirty();
+	game.broadcastState();
+	return true;
+}
+
+

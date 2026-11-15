@@ -337,6 +337,8 @@ std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 
 
 bool Player::canUse(const Card& card) {
+	//秘技牌【过载】：不可打出（牌的固有属性，优先于一切出牌无限制状态）
+	if (card.getName() == Card::Name::secret_过载) return false;
 	//出牌不受限制：任意牌均可打出
 	if (unrestrictedPlay) return true;
 	//其他角色安装的禁打钩子（如【圣权】【圣柄】）

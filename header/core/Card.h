@@ -39,10 +39,13 @@ public:
 		back,
 		//新增：秘技牌只由角色技能发放，不进标准牌堆与 getAllCards() 随机牌池。
 		//追加在末尾以保证既有牌名的线上序列化数值不变。
-		secret_poison, secret_heal
+		//命名约定：secret_中文名，与 images/cards/secret/中文名.jpg 对应。
+		secret_毒酒, secret_药酒, secret_过载
 	};
 	enum class Type {
-		unknown, number, action, wild
+		unknown, number, action, wild,
+		//新增：秘技牌独立类型，追加在末尾以保证既有类型数值不变
+		secret
 	};
 	enum class DiscardReason {
 		none,   //没进入弃牌堆（手中/牌堆/通用场景默认值）
@@ -187,9 +190,10 @@ public:
 			case Name::wild_draw4:   return "+4";
 				//其他
 			case Name::back:         return "背面";
-			//秘技牌
-			case Name::secret_poison: return "毒酒";
-			case Name::secret_heal:   return "药酒";
+				//秘技牌
+			case Name::secret_毒酒:  return "毒酒";
+			case Name::secret_药酒:  return "药酒";
+			case Name::secret_过载:  return "过载";
 			case Name::no:           return "无";
 			default:                 return "未知";
 		}
@@ -199,6 +203,7 @@ public:
 			case Type::number:  return "数字牌";
 			case Type::action:  return "功能牌";
 			case Type::wild:    return "万能牌";
+			case Type::secret:  return "秘技牌";
 			case Type::unknown:
 			default:            return "未知类型";
 		}
@@ -230,7 +235,8 @@ public:
 		return name == Name::wild_pal || name == Name::wild_draw4;
 	}
 	static constexpr bool is_secret(const Card::Name name) {
-		return name == Name::secret_poison || name == Name::secret_heal;
+		return name == Name::secret_毒酒 || name == Name::secret_药酒
+			|| name == Name::secret_过载;
 	}
 #pragma endregion
 

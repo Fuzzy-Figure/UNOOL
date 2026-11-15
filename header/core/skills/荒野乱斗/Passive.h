@@ -512,8 +512,8 @@ public:
 
 // ==================== 新增荒野乱斗角色技能 ====================
 // 共用口径：
-//  · 秘技牌【毒酒】【药酒】= Card::Name::secret_poison / secret_heal，牌色为绿，
-//    由【掷酒】在 game_begin 发放，效果在 Effect::poison/heal 结算，按普通牌循环；
+//  · 秘技牌【毒酒】【药酒】= Card::Name::secret_毒酒 / secret_药酒，牌色为绿，
+//    由【掷酒】在 game_begin 发放，效果在 Effect::毒酒/药酒 结算，按普通牌循环；
 //  · 【爆破】强化过的【+2】把附加伤害写在 Card::extraDamage 上，随牌流转，
 //    任何人打出都由 Player::useCardByIndex 对牌目标结算；
 //  · 【+2】/【+4】摸牌用 DrawReason::card_draw2 / card_draw4 标识；
@@ -613,3 +613,130 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+// ==================== 新增荒野乱斗角色技能（第二批） ====================
+// 共用口径：
+//  · 秘技牌【过载】= Card::Name::secret_过载，牌色绿、不可打出、按普通牌循环；
+//    只有珀尔打牌时由她的隐藏子技能判定（检查自己手里的过载）。
+//  · 已有 class 火箭（布洛克）与 class 过载（速度标记主动技）；麦茜技能改名为「飞弹」后无命名冲突，
+//    秘技牌【过载】不占技能类名。
+//  · 连续回合判定用 phase_begin 记录「本回合被封禁」、phase_end 读 getHasUsed()；
+//    引擎的 hasUsed 覆盖两个出牌阶段，被封禁的回合恒为 false。
+//  · 每局重置的状态一律重写 reset() 清空；隐藏子技能用空 info，由主技能携带完整描述。
+
+// ---------- 珀尔【烧炉】 ----------
+//烧炉_过载判定：隐藏子技能，你打出牌后，若手中【过载】数量大于等于其他牌，
+//弃置一张【过载】并对一名其他角色造成10点伤害
+class 烧炉_过载判定 final : public PassiveSkillImpl<烧炉_过载判定> {
+public:
+	烧炉_过载判定() : PassiveSkillImpl<烧炉_过载判定>(
+		"烧炉_过载判定", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//烧炉：锁定技，游戏开始后每经过五轮，获得一张秘技牌【过载】
+class 烧炉 final : public PassiveSkillImpl<烧炉> {
+public:
+	烧炉() : PassiveSkillImpl<烧炉>(
+		"烧炉",
+		"锁定技，游戏开始后每经过五轮，获得一张秘技牌【过载】。\n"
+		"【过载】：不可打出。你打出牌后，若手中【过载】数量大于等于其他牌，弃置一张【过载】并对一名其他角色造成10点伤害。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end,
+		烧炉_过载判定::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 麦茜【飞弹】【冲爆】 ----------
+//飞弹：锁定技，你造成任意伤害时，令此伤害+1
+class 飞弹 final : public PassiveSkillImpl<飞弹> {
+public:
+	飞弹() : PassiveSkillImpl<飞弹>(
+		"飞弹",
+		"锁定技，你造成任意伤害时，令此伤害+1。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::damage_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//冲爆：你摸牌后，若其中有数字牌，随机对一名其他角色造成1点伤害
+class 冲爆 final : public PassiveSkillImpl<冲爆> {
+public:
+	冲爆() : PassiveSkillImpl<冲爆>(
+		"冲爆",
+		"你摸牌后，若其中有数字牌，随机对一名其他角色造成1点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 阿方【功夫】【连踢】 ----------
+//功夫：锁定技，你打出的红色牌附带封禁效果，然后摸一张牌（手牌数大于10时整个技能不触发）
+class 功夫 final : public PassiveSkillImpl<功夫> {
+public:
+	功夫() : PassiveSkillImpl<功夫>(
+		"功夫",
+		"锁定技，你打出的红色牌附带封禁效果，然后摸一张牌（手牌数大于10时不触发）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//连踢：每连续四个「有出牌」的回合触发一次；中断清零。
+//效果带「可」字，由技能自己弹确认（forced=true 避免引擎重复询问）
+class 连踢 final : public PassiveSkillImpl<连踢> {
+	std::size_t streak{};
+public:
+	连踢() : PassiveSkillImpl<连踢>(
+		"连踢",
+		"你每连续四回合打出牌后，可摸两张牌并对一名其他角色造成4次2点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override;
+};
+
+// ---------- 公牛【蛮冲】隐藏子技能 ----------
+//蛮冲_记录：phase_begin 记录本回合是否被封禁（此时 unban() 尚未执行）
+class 蛮冲_记录 final : public PassiveSkillImpl<蛮冲_记录> {
+public:
+	蛮冲_记录() : PassiveSkillImpl<蛮冲_记录>(
+		"蛮冲_记录", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//蛮冲_结算：phase_end 考核四个回合，成功则摸牌/造成伤害/令蛮冲视为未发动过
+class 蛮冲_结算 final : public PassiveSkillImpl<蛮冲_结算> {
+public:
+	蛮冲_结算() : PassiveSkillImpl<蛮冲_结算>(
+		"蛮冲_结算", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};

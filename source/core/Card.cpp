@@ -8,93 +8,94 @@
 // ==================== Card 静态数据 ====================
 const std::unordered_map<Card::ColorName, std::string, Card::TupleHash> Card::imagePaths = {
 	// 红色牌
-	{{Color::red, Name::number_0},     "images/cards/red/number_0.jpg"},
-	{{Color::red, Name::number_1},     "images/cards/red/number_1.jpg"},
-	{{Color::red, Name::number_2},     "images/cards/red/number_2.jpg"},
-	{{Color::red, Name::number_3},     "images/cards/red/number_3.jpg"},
-	{{Color::red, Name::number_4},     "images/cards/red/number_4.jpg"},
-	{{Color::red, Name::number_5},     "images/cards/red/number_5.jpg"},
-	{{Color::red, Name::number_6},     "images/cards/red/number_6.jpg"},
-	{{Color::red, Name::number_7},     "images/cards/red/number_7.jpg"},
-	{{Color::red, Name::number_8},     "images/cards/red/number_8.jpg"},
-	{{Color::red, Name::number_9},     "images/cards/red/number_9.jpg"},
-	{{Color::red, Name::action_rev},   "images/cards/red/action_rev.jpg"},
-	{{Color::red, Name::action_skip},  "images/cards/red/action_skip.jpg"},
-	{{Color::red, Name::action_draw2}, "images/cards/red/action_draw2.jpg"},
+	{ { Color::red, Name::number_0 },     "images/cards/red/number_0.jpg" },
+	{ { Color::red, Name::number_1 },     "images/cards/red/number_1.jpg" },
+	{ { Color::red, Name::number_2 },     "images/cards/red/number_2.jpg" },
+	{ { Color::red, Name::number_3 },     "images/cards/red/number_3.jpg" },
+	{ { Color::red, Name::number_4 },     "images/cards/red/number_4.jpg" },
+	{ { Color::red, Name::number_5 },     "images/cards/red/number_5.jpg" },
+	{ { Color::red, Name::number_6 },     "images/cards/red/number_6.jpg" },
+	{ { Color::red, Name::number_7 },     "images/cards/red/number_7.jpg" },
+	{ { Color::red, Name::number_8 },     "images/cards/red/number_8.jpg" },
+	{ { Color::red, Name::number_9 },     "images/cards/red/number_9.jpg" },
+	{ { Color::red, Name::action_rev },   "images/cards/red/action_rev.jpg" },
+	{ { Color::red, Name::action_skip },  "images/cards/red/action_skip.jpg" },
+	{ { Color::red, Name::action_draw2 }, "images/cards/red/action_draw2.jpg" },
 
 	// 蓝色牌
-	{{Color::blue, Name::number_0},     "images/cards/blue/number_0.jpg"},
-	{{Color::blue, Name::number_1},     "images/cards/blue/number_1.jpg"},
-	{{Color::blue, Name::number_2},     "images/cards/blue/number_2.jpg"},
-	{{Color::blue, Name::number_3},     "images/cards/blue/number_3.jpg"},
-	{{Color::blue, Name::number_4},     "images/cards/blue/number_4.jpg"},
-	{{Color::blue, Name::number_5},     "images/cards/blue/number_5.jpg"},
-	{{Color::blue, Name::number_6},     "images/cards/blue/number_6.jpg"},
-	{{Color::blue, Name::number_7},     "images/cards/blue/number_7.jpg"},
-	{{Color::blue, Name::number_8},     "images/cards/blue/number_8.jpg"},
-	{{Color::blue, Name::number_9},     "images/cards/blue/number_9.jpg"},
-	{{Color::blue, Name::action_rev},   "images/cards/blue/action_rev.jpg"},
-	{{Color::blue, Name::action_skip},  "images/cards/blue/action_skip.jpg"},
-	{{Color::blue, Name::action_draw2}, "images/cards/blue/action_draw2.jpg"},
+	{ { Color::blue, Name::number_0 },     "images/cards/blue/number_0.jpg" },
+	{ { Color::blue, Name::number_1 },     "images/cards/blue/number_1.jpg" },
+	{ { Color::blue, Name::number_2 },     "images/cards/blue/number_2.jpg" },
+	{ { Color::blue, Name::number_3 },     "images/cards/blue/number_3.jpg" },
+	{ { Color::blue, Name::number_4 },     "images/cards/blue/number_4.jpg" },
+	{ { Color::blue, Name::number_5 },     "images/cards/blue/number_5.jpg" },
+	{ { Color::blue, Name::number_6 },     "images/cards/blue/number_6.jpg" },
+	{ { Color::blue, Name::number_7 },     "images/cards/blue/number_7.jpg" },
+	{ { Color::blue, Name::number_8 },     "images/cards/blue/number_8.jpg" },
+	{ { Color::blue, Name::number_9 },     "images/cards/blue/number_9.jpg" },
+	{ { Color::blue, Name::action_rev },   "images/cards/blue/action_rev.jpg" },
+	{ { Color::blue, Name::action_skip },  "images/cards/blue/action_skip.jpg" },
+	{ { Color::blue, Name::action_draw2 }, "images/cards/blue/action_draw2.jpg" },
 
 	// 绿色牌
-	{{Color::green, Name::number_0},     "images/cards/green/number_0.jpg"},
-	{{Color::green, Name::number_1},     "images/cards/green/number_1.jpg"},
-	{{Color::green, Name::number_2},     "images/cards/green/number_2.jpg"},
-	{{Color::green, Name::number_3},     "images/cards/green/number_3.jpg"},
-	{{Color::green, Name::number_4},     "images/cards/green/number_4.jpg"},
-	{{Color::green, Name::number_5},     "images/cards/green/number_5.jpg"},
-	{{Color::green, Name::number_6},     "images/cards/green/number_6.jpg"},
-	{{Color::green, Name::number_7},     "images/cards/green/number_7.jpg"},
-	{{Color::green, Name::number_8},     "images/cards/green/number_8.jpg"},
-	{{Color::green, Name::number_9},     "images/cards/green/number_9.jpg"},
-	{{Color::green, Name::action_rev},   "images/cards/green/action_rev.jpg"},
-	{{Color::green, Name::action_skip},  "images/cards/green/action_skip.jpg"},
-	{{Color::green, Name::action_draw2}, "images/cards/green/action_draw2.jpg"},
+	{ { Color::green, Name::number_0 },     "images/cards/green/number_0.jpg" },
+	{ { Color::green, Name::number_1 },     "images/cards/green/number_1.jpg" },
+	{ { Color::green, Name::number_2 },     "images/cards/green/number_2.jpg" },
+	{ { Color::green, Name::number_3 },     "images/cards/green/number_3.jpg" },
+	{ { Color::green, Name::number_4 },     "images/cards/green/number_4.jpg" },
+	{ { Color::green, Name::number_5 },     "images/cards/green/number_5.jpg" },
+	{ { Color::green, Name::number_6 },     "images/cards/green/number_6.jpg" },
+	{ { Color::green, Name::number_7 },     "images/cards/green/number_7.jpg" },
+	{ { Color::green, Name::number_8 },     "images/cards/green/number_8.jpg" },
+	{ { Color::green, Name::number_9 },     "images/cards/green/number_9.jpg" },
+	{ { Color::green, Name::action_rev },   "images/cards/green/action_rev.jpg" },
+	{ { Color::green, Name::action_skip },  "images/cards/green/action_skip.jpg" },
+	{ { Color::green, Name::action_draw2 }, "images/cards/green/action_draw2.jpg" },
 
 	// 黄色牌
-	{{Color::yellow, Name::number_0},     "images/cards/yellow/number_0.jpg"},
-	{{Color::yellow, Name::number_1},     "images/cards/yellow/number_1.jpg"},
-	{{Color::yellow, Name::number_2},     "images/cards/yellow/number_2.jpg"},
-	{{Color::yellow, Name::number_3},     "images/cards/yellow/number_3.jpg"},
-	{{Color::yellow, Name::number_4},     "images/cards/yellow/number_4.jpg"},
-	{{Color::yellow, Name::number_5},     "images/cards/yellow/number_5.jpg"},
-	{{Color::yellow, Name::number_6},     "images/cards/yellow/number_6.jpg"},
-	{{Color::yellow, Name::number_7},     "images/cards/yellow/number_7.jpg"},
-	{{Color::yellow, Name::number_8},     "images/cards/yellow/number_8.jpg"},
-	{{Color::yellow, Name::number_9},     "images/cards/yellow/number_9.jpg"},
-	{{Color::yellow, Name::action_rev},   "images/cards/yellow/action_rev.jpg"},
-	{{Color::yellow, Name::action_skip},  "images/cards/yellow/action_skip.jpg"},
-	{{Color::yellow, Name::action_draw2}, "images/cards/yellow/action_draw2.jpg"},
+	{ { Color::yellow, Name::number_0 },     "images/cards/yellow/number_0.jpg" },
+	{ { Color::yellow, Name::number_1 },     "images/cards/yellow/number_1.jpg" },
+	{ { Color::yellow, Name::number_2 },     "images/cards/yellow/number_2.jpg" },
+	{ { Color::yellow, Name::number_3 },     "images/cards/yellow/number_3.jpg" },
+	{ { Color::yellow, Name::number_4 },     "images/cards/yellow/number_4.jpg" },
+	{ { Color::yellow, Name::number_5 },     "images/cards/yellow/number_5.jpg" },
+	{ { Color::yellow, Name::number_6 },     "images/cards/yellow/number_6.jpg" },
+	{ { Color::yellow, Name::number_7 },     "images/cards/yellow/number_7.jpg" },
+	{ { Color::yellow, Name::number_8 },     "images/cards/yellow/number_8.jpg" },
+	{ { Color::yellow, Name::number_9 },     "images/cards/yellow/number_9.jpg" },
+	{ { Color::yellow, Name::action_rev },   "images/cards/yellow/action_rev.jpg" },
+	{ { Color::yellow, Name::action_skip },  "images/cards/yellow/action_skip.jpg" },
+	{ { Color::yellow, Name::action_draw2 }, "images/cards/yellow/action_draw2.jpg" },
 
 	// 黑色牌
-	{{Color::black, Name::wild_pal},   "images/cards/black/wild_pal.jpg"},
-	{{Color::black, Name::wild_draw4}, "images/cards/black/wild_draw4.jpg"},
+	{ { Color::black, Name::wild_pal },   "images/cards/black/wild_pal.jpg" },
+	{ { Color::black, Name::wild_draw4 }, "images/cards/black/wild_draw4.jpg" },
 
 	// 紫色牌（由角色技能加入牌堆；图片资源后补，缺失时客户端回退默认图）
-	{{Color::purple, Name::number_0},     "images/cards/purple/number_0.jpg"},
-	{{Color::purple, Name::number_1},     "images/cards/purple/number_1.jpg"},
-	{{Color::purple, Name::number_2},     "images/cards/purple/number_2.jpg"},
-	{{Color::purple, Name::number_3},     "images/cards/purple/number_3.jpg"},
-	{{Color::purple, Name::number_4},     "images/cards/purple/number_4.jpg"},
-	{{Color::purple, Name::number_5},     "images/cards/purple/number_5.jpg"},
-	{{Color::purple, Name::number_6},     "images/cards/purple/number_6.jpg"},
-	{{Color::purple, Name::number_7},     "images/cards/purple/number_7.jpg"},
-	{{Color::purple, Name::number_8},     "images/cards/purple/number_8.jpg"},
-	{{Color::purple, Name::number_9},     "images/cards/purple/number_9.jpg"},
-	{{Color::purple, Name::action_rev},   "images/cards/purple/action_rev.jpg"},
-	{{Color::purple, Name::action_skip},  "images/cards/purple/action_skip.jpg"},
-	{{Color::purple, Name::action_draw2}, "images/cards/purple/action_draw2.jpg"},
+	{ { Color::purple, Name::number_0 },     "images/cards/purple/number_0.jpg" },
+	{ { Color::purple, Name::number_1 },     "images/cards/purple/number_1.jpg" },
+	{ { Color::purple, Name::number_2 },     "images/cards/purple/number_2.jpg" },
+	{ { Color::purple, Name::number_3 },     "images/cards/purple/number_3.jpg" },
+	{ { Color::purple, Name::number_4 },     "images/cards/purple/number_4.jpg" },
+	{ { Color::purple, Name::number_5 },     "images/cards/purple/number_5.jpg" },
+	{ { Color::purple, Name::number_6 },     "images/cards/purple/number_6.jpg" },
+	{ { Color::purple, Name::number_7 },     "images/cards/purple/number_7.jpg" },
+	{ { Color::purple, Name::number_8 },     "images/cards/purple/number_8.jpg" },
+	{ { Color::purple, Name::number_9 },     "images/cards/purple/number_9.jpg" },
+	{ { Color::purple, Name::action_rev },   "images/cards/purple/action_rev.jpg" },
+	{ { Color::purple, Name::action_skip },  "images/cards/purple/action_skip.jpg" },
+	{ { Color::purple, Name::action_draw2 }, "images/cards/purple/action_draw2.jpg" },
 	// 被「变为紫色」的万能牌：牌名仍是万能牌，沿用黑色万能牌卡图
-	{{Color::purple, Name::wild_pal},     "images/cards/black/wild_pal.jpg"},
-	{{Color::purple, Name::wild_draw4},   "images/cards/black/wild_draw4.jpg"},
+	{ { Color::purple, Name::wild_pal },     "images/cards/black/wild_pal.jpg" },
+	{ { Color::purple, Name::wild_draw4 },   "images/cards/black/wild_draw4.jpg" },
 
 	// 秘技牌（由角色技能发放，视为绿色；卡图统一放在 cards/secret/，缺失时客户端回退默认图）
-	{{Color::green, Name::secret_poison}, "images/cards/secret/secret_poison.jpg"},
-	{{Color::green, Name::secret_heal},   "images/cards/secret/secret_heal.jpg"},
+	{ { Color::green, Name::secret_毒酒 }, "images/cards/secret/毒酒.jpg" },
+	{ { Color::green, Name::secret_药酒 }, "images/cards/secret/药酒.jpg" },
+	{ { Color::green, Name::secret_过载 }, "images/cards/secret/过载.jpg" },
 
 	// 背面牌
-	{{Color::no, Name::back}, "images/cards/back.jpg"}
+	{ { Color::no, Name::back }, "images/cards/back.jpg" }
 };
 
 const Card Card::back(Card::Color::no, Card::Name::back);
@@ -197,6 +198,7 @@ Card::Type Card::getType() const {
 	if (is_number(name)) return Type::number;
 	if (is_action(name)) return Type::action;
 	if (is_wild(name)) return Type::wild;
+	if (is_secret(name)) return Type::secret;
 	return Type::unknown;
 }
 Card::ColorName Card::getColorName() const {
@@ -259,9 +261,10 @@ std::size_t Card::value() const {
 			//万能
 		case Name::wild_pal:
 		case Name::wild_draw4: return 50;
-			//秘技牌：不计入手牌价值，避免败者伤害被它们放大
-		case Name::secret_poison:
-		case Name::secret_heal: return 0;
+			//秘技牌统一按 10 点计入手牌价值
+		case Name::secret_毒酒:
+		case Name::secret_药酒:
+		case Name::secret_过载: return 10;
 			//其他
 		default: throw std::invalid_argument("无法计算背面/未知牌的价值");
 	}
@@ -306,10 +309,12 @@ void Card::applyEffect(GameLogic& game, Player& source, Player& target) {
 			case Name::action_skip:   Effect::ban(*this, source, target); break;
 			case Name::action_rev:   Effect::rev(*this, game); break;
 			case Name::action_draw2: Effect::draw2(*this, source, target); break;
-		case Name::wild_pal:     Effect::pal(*this, game, source); break;
-		case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
-		case Name::secret_poison: Effect::poison(source); break;
-		case Name::secret_heal:   Effect::heal(source); break;
+			case Name::wild_pal:     Effect::pal(*this, game, source); break;
+			case Name::wild_draw4:   Effect::draw4(*this, game, source, target); break;
+			case Name::secret_毒酒: Effect::毒酒(source); break;
+			case Name::secret_药酒: Effect::药酒(source); break;
+				//【过载】不可打出，也没有打出时的效果
+			case Name::secret_过载: break;
 		}
 	}
 }

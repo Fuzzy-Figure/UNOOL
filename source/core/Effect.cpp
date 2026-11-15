@@ -50,7 +50,7 @@ void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) 
 }
 
 // ==================== 秘技牌效果 ====================
-void Effect::poison(Player& source) {
+void Effect::毒酒(Player& source) {
 	const opt_ref<Player> target = source.chooseOtherPlayer(
 		"【毒酒】选择一名其他角色，对其造成10点伤害", false);
 	if (!target.has_value()) {
@@ -61,7 +61,7 @@ void Effect::poison(Player& source) {
 	victim.damage(10, std::ref(source));
 	std::println("<秘技> {}的毒酒对{}造成10点伤害", source.displayName(), victim.displayName());
 }
-void Effect::heal(Player& source) {
+void Effect::药酒(Player& source) {
 	source.recover(10);
 	std::println("<秘技> {}的药酒回复10点体力", source.displayName());
 }
