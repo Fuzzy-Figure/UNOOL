@@ -937,3 +937,96 @@ public:
 	void reset() override { PassiveSkill::reset(); played = 0; }
 };
 
+
+
+// ==================== 新增荒野乱斗角色技能（第六批） ====================
+// 共用口径：
+//  · 「绝地技」= 每场（每局）限一次的限定技，文案保留「绝地技」；
+//  · 牌效果使其他角色摸牌：Effect::draw2/draw4 经 Player::draw 第4参数传入出牌者，
+//    draw_begin 的 Trigger.source 即「谁打出的牌」，【炮击】据此判断；
+//  · 「点数连续」指 0-9 中 n/n+1/n+2，不循环、不限颜色、三张点数互不相同；
+//  · 【狙击】用非锁定被动技实现「可选择发动」，发动后 charging=true 使 filter 失效，
+//    五个自己的回合结算完成后恢复。
+
+// ---------- 波克【安可】 ----------
+//安可：锁定技，打出万能牌后本局【音波】回复值+1
+class 安可 final : public PassiveSkillImpl<安可> {
+public:
+	安可() : PassiveSkillImpl<安可>(
+		"安可",
+		"锁定技，你打出万能牌后，本局【音波】回复值+1。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 邦尼【炮击】 ----------
+//炮击：因自己打出的【+2】/【+4】使其他角色摸牌时，可改为造成原摸牌数点伤害，然后其摸一张牌
+class 炮击 final : public PassiveSkillImpl<炮击> {
+public:
+	bool triple{};   //【发射】后本场改为三次伤害
+	炮击() : PassiveSkillImpl<炮击>(
+		"炮击",
+		"你因牌的效果使其他角色摸牌时，可改为对其造成原摸牌数点伤害，然后其摸一张牌。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); triple = false; }
+};
+
+// ---------- 佩佩【狙击】 ----------
+//狙击_记录：隐藏子技能，回合开始时记录本回合是否被封禁
+class 狙击_记录 final : public PassiveSkillImpl<狙击_记录> {
+public:
+	狙击_记录() : PassiveSkillImpl<狙击_记录>(
+		"狙击_记录", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//狙击_结算：隐藏子技能，回合结束时累计/中断连续五回合出牌
+class 狙击_结算 final : public PassiveSkillImpl<狙击_结算> {
+public:
+	狙击_结算() : PassiveSkillImpl<狙击_结算>(
+		"狙击_结算", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//狙击：回合开始可选择发动，发动后失效，五个自己回合均出过牌则造成15点伤害
+class 狙击 final : public PassiveSkillImpl<狙击> {
+public:
+	bool charging{};          //蓄力中（此技能失效）
+	std::size_t remaining{};  //还需达标的回合数
+	bool bannedThisTurn{};    //本回合是否被封禁
+	狙击() : PassiveSkillImpl<狙击>(
+		"狙击",
+		"回合开始时，你可发动此技能且此技能失效至触发。\n"
+		"你的下五个回合内（包含本回合）若均出过牌，则可选择一名其他角色，对其造成15点伤害。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin,
+		狙击_记录::make(),
+		狙击_结算::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override {
+		PassiveSkill::reset();
+		charging = false;
+		remaining = 0;
+		bannedThisTurn = false;
+	}
+};

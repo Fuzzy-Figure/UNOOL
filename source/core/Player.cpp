@@ -117,12 +117,15 @@ void Player::recover(std::size_t num) {
 
 // === 游戏逻辑 ===
 
-std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position) {
+std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position,
+									const opt_ref<Player> source) {
 	std::println("{}摸了{}张牌（{}）", displayName(), number, (position == DrawPosition::top ? "顶" : "底")); {
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
 		trigger.number = number;
 		trigger.drawReason = reason;
+		//牌效果摸牌：source 为打出该牌的角色（供【炮击】判断「你因牌的效果使其他角色摸牌」）
+		if (source.has_value()) trigger.source = source;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_begin, trigger);
 	}
 
@@ -537,7 +540,7 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 std::optional<std::size_t> Player::chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
 											  bool forced, ActiveSkill::TriggerTime phase) {
 	game.setOperatingPlayer(id);
-	decision.showChoice(id, { title, {}, forced });
+	decision.showChoice(id, { title,{}, forced });
 	opt_ref<TransformSkill> activeMode;  //当前激活的转换型主动技
 
 	std::vector<ref<InstantSkill>>   instantRefs;
@@ -566,7 +569,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			}
 			std::println("[Player] {} 重连成功，恢复选择", displayName());
 			game.broadcastState();
-			decision.showChoice(id, { title, {}, forced });
+			decision.showChoice(id, { title,{}, forced });
 			continue;
 		}
 
@@ -593,7 +596,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			&& input == unool::contract::Key::B) {
 			if (tryUseBombCard()) {
 				game.setOperatingPlayer(id);
-				decision.showChoice(id, { title, {}, forced });
+				decision.showChoice(id, { title,{}, forced });
 				game.broadcastState();
 			}
 			continue;
@@ -668,7 +671,7 @@ bool Player::handleDigitKey(unool::contract::Key input,
 		}
 		else {
 			activeMode = skill;
-			decision.showChoice(id, { skill.getPrompt(), {}, false });
+			decision.showChoice(id, { skill.getPrompt(),{}, false });
 		}
 	}
 	return true;

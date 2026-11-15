@@ -13,7 +13,7 @@ void Effect::rev(Card& card, GameLogic& game) {
 	game.reverse();
 }
 void Effect::draw2(Card& card, Player& source, Player& target) {
-	target.draw(2, DrawReason::card_draw2);
+	target.draw(2, DrawReason::card_draw2, DrawPosition::top, std::ref(source));
 	target.ban(source, card);
 }
 
@@ -35,15 +35,15 @@ void Effect::draw4(Card& card, GameLogic& game, Player& source, Player& target) 
 		if (source.handInclude([&colorBeforeDraw4](const Card& card) {
 			return card.is(colorBeforeDraw4);
 		})) { //质疑成功
-			source.draw(4, DrawReason::card_draw4);
+			source.draw(4, DrawReason::card_draw4, DrawPosition::top, std::ref(source));
 		}
 		else { //质疑失败
-			target.draw(6, DrawReason::card_draw4);
+			target.draw(6, DrawReason::card_draw4, DrawPosition::top, std::ref(source));
 			target.ban(source, card);
 		}
 	}
 	else if (choice == 2) { //不质疑
-		target.draw(4, DrawReason::card_draw4);
+		target.draw(4, DrawReason::card_draw4, DrawPosition::top, std::ref(source));
 		target.ban(source, card);
 	}
 	else throw std::runtime_error(std::format("意外的ask返回值：{}", choice));

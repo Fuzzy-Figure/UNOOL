@@ -444,3 +444,37 @@ public:
 	bool content(GameLogic& game, Player& carrier) override;
 	void reset() override { InstantSkill::reset(); lastExtraRound = 0; }
 };
+
+
+// ==================== 新增荒野乱斗角色技能（第六批） ====================
+
+// ---------- 波克【音波】 ----------
+//音波：每回合限一次，重铸点数连续的三张数字牌，回复 1+bonus 点体力
+class 音波 final : public InstantSkillImpl<音波> {
+public:
+	std::size_t bonus{};   //【安可】累计的回复值加成（每局清零）
+	音波() : InstantSkillImpl<音波>(
+		"音波",
+		"每回合限一次，出牌阶段，你可重铸点数连续的三张数字牌，回复1点体力。",
+		unlimited, 1,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+	void reset() override { InstantSkill::reset(); bonus = 0; }
+};
+
+// ---------- 邦尼【发射】 ----------
+//发射：绝地技（每场限一次），生命上限减至75，【炮击】改为三次伤害
+class 发射 final : public InstantSkillImpl<发射> {
+public:
+	发射() : InstantSkillImpl<发射>(
+		"发射",
+		"绝地技（每场限一次），出牌阶段，你可将自己发射出去并将生命上限减至75；"
+		"发射后本场游戏你的【炮击】改为造成三次伤害。",
+		1, unlimited,
+		TriggerTime::phase_use
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier) const override;
+	bool content(GameLogic& game, Player& carrier) override;
+};

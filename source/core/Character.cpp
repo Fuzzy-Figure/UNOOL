@@ -138,6 +138,10 @@ const std::unordered_map<std::string, Character::Info> Character::infos = {
 	{"罗莎",        {"荒野乱斗",  Level::D, {即时<生草>}, 225}},
 	// ---- 新增荒野乱斗角色（第五批） ----
 	{"芬克斯",      {"荒野乱斗",  Level::A, {被动<溯流>, 即时<时匡>}, 100}},
+	// ---- 新增荒野乱斗角色（第六批） ----
+	{"波克",        {"荒野乱斗",  Level::B, {被动<安可>, 即时<音波>}, 100}},
+	{"佩佩",        {"荒野乱斗",  Level::D, {被动<狙击>}, 90}},
+	{"邦尼",        {"荒野乱斗",  Level::B, {被动<炮击>, 即时<发射>}, 250}},
 };
 
 // ==================== 构造 / 工厂 ====================
@@ -494,6 +498,10 @@ Character::hp_t Character::getMaxHp() const {
 }
 void Character::setHp(hp_t newHp) {
 	hp = std::min(newHp, maxHp);
+}
+void Character::setMaxHp(hp_t newMaxHp) {
+	maxHp = newMaxHp;
+	if (hp > maxHp) hp = maxHp;
 }
 std::size_t Character::damage(std::size_t damage) {
 	hp -= static_cast<hp_t>(damage);

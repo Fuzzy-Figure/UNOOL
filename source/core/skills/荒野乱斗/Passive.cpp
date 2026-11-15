@@ -789,7 +789,7 @@ bool 掷酒::content(GameLogic& game, Player& carrier, Trigger&) {
 
 // ==================== 技能：烧炉_过载判定 ====================
 bool 烧炉_过载判定::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
-	const std::size_t total{carrier.handCount()};
+	const std::size_t total{ carrier.handCount() };
 	std::size_t overloads{};
 	carrier.getHand().forEach([&](Card& c) {
 		if (c.getName() == Card::Name::secret_过载) ++overloads;
@@ -825,7 +825,7 @@ bool 烧炉_过载判定::content(GameLogic& game, Player& carrier, Trigger&) {
 
 // ==================== 技能：烧炉 ====================
 bool 烧炉::filter(const GameLogic& game, const Player&, const Trigger&) const {
-	const std::size_t round{game.getRoundCount()};
+	const std::size_t round{ game.getRoundCount() };
 	return round > 0 && round % 5 == 0;
 }
 
@@ -899,7 +899,7 @@ bool 连踢::content(GameLogic& game, Player& carrier, Trigger&) {
 	streak = 0;
 
 	//「可」字效果：满足条件时才弹确认
-	const std::size_t choice{carrier.ask("是否发动 [连踢]？", { "发动", "不发动" }, true)};
+	const std::size_t choice{ carrier.ask("是否发动 [连踢]？",{ "发动", "不发动" }, true) };
 	if (choice == 2) return false;
 	auto targetOpt = carrier.chooseOtherPlayer("【连踢】选择一名其他角色", false);
 	if (!targetOpt.has_value()) return false;
@@ -961,7 +961,7 @@ bool 蛮冲_结算::content(GameLogic& game, Player& carrier, Trigger&) {
 	carrier.draw(4, DrawReason::skill);
 	auto targetOpt = carrier.chooseOtherPlayer("【蛮冲】选择一名其他角色", false);
 	if (targetOpt.has_value()) {
-		const std::size_t dmg{10 * skill.activationCount};
+		const std::size_t dmg{ 10 * skill.activationCount };
 		Player& target = targetOpt.value().get();
 		target.damage(dmg, carrier);
 		std::println("<技能> {}的蛮冲对{}造成{}点伤害", carrier.displayName(), target.displayName(), dmg);
@@ -1038,7 +1038,7 @@ bool 镐机::content(GameLogic& game, Player& carrier, Trigger&) {
 		const auto picked = unool::random::randomGet(colors, 2);
 		const std::size_t first = unool::random::randomGet(byColor[picked[0].get()]);
 		const std::size_t second = unool::random::randomGet(byColor[picked[1].get()]);
-		std::vector<std::size_t> indices{first, second};
+		std::vector<std::size_t> indices{ first, second };
 		std::ranges::sort(indices, std::greater{});
 		for (const std::size_t idx : indices) carrier.recastByIndex(idx);
 		std::println("<技能> {}发动镐机：随机重铸两张颜色不同的牌", carrier.displayName());
@@ -1049,7 +1049,7 @@ bool 镐机::content(GameLogic& game, Player& carrier, Trigger&) {
 
 // ==================== 技能：旋转 ====================
 bool 旋转::filter(const GameLogic& game, const Player&, const Trigger&) const {
-	const std::size_t round{game.getRoundCount()};
+	const std::size_t round{ game.getRoundCount() };
 	return round == 3 || round == 4 || round == 5;
 }
 
@@ -1075,7 +1075,7 @@ bool 炮台_轰击::content(GameLogic& game, Player& carrier, Trigger&) {
 	auto targetOpt = carrier.chooseOtherPlayer("【炮台】选择一名其他角色开火", true);
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
-	const std::size_t times{static_cast<std::size_t>(unool::random::randomInt(2, 3))};
+	const std::size_t times{ static_cast<std::size_t>(unool::random::randomInt(2, 3)) };
 	for (std::size_t i = 0; i < times; ++i) target.damage(1, carrier);
 	std::println("<技能> {}的炮台对{}造成{}次1点伤害",
 				 carrier.displayName(), target.displayName(), times);
@@ -1091,11 +1091,11 @@ bool 炮台_无效::filter(const GameLogic&, const Player& carrier, const Trigge
 
 bool 炮台_无效::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& player = trigger.getPlayer();
-	const std::size_t choice{player.ask(
+	const std::size_t choice{ player.ask(
 		std::format("{}拥有\"炮台\"，是否令此万能牌无效并销毁\"炮台\"？", carrier.displayName()),
 		{ "令此牌无效并销毁炮台", "正常结算" },
 		true
-	)};
+	) };
 	if (choice != 1) return false;
 	trigger.getCard().cancelEffect();
 	carrier.clearMark("炮台");
@@ -1132,10 +1132,10 @@ bool 征讨::filter(const GameLogic&, const Player& carrier, const Trigger& trig
 
 bool 征讨::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Player& target = trigger.getPlayer();
-	const int hp{target.getHp()};
-	const std::size_t currentHp{hp > 0 ? static_cast<std::size_t>(hp) : 0};
-	const std::size_t dmg{(currentHp * 33 + 99) / 100};   //当前体力33%，向上取整
-	const std::size_t heal{(dmg + 1) / 2};                //此伤害50%，向上取整
+	const int hp{ target.getHp() };
+	const std::size_t currentHp{ hp > 0 ? static_cast<std::size_t>(hp) : 0 };
+	const std::size_t dmg{ (currentHp * 33 + 99) / 100 };   //当前体力33%，向上取整
+	const std::size_t heal{ (dmg + 1) / 2 };                //此伤害50%，向上取整
 	//先结算额外伤害；本技能 limit=1，嵌套的 damage_begin 因已达次数不会再次触发
 	target.damage(dmg, carrier);
 	carrier.recover(heal);
@@ -1233,4 +1233,127 @@ bool 指虎_专属::content(GameLogic& game, Player& carrier, Trigger& trigger) 
 		return true;
 	}
 	return false;
+}
+
+
+// ==================== 新增荒野乱斗角色技能（第六批） ====================
+
+// ==================== 技能：安可 ====================
+bool 安可::filter(const GameLogic&, const Player&, const Trigger& trigger) const {
+	return trigger.hasCards() && trigger.getCard().isWild();
+}
+
+bool 安可::content(GameLogic& game, Player& carrier, Trigger&) {
+	auto wave = carrier.findSkill<音波>();
+	if (!wave.has_value()) return false;
+	++wave.value().get().bonus;
+	const std::size_t heal = 1 + wave.value().get().bonus;
+	carrier.hint(std::format("【安可】打出万能牌，【音波】回复值提升至{}", heal));
+	std::println("<技能> {}发动安可，【音波】回复值+1（当前{}）", carrier.displayName(), heal);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：炮击 ====================
+bool 炮击::filter(const GameLogic&, const Player& carrier, const Trigger& trigger) const {
+	if (!trigger.hasPlayer() || !trigger.hasSource() || !trigger.hasNumber()
+		|| !trigger.hasDrawReason()) return false;
+	const DrawReason reason = trigger.getDrawReason();
+	if (reason != DrawReason::card_draw2 && reason != DrawReason::card_draw4) return false;
+	if (trigger.getPlayer() == carrier) return false;   //必须是其他角色摸牌
+	if (trigger.getSource() != carrier) return false;  //必须是自己打出的牌
+	return trigger.getNumber() > 0;
+}
+
+bool 炮击::content(GameLogic& game, Player& carrier, Trigger& trigger) {
+	Player& target = trigger.getPlayer();
+	const std::size_t original = trigger.getNumber();
+	const std::size_t times = carrier.getSkill<炮击>().triple ? 3 : 1;
+	const std::size_t choice = carrier.ask(
+		std::format("【炮击】是否将{}的{}张摸牌改为{}次各{}点伤害，然后其摸一张牌？",
+					target.displayName(), original, times, original),
+		{ "发动", "不发动" }, false);
+	if (choice != 1) return false;
+
+	for (std::size_t i = 0; i < times; ++i) target.damage(original, carrier);
+	trigger.getNumber() = 1;   //改为摸一张牌
+	carrier.hint(std::format("【炮击】{}改为受到{}次各{}点伤害并摸一张牌",
+							 target.displayName(), times, original));
+	std::println("<技能> {}发动炮击，对{}造成{}次各{}点伤害，其改为摸一张牌",
+				 carrier.displayName(), target.displayName(), times, original);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：狙击_记录 ====================
+bool 狙击_记录::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	const auto main = carrier.findSkill<狙击>();
+	return main.has_value() && main.value().get().charging;
+}
+
+bool 狙击_记录::content(GameLogic&, Player& carrier, Trigger&) {
+	auto main = carrier.findSkill<狙击>();
+	if (!main.has_value()) return false;
+	//phase_begin 时 ban() 造成的封禁尚未被 turn() 的 unban() 清除
+	main.value().get().bannedThisTurn = carrier.isBanned();
+	return true;
+}
+
+// ==================== 技能：狙击_结算 ====================
+bool 狙击_结算::filter(const GameLogic&, const Player& carrier, const Trigger&) const {
+	const auto main = carrier.findSkill<狙击>();
+	return main.has_value() && main.value().get().charging;
+}
+
+bool 狙击_结算::content(GameLogic& game, Player& carrier, Trigger&) {
+	auto main = carrier.findSkill<狙击>();
+	if (!main.has_value()) return false;
+	狙击& skill = main.value().get();
+	if (!skill.charging) return false;
+
+	//空过或被封禁：本次蓄力作废，技能立即恢复
+	if (skill.bannedThisTurn || !carrier.getHasUsed()) {
+		skill.charging = false;
+		skill.remaining = 0;
+		std::println("<技能> {}的狙击蓄力中断（空过或被封禁），技能恢复", carrier.displayName());
+		game.broadcastState();
+		return true;
+	}
+
+	if (skill.remaining > 0) --skill.remaining;
+	if (skill.remaining > 0) {
+		std::println("<技能> {}的狙击累计{}/5回合，还需{}回合",
+					 carrier.displayName(), 5 - skill.remaining, skill.remaining);
+		return true;
+	}
+
+	//五个回合全部出过牌：技能恢复并结算
+	skill.charging = false;
+	auto targetOpt = carrier.chooseOtherPlayer("【狙击】选择一名其他角色，对其造成15点伤害", false);
+	if (targetOpt.has_value()) {
+		Player& target = targetOpt.value().get();
+		target.damage(15, carrier);
+		std::println("<技能> {}发动狙击，对{}造成15点伤害", carrier.displayName(), target.displayName());
+	}
+	else {
+		std::println("<技能> {}的狙击五回合达标，但取消了目标选择", carrier.displayName());
+	}
+	std::println("<技能> {}的狙击结算完成，技能恢复", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：狙击 ====================
+bool 狙击::filter(const GameLogic&, const Player&, const Trigger&) const {
+	return !charging;   //蓄力期间此技能失效
+}
+
+bool 狙击::content(GameLogic& game, Player& carrier, Trigger&) {
+	charging = true;
+	remaining = 5;
+	bannedThisTurn = false;
+	carrier.hint("【狙击】开始蓄力：接下来五个自己的回合（含本回合）均需出过牌");
+	std::println("<技能> {}发动狙击，开始记录接下来五个回合的出牌情况", carrier.displayName());
+	game.broadcastState();
+	return true;
 }

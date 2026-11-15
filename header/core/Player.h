@@ -125,6 +125,8 @@ public:
 	std::vector<std::string> getImagePaths() const { return character->getImagePaths(); }
 	Character::hp_t getHp() const { return character->getHp(); }
 	Character::hp_t getMaxHp() const { return character->getMaxHp(); }
+	//减少/修改生命上限（当前体力同步压到新上限）
+	void setMaxHp(Character::hp_t v) { character->setMaxHp(v); markCharInfoDirty(); }
 	std::size_t damage(std::size_t damage, opt_ref<Player> source);
 	//失去体力：不经过伤害结算（不触发伤害相关技能、不被护盾抵消、不受倍率影响）
 	std::size_t loseHp(std::size_t num);
@@ -221,7 +223,8 @@ public:
 
 #pragma region 游戏逻辑 - 摸牌与出牌
 	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown,
-								const DrawPosition position = DrawPosition::top);
+								const DrawPosition position = DrawPosition::top,
+								const opt_ref<Player> source = std::nullopt);
 	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 	Card& useCardByIndex(const std::size_t cardIndex);
 	//把指定索引的手牌放进弃牌堆（触发lose_card事件），reason标识进弃牌堆的原因

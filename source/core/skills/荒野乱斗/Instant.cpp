@@ -1,6 +1,10 @@
 #include "skills/Skills.h"
 #include "GameLogic.h"
 #include "utils.h"
+#include <algorithm>
+#include <array>
+#include <format>
+#include <functional>
 
 
 // ==================== 技能：装币 ====================
@@ -385,7 +389,7 @@ bool 飞手::content(GameLogic& game, Player& carrier) {
 
 	const std::size_t choice = carrier.ask("【飞手】选择获得谁的一张牌", options, false);
 	if (choice == 0) return false;
-	Player& target{candidates[choice - 1].get()};
+	Player& target{ candidates[choice - 1].get() };
 
 	//随机获得一张，然后交还一张
 	const std::size_t idx = unool::random::randomSize_t(0, target.handCount() - 1);
@@ -537,7 +541,7 @@ bool 突击::content(GameLogic& game, Player& carrier) {
 	const std::size_t index = unool::random::randomSize_t(0, target.handCount() - 1);
 	const Card::Name name = target.getCardByIndex(index).getName();
 	carrier.hint(std::format("【突击】观看了{}的一张牌：{}",
-							  target.displayName(), Card::to_string(name)));
+							 target.displayName(), Card::to_string(name)));
 	std::println("<技能> {}发动突击，观看{}的{}",
 				 carrier.displayName(), target.displayName(), Card::to_string(name));
 
@@ -577,7 +581,7 @@ bool 蝙蝠::content(GameLogic& game, Player& carrier) {
 
 	const auto startOpt = carrier.chooseOtherPlayer("【蝙蝠】选择座位连续区间的起点", false);
 	if (!startOpt.has_value()) return false;
-	Player& startPlayer{startOpt.value().get()};
+	Player& startPlayer{ startOpt.value().get() };
 	std::size_t startIndex = players.size();
 	for (std::size_t i = 0; i < players.size(); ++i) {
 		if (players[i].get() == startPlayer) startIndex = i;
@@ -624,8 +628,8 @@ bool 收税::content(GameLogic& game, Player& carrier) {
 	if (!targetOpt.has_value()) return false;
 	Player& target = targetOpt.value().get();
 
-	const bool hasWild{target.handInclude([](const Card& c) { return c.isWild(); })};
-	std::size_t choice{2};
+	const bool hasWild{ target.handInclude([](const Card& c) { return c.isWild(); }) };
+	std::size_t choice{ 2 };
 	if (hasWild) {
 		choice = target.ask(
 			std::format("【收税】{}令你选择：", carrier.displayName()),
@@ -640,7 +644,7 @@ bool 收税::content(GameLogic& game, Player& carrier) {
 
 	if (choice == 1) {
 		auto gave = target.chooseToGive("【收税】交出一张万能牌", carrier, true,
-			[](const Card& c) { return c.isWild(); });
+										[](const Card& c) { return c.isWild(); });
 		if (!gave.has_value()) {
 			target.damage(1, carrier);
 			std::println("<技能> {}发动收税，{}未能交出万能牌，受到1点伤害",
@@ -678,7 +682,7 @@ bool 生草::filter(const GameLogic&, const Player& carrier) const {
 
 bool 生草::content(GameLogic& game, Player& carrier) {
 	auto index = carrier.chooseCard("【生草】选择一张绿色牌重铸",
-		[](const Card& c) { return c.is(Card::Color::green); }, false);
+									[](const Card& c) { return c.is(Card::Color::green); }, false);
 	if (!index.has_value()) return false;
 	carrier.recastByIndex(index.value());
 	++streak;
@@ -746,6 +750,79 @@ bool 时匡::content(GameLogic& game, Player& carrier) {
 	carrier.addMark("神速");
 	carrier.hint("【时匡】获得\"神速\"：每轮回合结束可额外执行一个回合；执行摸牌阶段或打出万能牌后移去");
 	std::println("<技能> {}发动时匡，获得\"神速\"标记", carrier.displayName());
+	game.broadcastState();
+	return true;
+}
+
+
+// ==================== 新增荒野乱斗角色技能（第六批） ====================
+namespace {
+	struct 音波组 {
+		std::string text{};
+		std::array<std::size_t, 3> indices{};
+	};
+
+	//枚举手牌中所有「点数连续」的三张数字牌组合（n/n+1/n+2，不循环、不限颜色）
+	std::vector<音波组> 音波_组合(const Player& player) {
+		constexpr std::size_t none = static_cast<std::size_t>(-1);
+		std::vector<音波组> result{};
+		for (int base = 0; base <= 7; ++base) {
+			std::array<std::size_t, 3> pick{ none, none, none };
+			for (std::size_t i = 0; i < player.handCount(); ++i) {
+				const Card& card = player.getHand().getCardByIndex(i);
+				if (!Card::is_number(card.getName())) continue;
+				const int v = static_cast<int>(card.getName()) - static_cast<int>(Card::Name::number_0);
+				for (int k = 0; k < 3; ++k) {
+					if (v == base + k && pick[k] == none) pick[k] = i;
+				}
+			}
+			if (pick[0] != none && pick[1] != none && pick[2] != none) {
+				result.push_back({ std::format("{} {} {}", base, base + 1, base + 2), pick });
+			}
+		}
+		return result;
+	}
+}
+
+// ==================== 技能：音波 ====================
+bool 音波::filter(const GameLogic&, const Player& carrier) const {
+	return !音波_组合(carrier).empty();
+}
+
+bool 音波::content(GameLogic& game, Player& carrier) {
+	const auto combos = 音波_组合(carrier);
+	if (combos.empty()) return false;
+	std::vector<std::string> options{};
+	for (const auto& combo : combos) options.push_back(combo.text);
+	const std::size_t choice = carrier.ask(
+		"【音波】选择一组点数连续的三张数字牌重铸（↓取消）", options, false);
+	if (choice == 0 || choice > combos.size()) return false;
+
+	//按索引降序重铸，避免前面的取出导致后面的下标偏移
+	auto indices = combos[choice - 1].indices;
+	std::sort(indices.begin(), indices.end(), std::greater{});
+	for (const std::size_t idx : indices) carrier.recastByIndex(idx);
+	const std::size_t heal = 1 + bonus;
+	carrier.recover(heal);
+	carrier.hint(std::format("【音波】重铸{}，回复{}点体力", combos[choice - 1].text, heal));
+	std::println("<技能> {}发动音波，重铸点数连续的三张数字牌（{}），回复{}点体力",
+				 carrier.displayName(), combos[choice - 1].text, heal);
+	game.broadcastState();
+	return true;
+}
+
+// ==================== 技能：发射 ====================
+bool 发射::filter(const GameLogic&, const Player& carrier) const {
+	const auto skill = carrier.findSkill<炮击>();
+	return skill.has_value() && !skill.value().get().triple;
+}
+
+bool 发射::content(GameLogic& game, Player& carrier) {
+	carrier.setMaxHp(75);
+	carrier.getSkill<炮击>().triple = true;
+	carrier.hint("【发射】生命上限减至75，【炮击】改为造成三次伤害");
+	std::println("<技能> {}发动发射，生命上限减至75（当前体力{}），【炮击】改为三次伤害",
+				 carrier.displayName(), carrier.getHp());
 	game.broadcastState();
 	return true;
 }
