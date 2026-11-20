@@ -22,6 +22,11 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\core\Crypto.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\core\Effect.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
@@ -192,6 +197,7 @@
     <ClInclude Include="..\..\header\core\AccountService.h" />
     <ClInclude Include="..\..\header\core\Card.h" />
     <ClInclude Include="..\..\header\core\Character.h" />
+    <ClInclude Include="..\..\header\core\Crypto.h" />
     <ClInclude Include="..\..\header\core\Effect.h" />
     <ClInclude Include="..\..\header\core\GameLogic.h" />
     <ClInclude Include="..\..\header\core\IAccountSession.h" />
@@ -231,6 +237,7 @@
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
     <ClInclude Include="..\..\header\protocol\GameState.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
+    <ClInclude Include="..\..\header\protocol\Protocol.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />

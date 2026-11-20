@@ -99,6 +99,9 @@
     <ClCompile Include="..\..\source\core\Character.cpp">
       <Filter>源文件\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\core\Crypto.cpp">
+      <Filter>源文件\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\core\Effect.cpp">
       <Filter>源文件\core</Filter>
     </ClCompile>
@@ -219,6 +222,9 @@
     <ClInclude Include="..\..\header\core\Character.h">
       <Filter>头文件\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\core\Crypto.h">
+      <Filter>头文件\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\core\Effect.h">
       <Filter>头文件\core</Filter>
     </ClInclude>
@@ -334,6 +340,9 @@
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\MessageType.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\protocol\Protocol.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopData.h">
