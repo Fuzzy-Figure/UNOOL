@@ -388,9 +388,21 @@ void ServerNetwork::handlePendingSocket() {
 			sf::Packet peek = packet;
 			int msgType;
 			std::string reqUsername, reqPassword;
+			std::uint32_t reqVersion{};
 			if (peek >> msgType
 				&& msgType == static_cast<int>(MessageType::LoginRequest)
-				&& peek >> reqUsername >> reqPassword) {
+				&& peek >> reqVersion >> reqUsername >> reqPassword) {
+				// Arch-C P1-1：版本握手。首包版本不匹配则明确拒绝，不进入任何业务分支。
+				if (!unool::protocol::isProtocolVersionCompatible(reqVersion)) {
+					auto resp = unool::protocol::makeVersionMismatchResponse();
+					pendingSocket->send(resp);
+					selector.remove(*pendingSocket);
+					pendingSocket->disconnect();
+					pendingSocket.reset();
+					std::println("[ServerNetwork] 拒绝旧版本客户端（版本 {}，期望 {}）",
+								 reqVersion, unool::protocol::kProtocolVersion);
+					return;
+				}
 				//找匹配的 loggedIn 或 disconnected 槽位（同账号）
 				std::size_t targetIdx = unool::contract::TableConfig::seatCount;
 				for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
@@ -498,8 +510,16 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		accountService_->get().handleAccountRequest(clientIdx, type, unool::protocol::AccountRequest{});
 		return;
 	}
-	auto req = unool::protocol::parseAccountRequest(packet);
+	// Arch-C P1-1：登录/注册包首字段带协议版本，不匹配时明确拒绝（不进业务分支）。
+	const bool withVersion = (type == MessageType::LoginRequest || type == MessageType::RegisterRequest);
+	auto req = unool::protocol::parseAccountRequest(packet, withVersion);
 	if (!req) return;
+	if (withVersion && !req->versionMatches) {
+		sf::Packet resp = unool::protocol::makeVersionMismatchResponse();
+		sendPacketToClient(clientIdx, resp);
+		removeClient(clientIdx);
+		return;
+	}
 	accountService_->get().handleAccountRequest(clientIdx, type, *req);
 }
 
