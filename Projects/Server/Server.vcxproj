@@ -3,9 +3,8 @@
 <!-- ARCH-C:ITEMS:BEGIN -->
   <ItemGroup>
     <ClCompile Include="pch.server.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\ServerMain.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>

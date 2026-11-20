@@ -3,9 +3,8 @@
 <!-- ARCH-C:ITEMS:BEGIN -->
   <ItemGroup>
     <ClCompile Include="pch.adapters.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>

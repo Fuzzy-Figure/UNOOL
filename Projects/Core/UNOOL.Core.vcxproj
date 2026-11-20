@@ -3,9 +3,8 @@
 <!-- ARCH-C:ITEMS:BEGIN -->
   <ItemGroup>
     <ClCompile Include="pch.core.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\core\AccountService.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>

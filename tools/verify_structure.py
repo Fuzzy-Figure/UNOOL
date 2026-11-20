@@ -147,7 +147,9 @@ def cpp_item_block(rel, pch_create, pch_header):
 def build_items_xml(pr, m):
     """生成托管区正文：ClCompile / ClInclude / None 三个 ItemGroup。"""
     proj_path = pr['vcxproj']
-    pch_create = pr['pch']['create']
+    # pch.create 是仓库根相对路径，需转成工程相对再与 cpp_rels 比较，
+    # 否则 PCH 创建文件会被误标成 Use 导致 C1854 / C1083。
+    pch_create = rel_to(proj_path, pr['pch']['create'])
     pch_header = pr['pch']['header']
 
     cpp_rels = [rel_to(proj_path, f) for f in expand_compile(pr)]
@@ -293,6 +295,17 @@ def do_check(m):
                 problems.append('%s: 多余条目 -> %s' % (vp, x))
             if len(missing) > 8 or len(extra) > 8:
                 problems.append('%s: 另有 %d 缺 / %d 多' % (vp, max(0, len(missing) - 8), max(0, len(extra) - 8)))
+        # PCH 语义护栏：manifest 声明的创建单元必须恰好被标为 Create。
+        # 防止生成器把 pch.create 误判为普通 .cpp（曾导致 C1854 / C1083）。
+        pch_rel = rel_to(vp, pr['pch']['create'])
+        create_line = '<ClCompile Include="%s">' % pch_rel
+        if create_line in e:
+            idx = e.index(create_line)
+            if idx + 1 >= len(e) or e[idx + 1] != '<PrecompiledHeader>Create</PrecompiledHeader>':
+                problems.append('%s: PCH 创建单元 %s 未标记为 Create（会导致 C1854/C1083）' % (vp, pch_rel))
+        creates = [i for i, ln in enumerate(e) if ln == '<PrecompiledHeader>Create</PrecompiledHeader>']
+        if len(creates) != 1:
+            problems.append('%s: PCH Create 单元数量为 %d（应为 1）' % (vp, len(creates)))
         # filters 一致性
         fp = pr['filters']
         fa = [x.strip() for x in read_text(fp).splitlines() if x.strip()]
