@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "test_codec.h"
 #include "test_connection.h"
+#include "test_gamelogic.h"
 #include "test_rules.h"
 
 #ifdef _WIN32
@@ -118,6 +119,11 @@ int main() {
 	const auto rules = runRulesTests();
 	g_pass += rules.passed;
 	g_fail += rules.failed;
+
+	// Arch-C P3-5：GameLogic 测试台（fake-port）——摸牌来源 / 技能触发顺序。
+	const auto gamelogic = runGameLogicTests();
+	g_pass += gamelogic.passed;
+	g_fail += gamelogic.failed;
 
 	std::cout << "单测结果: " << g_pass << " 通过, " << g_fail << " 失败\n";
 	return g_fail == 0 ? 0 : 1;

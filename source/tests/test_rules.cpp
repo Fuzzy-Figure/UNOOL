@@ -4,6 +4,7 @@
 #include "test_rules.h"
 
 #include "core/Card.h"
+#include "core/Character.h"
 
 #include <cstddef>
 #include <cstdio>
@@ -200,6 +201,23 @@ void testCardCopyKeepsMetadata(Result& r) {
 			"copy keeps discard source id");
 }
 
+// 生命上限：改上限时当前体力同步压到新上限，提高上限不回复体力。
+// 白板只有 1 点体力，所以用「降到 0」「升到 10」两端验证同一条规则，
+// 数值大小不影响判定，只是【发射】那种「减上限到 75」的同一段代码。
+void testMaxHp(Result& r) {
+	auto character = Character::make("白板");
+	r.check(character->getHp() == 1 && character->getMaxHp() == 1, "max hp defaults to hp");
+
+	character->setMaxHp(0);
+	r.check(character->getMaxHp() == 0, "setMaxHp lowers the cap");
+	r.check(character->getHp() == 0 && character->isDead(),
+			"lowering the cap clamps current hp");
+
+	character->setMaxHp(10);
+	r.check(character->getMaxHp() == 10, "raising the cap takes effect");
+	r.check(character->getHp() == 0, "raising the cap does not heal");
+}
+
 } // namespace
 
 RulesTestResult runRulesTests() {
@@ -210,5 +228,6 @@ RulesTestResult runRulesTests() {
 	testCardsContainer(r);
 	testHandSelection(r);
 	testCardCopyKeepsMetadata(r);
+	testMaxHp(r);
 	return { r.passed, r.failed };
 }

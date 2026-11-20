@@ -6,6 +6,7 @@
     <ClCompile Include="..\..\source\tests\test_codec.cpp" />
     <ClCompile Include="..\..\source\tests\test_connection.cpp" />
     <ClCompile Include="..\..\source\tests\test_rules.cpp" />
+    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp" />
     <ClCompile Include="..\..\source\shell\ConnectionState.cpp" />
     <ClCompile Include="..\..\source\core\Crypto.cpp" />
   </ItemGroup>
@@ -13,5 +14,7 @@
     <ClInclude Include="..\..\source\tests\test_codec.h" />
     <ClInclude Include="..\..\source\tests\test_connection.h" />
     <ClInclude Include="..\..\source\tests\test_rules.h" />
+    <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
+    <ClInclude Include="..\..\source\tests\test_fakes.h" />
   </ItemGroup>
 </Project>
