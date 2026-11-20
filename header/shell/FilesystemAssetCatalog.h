@@ -19,12 +19,12 @@ namespace unool::shell {
 	class FilesystemAssetCatalog final : public core::IAssetCatalog {
 	public:
 		std::vector<std::string> skinsOf(const std::string& group,
-										const std::string& name) const override {
+										 const std::string& name) const override {
 			namespace fs = std::filesystem;
 			const fs::path dir = unool::paths::resourceRoot() / "images" / "characters"
 				/ unool::string::to_utf16(group) / unool::string::to_utf16(name);
 			if (!fs::exists(dir) || !fs::is_directory(dir)) {
-				std::println(stderr, "角色 <{}> 的皮肤目录不存在", name);
+				std::println(stderr, "角色 <{}/{}> 的皮肤目录不存在", group, name);
 				return {};
 			}
 			std::vector<std::string> skins;
