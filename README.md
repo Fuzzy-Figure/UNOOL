@@ -70,7 +70,7 @@
 
 ## 工程结构
 
-`UNOOL.slnx` 含 4 个工程：`Server`、`Client`（可执行）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。仅 x64。`Core` 统一编译规则内核、协议与用例服务；`Adapters` 编译服务端适配器；平台实现由 `Projects/PlatformShell.props` 在 2 个 exe 中共用。新增源文件不手改工程文件——生成器以 `tools/projects.manifest.json` 为事实源，`--generate` 写条目、`--check` 阻止漂移。
+`UNOOL.slnx` 含 5 个工程：`Server`、`Client`、`Tests`（可执行）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。仅 x64。`Core` 统一编译规则内核、协议与用例服务；`Adapters` 编译服务端适配器；`Tests` 为零依赖单测工程；平台实现由 `Projects/PlatformShell.props` 在 2 个 exe 中共用。新增源文件不手改工程文件——生成器以 `tools/projects.manifest.json` 为事实源，`--generate` 写条目、`--check` 阻止漂移（Tests 工程独立管理，不在该 manifest 内）。
 
 ## 文档
 

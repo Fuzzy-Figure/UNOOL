@@ -12,7 +12,7 @@
 ## 技术形态
 
 - C++23 / SFML 3.1.0 / nlohmann/json；Visual Studio 2026 `.slnx`，仅 x64，Windows 10/11。
-- 4 个工程：`Server`、`Client`（exe）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。
+- 5 个工程：`Server`、`Client`、`Tests`（exe）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。
 - 生成期护栏：`python tools/verify_structure.py --check`（CI 用）、`--generate`（以 manifest 为源重写工程条目）；
   `python tools/gen_stats.py --check`（角色 / 技能统计最新性）。
 
