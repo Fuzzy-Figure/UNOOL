@@ -30,4 +30,4 @@
 - 协议：`MessageType` 是 `enum class uint16` 显式分段（命令 1xx/事件 2xx/心跳 901），方向判定 `isClientCommand/isServerEvent/isControlMessage` 在全局命名空间；`unool::protocol::kProtocolVersion=2`，登录/注册包首字段带版本，服务端校验，不匹配回可读拒绝。仍大量用 `static_cast<int>(MessageType::X)` 发包（int 读写两端一致）。
 - 账号：`UserInfo` 只存 salt+passwordHash（PBKDF2-HMAC-SHA256 12 万次，纯标准库实现于 header/core/Crypto.h），无明文；旧明文存档不兼容但**不要直接重置**——先用 `tools/migrate_userdata.py <存档路径>` 无损迁移（保留积分/皮肤/道具，口令不变），脚本自带时间戳备份。客户端参数覆盖：`--ip/--port`、`UNOOL_SERVER_IP/PORT/USERDATA`。端口 8888（服务端）/14341（客户端穿透映射）有意不同，禁止统一或加一致性校验。
 - 统计：`tools/gen_stats.py` 从 `Character::infos` + 技能头生成角色数/技能类数（当前 123 角色/238 技能类），README 与 CI 引用生成结果，勿手写数字。
-- P1-2 序列化收敛 / P1-3 收包状态机 / P1-4 Scene 纯 View 化按用户决策暂停，未落地；改这些前先看 CURRENT.md 的「进行中/未完成」。
+- P1-3 收包状态机已落地（`ConnectionState`：显式入站队列+心跳+断线，取代 peek 留包）；P1-4 已做语义化切片（Scene 收发语义上移到 ConnectionState/ShopProtocol，静态缓存抽为组合根持有的 ShopPresentationCache），剩余 6 状态机抽 ViewModel + Scene headless 测试。P1-2/P1-3/P1-4 均待用户 VS 编译验证。
