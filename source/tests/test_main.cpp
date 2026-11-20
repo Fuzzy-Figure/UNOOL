@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "test_codec.h"
 #include "test_connection.h"
+#include "test_rules.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -102,6 +103,11 @@ int main() {
 	const auto conn = runConnectionStateTests();
 	g_pass += conn.passed;
 	g_fail += conn.failed;
+
+	// Arch-C P3-5：冻结区玩法规则（牌值 / 体力扣减依据 / 秘技牌 / 容器与选择指针）。
+	const auto rules = runRulesTests();
+	g_pass += rules.passed;
+	g_fail += rules.failed;
 
 	std::cout << "单测结果: " << g_pass << " 通过, " << g_fail << " 失败\n";
 	return g_fail == 0 ? 0 : 1;
