@@ -5,8 +5,8 @@
 #include <format>
 #include <string>
 #include <utility>
-#include "PacketDispatcher.h"
 #include "ShopProtocol.h"
+#include "ShopData.h"
 #include "AccountProtocol.h"
 
 // 技能描述缓存（静态成员定义）
@@ -15,7 +15,7 @@ std::unordered_map<std::string, std::string> ShopScene::skillsCache;
 // 客户端不内置任何道具文案；进程级保留，退出商城后仍在，每次下发都会刷新。
 std::unordered_map<std::string, unool::shell::ShopItemPresentation> ShopScene::itemPresentationCache;
 
-ShopScene::ShopScene(GameRenderer& r, unool::shell::IClientGateway& n, const std::string& uname,
+ShopScene::ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& uname,
 					 unool::shell::MatchNoticeState& notice)
 	: renderer(r), net(n), username(uname), matchNotice(notice) {
 	rebuildDisplayedIndices();
@@ -29,7 +29,7 @@ void ShopScene::run() {
 			handleEvent(*ev);
 		}
 		if (exiting) break;
-		net.update();
+		net.pump();
 		if (!net.isConnected()) break;
 		handleNetwork();
 		render();
@@ -56,7 +56,7 @@ void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
 
 void ShopScene::handleNetwork() {
 	// 阶段 4 · S2：DrainAll 模式，消费队列所有包；坏包丢弃与心跳回复收拢到 PacketDispatcher。
-	while (auto next = unool::shell::PacketDispatcher::next(net)) {
+	while (auto next = net.takeAny()) {
 		auto [mt, packet] = std::move(*next);
 
 		// 匹配提示：商城阶段是 DrainAll，若此处不接管这两个事件，大厅将永远

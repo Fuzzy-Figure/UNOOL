@@ -36,6 +36,9 @@
     <ClCompile Include="..\..\source\shell\ClientApp.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <Filter>源文件\shell</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\GameRenderer.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
@@ -106,6 +109,9 @@
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\ClientApp.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\ConnectionState.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\GameRenderer.h">

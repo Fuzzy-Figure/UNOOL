@@ -16,6 +16,11 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\GameRenderer.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -70,6 +75,7 @@
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
     <ClInclude Include="..\..\header\shell\ClientApp.h" />
+    <ClInclude Include="..\..\header\shell\ConnectionState.h" />
     <ClInclude Include="..\..\header\shell\GameRenderer.h" />
     <ClInclude Include="..\..\header\shell\IClientGateway.h" />
     <ClInclude Include="..\..\header\shell\IShopOpener.h" />

@@ -163,6 +163,7 @@
           "source/shell/ShopScene.cpp",
           "source/shell/TextManager.cpp",
           "source/shell/ClientApp.cpp",
+          "source/shell/ConnectionState.cpp",
           "source/shell/PacketDispatcher.cpp",
           "source/shell/InputAdapter.cpp"
         ]
@@ -194,6 +195,7 @@
           "header/shell/Socket.h",
           "header/shell/UserDB.h",
           "header/shell/ClientApp.h",
+          "header/shell/ConnectionState.h",
           "header/shell/PacketDispatcher.h",
           "header/shell/IClientGateway.h",
           "header/shell/IShopOpener.h",

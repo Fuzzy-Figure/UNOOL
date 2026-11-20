@@ -4,9 +4,12 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp" />
     <ClCompile Include="..\..\source\tests\test_main.cpp" />
     <ClCompile Include="..\..\source\tests\test_codec.cpp" />
+    <ClCompile Include="..\..\source\tests\test_connection.cpp" />
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp" />
     <ClCompile Include="..\..\source\core\Crypto.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\tests\test_codec.h" />
+    <ClInclude Include="..\..\source\tests\test_connection.h" />
   </ItemGroup>
 </Project>

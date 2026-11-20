@@ -4,11 +4,12 @@
 #include "AccountEvent.h"
 #include <SFML/Network.hpp>
 #include "shell/IShopOpener.h"
-#include "PacketDispatcher.h"
 #include <utility>
 
+// P1-3：收包/心跳/断线收敛到 ConnectionState；发包与协议构造仍留本单元。
 
-LoginScene::LoginScene(GameRenderer& r, unool::shell::IClientGateway& n,
+
+LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
 					   unool::shell::IShopOpener& opener, const std::string& title)
 	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
@@ -54,14 +55,13 @@ LoginScene::Result LoginScene::run() {
 		for (auto ev = renderer.pollEvent(); ev; ev = renderer.pollEvent()) {
 			handleEvent(*ev);
 		}
-		net.update();
+		// P1-3：连接状态机每帧统一驱动 IO、心跳与入站队列。
+		net.pump();
 		pollAccountPackets();
 
-		// 服务端裁定开局后只 peek、不消费 GameStart：跨阶段留包约定要求把它交给
-		// gamePhase 打印并处理。大厅 / 匹配等待都生效，覆盖「刚点退出匹配、对手
-		// 同时点开始」的竞态——以服务端的 GameStart 为准直接进游戏。
-		if (auto peek = net.peekMessageType();
-			peek && *peek == static_cast<int>(MessageType::GameStart)
+		// 服务端裁定开局后只查询、不消费 GameStart：跨阶段留包由 ConnectionState
+		// 的显式队列保证（take 只消费订阅包，GameStart 留在队列里交给 gamePhase）。
+		if (net.contains(MessageType::GameStart)
 			&& (mode == Mode::Lobby || mode == Mode::Matching)) {
 			status = Status::Done;
 		}
@@ -311,7 +311,7 @@ void LoginScene::pollAccountPackets() {
 	// 结果以同步值对象返回；订阅集、每帧顺序、continue 与链式请求
 	// （查重→注册→登录）的同帧触发点逐字保留，message / status / mode /
 	// result / checkinPopup 仍由 View 写。
-	while (auto next = unool::shell::PacketDispatcher::next(net, {
+	while (auto next = net.take({
 			   MessageType::ConnectionInfo,
 			   MessageType::CheckUsernameResponse,
 			   MessageType::RegisterResponse,

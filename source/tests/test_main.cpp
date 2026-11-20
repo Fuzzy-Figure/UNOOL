@@ -4,6 +4,7 @@
 #include "protocol/Protocol.h"
 #include "utils.h"
 #include "test_codec.h"
+#include "test_connection.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -95,6 +96,11 @@ int main() {
 	const auto codec = runCodecRoundTripTests();
 	g_pass += codec.passed;
 	g_fail += codec.failed;
+
+	// Arch-C P1-3：ConnectionState 显式入站队列 / 心跳 / 断线单测（fake gateway）。
+	const auto conn = runConnectionStateTests();
+	g_pass += conn.passed;
+	g_fail += conn.failed;
 
 	std::cout << "单测结果: " << g_pass << " 通过, " << g_fail << " 失败\n";
 	return g_fail == 0 ? 0 : 1;

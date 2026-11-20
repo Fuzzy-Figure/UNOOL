@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include "shell/IClientGateway.h"
+#include "shell/ConnectionState.h"
 #include "shell/IShopOpener.h"
 #include "ShopData.h"
 #include "contract/CharacterTypes.h"
@@ -26,14 +26,14 @@ class GameRenderer;
 // 参考 LoginScene 的 SFML 场景模式，run() 返回时表示用户退出商城。
 class ShopScene {
 public:
-	ShopScene(GameRenderer& r, unool::shell::IClientGateway& n, const std::string& username,
+	ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& username,
 	          unool::shell::MatchNoticeState& notice);
 	// 跑商城主循环，ESC 或关窗后返回
 	void run();
 
 private:
 	GameRenderer& renderer;
-	unool::shell::IClientGateway& net;
+	unool::shell::ConnectionState& net;
 	const std::string username;
 	// 「对手已开始匹配」提示：引用 LoginScene 持有的同一份状态，商城期间收到的
 	// 匹配事件就地写回，退出商城后大厅无需额外同步即可显示。

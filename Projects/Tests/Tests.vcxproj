@@ -85,12 +85,19 @@
     <ClCompile Include="..\..\source\tests\test_codec.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_connection.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\source\core\Crypto.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\tests\test_codec.h" />
+    <ClInclude Include="..\..\source\tests\test_connection.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\UNOOL.Core.vcxproj">

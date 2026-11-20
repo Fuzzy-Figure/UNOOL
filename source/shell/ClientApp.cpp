@@ -1,6 +1,6 @@
 #include "shell/ClientApp.h"
 
-#include "PacketDispatcher.h"
+#include "shell/ConnectionState.h"
 #include "GameRenderer.h"
 #include "LoginScene.h"
 #include "ShopScene.h"
@@ -51,8 +51,9 @@ static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
 }
 
 // 游戏主循环
-static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::string& titleBrackets) {
-	renderer.setLocalPlayerId(net.getPlayerId());
+static void gamePhase(ClientNetwork& net, unool::shell::ConnectionState& conn,
+					  GameRenderer& renderer, const std::string& titleBrackets) {
+	renderer.setLocalPlayerId(conn.getPlayerId());
 	sf::Clock clock;
 	unool::shell::InputAdapter input(net, renderer);
 	while (renderer.windowIsOpen()) {
@@ -60,23 +61,24 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 
 		if (!input.pollAndDispatch()) return;
 
-		net.update();
+		// P1-3：连接状态机单一时序点，心跳回复/入站队列由 conn 统一驱动。
+		conn.pump();
 
-		if (!net.isConnected()) {
+		if (!conn.isConnected()) {
 			std::println("{} 与服务器断开连接，退出游戏", titleBrackets);
 			break;
 		}
 
 		//每帧消化所有积压包，防止服务器多包推送时延迟累积
-		// 阶段 4 · S2：DrainAll 模式，心跳回复由 PacketDispatcher 统一处理。
-		while (auto next = unool::shell::PacketDispatcher::next(net)) {
+		// P1-3：DrainAll 由 conn.takeAny() 提供，心跳已由 pump 内部回复。
+		while (auto next = conn.takeAny()) {
 			auto [mt, packet] = std::move(*next);
 
 			switch (mt) {
 				case MessageType::ConnectionInfo: {
 					if (auto data = unool::protocol::parseConnectionInfo(packet)) {
-						net.setPlayerId(data->playerId);
-						std::println("{} 分配到玩家：{}", titleBrackets, net.getUsername());
+						conn.setPlayerId(data->playerId);
+						std::println("{} 分配到玩家：{}", titleBrackets, conn.getUsername());
 					}
 					break;
 				}
@@ -146,7 +148,7 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		//BP 预览：把本次候选项中缺失的技能描述批量取回（服务端内联处理，不进输入队列）
 		if (auto names = renderer.takePendingSkillNames(); !names.empty()) {
 			sf::Packet req = unool::protocol::makeSkillInfoRequestPacket(names);
-			net.send(req);
+			conn.send(req);
 		}
 
 		renderer.display();
@@ -163,19 +165,17 @@ namespace unool::shell {
 		// 构造参数在原 renderer / net / username 之外多一个匹配提示状态引用。
 		class ShopOpener final : public IShopOpener {
 		public:
-			ShopOpener(GameRenderer& renderer, ClientNetwork& net)
-				: renderer_{ renderer }, net_{ net } {}
+			ShopOpener(GameRenderer& renderer, unool::shell::ConnectionState& conn)
+				: renderer_{ renderer }, conn_{ conn } {}
 
 			void openShop(const std::string& username, MatchNoticeState& notice) override {
-				// 把大厅持有的匹配提示状态传给商城：商城期间收到的匹配事件
-				// 由 ShopScene 就地写回，退出商城后大厅显示的就是最新状态。
-				ShopScene shop(renderer_, net_, username, notice);
+				ShopScene shop(renderer_, conn_, username, notice);
 				shop.run();
 			}
 
 		private:
 			GameRenderer& renderer_;
-			ClientNetwork& net_;
+			unool::shell::ConnectionState& conn_;
 		};
 
 	} // namespace
@@ -197,12 +197,16 @@ namespace unool::shell {
 		GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle_));
 		GameRenderer renderer(rendererConfig);
 
+		// P1-3：单一连接状态机在此构造，Scene 与 gamePhase 共用同一个实例，
+		// 跨阶段留包（GameStart）由它的显式队列承载。
+		unool::shell::ConnectionState conn(net_);
+
 		// S3a：商城由组合根经 IShopOpener 打开；只在登录场景之前多一个局部对象，
 		// 「连接 → 渲染器 → 登录场景 → 游戏阶段」的线性顺序不变。
-		ShopOpener shopOpener(renderer, net_);
+		ShopOpener shopOpener(renderer, conn);
 
 		// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
-		LoginScene login(renderer, net_, shopOpener, titleBrackets_);
+		LoginScene login(renderer, conn, shopOpener, titleBrackets_);
 		auto session = login.run();
 		if (!session.ok) {
 			std::println(stderr, "{} 登录未完成或连接已断开，退出", titleBrackets_);
@@ -212,7 +216,7 @@ namespace unool::shell {
 
 		// LoginScene 现在要等到服务端 GameStart 才返回；退出匹配只是回到大厅继续等用户操作
 		std::println("{} 匹配完成，进入游戏...", titleBrackets_);
-		gamePhase(net_, renderer, titleBrackets_);
+		gamePhase(net_, conn, renderer, titleBrackets_);
 
 		return 0;
 	}

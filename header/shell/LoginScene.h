@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <chrono>
 #include <string>
-#include "shell/IClientGateway.h"
+#include "shell/ConnectionState.h"
 #include "shell/IShopOpener.h"
 
 class GameRenderer;
@@ -33,7 +33,9 @@ private:
 	enum class Focus { None, Username, Password } focus = Focus::Username;
 
 	GameRenderer& renderer;
-	unool::shell::IClientGateway& net;
+	// P1-3：由单一连接状态机（显式入站队列）取代直接的 IClientGateway 收包，
+	// 发包/会话方法由 ConnectionState 转发，签名与调用点保持一致。
+	unool::shell::ConnectionState& net;
 	// S3a：商城由组合根经意图端口打开，本 Scene 不再自行构造 ShopScene。
 	unool::shell::IShopOpener& shopOpener;
 	const std::string titleBrackets;
@@ -68,7 +70,7 @@ private:
 	void layoutBoxes(); // 根据 windowSize 计算矩形
 
 public:
-	LoginScene(GameRenderer& r, unool::shell::IClientGateway& n,
+	LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
 	           unool::shell::IShopOpener& opener, const std::string& title);
 	Result run(); // 跑登录循环，成功/失败/关窗后返回
 

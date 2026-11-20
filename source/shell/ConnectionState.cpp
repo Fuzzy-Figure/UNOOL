@@ -1,0 +1,96 @@
+#include "ConnectionState.h"
+
+#include "IClientGateway.h"
+#include "MessageCodec.h"
+#include <utility>
+
+// Arch-C P1-3：连接状态机。收包 / 心跳 / 断线的唯一时序点。
+// 原三处 net.update() + PacketDispatcher::next() + 散落心跳分支全部收敛到这里；
+// 消息号与包体字节、心跳回复包均与重构前逐字一致。
+
+namespace unool::shell {
+
+	ConnectionState::ConnectionState(IClientGateway& gateway)
+		: gateway_(gateway) {}
+
+	void ConnectionState::pump() {
+		gateway_.update();
+
+		// Drain 本帧 socket 上所有包：心跳就地回复，其余打 tag 入显式队列。
+		while (auto packetOpt = gateway_.receivePacket()) {
+			sf::Packet packet = std::move(*packetOpt);
+			int msgType{};
+			if (!(packet >> msgType)) continue;  // 坏包丢弃，与原 Dispatcher 一致
+			const auto type = static_cast<MessageType>(msgType);
+			if (type == MessageType::Heartbeat) {
+				sf::Packet hb = unool::protocol::makeHeartbeat();
+				gateway_.send(hb);
+				continue;
+			}
+			queue_.push_back(Inbound{ type, std::move(packet) });
+		}
+
+		// 断线可枚举：连接态 → 断线态时清空积压，避免旧包跨会话串味。
+		const bool nowConnected = gateway_.isConnected();
+		if (wasConnected_ && !nowConnected) queue_.clear();
+		wasConnected_ = nowConnected;
+	}
+
+	std::optional<Inbound> ConnectionState::take(
+		std::initializer_list<MessageType> subscription) {
+		if (queue_.empty()) return std::nullopt;
+		const MessageType front = queue_.front().type;
+		for (auto type : subscription) {
+			if (type == front) {
+				Inbound out = std::move(queue_.front());
+				queue_.pop_front();
+				return out;
+			}
+		}
+		// 队首未命中：不消费、留在队列给下一阶段（跨阶段留包语义）。
+		return std::nullopt;
+	}
+
+	std::optional<Inbound> ConnectionState::takeAny() {
+		if (queue_.empty()) return std::nullopt;
+		Inbound out = std::move(queue_.front());
+		queue_.pop_front();
+		return out;
+	}
+
+	bool ConnectionState::contains(MessageType type) const {
+		for (const Inbound& in : queue_) {
+			if (in.type == type) return true;
+		}
+		return false;
+	}
+
+	void ConnectionState::clear() {
+		queue_.clear();
+	}
+
+	bool ConnectionState::isConnected() const {
+		return gateway_.isConnected();
+	}
+
+	bool ConnectionState::send(sf::Packet& packet) {
+		return gateway_.send(packet);
+	}
+
+	bool ConnectionState::sendShopPurchase(const std::string& purchaseData) {
+		return gateway_.sendShopPurchase(purchaseData);
+	}
+
+	void ConnectionState::setPlayerId(std::size_t id) {
+		gateway_.setPlayerId(id);
+	}
+
+	std::size_t ConnectionState::getPlayerId() const {
+		return gateway_.getPlayerId();
+	}
+
+	const std::string& ConnectionState::getUsername() const {
+		return gateway_.getUsername();
+	}
+
+}
