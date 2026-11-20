@@ -7,6 +7,10 @@
 #include "test_connection.h"
 #include "test_rules.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -88,6 +92,12 @@ void testScoreboard() {
 } // namespace
 
 int main() {
+#ifdef _WIN32
+	// 断言名是中文，控制台默认 CP936 会把 UTF-8 输出打成乱码。
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+#endif
+
 	testSha256();
 	testPbkdf2();
 	testProtocolVersion();

@@ -118,6 +118,13 @@ void testCardsContainer(Result& r) {
 	cards.push_back(Card::make(Card::Color::red, Card::Name::number_7), 3);
 	r.check(cards.count() == 3, "push_back(count) inserts that many copies");
 
+	// 0 张是合法入参（调用方算出来的数量可能为 0），必须什么都不做；
+	// 早期实现用 number - 1 判断，无符号下溢成 SIZE_MAX，会死循环 + 无限分配。
+	Cards none;
+	none.push_back(Card::make(Card::Color::red, Card::Name::number_7), 0);
+	none.push_front(Card::make(Card::Color::blue, Card::Name::number_1), 0);
+	r.check(none.empty(), "push with count 0 inserts nothing");
+
 	auto taken = cards.takeCardByIndex(1);
 	r.check(taken != nullptr && taken->getName() == Card::Name::number_7,
 			"takeCardByIndex returns the card");
@@ -167,12 +174,12 @@ void testHandSelection(Result& r) {
 
 	// 出中间的牌：指针左移一位。
 	hand.setSelectedIndex(1);
-	hand.takeCardByIndex(1);
+	(void)hand.takeCardByIndex(1);
 	r.check(hand.getSelectedIndex() == 0, "playing middle card moves selection left");
 
 	// 出最右边的牌：指针指向新的最右边。
 	hand.setSelectedIndex(hand.count() - 1);
-	hand.takeCardByIndex(hand.count() - 1);
+	(void)hand.takeCardByIndex(hand.count() - 1);
 	r.check(hand.getSelectedIndex() == hand.count() - 1,
 			"playing last card selects new last card");
 }

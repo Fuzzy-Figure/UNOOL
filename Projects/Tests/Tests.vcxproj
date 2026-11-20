@@ -67,7 +67,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\protocol;$(SolutionDir)header\contract;$(SolutionDir)header\shell;$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
