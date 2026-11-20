@@ -1,14 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!-- ARCH-C:ITEMS:BEGIN -->
+  <ItemGroup>
+    <ClCompile Include="pch.server.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\ServerMain.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.server.h" />
+    <ClInclude Include="..\..\header\core\Card.h" />
+    <ClInclude Include="..\..\header\core\Character.h" />
+    <ClInclude Include="..\..\header\core\Effect.h" />
+    <ClInclude Include="..\..\header\core\GameLogic.h" />
+    <ClInclude Include="..\..\header\core\Player.h" />
+    <ClInclude Include="..\..\header\core\Skill.h" />
+    <ClInclude Include="..\..\header\core\skills\Skills.h" />
+    <ClInclude Include="..\..\header\protocol\AccountEvent.h" />
+    <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
+    <ClInclude Include="..\..\header\protocol\GameState.h" />
+    <ClInclude Include="..\..\header\protocol\MessageType.h" />
+    <ClInclude Include="..\..\header\protocol\ShopData.h" />
+    <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
+    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\Socket.h" />
+    <ClInclude Include="..\..\header\shell\UserDB.h" />
+    <ClInclude Include="..\..\header\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\server_config.json" />
+  </ItemGroup>
+<!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -26,19 +57,6 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -53,17 +71,11 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <!-- B+ 平台外壳共用清单：3 个 exe 登记同一份平台实现，换平台只改这一行 -->
+  <!-- 平台外壳共用清单：2 个 exe（Server / Client）登记同一份平台实现，换平台只改这一行 -->
   <Import Project="..\PlatformShell.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -75,42 +87,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-    <Manifest>
-      <EnableSegmentHeap>true</EnableSegmentHeap>
-    </Manifest>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-    <Manifest>
-      <EnableSegmentHeap>true</EnableSegmentHeap>
-    </Manifest>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -155,42 +131,6 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.server.h" />
-    <ClInclude Include="..\..\header\protocol\AccountEvent.h" />
-    <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
-    <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
-    <ClInclude Include="..\..\header\protocol\MessageType.h" />
-    <ClInclude Include="..\..\header\core\Character.h" />
-    <ClInclude Include="..\..\header\core\skills\Skills.h" />
-    <ClInclude Include="..\..\header\core\Card.h" />
-    <ClInclude Include="..\..\header\core\Effect.h" />
-    <ClInclude Include="..\..\header\core\GameLogic.h" />
-    <ClInclude Include="..\..\header\protocol\GameState.h" />
-    <ClInclude Include="..\..\header\core\Player.h" />
-    <ClInclude Include="..\..\header\core\Skill.h" />
-    <ClInclude Include="..\..\header\shell\Socket.h" />
-    <ClInclude Include="..\..\header\protocol\ShopData.h" />
-    <ClInclude Include="..\..\header\shell\UserDB.h" />
-    <ClInclude Include="..\..\header\utils.h" />
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
-    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="pch.server.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-    </ClCompile>
-    <ClCompile Include="..\..\source\ServerMain.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.server.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.server.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\server_config.json" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Adapters\UNOOL.Adapters.vcxproj">
       <Project>{a1000000-0000-4000-8000-000000000003}</Project>

@@ -1,14 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!-- ARCH-C:ITEMS:BEGIN -->
+  <ItemGroup>
+    <ClCompile Include="pch.adapters.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\NetworkServerView.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.adapters.h" />
+    <ClInclude Include="..\..\header\contract\Keys.h" />
+    <ClInclude Include="..\..\header\contract\Types.h" />
+    <ClInclude Include="..\..\header\core\IAssetCatalog.h" />
+    <ClInclude Include="..\..\header\core\IConfigProvider.h" />
+    <ClInclude Include="..\..\header\core\IDecisionPort.h" />
+    <ClInclude Include="..\..\header\core\IRandom.h" />
+    <ClInclude Include="..\..\header\core\IServerView.h" />
+    <ClInclude Include="..\..\header\core\IUserRepository.h" />
+    <ClInclude Include="..\..\header\core\Services.h" />
+    <ClInclude Include="..\..\header\shell\ChronoClock.h" />
+    <ClInclude Include="..\..\header\shell\ClientApp.h" />
+    <ClInclude Include="..\..\header\shell\FilesystemAssetCatalog.h" />
+    <ClInclude Include="..\..\header\shell\IClientGateway.h" />
+    <ClInclude Include="..\..\header\shell\IShopOpener.h" />
+    <ClInclude Include="..\..\header\shell\InputAdapter.h" />
+    <ClInclude Include="..\..\header\shell\JsonConfig.h" />
+    <ClInclude Include="..\..\header\shell\JsonConfigProvider.h" />
+    <ClInclude Include="..\..\header\shell\JsonUserRepository.h" />
+    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
+    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
+    <ClInclude Include="..\..\header\shell\Mt19937Random.h" />
+    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\PacketDispatcher.h" />
+  </ItemGroup>
+<!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -26,18 +63,6 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -55,12 +80,6 @@
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -68,18 +87,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -96,48 +103,6 @@
       <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.adapters.h" />
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
-    <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
-    <ClInclude Include="..\..\header\shell\JsonConfigProvider.h" />
-    <ClInclude Include="..\..\header\shell\JsonUserRepository.h" />
-    <ClInclude Include="..\..\header\shell\Mt19937Random.h" />
-    <ClInclude Include="..\..\header\shell\ChronoClock.h" />
-    <ClInclude Include="..\..\header\shell\FilesystemAssetCatalog.h" />
-    <ClInclude Include="..\..\header\shell\JsonConfig.h" />
-    <ClInclude Include="..\..\header\shell\ClientApp.h" />
-    <ClInclude Include="..\..\header\shell\PacketDispatcher.h" />
-    <ClInclude Include="..\..\header\shell\IClientGateway.h" />
-    <ClInclude Include="..\..\header\shell\IShopOpener.h" />
-    <ClInclude Include="..\..\header\shell\InputAdapter.h" />
-    <ClInclude Include="..\..\header\core\IDecisionPort.h" />
-    <ClInclude Include="..\..\header\core\IServerView.h" />
-    <ClInclude Include="..\..\header\core\IConfigProvider.h" />
-    <ClInclude Include="..\..\header\core\IUserRepository.h" />
-    <ClInclude Include="..\..\header\core\IRandom.h" />
-    <ClInclude Include="..\..\header\core\IAssetCatalog.h" />
-    <ClInclude Include="..\..\header\core\Services.h" />
-    <ClInclude Include="..\..\header\contract\Types.h" />
-    <ClInclude Include="..\..\header\contract\Keys.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="pch.adapters.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\NetworkServerView.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-  </ItemGroup>
   <!-- B+：Domain / Application 两个占位库已删除。
        本工程只编译自己的 2 个适配器实现 + PCH，不再引用空库。
        分层语义由目录与头文件闭包表达，不再由物理库边界表达。 -->

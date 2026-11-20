@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "note": "Arch-C P0-1：工程文件的唯一事实源。verify_structure.py --generate 据此重写 4 个 vcxproj/filters 的 ClCompile/ClInclude/None 条目；--check 校验无漂移。新增 .cpp 放进 recursiveDirs 覆盖的目录即可被自动纳入；source/shell 为多工程共享目录，新增文件须在对应工程的 files 中登记一次（只改本文件，不改任何 .vcxproj/.filters）。",
+  "conventions": {
+    "lineEnding": "CRLF",
+    "vcxprojBom": false,
+    "filtersBom": true,
+    "sourceEncoding": "UTF-8 无 BOM"
+  },
+  "platformShell": {
+    "props": "Projects/PlatformShell.props",
+    "source": "source/platform/WindowsPlatform.cpp",
+    "importedBy": [
+      "Projects/Server/Server.vcxproj",
+      "Projects/Client/Client.vcxproj"
+    ]
+  },
+  "projects": [
+    {
+      "name": "UNOOL.Core",
+      "vcxproj": "Projects/Core/UNOOL.Core.vcxproj",
+      "filters": "Projects/Core/UNOOL.Core.vcxproj.filters",
+      "pch": {
+        "create": "Projects/Core/pch.core.cpp",
+        "header": "pch.core.h",
+        "dir": "Projects/Core"
+      },
+      "compile": {
+        "recursiveDirs": [
+          "source/core",
+          "source/protocol"
+        ],
+        "files": [
+          "source/utils.cpp",
+          "source/shell/Socket.cpp",
+          "source/shell/UserDB.cpp",
+          "source/shell/JsonConfig.cpp"
+        ]
+      },
+      "headers": {
+        "recursiveDirs": [
+          "header/core",
+          "header/protocol",
+          "header/contract",
+          "header/platform"
+        ],
+        "files": [
+          "header/shell/Socket.h",
+          "Projects/Core/pch.core.h"
+        ]
+      },
+      "none": []
+    },
+    {
+      "name": "UNOOL.Adapters",
+      "vcxproj": "Projects/Adapters/UNOOL.Adapters.vcxproj",
+      "filters": "Projects/Adapters/UNOOL.Adapters.vcxproj.filters",
+      "pch": {
+        "create": "Projects/Adapters/pch.adapters.cpp",
+        "header": "pch.adapters.h",
+        "dir": "Projects/Adapters"
+      },
+      "compile": {
+        "recursiveDirs": [],
+        "files": [
+          "source/shell/LegacyBlockingDecisionAdapter.cpp",
+          "source/shell/NetworkServerView.cpp"
+        ]
+      },
+      "headers": {
+        "recursiveDirs": [],
+        "files": [
+          "Projects/Adapters/pch.adapters.h",
+          "header/shell/LegacyBlockingDecisionAdapter.h",
+          "header/shell/NetworkServerView.h",
+          "header/shell/LegacyServicesAdapter.h",
+          "header/shell/JsonConfigProvider.h",
+          "header/shell/JsonUserRepository.h",
+          "header/shell/Mt19937Random.h",
+          "header/shell/ChronoClock.h",
+          "header/shell/FilesystemAssetCatalog.h",
+          "header/shell/JsonConfig.h",
+          "header/shell/ClientApp.h",
+          "header/shell/PacketDispatcher.h",
+          "header/shell/IClientGateway.h",
+          "header/shell/IShopOpener.h",
+          "header/shell/InputAdapter.h",
+          "header/core/IDecisionPort.h",
+          "header/core/IServerView.h",
+          "header/core/IConfigProvider.h",
+          "header/core/IUserRepository.h",
+          "header/core/IRandom.h",
+          "header/core/IAssetCatalog.h",
+          "header/core/Services.h",
+          "header/contract/Types.h",
+          "header/contract/Keys.h"
+        ]
+      },
+      "none": []
+    },
+    {
+      "name": "Server",
+      "vcxproj": "Projects/Server/Server.vcxproj",
+      "filters": "Projects/Server/Server.vcxproj.filters",
+      "pch": {
+        "create": "Projects/Server/pch.server.cpp",
+        "header": "pch.server.h",
+        "dir": "Projects/Server"
+      },
+      "compile": {
+        "recursiveDirs": [],
+        "files": [
+          "source/ServerMain.cpp"
+        ]
+      },
+      "headers": {
+        "recursiveDirs": [],
+        "files": [
+          "Projects/Server/pch.server.h",
+          "header/protocol/AccountEvent.h",
+          "header/protocol/AccountProtocol.h",
+          "header/protocol/ShopProtocol.h",
+          "header/protocol/MessageType.h",
+          "header/protocol/GameState.h",
+          "header/protocol/ShopData.h",
+          "header/core/Character.h",
+          "header/core/Card.h",
+          "header/core/Effect.h",
+          "header/core/GameLogic.h",
+          "header/core/Player.h",
+          "header/core/Skill.h",
+          "header/core/skills/Skills.h",
+          "header/shell/Socket.h",
+          "header/shell/UserDB.h",
+          "header/shell/LegacyBlockingDecisionAdapter.h",
+          "header/shell/NetworkServerView.h",
+          "header/shell/LegacyServicesAdapter.h",
+          "header/utils.h"
+        ]
+      },
+      "none": [
+        "server_config.json"
+      ]
+    },
+    {
+      "name": "Client",
+      "vcxproj": "Projects/Client/Client.vcxproj",
+      "filters": "Projects/Client/Client.vcxproj.filters",
+      "pch": {
+        "create": "source/pch.cpp",
+        "header": "pch.h",
+        "dir": "Projects/Client"
+      },
+      "compile": {
+        "recursiveDirs": [],
+        "files": [
+          "source/ClientMain.cpp",
+          "source/shell/GameRenderer.cpp",
+          "source/shell/ImageManager.cpp",
+          "source/shell/LoginScene.cpp",
+          "source/shell/ShopScene.cpp",
+          "source/shell/TextManager.cpp",
+          "source/shell/ClientApp.cpp",
+          "source/shell/PacketDispatcher.cpp",
+          "source/shell/InputAdapter.cpp"
+        ]
+      },
+      "headers": {
+        "recursiveDirs": [],
+        "files": [
+          "header/pch.h",
+          "header/protocol/AccountEvent.h",
+          "header/protocol/AccountProtocol.h",
+          "header/protocol/ShopProtocol.h",
+          "header/protocol/MessageType.h",
+          "header/protocol/GameState.h",
+          "header/protocol/ShopData.h",
+          "header/core/Card.h",
+          "header/core/Character.h",
+          "header/core/Effect.h",
+          "header/core/GameLogic.h",
+          "header/core/Player.h",
+          "header/core/Skill.h",
+          "header/core/IClientSession.h",
+          "header/core/skills/Skills.h",
+          "header/shell/GameRenderer.h",
+          "header/shell/ImageManager.h",
+          "header/shell/LoginScene.h",
+          "header/shell/ShopScene.h",
+          "header/shell/TextManager.h",
+          "header/shell/Socket.h",
+          "header/shell/UserDB.h",
+          "header/shell/ClientApp.h",
+          "header/shell/PacketDispatcher.h",
+          "header/shell/IClientGateway.h",
+          "header/shell/IShopOpener.h",
+          "header/shell/InputAdapter.h",
+          "header/utils.h"
+        ]
+      },
+      "none": [
+        "client_config.json"
+      ]
+    }
+  ]
+}

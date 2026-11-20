@@ -155,13 +155,10 @@ public:
 	bool sendShopResult(std::size_t clientIndex, const std::string& resultJson) override;
 };
 
-// 阶段 4 · S1 实现 IClientSession 端口；S3a（用户 49.10 口径②A）改由
-// adapters 层的 IClientGateway 继承实现——该网关端口间接继承 IClientSession，
-// 会话 6 方法的签名与函数体仍逐字未改。
-// S3b1（用户 51.11 口径②A + ③C）：网关端口新增两个入站纯虚，本类的
-// receivePacket / peekMessageType 加 override；同时删除零调用的 setCredentials /
-// reconnect 与恒为空的 username / password（不可达死代码链，对外行为零变化）。
-// ClientNetwork 仍是唯一的具体实现，S1 的 IClientSession& 端口视图继续有效。
+// 实现 shell 层 IClientGateway 端口：该网关间接继承 core 层 IClientSession，
+// 本类提供 6 个会话方法 + 2 个入站方法（receivePacket / peekMessageType）的具体实现。
+// 零调用的凭据写入/重连接口与恒为空的用户名/密码字段已删除。
+// ClientNetwork 是当前唯一的具体实现，IClientSession& 端口视图继续有效。
 class ClientNetwork : public unool::shell::IClientGateway {
 private:
 	std::unique_ptr<sf::TcpSocket> socket;
@@ -169,7 +166,7 @@ private:
 	std::size_t playerId = 0;
 	std::queue<sf::Packet> receivedPackets;
 
-	// S3b1：仍由 connect() 赋值，删 reconnect() 后只写不读，顺延到后续批次再判
+	// 由 connect() 记录，供连接状态与诊断使用
 	std::string serverIp;
 	unsigned short serverPort = 0;
 
@@ -193,8 +190,7 @@ public:
 
 	void setPlayerId(std::size_t id) override { playerId = id; }
 	std::size_t getPlayerId() const override { return playerId; }
-	// S3b1：原实现返回的 username 因 setCredentials() 零调用而恒为空串，删除该字段后
-	// 改为返回函数内静态空串，返回值与 ClientApp.cpp 的打印内容逐字不变。
+	// 客户端登录名由 LoginRequest 包承载，本端口不再持有字段，返回静态空串。
 	const std::string& getUsername() const override {
 		static const std::string empty{};
 		return empty;
