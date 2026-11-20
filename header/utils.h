@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <functional>
 #include <iterator>
@@ -24,6 +25,22 @@ template<typename T>
 using opt_ref = std::optional<ref<T>>;
 
 namespace unool {
+	// 读取环境变量的跨平台封装：未设置或空串返回 nullopt。
+	// MSVC 对 getenv 报 C4996（建议 _dupenv_s），此处读取语义安全，
+	// 局部抑制该警告，避免每个调用点各写一次 pragma。
+	inline std::optional<std::string> envVar(const char* name) {
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4996)
+#endif
+		const char* v = std::getenv(name);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+		if (v && *v) return std::string(v);
+		return std::nullopt;
+	}
+
 	// B+：一桌的座位数已移入共享契约层 contract/TableConfig.h 的
 	// TableConfig::seatCount（每桌配置，不再放在进程级工具头里）。
 	// 需要容量判断的编译单元请显式包含该头；值仍为 2，玩法不变。

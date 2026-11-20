@@ -395,7 +395,7 @@ void ServerNetwork::handlePendingSocket() {
 				// Arch-C P1-1：版本握手。首包版本不匹配则明确拒绝，不进入任何业务分支。
 				if (!unool::protocol::isProtocolVersionCompatible(reqVersion)) {
 					auto resp = unool::protocol::makeVersionMismatchResponse();
-					pendingSocket->send(resp);
+					(void)pendingSocket->send(resp);
 					selector.remove(*pendingSocket);
 					pendingSocket->disconnect();
 					pendingSocket.reset();

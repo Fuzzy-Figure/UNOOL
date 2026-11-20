@@ -18,7 +18,7 @@ namespace {
 // Arch-C P2-3：配置外置。优先级 命令行 > 环境变量 > 配置文件。
 // 默认值保持工单指定：客户端 14341（经内网穿透映射，与服务端 8888 有意不同）。
 std::string envOr(std::string_view name, std::string fallback) {
-	if (const char* v = std::getenv(name.data()); v && *v) return std::string(v);
+	if (auto v = unool::envVar(name.data())) return *v;
 	return fallback;
 }
 
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 
 	// 环境变量覆盖（仅当设置时）。
 	ipAddress = envOr("UNOOL_SERVER_IP", ipAddress);
-	if (const char* p = std::getenv("UNOOL_SERVER_PORT"); p && *p) port = parseInt(p, port);
+	if (auto p = unool::envVar("UNOOL_SERVER_PORT")) port = parseInt(*p, port);
 
 	// 命令行覆盖（最高优先级）。
 	parseArgs(argc, argv, ipAddress, port);

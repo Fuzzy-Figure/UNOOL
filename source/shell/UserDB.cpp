@@ -18,8 +18,7 @@ namespace {
 	const std::string& dataFile() {
 		static const std::string path = []() -> std::string {
 			// Arch-C P2-3：UNOOL_USERDATA 环境变量覆盖存档路径（支持双实例互不覆盖）。
-			if (const char* overridePath = std::getenv("UNOOL_USERDATA"); overridePath && *overridePath)
-				return std::string(overridePath);
+			if (auto overridePath = unool::envVar("UNOOL_USERDATA")) return *overridePath;
 			const auto underRoot = unool::paths::resourceRoot() / "userDatas.json";
 			if (std::filesystem::is_regular_file(underRoot)) return underRoot.string();
 			const auto found = unool::paths::locate("userDatas.json");
