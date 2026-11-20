@@ -24,6 +24,10 @@
 #include <print>
 #include <utility>
 
+// MessageType 归 protocol 层；本单元既有全局 static 函数也有 unool::shell 段，
+// 这里统一做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 // 阶段 4 · S1：以下两个函数从 source/ClientMain.cpp 逐字平移到组合根实现单元。
 // 函数体、case 顺序、心跳回复、键位映射与线上 ClientInput.key 字节均未改动；
 // 仅按用户 46.5 口径③B 删除 gamePhase 中两支只 println + TODO 的商城死分支

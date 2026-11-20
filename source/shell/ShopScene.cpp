@@ -11,6 +11,9 @@
 
 // Arch-C P1-4：展示缓存由组合根持有，进程级 static 已移除。
 
+// MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 ShopScene::ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& uname,
 					 unool::shell::MatchNoticeState& notice,
 					 unool::shell::ShopPresentationCache& cache)

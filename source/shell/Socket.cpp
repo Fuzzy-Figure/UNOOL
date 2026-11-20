@@ -12,6 +12,9 @@
 #include <array>
 #include <utility>
 
+// MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 ServerNetwork::~ServerNetwork() {
 	disconnect();
 }

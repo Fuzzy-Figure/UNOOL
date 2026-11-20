@@ -6,6 +6,9 @@
 
 namespace unool::core {
 
+	// MessageType 归 protocol 层（线上协议概念），此端口只转发类型名，不引入 sf::Packet。
+	using protocol::MessageType;
+
 	// 账号用例所需的会话出站端口（阶段 3 第九批 / W5 第一段）。
 	//
 	// 由 ServerNetwork 实现：只暴露「会话状态查询 / 变更 / 发包」，

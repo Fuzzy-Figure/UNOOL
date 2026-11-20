@@ -62,7 +62,8 @@ void testProtocolVersion() {
 }
 
 void testMessageDirection() {
-	// isClientCommand / isServerEvent / isControlMessage 在全局命名空间（MessageType.h）。
+	// MessageType 与 isClientCommand / isServerEvent / isControlMessage 均在 unool::protocol。
+	using namespace unool::protocol;
 	// 命令段 1xx
 	CHECK(isClientCommand(MessageType::LoginRequest), "LoginRequest is command");
 	CHECK(isClientCommand(MessageType::ClientInput), "ClientInput is command");

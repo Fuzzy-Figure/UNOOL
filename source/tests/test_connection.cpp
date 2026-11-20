@@ -15,6 +15,9 @@
 #include <string>
 #include <utility>
 
+// MessageType 归 protocol 层；本文件在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 namespace {
 
 // 纯内存网关：实现 IClientGateway，记录心跳回复次数，注入预设入站包。

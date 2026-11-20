@@ -5,6 +5,9 @@
 
 namespace unool::core {
 
+	// MessageType 归 protocol 层，此处只转发类型名。
+	using protocol::MessageType;
+
 	class IAccountSession;
 	class IUserRepository;
 

@@ -69,7 +69,7 @@ private:
 private:
 	bool sendPacketToClient(std::size_t clientIndex, sf::Packet& packet);
 	bool sendPacketToAll(sf::Packet& packet);
-	void handleAccountPacket(std::size_t clientIdx, MessageType type, sf::Packet packet);
+	void handleAccountPacket(std::size_t clientIdx, unool::protocol::MessageType type, sf::Packet packet);
 	void removeClient(std::size_t clientIndex);
 	//update() 的拆分子任务
 	void handleNewConnections();
@@ -143,12 +143,12 @@ public:
 	void onPointsSpent(std::size_t clientIdx, int amount) override;
 	void onReadyToPlay(std::size_t clientIdx) override;
 	void onCancelMatchmaking(std::size_t clientIdx) override;
-	void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,
+	void sendAccountResponse(std::size_t clientIdx, unool::protocol::MessageType type, bool ok,
 							 const std::string& msg, int points, int wins, int losses) override;
 	void sendCheckUsernameResponse(std::size_t clientIdx, bool exists) override;
 	// W5 第二段：绝对值积分同步与可判成败的响应包发送
 	void onPointsChanged(std::size_t clientIdx, int points) override;
-	bool sendPayload(std::size_t clientIdx, MessageType type, const std::string& jsonPayload) override;
+	bool sendPayload(std::size_t clientIdx, unool::protocol::MessageType type, const std::string& jsonPayload) override;
 	void sendCheckinResponse(std::size_t clientIdx, const std::string& msg, bool ok, int points) override;
 	// W5 第二段第二段：购买结果回送（IAccountSession 端口实现）。
 	// 实现体保留原 7 行纯传输逻辑（连接早退 + MessageType::ShopResult + JSON 字符串）。

@@ -8,6 +8,9 @@
 
 // P1-3/P1-4：收发均经 ConnectionState；协议构造上移到语义方法，本单元只做 View 与事件解析。
 
+// MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 
 LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
 					   unool::shell::IShopOpener& opener, const std::string& title)

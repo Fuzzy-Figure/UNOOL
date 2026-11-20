@@ -10,6 +10,9 @@
 
 namespace unool::shell {
 
+	// MessageType 归 protocol 层：网络上的一切消息号都是协议概念，本层只转发类型名。
+	using protocol::MessageType;
+
 	class IClientGateway;
 
 	// Arch-C P1-3：显式入站包（已消费开头 int 消息号，body 为剩余字节）。

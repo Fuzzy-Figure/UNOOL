@@ -8,6 +8,9 @@ namespace unool::shell { class IClientGateway; }
 
 namespace unool::shell {
 
+	// MessageType 归 protocol 层，本单元只转发类型名（见 protocol/MessageType.h）。
+	using protocol::MessageType;
+
 	// 阶段 4 · S2：把三处收包循环里重复的「peek 过滤 / 心跳回复 / 包体消息号消费」
 	// 收拢到单点。业务判定仍留在各阶段，S3 才会把两个 Scene 纯 View 化并改为订阅回调。
 	//
