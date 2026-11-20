@@ -12,7 +12,8 @@
     "source": "source/platform/WindowsPlatform.cpp",
     "importedBy": [
       "Projects/Server/Server.vcxproj",
-      "Projects/Client/Client.vcxproj"
+      "Projects/Client/Client.vcxproj",
+      "Projects/Tests/Tests.vcxproj"
     ]
   },
   "projects": [

@@ -2,7 +2,7 @@
 
 // B+ 平台接缝 · Windows 实现。
 //
-// 本单元只在 3 个 exe 工程（Client1 / Client2 / Server）里编译，不进 UNOOL.Core：
+// 本单元只在 3 个 exe 工程（Client / Server / Tests）里编译，不进 UNOOL.Core：
 // 静态库 Core.lib 中被 utils.cpp 引用的 unool::platform::* 符号由外壳解析。
 // 因此「Core 的任一共享编译单元都不含 Windows.h」这一安卓前置条件成立，
 // 而 Windows 侧实现与重构前 source/utils.cpp 中的代码逐字等价。
