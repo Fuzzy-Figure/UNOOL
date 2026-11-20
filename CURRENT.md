@@ -28,17 +28,17 @@
 | P2-2 许可证 | 已落地 | 根目录 MIT `LICENSE` + `THIRD_PARTY_NOTICES.md` |
 | P2-3 配置外置 | 已落地 | 客户端 IP / 端口 / 存档路径支持命令行与环境变量覆盖；8888 / 14341 默认值不变 |
 | P3-1 角色数生成 | 已落地 | `tools/gen_stats.py` 生成 `docs/characters.md` + `tools/generated_stats.json`；当前 123 角色 / 238 技能类 |
-| P3-2 README 重组 | 已落地 | 历史批次归档 `docs/adr/`，本文件为现状入口 |
-| P3-4 CI | 见下 | GitHub Actions 工作流 |
+| P3-2 README 重组 | 已落地 | 历史批次归档 `docs/adr/README-历史批次.md`，本文件为现状入口 |
+| P3-3 规则文档同步 | 已落地 | `docs/rules.md` 增量补充体力/生命上限、摸牌来源、技能触发顺序、积分查表与协议变更说明；一次性归一化为 CRLF |
+| P3-4 CI | 已落地 | `.github/workflows/arch-c.yml`：结构/编码/统计校验 + x64 Debug·Release 构建 + 单测运行 |
 
 ## 进行中 / 未完成
 
 - **P1-2 序列化收敛**：`Socket.cpp` 仍有约 20+ 处手写包，尚未统一为每种消息一对 `serialize` / `deserialize`。
 - **P1-3 收包模型显式化**：`peekMessageType()` 隐式跨阶段留包、迭代器式 `PacketDispatcher`、心跳 / 3 秒超时散落 Scene 与 `run()`，尚未收敛为连接状态机。
 - **P1-4 Scene 纯 View 化**：`LoginScene` / `ShopScene` 仍含 `sf::Packet` / `json` 符号；`skillsCache` / `itemPresentationCache` 仍是进程级 static；尚无 fake gateway headless 测试。
-- **P3-3 规则文档同步**：`docs/rules.md` 需按本次 P0~P2 改动做增量复核（生命上限、摸牌来源、积分查表、账号 / 商城交互）。
-- **P3-5 测试网**：测试工程与框架尚未引入。
-- **P3-6 Release 产物**：免安装 zip、实际运行截图、版本 tag 尚未产出。
+- **P3-5 测试网（起点已建，待扩展）**：已有 `Projects/Tests` 零依赖单测工程，23 个断言覆盖 Crypto / 协议版本 / 消息方向 / 积分查表；冻结区（牌堆 / 出牌 / 技能顺序 / 摸牌来源 / 生命上限）与协议 round-trip、两个 Scene 的 headless 测试尚未补。
+- **P3-6 Release 产物**：`tools/make_release.py` 免安装打包脚本已就位；实际 zip（需编译后）、运行截图（需实机截屏）、版本 tag 尚未产出。
 
 ## 不可丢的玩法语义
 
