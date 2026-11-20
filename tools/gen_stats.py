@@ -133,8 +133,9 @@ def main():
         sys.exit(0 if ok else 1)
 
     os.makedirs('docs', exist_ok=True)
-    open(OUT_MD, 'w', encoding='utf-8', newline='\n').write(md)
-    open(OUT_JSON, 'w', encoding='utf-8', newline='\n').write(js)
+    # 与仓库 CRLF 约定一致（--check 读取时 universal newline 会归一化为 \n 后比较）。
+    open(OUT_MD, 'w', encoding='utf-8', newline='\r\n').write(md)
+    open(OUT_JSON, 'w', encoding='utf-8', newline='\r\n').write(js)
     print(f'已生成 {OUT_MD} 与 {OUT_JSON}')
     print(f'角色 {stats["characterCount"]} / 技能类 {stats["skillClassCount"]} / 技能引用 {stats["skillReferenceCount"]}')
 
