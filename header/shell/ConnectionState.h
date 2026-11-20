@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include <optional>
 #include <string>
+#include <vector>
 #include <SFML/Network.hpp>
 #include "MessageType.h"
 
@@ -51,6 +52,21 @@ namespace unool::shell {
 		void setPlayerId(std::size_t id);
 		std::size_t getPlayerId() const;
 		const std::string& getUsername() const;
+
+		// === P1-4 语义化出站：Scene 不再构造 sf::Packet ===
+		// 每个方法内部调用协议层 makeXxx + send，返回 send 结果；字节与线上一致。
+		bool sendLogin(const std::string& username, const std::string& password);
+		bool sendRegister(const std::string& username, const std::string& password);
+		bool sendCheckUsername(const std::string& username);
+		bool sendCheckin();
+		bool sendReadyToPlay();
+		bool sendCancelMatchmaking();
+		bool sendSkillInfoRequest(const std::vector<std::string>& names);
+		// 商城语义出站：内部构造购买 JSON 并经网关发送（4 类请求）。
+		bool sendShopRequest();
+		bool sendBuyCharacter(const std::string& name);
+		bool sendBuySkin(const std::string& charName, const std::string& skinName);
+		bool sendBuyItem(const std::string& itemName);
 
 	private:
 		IClientGateway& gateway_;

@@ -2,6 +2,8 @@
 
 #include "IClientGateway.h"
 #include "MessageCodec.h"
+#include "AccountProtocol.h"
+#include "ShopProtocol.h"
 #include <utility>
 
 // Arch-C P1-3：连接状态机。收包 / 心跳 / 断线的唯一时序点。
@@ -91,6 +93,62 @@ namespace unool::shell {
 
 	const std::string& ConnectionState::getUsername() const {
 		return gateway_.getUsername();
+	}
+
+	// === P1-4 语义化出站 ===
+	bool ConnectionState::sendLogin(const std::string& username, const std::string& password) {
+		sf::Packet p = unool::protocol::makeLoginRequest(username, password);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendRegister(const std::string& username, const std::string& password) {
+		sf::Packet p = unool::protocol::makeRegisterRequest(username, password);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendCheckUsername(const std::string& username) {
+		sf::Packet p = unool::protocol::makeCheckUsernameRequest(username);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendCheckin() {
+		sf::Packet p = unool::protocol::makeCheckinRequest();
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendReadyToPlay() {
+		sf::Packet p = unool::protocol::makeReadyToPlay();
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendCancelMatchmaking() {
+		sf::Packet p = unool::protocol::makeCancelMatchmaking();
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendSkillInfoRequest(const std::vector<std::string>& names) {
+		sf::Packet p = unool::protocol::makeSkillInfoRequestPacket(names);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendShopRequest() {
+		return gateway_.sendShopPurchase(
+			unool::protocol::makeShopPurchaseJson(ShopRequestType::Request, "", "", ""));
+	}
+
+	bool ConnectionState::sendBuyCharacter(const std::string& name) {
+		return gateway_.sendShopPurchase(
+			unool::protocol::makeShopPurchaseJson(ShopRequestType::Character, name, "", ""));
+	}
+
+	bool ConnectionState::sendBuySkin(const std::string& charName, const std::string& skinName) {
+		return gateway_.sendShopPurchase(
+			unool::protocol::makeShopPurchaseJson(ShopRequestType::Skin, "", charName, skinName));
+	}
+
+	bool ConnectionState::sendBuyItem(const std::string& itemName) {
+		return gateway_.sendShopPurchase(
+			unool::protocol::makeShopPurchaseJson(ShopRequestType::Item, itemName, "", ""));
 	}
 
 }

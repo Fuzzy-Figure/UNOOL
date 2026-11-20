@@ -18,6 +18,13 @@ namespace unool::shell {
 		std::string description;
 		std::optional<int> maxCount;
 	};
+
+	// Arch-C P1-4：商城展示缓存从 Scene 的进程级 static 抽为显式对象，
+	// 由组合根（ClientApp）持有并注入，退出商城后数据保留的语义不变。
+	struct ShopPresentationCache {
+		std::unordered_map<std::string, std::string> skills;              // 角色名 → 技能全文
+		std::unordered_map<std::string, ShopItemPresentation> itemPresentation; // 道具名 → 展示元数据
+	};
 }
 
 class GameRenderer;
@@ -27,7 +34,8 @@ class GameRenderer;
 class ShopScene {
 public:
 	ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& username,
-	          unool::shell::MatchNoticeState& notice);
+	          unool::shell::MatchNoticeState& notice,
+	          unool::shell::ShopPresentationCache& cache);
 	// 跑商城主循环，ESC 或关窗后返回
 	void run();
 
@@ -74,12 +82,9 @@ private:
 	void requestShopData();
 	// 请求角色技能描述（缓存缺失时调用；pendingSkills 防止重复请求）
 	void requestSkillInfo(const std::vector<std::string>& names);
-	// 技能描述缓存：进程级静态数据，商城退出后仍保留
-	static std::unordered_map<std::string, std::string> skillsCache;
+	// P1-4：技能 / 道具展示缓存由组合根持有，退出商城后仍保留（原 static 语义）。
+	unool::shell::ShopPresentationCache& cache_;
 	std::unordered_set<std::string> pendingSkills;
-	// 道具展示元数据缓存：服务端随 ShopData 下发的效果说明 / 购买上限，进程级保留，
-	// 退出商城后仍在；每次收到新版 ShopData 会刷新，不会像技能文案那样永不失效。
-	static std::unordered_map<std::string, unool::shell::ShopItemPresentation> itemPresentationCache;
 	// 处理网络包（ShopData / ShopResult / SkillInfoResponse / 匹配提示事件）
 	void handleNetwork();
 	// 渲染

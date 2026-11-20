@@ -165,17 +165,19 @@ namespace unool::shell {
 		// 构造参数在原 renderer / net / username 之外多一个匹配提示状态引用。
 		class ShopOpener final : public IShopOpener {
 		public:
-			ShopOpener(GameRenderer& renderer, unool::shell::ConnectionState& conn)
-				: renderer_{ renderer }, conn_{ conn } {}
+			ShopOpener(GameRenderer& renderer, unool::shell::ConnectionState& conn,
+			           unool::shell::ShopPresentationCache& cache)
+				: renderer_{ renderer }, conn_{ conn }, cache_{ cache } {}
 
 			void openShop(const std::string& username, MatchNoticeState& notice) override {
-				ShopScene shop(renderer_, conn_, username, notice);
+				ShopScene shop(renderer_, conn_, username, notice, cache_);
 				shop.run();
 			}
 
 		private:
 			GameRenderer& renderer_;
 			unool::shell::ConnectionState& conn_;
+			unool::shell::ShopPresentationCache& cache_;
 		};
 
 	} // namespace
@@ -200,10 +202,12 @@ namespace unool::shell {
 		// P1-3：单一连接状态机在此构造，Scene 与 gamePhase 共用同一个实例，
 		// 跨阶段留包（GameStart）由它的显式队列承载。
 		unool::shell::ConnectionState conn(net_);
+		// P1-4：商城展示缓存由组合根持有，跨多次进入商城保留（原 static 语义）。
+		unool::shell::ShopPresentationCache shopCache;
 
 		// S3a：商城由组合根经 IShopOpener 打开；只在登录场景之前多一个局部对象，
 		// 「连接 → 渲染器 → 登录场景 → 游戏阶段」的线性顺序不变。
-		ShopOpener shopOpener(renderer, conn);
+		ShopOpener shopOpener(renderer, conn, shopCache);
 
 		// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
 		LoginScene login(renderer, conn, shopOpener, titleBrackets_);

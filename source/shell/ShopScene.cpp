@@ -9,15 +9,12 @@
 #include "ShopData.h"
 #include "AccountProtocol.h"
 
-// 技能描述缓存（静态成员定义）
-std::unordered_map<std::string, std::string> ShopScene::skillsCache;
-// 道具展示元数据缓存（静态成员定义）：文案与购买上限均由服务端随 ShopData 下发，
-// 客户端不内置任何道具文案；进程级保留，退出商城后仍在，每次下发都会刷新。
-std::unordered_map<std::string, unool::shell::ShopItemPresentation> ShopScene::itemPresentationCache;
+// Arch-C P1-4：展示缓存由组合根持有，进程级 static 已移除。
 
 ShopScene::ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& uname,
-					 unool::shell::MatchNoticeState& notice)
-	: renderer(r), net(n), username(uname), matchNotice(notice) {
+					 unool::shell::MatchNoticeState& notice,
+					 unool::shell::ShopPresentationCache& cache)
+	: renderer(r), net(n), username(uname), matchNotice(notice), cache_(cache) {
 	rebuildDisplayedIndices();
 }
 
@@ -39,7 +36,7 @@ void ShopScene::run() {
 // ===== 网络通信 =====
 
 void ShopScene::requestShopData() {
-	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Request, "", "", ""));
+	net.sendShopRequest();
 }
 
 void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
@@ -50,12 +47,11 @@ void ShopScene::requestSkillInfo(const std::vector<std::string>& names) {
 		pendingSkills.insert(name);
 	}
 	if (filtered.empty()) return;
-	sf::Packet req = unool::protocol::makeSkillInfoRequestPacket(filtered);
-	net.send(req);
+	net.sendSkillInfoRequest(filtered);
 }
 
 void ShopScene::handleNetwork() {
-	// 阶段 4 · S2：DrainAll 模式，消费队列所有包；坏包丢弃与心跳回复收拢到 PacketDispatcher。
+	// P1-3：DrainAll 模式，消费队列所有包；坏包丢弃与心跳回复收拢到 ConnectionState。
 	while (auto next = net.takeAny()) {
 		auto [mt, packet] = std::move(*next);
 
@@ -78,84 +74,75 @@ void ShopScene::handleNetwork() {
 		}
 
 		if (mt == MessageType::ShopData) {
-			std::string jsonStr;
-			if (packet >> jsonStr) {
-				if (auto parsed = unool::protocol::parseShopData(jsonStr)) {
-					shopData = std::move(*parsed);
-					dataReady = true;
-					// 每次 ShopData 到达都用服务端下发的展示元数据全量刷新进程级缓存：
-					// 服务端改了文案 / 上限，客户端下一帧就能显示新值。
-					for (const auto& item : shopData.items) {
-						itemPresentationCache[item.name] =
-							unool::shell::ShopItemPresentation{ item.description, item.maxCount };
-					}
-					// 数据刷新后重建显示并夹紧导航状态
-					rebuildDisplayedIndices();
-					clampPage();
-					rebuildRows();
-					clampCursor();
-					// 预取缓存缺失的角色技能描述（一次性批量请求）
-					std::vector<std::string> missing;
-					for (const auto& c : shopData.characters) {
-						if (!skillsCache.contains(c.name)) missing.push_back(c.name);
-					}
-					if (!missing.empty()) requestSkillInfo(missing);
+			if (auto parsed = unool::protocol::parseShopData(packet)) {
+				shopData = std::move(*parsed);
+				dataReady = true;
+				// 每次 ShopData 到达都用服务端下发的展示元数据全量刷新进程级缓存：
+				// 服务端改了文案 / 上限，客户端下一帧就能显示新值。
+				for (const auto& item : shopData.items) {
+					cache_.itemPresentation[item.name] =
+						unool::shell::ShopItemPresentation{ item.description, item.maxCount };
 				}
-				else {
-					setPurchaseMsg("商城数据解析失败");
+				// 数据刷新后重建显示并夹紧导航状态
+				rebuildDisplayedIndices();
+				clampPage();
+				rebuildRows();
+				clampCursor();
+				// 预取缓存缺失的角色技能描述（一次性批量请求）
+				std::vector<std::string> missing;
+				for (const auto& c : shopData.characters) {
+					if (!cache_.skills.contains(c.name)) missing.push_back(c.name);
 				}
+				if (!missing.empty()) requestSkillInfo(missing);
+			}
+			else {
+				setPurchaseMsg("商城数据解析失败");
 			}
 			continue;
 		}
 		if (mt == MessageType::SkillInfoResponse) {
-			std::string jsonStr;
-			if (packet >> jsonStr) {
-				if (auto parsed = unool::protocol::parseSkillInfoResponse(jsonStr)) {
-					for (auto& [name, text] : parsed->skills) {
-						skillsCache[name] = std::move(text);
-						pendingSkills.erase(name);
-					}
+			if (auto parsed = unool::protocol::parseSkillInfoResponse(packet)) {
+				for (auto& [name, text] : parsed->skills) {
+					cache_.skills[name] = std::move(text);
+					pendingSkills.erase(name);
 				}
-				// 解析失败：静默吞掉（与原 catch(const std::exception&) {} 一致）
 			}
+			// 解析失败：静默吞掉（与原 catch(const std::exception&) {} 一致）
 			continue;
 		}
 		if (mt == MessageType::ShopResult) {
-			std::string jsonStr;
-			if (packet >> jsonStr) {
-				auto parsed = unool::protocol::parseShopPurchaseResult(jsonStr);
-				if (!parsed) {
-					setPurchaseMsg("购买结果解析失败");
-					continue;
-				}
-				const ShopPurchaseResult& result = *parsed;
-				if (result.ok) {
-					setPurchaseMsg("购买成功");
-				}
-				else {
-					// 失败：积分不足或其它，统一提示
-					setPurchaseMsg(result.msg.empty() ? "积分不足！" : result.msg);
-				}
+			auto parsed = unool::protocol::parseShopPurchaseResult(packet);
+			if (!parsed) {
+				setPurchaseMsg("购买结果解析失败");
+				continue;
+			}
+			const ShopPurchaseResult& result = *parsed;
+			if (result.ok) {
+				setPurchaseMsg("购买成功");
+			}
+			else {
+				// 失败：积分不足或其它，统一提示
+				setPurchaseMsg(result.msg.empty() ? "积分不足！" : result.msg);
 			}
 			continue;
 		}
-		// 心跳包已由 PacketDispatcher 统一消费并回复
+		// 心跳包已由 ConnectionState::pump 统一消费并回复
 		// 其它包忽略（商城场景不处理游戏/账号包）
 	}
 }
 
 void ShopScene::tryBuyCharacter(const std::string& name) {
-	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Character, name, "", ""));
+	net.sendBuyCharacter(name);
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuySkin(const std::string& charName, const std::string& skinName) {
-	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Skin, "", charName, skinName));
+	net.sendBuySkin(charName, skinName);
 	setPurchaseMsg("正在购买...");
 }
 
 void ShopScene::tryBuyItem(const std::string& itemName) {
-	net.sendShopPurchase(unool::protocol::makeShopPurchaseJson(ShopRequestType::Item, itemName, "", ""));
+	net.sendBuyItem(itemName);
 	setPurchaseMsg("正在购买...");
 }
 
@@ -852,7 +839,7 @@ void ShopScene::renderItemDetailPanel() {
 
 	// 展示元数据一律读进程级缓存（每次 ShopData 到达时刷新，跨商城会话保留）；
 	// 缓存里没有该道具时得到空值，由下方显示占位文案。
-	const auto& presentation = itemPresentationCache[item.name];
+	const auto& presentation = cache_.itemPresentation[item.name];
 
 	// 道具名
 	float textY = panelY + 24.f;
@@ -943,7 +930,7 @@ void ShopScene::renderDetailPanel() {
 
 	// 技能描述：从服务器下发的缓存取，未命中则补发请求并显示加载中
 	std::string skillsText;
-	if (auto cacheIt = skillsCache.find(charName); cacheIt != skillsCache.end()) {
+	if (auto cacheIt = cache_.skills.find(charName); cacheIt != cache_.skills.end()) {
 		skillsText = cacheIt->second;
 	}
 	else {

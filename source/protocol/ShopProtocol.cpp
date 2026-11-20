@@ -33,6 +33,25 @@ namespace unool::protocol {
 		}
 	}
 
+	// Arch-C P1-4：Packet 级重载。读字符串 + 解析合一，提取失败以空串走解析（得 nullopt）。
+	std::optional<ShopData> parseShopData(sf::Packet& packet) {
+		std::string jsonStr;
+		if (!(packet >> jsonStr)) return std::nullopt;
+		return parseShopData(jsonStr);
+	}
+
+	std::optional<SkillInfoResponseBody> parseSkillInfoResponse(sf::Packet& packet) {
+		std::string jsonStr;
+		if (!(packet >> jsonStr)) return std::nullopt;
+		return parseSkillInfoResponse(jsonStr);
+	}
+
+	std::optional<ShopPurchaseResult> parseShopPurchaseResult(sf::Packet& packet) {
+		std::string jsonStr;
+		if (!(packet >> jsonStr)) return std::nullopt;
+		return parseShopPurchaseResult(jsonStr);
+	}
+
 	std::string makeShopPurchaseJson(ShopRequestType type,
 	                                 const std::string& name,
 	                                 const std::string& charName,

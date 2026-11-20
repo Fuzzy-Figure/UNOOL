@@ -25,6 +25,13 @@ namespace unool::protocol {
 	// 解析购买结果 JSON。提取失败由调用方转「购买结果解析失败」。
 	std::optional<ShopPurchaseResult> parseShopPurchaseResult(const std::string& jsonStr);
 
+	// Arch-C P1-4：Packet 级重载（packet 已消费消息号）。
+	// 内部完成「读 json 字符串 + 解析」，让 Scene 不再出现 jsonStr 符号。
+	// 提取失败或解析失败均返回 nullopt（坏包静默忽略，与原提取门控行为等价）。
+	std::optional<ShopData> parseShopData(sf::Packet& packet);
+	std::optional<SkillInfoResponseBody> parseSkillInfoResponse(sf::Packet& packet);
+	std::optional<ShopPurchaseResult> parseShopPurchaseResult(sf::Packet& packet);
+
 	// 构造购买请求 JSON 字符串（经 IClientGateway::sendShopPurchase 发送）。
 	// 覆盖 4 处手写 ShopPurchaseRequest + j.dump()（Request / Character / Skin / Item），
 	// 字段顺序与线上包体逐字一致。

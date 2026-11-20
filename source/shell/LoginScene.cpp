@@ -6,7 +6,7 @@
 #include "shell/IShopOpener.h"
 #include <utility>
 
-// P1-3：收包/心跳/断线收敛到 ConnectionState；发包与协议构造仍留本单元。
+// P1-3/P1-4：收发均经 ConnectionState；协议构造上移到语义方法，本单元只做 View 与事件解析。
 
 
 LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
@@ -177,8 +177,7 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 		if (startGameBtn.contains(pos)) {
 			// 退出匹配功能：不再点完就 Done 进入 gamePhase 空等，而是留在本场景的
 			// 匹配等待界面；收到 GameStart 后 run() 才结束（包留给 gamePhase）。
-			sf::Packet readyPkt = unool::protocol::makeReadyToPlay();
-			if (!net.send(readyPkt)) {
+		if (!net.sendReadyToPlay()) {
 				message = "发送失败，请重试";
 				return;
 			}
@@ -231,8 +230,7 @@ void LoginScene::sendLoginRequest() {
 		message = "用户名和密码不能为空";
 		return;
 	}
-	sf::Packet req = unool::protocol::makeLoginRequest(username, password);
-	if (!net.send(req)) {
+	if (!net.sendLogin(username, password)) {
 		message = "发送失败，请关闭客户端的.exe文件后重试";
 		return;
 	}
@@ -246,8 +244,7 @@ void LoginScene::sendRegisterRequest() {
 		status = Status::Idle;
 		return;
 	}
-	sf::Packet req = unool::protocol::makeRegisterRequest(username, password);
-	if (!net.send(req)) {
+	if (!net.sendRegister(username, password)) {
 		message = "发送失败，请重试";
 		status = Status::Idle;
 		return;
@@ -261,8 +258,7 @@ void LoginScene::sendCheckUsername() {
 		message = "用户名不能为空";
 		return;
 	}
-	sf::Packet req = unool::protocol::makeCheckUsernameRequest(username);
-	if (!net.send(req)) {
+	if (!net.sendCheckUsername(username)) {
 		message = "发送失败，请重试";
 		return;
 	}
@@ -271,8 +267,7 @@ void LoginScene::sendCheckUsername() {
 }
 
 void LoginScene::sendCheckinRequest() {
-	sf::Packet req = unool::protocol::makeCheckinRequest();
-	if (!net.send(req)) {
+	if (!net.sendCheckin()) {
 		message = "发送失败，请重试";
 		return;
 	}
@@ -280,8 +275,7 @@ void LoginScene::sendCheckinRequest() {
 }
 
 void LoginScene::sendCancelMatchmaking() {
-	sf::Packet req = unool::protocol::makeCancelMatchmaking();
-	if (!net.send(req)) {
+	if (!net.sendCancelMatchmaking()) {
 		// 发包失败也不能把用户困在等待界面，本地直接回大厅（不显示文字提示）
 		backToLobby();
 		return;
@@ -303,7 +297,7 @@ void LoginScene::clearMatchNotice() {
 }
 
 void LoginScene::pollAccountPackets() {
-	// 阶段 4 · S2：收包动作收拢到 PacketDispatcher。订阅集在原有 5 类账号响应上
+	// P1-3：收包动作收拢到 ConnectionState 的显式队列。订阅集在原有 5 类账号响应上
 	// 增加 MatchmakingCancelled / MatchmakingStarted（共 7 类；Heartbeat 由
 	// dispatcher 内部统一消费并回复），「非订阅包不消费、留给 gamePhase」的
 	// 跨阶段留包约定由 next() 逐字保留。

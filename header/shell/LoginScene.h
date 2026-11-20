@@ -8,8 +8,8 @@
 class GameRenderer;
 
 // 登录场景：图形界面完成注册/登录，成功后返回账号信息
-// 阶段 4 · S3b1（用户 51.11 口径①A）：成员与构造参数由具体 ClientNetwork& 切到
-// adapters 层的 IClientGateway&，并删掉 #include "Socket.h" 的粗粒度传递依赖。
+// P1-3/P1-4：成员与构造参数收敛到 ConnectionState&，发包经其语义方法、
+// 收包经显式入站队列，本 View 不含网络客户端 / SFML Network / json 符号。
 // 阶段 4 · S3b2（53.9 口径①A + ②A）：5 个请求构造与 4 处响应解析上移到 Protocol
 // 层、结果经同步值对象返回；状态机 / render() / run() 主循环仍逐字留在 View。
 // ③A：Result::enterShop 全项目零读取点，声明与赋值一并删除。
