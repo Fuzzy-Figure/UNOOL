@@ -7,7 +7,6 @@
 
 #include "shell/ConnectionState.h"
 #include "shell/IClientGateway.h"
-#include "protocol/MessageCodec.h"
 #include <SFML/Network.hpp>
 
 #include <cstddef>
@@ -50,7 +49,7 @@ public:
 	std::optional<int> peekMessageType() const override { return std::nullopt; }
 };
 
-sf::Packet packetOf(unool::protocol::MessageType type) {
+sf::Packet packetOf(MessageType type) {
 	sf::Packet p;
 	p << static_cast<int>(type);
 	return p;
@@ -65,53 +64,53 @@ struct Result {
 // 跨阶段留包：队首非订阅包不被消费，GameStart 留给下一阶段 takeAny 取出。
 void testCrossStageLeaving(Result& r) {
 	FakeGateway gw;
-	gw.inbound.push_back(packetOf(unool::protocol::MessageType::GameStart));
-	gw.inbound.push_back(packetOf(unool::protocol::MessageType::LoginResponse));
+	gw.inbound.push_back(packetOf(MessageType::GameStart));
+	gw.inbound.push_back(packetOf(MessageType::LoginResponse));
 	unool::shell::ConnectionState conn(gw);
 
 	conn.pump();
 	// 订阅只含 LoginResponse：队首是 GameStart，不消费；但 LoginResponse 在其后，
 	// 按 take 的「队首命中才取」语义也不会被跳过取出 —— 这正是原 Filtered 约定。
-	auto noTake = conn.take({ unool::protocol::MessageType::LoginResponse });
+	auto noTake = conn.take({ MessageType::LoginResponse });
 	r.check(!noTake.has_value());
-	r.check(conn.contains(unool::protocol::MessageType::GameStart));
-	r.check(conn.contains(unool::protocol::MessageType::LoginResponse));
+	r.check(conn.contains(MessageType::GameStart));
+	r.check(conn.contains(MessageType::LoginResponse));
 
 	// 下一阶段 DrainAll：按入队顺序取出（FIFO），顺序不依赖调用次序。
 	auto first = conn.takeAny();
-	r.check(first && first->type == unool::protocol::MessageType::GameStart);
+	r.check(first && first->type == MessageType::GameStart);
 	auto second = conn.takeAny();
-	r.check(second && second->type == unool::protocol::MessageType::LoginResponse);
+	r.check(second && second->type == MessageType::LoginResponse);
 	r.check(!conn.takeAny().has_value());
 }
 
 // 心跳：pump 消费 Heartbeat 并回复一次，其余包正常入队。
 void testHeartbeatAutoReply(Result& r) {
 	FakeGateway gw;
-	gw.inbound.push_back(packetOf(unool::protocol::MessageType::Heartbeat));
-	gw.inbound.push_back(packetOf(unool::protocol::MessageType::GameState));
+	gw.inbound.push_back(packetOf(MessageType::Heartbeat));
+	gw.inbound.push_back(packetOf(MessageType::GameState));
 	unool::shell::ConnectionState conn(gw);
 
 	conn.pump();
 	r.check(gw.heartbeatReplies == 1);
-	r.check(conn.contains(unool::protocol::MessageType::GameState));
-	r.check(!conn.contains(unool::protocol::MessageType::Heartbeat));
+	r.check(conn.contains(MessageType::GameState));
+	r.check(!conn.contains(MessageType::Heartbeat));
 }
 
 // 断线：连接态→断线态时清空积压；isConnected 反映网关状态。
 void testDisconnectClearsQueue(Result& r) {
 	FakeGateway gw;
-	gw.inbound.push_back(packetOf(unool::protocol::MessageType::GameState));
+	gw.inbound.push_back(packetOf(MessageType::GameState));
 	unool::shell::ConnectionState conn(gw);
 
 	conn.pump();
 	r.check(conn.isConnected());
-	r.check(conn.contains(unool::protocol::MessageType::GameState));
+	r.check(conn.contains(MessageType::GameState));
 
 	gw.connected = false;
 	conn.pump();
 	r.check(!conn.isConnected());
-	r.check(!conn.contains(unool::protocol::MessageType::GameState));
+	r.check(!conn.contains(MessageType::GameState));
 }
 
 } // namespace
