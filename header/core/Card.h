@@ -9,6 +9,7 @@
 #include <functional>
 #include <iosfwd>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -25,17 +26,27 @@ class Card {
 public:
 #pragma region 类型定义
 	enum class Color {
-		no, blue, green, red, yellow, black
+		no, blue, green, red, yellow, black,
+		//新增：紫色牌只由角色技能加入牌堆，不属于 fourColors/fiveColors，
+		//因此既不进标准牌堆，也不进 Card::getAllCards() 的随机牌池。
+		//追加在末尾以保证既有颜色的线上序列化数值不变。
+		purple
 	};
 	enum class Name {
 		no,
 		number_0, number_1, number_2, number_3, number_4,
 		number_5, number_6, number_7, number_8, number_9,
 		action_rev, action_skip, action_draw2, wild_pal, wild_draw4,
-		back
+		back,
+		//新增：秘技牌只由角色技能发放，不进标准牌堆与 getAllCards() 随机牌池。
+		//追加在末尾以保证既有牌名的线上序列化数值不变。
+		//命名约定：secret_中文名，与 images/cards/secret/中文名.jpg 对应。
+		secret_毒酒, secret_药酒, secret_过载, secret_指虎
 	};
 	enum class Type {
-		unknown, number, action, wild
+		unknown, number, action, wild,
+		//新增：秘技牌独立类型，追加在末尾以保证既有类型数值不变
+		secret
 	};
 	enum class DiscardReason {
 		none,   //没进入弃牌堆（手中/牌堆/通用场景默认值）
@@ -58,6 +69,10 @@ private:
 	Name name = Name::no;
 	bool effective = true;
 	DiscardReason discardReason = DiscardReason::none;
+	//牌自带的附加伤害（由角色技能写入，随牌在牌堆/弃牌堆间流转），打出时对目标结算
+	std::size_t extraDamage = 0;
+	//牌进入弃牌堆时的来源玩家 id（putCardToDiscardPile 写入，回收进牌堆时清空）
+	std::optional<std::size_t> discardSourceId{};
 
 public:
 #pragma region 构造 / 静态工厂
@@ -90,6 +105,8 @@ public:
 	Type getType() const;
 	ColorName getColorName() const;
 	DiscardReason getDiscardReason() const { return discardReason; }
+	std::size_t getExtraDamage() const { return extraDamage; }
+	std::optional<std::size_t> getDiscardSourceId() const { return discardSourceId; }
 
 	bool sameColorAs(const Card& other) const;
 	bool sameNameAs(const Card& other) const;
@@ -115,6 +132,8 @@ public:
 	bool isNotAction() const;
 	bool isWild() const;
 	bool isNotWild() const;
+	bool isSecret() const;
+	bool isNotSecret() const;
 	bool isTargeted() const;
 	bool isNotTargeted() const;
 	std::size_t value() const;
@@ -128,6 +147,8 @@ public:
 	void setColor(const Color newColor);
 	void setName(const Name newName);
 	void setDiscardReason(DiscardReason r) { discardReason = r; }
+	void setExtraDamage(std::size_t v) { extraDamage = v; }
+	void setDiscardSourceId(std::optional<std::size_t> id) { discardSourceId = id; }
 	void set(const Card& other);
 	void set(const Color color, const Name name);
 	void set(const ColorName& cn);
@@ -148,6 +169,7 @@ public:
 			case Color::red:    return "红";
 			case Color::yellow: return "黄";
 			case Color::black:  return "黑";
+			case Color::purple: return "紫";
 			case Color::no:     return "无";
 			default:            return "";
 		}
@@ -174,6 +196,11 @@ public:
 			case Name::wild_draw4:   return "+4";
 				//其他
 			case Name::back:         return "背面";
+				//秘技牌
+			case Name::secret_毒酒:  return "毒酒";
+			case Name::secret_药酒:  return "药酒";
+			case Name::secret_过载:  return "过载";
+			case Name::secret_指虎:  return "指虎";
 			case Name::no:           return "无";
 			default:                 return "未知";
 		}
@@ -183,6 +210,7 @@ public:
 			case Type::number:  return "数字牌";
 			case Type::action:  return "功能牌";
 			case Type::wild:    return "万能牌";
+			case Type::secret:  return "秘技牌";
 			case Type::unknown:
 			default:            return "未知类型";
 		}
@@ -212,6 +240,10 @@ public:
 	}
 	static constexpr bool is_wild(const Card::Name name) {
 		return name == Name::wild_pal || name == Name::wild_draw4;
+	}
+	static constexpr bool is_secret(const Card::Name name) {
+		return name == Name::secret_毒酒 || name == Name::secret_药酒
+			|| name == Name::secret_过载 || name == Name::secret_指虎;
 	}
 #pragma endregion
 

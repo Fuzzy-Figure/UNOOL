@@ -20,7 +20,10 @@ enum class DrawReason {
 	unknown,
 	init,        //开局初始手牌
 	phase_draw,
-	skill
+	skill,
+	//新增：因【+2】/【+4】效果摸牌（供技能识别，数值追加在末尾不影响既有判断）
+	card_draw2,
+	card_draw4
 };
 enum class DrawPosition {
 	top,
@@ -160,7 +163,9 @@ public:
 		card_discard_begin, card_discard_end,
 		recycle_discardPile_begin, recycle_discardPile_end,
 		add_mark, remove_mark,
-		round_begin, round_end
+		round_begin, round_end,
+		//新增：发初始手牌前（resetGame() 中牌堆重建后、发牌前触发，Trigger 为空）
+		before_deal
 	};
 	struct Trigger {
 		opt_ref<Player> player = std::nullopt;
@@ -397,9 +402,12 @@ struct HybridSkills {
 
 	template<class... Xs>
 	HybridSkills(Xs... xs) {
-		static_assert((0 + ... + (std::is_base_of_v<PassiveSkillTag, Xs> ? 1 : 0)) <= 1, "被动<> 只能出现一次");
-		static_assert((0 + ... + (std::is_base_of_v<InstantSkillTag, Xs> ? 1 : 0)) <= 1, "即时<> 只能出现一次");
-		static_assert((0 + ... + (std::is_base_of_v<TransformSkillTag, Xs> ? 1 : 0)) <= 1, "转换<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<PassiveSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，被动<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<InstantSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，即时<> 只能出现一次");
+		static_assert((0 + ... + (std::is_base_of_v<TransformSkillTag, Xs> ? 1 : 0)) <= 1,
+					  "在 Character::infos 里，转换<> 只能出现一次");
 		([&](auto x) {
 			using X = decltype(x);
 			if      constexpr (std::is_base_of_v<PassiveSkillTag, X>) passive = x;

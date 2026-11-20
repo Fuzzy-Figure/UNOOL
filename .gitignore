@@ -373,3 +373,5 @@ todoList.txt
 
 !dep/SFML/bin/
 !dep/SFML/bin/**
+
+.workbuddy/

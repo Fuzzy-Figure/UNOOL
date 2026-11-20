@@ -366,7 +366,7 @@ bool 改革_摸牌替代::filter(const GameLogic& game, const Player& carrier, c
 	if (trigger.getDrawReason() == DrawReason::phase_draw) return false;
 	if (trigger.getDrawReason() == DrawReason::init) return false;
 	if (!trigger.hasNumber() || trigger.getNumber() == 0) return false;
-	return trigger.getPlayer().getId() != carrier.getId();
+	return trigger.getPlayer() != carrier;
 }
 
 bool 改革_摸牌替代::content(GameLogic& game, Player& carrier, Trigger& trigger) {

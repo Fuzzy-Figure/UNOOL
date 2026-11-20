@@ -51,6 +51,9 @@ private:
 	std::size_t lifesteal = 0;  //吸血率（百分比，本局内有效）
 	bool noWinByEmptyHand = false;  //本回合内手牌为空也不判负（如炼石重铸光所有牌）
 	mutable bool charInfoDirty = true;  //角色信息脏标记，初始为true保证开局发送一次
+	//出牌禁打钩子：由其他角色的技能按 key 安装，返回 true 表示该牌禁止打出。
+	//key 用于同名覆盖，避免每局重复安装造成累积。
+	std::unordered_map<std::string, std::function<bool(const Card&)>> playVetoes{};
 #pragma endregion
 
 #pragma region 成员变量 - 输入
@@ -122,6 +125,8 @@ public:
 	std::vector<std::string> getImagePaths() const { return character->getImagePaths(); }
 	Character::hp_t getHp() const { return character->getHp(); }
 	Character::hp_t getMaxHp() const { return character->getMaxHp(); }
+	//减少/修改生命上限（当前体力同步压到新上限）
+	void setMaxHp(Character::hp_t v) { character->setMaxHp(v); markCharInfoDirty(); }
 	std::size_t damage(std::size_t damage, opt_ref<Player> source);
 	//失去体力：不经过伤害结算（不触发伤害相关技能、不被护盾抵消、不受倍率影响）
 	std::size_t loseHp(std::size_t num);
@@ -218,7 +223,8 @@ public:
 
 #pragma region 游戏逻辑 - 摸牌与出牌
 	std::vector<ref<Card>> draw(std::size_t num, const DrawReason reason = DrawReason::unknown,
-								const DrawPosition position = DrawPosition::top);
+								const DrawPosition position = DrawPosition::top,
+								const opt_ref<Player> source = std::nullopt);
 	std::vector<ref<Card>> drawTo(const std::size_t num, const DrawReason reason = DrawReason::unknown);
 	Card& useCardByIndex(const std::size_t cardIndex);
 	//把指定索引的手牌放进弃牌堆（触发lose_card事件），reason标识进弃牌堆的原因
@@ -257,6 +263,11 @@ public:
 	void resetBombUsage() { bombUsed = 0; }
 	//尝试使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
 	bool tryUseBombCard();
+	//出牌禁打钩子：按 key 安装/移除，canUse() 中所有钩子返回 false 才允许打出
+	void setPlayVeto(std::string key, std::function<bool(const Card&)> veto) {
+		playVetoes.insert_or_assign(std::move(key), std::move(veto));
+	}
+	void clearPlayVeto(const std::string& key) { playVetoes.erase(key); }
 	void markCharInfoDirty() const { charInfoDirty = true; }
 	bool isCharInfoDirty() const { return charInfoDirty; }
 	void clearCharInfoDirty() { charInfoDirty = false; }

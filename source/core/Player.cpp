@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "GameLogic.h"
+#include <ranges>
 #include <thread>
 
 std::string Player::displayName() const {
@@ -116,12 +117,15 @@ void Player::recover(std::size_t num) {
 
 // === 游戏逻辑 ===
 
-std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position) {
+std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason, const DrawPosition position,
+									const opt_ref<Player> source) {
 	std::println("{}摸了{}张牌（{}）", displayName(), number, (position == DrawPosition::top ? "顶" : "底")); {
 		PassiveSkill::Trigger trigger;
 		trigger.player = *this;
 		trigger.number = number;
 		trigger.drawReason = reason;
+		//牌效果摸牌：source 为打出该牌的角色（供【炮击】判断「你因牌的效果使其他角色摸牌」）
+		if (source.has_value()) trigger.source = source;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_begin, trigger);
 	}
 
@@ -154,6 +158,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		trigger.player = *this;
 		trigger.cards = drawnCards;
 		trigger.number = number;
+		trigger.drawReason = reason;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::draw_end, trigger);
 	}
 	{
@@ -161,6 +166,7 @@ std::vector<ref<Card>> Player::draw(std::size_t number, const DrawReason reason,
 		trigger.player = *this;
 		trigger.cards = drawnCards;
 		trigger.number = number;
+		trigger.drawReason = reason;
 		game.launchPassiveSkills(PassiveSkill::TriggerTime::gain_card_end, trigger);
 	}
 	return drawnCards;
@@ -193,7 +199,14 @@ Card& Player::useCardByIndex(const std::size_t cardIndex) {
 	}
 
 	//发动卡牌效果
-	card->applyEffect(game, *this, next());
+	Player& cardTarget = next();
+	card->applyEffect(game, *this, cardTarget);
+	//牌自带的附加伤害（如【雷管】强化的【+2】）：随牌流转，任何人打出都结算
+	if (const std::size_t extra = card->getExtraDamage(); extra > 0) {
+		std::println("<附加效果> {}对{}额外造成{}点伤害",
+					 displayName(), cardTarget.displayName(), extra);
+		cardTarget.damage(extra, std::ref(*this));
+	}
 
 	//更改当前颜色
 	if (!card->isWild()) game.setCurrentColor(card->getColor());
@@ -327,8 +340,16 @@ std::unique_ptr<Card> Player::takeCardByIndex(const std::size_t cardIndex) {
 
 
 bool Player::canUse(const Card& card) {
+	//秘技牌【过载】：不可打出（牌的固有属性，优先于一切出牌无限制状态）
+	if (card.getName() == Card::Name::secret_过载) return false;
 	//出牌不受限制：任意牌均可打出
 	if (unrestrictedPlay) return true;
+	//其他角色安装的禁打钩子（如【圣权】【圣柄】）
+	for (const auto& veto : playVetoes | std::views::values) {
+		if (veto(card)) return false;
+	}
+	//秘技牌：可跟任意数字牌；牌本身为绿色，当前颜色为绿时由通用规则放行
+	if (card.isSecret() && Card::is_number(game.getCurrentName())) return true;
 	if (game.getCurrentColor() == Card::Color::no) return true;
 	if (card.is(game.getCurrentColor())
 		|| card.is(game.getCurrentName())
@@ -519,7 +540,7 @@ void Player::chooseSkinAndSet(const std::string& charName) {
 std::optional<std::size_t> Player::chooseCard(const std::string& title, std::function<bool(const Card&)> condition,
 											  bool forced, ActiveSkill::TriggerTime phase) {
 	game.setOperatingPlayer(id);
-	decision.showChoice(id, { title, {}, forced });
+	decision.showChoice(id, { title,{}, forced });
 	opt_ref<TransformSkill> activeMode;  //当前激活的转换型主动技
 
 	std::vector<ref<InstantSkill>>   instantRefs;
@@ -548,7 +569,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			}
 			std::println("[Player] {} 重连成功，恢复选择", displayName());
 			game.broadcastState();
-			decision.showChoice(id, { title, {}, forced });
+			decision.showChoice(id, { title,{}, forced });
 			continue;
 		}
 
@@ -575,7 +596,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			&& input == unool::contract::Key::B) {
 			if (tryUseBombCard()) {
 				game.setOperatingPlayer(id);
-				decision.showChoice(id, { title, {}, forced });
+				decision.showChoice(id, { title,{}, forced });
 				game.broadcastState();
 			}
 			continue;
@@ -650,7 +671,7 @@ bool Player::handleDigitKey(unool::contract::Key input,
 		}
 		else {
 			activeMode = skill;
-			decision.showChoice(id, { skill.getPrompt(), {}, false });
+			decision.showChoice(id, { skill.getPrompt(),{}, false });
 		}
 	}
 	return true;

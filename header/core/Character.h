@@ -168,6 +168,7 @@ public:
 	hp_t getHp() const;
 	hp_t getMaxHp() const;
 	void setHp(hp_t newHp);
+	void setMaxHp(hp_t newMaxHp);
 	std::size_t damage(std::size_t damage);
 	void recover(std::size_t num);
 	bool isDead() const;

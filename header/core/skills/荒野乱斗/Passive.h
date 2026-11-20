@@ -509,3 +509,524 @@ public:
 	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
 };
 
+
+// ==================== 新增荒野乱斗角色技能 ====================
+// 共用口径：
+//  · 秘技牌【毒酒】【药酒】= Card::Name::secret_毒酒 / secret_药酒，牌色为绿，
+//    由【掷酒】在 game_begin 发放，效果在 Effect::毒酒/药酒 结算，按普通牌循环；
+//  · 【雷管】强化过的【+2】把附加伤害写在 Card::extraDamage 上，随牌流转，
+//    任何人打出都由 Player::useCardByIndex 对牌目标结算；
+//  · 【+2】/【+4】摸牌用 DrawReason::card_draw2 / card_draw4 标识；
+//  · 每局重置的状态一律重写 reset() 清空（Skill::reset() 只清 count/limit）；
+//  · 隐藏子技能一律用空 info，由父技能携带完整描述文字。
+
+// ---------- 麦克【雷管】 ----------
+class 雷管 final : public PassiveSkillImpl<雷管> {
+public:
+	雷管() : PassiveSkillImpl<雷管>(
+		"雷管",
+		"你打出万能牌后，可获得一张随机颜色的【+2】，此牌额外对目标造成5点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 妮塔【熊灵】 ----------
+//熊灵_摸前：因【+2】/【+4】摸牌前，护盾已达上限则本次摸牌数减半
+class 熊灵_摸前 final : public PassiveSkillImpl<熊灵_摸前> {
+public:
+	熊灵_摸前() : PassiveSkillImpl<熊灵_摸前>(
+		"熊灵_摸前", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//熊灵_摸后：因【+2】/【+4】摸牌后获得护盾（上限30）
+class 熊灵_摸后 final : public PassiveSkillImpl<熊灵_摸后> {
+public:
+	熊灵_摸后() : PassiveSkillImpl<熊灵_摸后>(
+		"熊灵_摸后", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+class 熊灵 final : public PassiveSkillImpl<熊灵> {
+	friend class 熊灵_摸前;
+	friend class 熊灵_摸后;
+private:
+	//本局每次因【+2】/【+4】摸牌获得的护盾量，初始1，每打出一张功能牌+1
+	std::size_t shieldGain = 1;
+public:
+	熊灵() : PassiveSkillImpl<熊灵>(
+		"熊灵",
+		"你因【+2】/【+4】摸牌后，获得1点护盾（上限30点），已达上限则此次摸牌数减半；\n"
+		"你每次打出功能牌，使本局此技能护盾值+1。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end,
+		熊灵_摸前::make(), 熊灵_摸后::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override {
+		PassiveSkillImpl<熊灵>::reset();
+		shieldGain = 1;
+	}
+};
+
+// ---------- 布洛克【火箭】 ----------
+class 火箭 final : public PassiveSkillImpl<火箭> {
+public:
+	火箭() : PassiveSkillImpl<火箭>(
+		"火箭",
+		"锁定技，每局游戏开始后第十轮结束时，获得两张【变色】和两张随机颜色的【封禁】。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 巴利【掷酒】 ----------
+class 掷酒 final : public PassiveSkillImpl<掷酒> {
+public:
+	掷酒() : PassiveSkillImpl<掷酒>(
+		"掷酒",
+		"锁定技，每局游戏开始时，获得秘技牌【毒酒】和【药酒】各一张。\n"
+		"【毒酒】：可跟任意数字牌且视为绿色，打出后对一名其他角色造成10点伤害。\n"
+		"【药酒】：可跟任意数字牌且视为绿色，打出后回复10点体力。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::game_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ==================== 新增荒野乱斗角色技能（第二批） ====================
+// 共用口径：
+//  · 秘技牌【过载】= Card::Name::secret_过载，牌色绿、不可打出、按普通牌循环；
+//    只有珀尔打牌时由她的隐藏子技能判定（检查自己手里的过载）。
+//  · 已有 class 火箭（布洛克）与 class 过载（速度标记主动技）；麦茜技能改名为「飞弹」后无命名冲突，
+//    秘技牌【过载】不占技能类名。
+//  · 连续回合判定用 phase_begin 记录「本回合被封禁」、phase_end 读 getHasUsed()；
+//    引擎的 hasUsed 覆盖两个出牌阶段，被封禁的回合恒为 false。
+//  · 每局重置的状态一律重写 reset() 清空；隐藏子技能用空 info，由主技能携带完整描述。
+
+// ---------- 珀尔【烧炉】 ----------
+//烧炉_过载判定：隐藏子技能，你打出牌后，若手中【过载】数量大于等于其他牌，
+//弃置一张【过载】并对一名其他角色造成10点伤害
+class 烧炉_过载判定 final : public PassiveSkillImpl<烧炉_过载判定> {
+public:
+	烧炉_过载判定() : PassiveSkillImpl<烧炉_过载判定>(
+		"烧炉_过载判定", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//烧炉：锁定技，游戏开始后每经过五轮，获得一张秘技牌【过载】
+class 烧炉 final : public PassiveSkillImpl<烧炉> {
+public:
+	烧炉() : PassiveSkillImpl<烧炉>(
+		"烧炉",
+		"锁定技，游戏开始后每经过五轮，获得一张秘技牌【过载】。\n"
+		"【过载】：不可打出。你打出牌后，若手中【过载】数量大于等于其他牌，弃置一张【过载】并对一名其他角色造成10点伤害。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end,
+		烧炉_过载判定::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 麦茜【飞弹】【冲爆】 ----------
+//飞弹：锁定技，你造成任意伤害时，令此伤害+1
+class 飞弹 final : public PassiveSkillImpl<飞弹> {
+public:
+	飞弹() : PassiveSkillImpl<飞弹>(
+		"飞弹",
+		"锁定技，你造成任意伤害时，令此伤害+1。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::damage_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//冲爆：你摸牌后，若其中有数字牌，随机对一名其他角色造成1点伤害
+class 冲爆 final : public PassiveSkillImpl<冲爆> {
+public:
+	冲爆() : PassiveSkillImpl<冲爆>(
+		"冲爆",
+		"你摸牌后，若其中有数字牌，随机对一名其他角色造成1点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::draw_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 阿方【功夫】【连踢】 ----------
+//功夫：锁定技，你打出的红色牌附带封禁效果，然后摸一张牌（手牌数大于10时整个技能不触发）
+class 功夫 final : public PassiveSkillImpl<功夫> {
+public:
+	功夫() : PassiveSkillImpl<功夫>(
+		"功夫",
+		"锁定技，你打出的红色牌附带封禁效果，然后摸一张牌（手牌数大于10时不触发）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//连踢：每连续四个「有出牌」的回合触发一次；中断清零。
+//效果带「可」字，由技能自己弹确认（forced=true 避免引擎重复询问）
+class 连踢 final : public PassiveSkillImpl<连踢> {
+	std::size_t streak{};
+public:
+	连踢() : PassiveSkillImpl<连踢>(
+		"连踢",
+		"你每连续四回合打出牌后，可摸两张牌并对一名其他角色造成4次2点伤害。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override;
+};
+
+// ---------- 公牛【蛮冲】隐藏子技能 ----------
+//蛮冲_记录：phase_begin 记录本回合是否被封禁（此时 unban() 尚未执行）
+class 蛮冲_记录 final : public PassiveSkillImpl<蛮冲_记录> {
+public:
+	蛮冲_记录() : PassiveSkillImpl<蛮冲_记录>(
+		"蛮冲_记录", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//蛮冲_结算：phase_end 考核四个回合，成功则摸牌/造成伤害/令蛮冲视为未发动过
+class 蛮冲_结算 final : public PassiveSkillImpl<蛮冲_结算> {
+public:
+	蛮冲_结算() : PassiveSkillImpl<蛮冲_结算>(
+		"蛮冲_结算", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+
+// ==================== 新增荒野乱斗角色技能（第三批） ====================
+// 共用口径：
+//  · 秘技牌【指虎】= Card::Name::secret_指虎，牌色绿、可跟任意数字牌（canUse 统一特判），
+//    效果由山姆的隐藏子技能实现，不进标准牌堆与随机牌池；
+//  · 【蝙蝠】limit=0（每局限零次），由其隐藏子技能统计 gain_card_end（排除 DrawReason::init），
+//    每累计 5 张调用 increaseLimit(1)；Skill::reset() 每局把 limit 恢复为 0；
+//  · 【镐机】是契定技：构造 forced=false，content 里 setForced(true)，reset 里 setForced(false)；
+//  · 座位顺序 = game.getPlayers() 的数组顺序（nextPlayerIndex 按该数组推进）。
+
+// ---------- 山姆【指虎】 ----------
+//指虎_弃牌：隐藏子技能，打出【指虎】后解锁；此后每次打出万能牌可弃置一张手牌（↓取消），本局上限3张
+class 指虎_弃牌 final : public PassiveSkillImpl<指虎_弃牌> {
+public:
+	指虎_弃牌() : PassiveSkillImpl<指虎_弃牌>(
+		"指虎_弃牌", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 山姆【指虎】专属牌补充 ----------
+//指虎_销毁：隐藏子技能，【指虎】进入弃牌堆后移出销毁
+class 指虎_销毁 final : public PassiveSkillImpl<指虎_销毁> {
+public:
+	指虎_销毁() : PassiveSkillImpl<指虎_销毁>(
+		"指虎_销毁", "",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::card_discard_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//指虎_专属：隐藏子技能，【指虎】被其他角色获得后销毁
+class 指虎_专属 final : public PassiveSkillImpl<指虎_专属> {
+public:
+	指虎_专属() : PassiveSkillImpl<指虎_专属>(
+		"指虎_专属", "",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::gain_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//指虎：锁定技，每局游戏开始时，获得一张专属牌【指虎】
+class 指虎 final : public PassiveSkillImpl<指虎> {
+public:
+	bool unlocked{};          //本局是否已打出【指虎】
+	std::size_t discarded{};  //本局因万能牌弃置的牌数（上限3）
+	std::vector<std::unique_ptr<Card>> destroyed{};  //已销毁的【指虎】对象（寄存以保持引用有效）
+	指虎() : PassiveSkillImpl<指虎>(
+		"指虎",
+		"锁定技，每局游戏开始时，获得一张\"指虎\"牌（专属卡牌，被其他角色获得或进入弃牌堆后销毁）。\n"
+		"【指虎】：可跟任意数字牌，打出后山姆本局每打出一张万能牌可弃置一张牌（最多弃置三张）。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::game_begin,
+		指虎_弃牌::make(),
+		指虎_销毁::make(),
+		指虎_专属::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); unlocked = false; discarded = 0; destroyed.clear(); }
+};
+
+// ---------- 卡尔【镐机】【旋转】 ----------
+//镐机：契定技，每局游戏限一次，回合开始时随机重铸两张颜色不同的牌；
+//若手牌颜色种类≤1（含空手/单张），改为重铸所有手牌并回复5点体力
+class 镐机 final : public PassiveSkillImpl<镐机> {
+public:
+	镐机() : PassiveSkillImpl<镐机>(
+		"镐机",
+		"契定技，每局游戏限{limit}次，回合开始时，随机重铸两张颜色不同的牌，若仅剩一种颜色的牌改为重铸所有手牌并回复5点体力。",
+		1, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); setForced(false); }
+};
+
+//旋转：锁定技，第3/4/5轮末各令【镐机】可发动次数+1
+class 旋转 final : public PassiveSkillImpl<旋转> {
+public:
+	旋转() : PassiveSkillImpl<旋转>(
+		"旋转",
+		"锁定技，每经过3/4/5轮，【镐机】可发动次数+1。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::round_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ==================== 新增荒野乱斗角色技能（第四批） ====================
+// 共用口径：
+//  · 「炮台」用角色标记表示，addMark/clearMark 维护，销毁炮台即 clearMark("炮台")；
+//  · 连续出牌回合用 phase_end 读 getHasUsed()（空过或被封禁的回合恒为 false，中断即清零）；
+//  · 万能牌无效沿用引擎标准做法：use_card_begin 时 Card::cancelEffect()；
+//  · 科莱特技能名为「征讨」，与博尔特的 class 冲撞（速度标记）是不同技能。
+
+// ---------- 杰西【炮台】 ----------
+//炮台_轰击：隐藏子技能，有「炮台」时回合开始选择一名其他角色，随机造成2-3次1点伤害
+class 炮台_轰击 final : public PassiveSkillImpl<炮台_轰击> {
+public:
+	炮台_轰击() : PassiveSkillImpl<炮台_轰击>(
+		"炮台_轰击", "",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//炮台_无效：隐藏子技能，其他角色打出万能牌时，由打牌者选择是否令此牌无效并销毁「炮台」
+class 炮台_无效 final : public PassiveSkillImpl<炮台_无效> {
+public:
+	炮台_无效() : PassiveSkillImpl<炮台_无效>(
+		"炮台_无效", "",
+		unlimited, true,
+		TriggerPlayer::others,
+		TriggerTime::use_card_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//炮台：每连续五回合出牌后，若没有「炮台」则获得一个
+class 炮台 final : public PassiveSkillImpl<炮台> {
+	std::size_t streak{};
+public:
+	炮台() : PassiveSkillImpl<炮台>(
+		"炮台",
+		"你每连续五回合出牌后，若你没有\"炮台\"，获得一个\"炮台\"：\n"
+		"回合开始时，选择一名其他角色，随机对其造成2-3次1点伤害。\n"
+		"其他角色打出万能牌时，其可选择令此牌无效并销毁\"炮台\"。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end,
+		炮台_轰击::make(),
+		炮台_无效::make()
+	) {}
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); streak = 0; }
+};
+
+// ---------- 科莱特【征讨】 ----------
+//每局首次造成伤害时，先对目标造成其当前体力33%的伤害（向上取整），并回复此值50%（向上取整）
+class 征讨 final : public PassiveSkillImpl<征讨> {
+public:
+	征讨() : PassiveSkillImpl<征讨>(
+		"征讨",
+		"锁定技，每局游戏首次造成伤害时，先对目标造成一次其当前生命值33%的伤害（向上取整），"
+		"并回复此伤害值50%的体力（向上取整）。",
+		1, true,
+		TriggerPlayer::anybody,
+		TriggerTime::damage_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ==================== 新增荒野乱斗角色技能（第五批） ====================
+// 共用口径：
+//  · 弃牌堆里每张牌记录「进堆来源玩家 id」（Card::discardSourceId），由 putCardToDiscardPile 写入，
+//    回收进牌堆时清空；【溯流】据此筛掉来源为自己的牌；
+//  · 额外回合由 GameLogic::requestExtraTurn() 在 phase_end 请求，下次 runTurn 不推进玩家、
+//    不重复触发 round_begin / 累计轮数；每轮一次由技能自己用 getRoundCount() 限制；
+//  · 专属牌【指虎】进弃牌堆或被其他角色获得时移出游戏，对象暂存于 指虎::destroyed，
+//    保证 putCardToDiscardPile 返回的引用与后续 use_card_end 不悬空。
+
+// ---------- 芬克斯【溯流】 ----------
+//溯流：每累计打出两张牌，可从弃牌堆选一张「非弃置进堆、来源非己」的牌获得，然后弃置一张牌
+class 溯流 final : public PassiveSkillImpl<溯流> {
+public:
+	std::size_t played{};   //本局累计打出的牌数（每满2张给一次机会）
+	溯流() : PassiveSkillImpl<溯流>(
+		"溯流",
+		"你每打出两张牌后，可从弃牌堆中选择一张不因弃置进入弃牌堆且来源不是你的牌获得，然后弃置一张牌。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); played = 0; }
+};
+
+
+
+// ==================== 新增荒野乱斗角色技能（第六批） ====================
+// 共用口径：
+//  · 「绝地技」= 每场（每局）限一次的限定技，文案保留「绝地技」；
+//  · 牌效果使其他角色摸牌：Effect::draw2/draw4 经 Player::draw 第4参数传入出牌者，
+//    draw_begin 的 Trigger.source 即「谁打出的牌」，【炮击】据此判断；
+//  · 「点数连续」指 0-9 中 n/n+1/n+2，不循环、不限颜色、三张点数互不相同；
+//  · 【狙击】用非锁定被动技实现「可选择发动」，发动后 charging=true 使 filter 失效，
+//    五个自己的回合结算完成后恢复。
+
+// ---------- 波克【安可】 ----------
+//安可：锁定技，打出万能牌后本局【音波】回复值+1
+class 安可 final : public PassiveSkillImpl<安可> {
+public:
+	安可() : PassiveSkillImpl<安可>(
+		"安可",
+		"锁定技，你打出万能牌后，本局【音波】回复值+1。",
+		unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::use_card_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+// ---------- 邦尼【炮击】 ----------
+//炮击：因自己打出的【+2】/【+4】使其他角色摸牌时，可改为造成原摸牌数点伤害，然后其摸一张牌
+class 炮击 final : public PassiveSkillImpl<炮击> {
+public:
+	bool triple{};   //【发射】后本场改为三次伤害
+	炮击() : PassiveSkillImpl<炮击>(
+		"炮击",
+		"你因牌的效果使其他角色摸牌时，可改为对其造成原摸牌数点伤害，然后其摸一张牌。",
+		unlimited, true,
+		TriggerPlayer::anybody,
+		TriggerTime::draw_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override { PassiveSkill::reset(); triple = false; }
+};
+
+// ---------- 佩佩【狙击】 ----------
+//狙击_记录：隐藏子技能，回合开始时记录本回合是否被封禁
+class 狙击_记录 final : public PassiveSkillImpl<狙击_记录> {
+public:
+	狙击_记录() : PassiveSkillImpl<狙击_记录>(
+		"狙击_记录", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//狙击_结算：隐藏子技能，回合结束时累计/中断连续五回合出牌
+class 狙击_结算 final : public PassiveSkillImpl<狙击_结算> {
+public:
+	狙击_结算() : PassiveSkillImpl<狙击_结算>(
+		"狙击_结算", "", unlimited, true,
+		TriggerPlayer::self,
+		TriggerTime::phase_end
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+};
+
+//狙击：回合开始可选择发动，发动后失效，五个自己回合均出过牌则造成15点伤害
+class 狙击 final : public PassiveSkillImpl<狙击> {
+public:
+	bool charging{};          //蓄力中（此技能失效）
+	std::size_t remaining{};  //还需达标的回合数
+	bool bannedThisTurn{};    //本回合是否被封禁
+	狙击() : PassiveSkillImpl<狙击>(
+		"狙击",
+		"回合开始时，你可发动此技能且此技能失效至触发。\n"
+		"你的下五个回合内（包含本回合）若均出过牌，则可选择一名其他角色，对其造成15点伤害。",
+		unlimited, false,
+		TriggerPlayer::self,
+		TriggerTime::phase_begin,
+		狙击_记录::make(),
+		狙击_结算::make()
+	) {}
+	bool filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const override;
+	bool content(GameLogic& game, Player& carrier, Trigger& trigger) override;
+	void reset() override {
+		PassiveSkill::reset();
+		charging = false;
+		remaining = 0;
+		bannedThisTurn = false;
+	}
+};

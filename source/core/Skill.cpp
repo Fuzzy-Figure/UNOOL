@@ -115,9 +115,10 @@ bool PassiveSkill::matchTrigger(const TriggerTime& currentTriggerTime,
 	return triggerTime == currentTriggerTime && (
 		triggerTime == TriggerTime::game_begin ||
 		triggerTime == TriggerTime::game_end ||
+		triggerTime == TriggerTime::before_deal ||
 		triggerPlayer == TriggerPlayer::anybody ||
-		(triggerPlayer == TriggerPlayer::self && carrier.getId() == trigger.getPlayer().getId()) ||
-		(triggerPlayer == TriggerPlayer::others && carrier.getId() != trigger.getPlayer().getId())
+		(triggerPlayer == TriggerPlayer::self && carrier == trigger.getPlayer()) ||
+		(triggerPlayer == TriggerPlayer::others && carrier != trigger.getPlayer())
 		);
 }
 

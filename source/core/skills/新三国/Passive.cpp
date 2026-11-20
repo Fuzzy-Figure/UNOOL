@@ -156,7 +156,7 @@ bool 大盏::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 
 bool 连营::filter(const GameLogic& game, const Player& carrier, const Trigger& trigger) const {
 	if (!trigger.hasPlayer() || !trigger.hasCards()) return false;
-	if (carrier.getId() != trigger.getPlayer().getId()) return false;
+	if (carrier != trigger.getPlayer()) return false;
 	const Card& c = trigger.getCard();
 	Card::Type type = c.getType();
 	if (triggered.count(type)) return false;  //该类别已触发过
