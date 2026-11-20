@@ -93,6 +93,9 @@
     <ClInclude Include="..\..\header\protocol\GameState.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\protocol\MessageCodec.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\protocol\MessageType.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>

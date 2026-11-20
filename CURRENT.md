@@ -24,6 +24,7 @@
 | P0-2 合并 Client | 已落地 | 删除 Client2，保留单一 `Client` 工程；玩家座位由服务端分配 |
 | P0-3 清理僵尸 | 已落地 | 移除 Win32 配置与 slnx 的 x86；`ICommands.h` / 占位库 / `reconnect()` / `setCredentials()` 已不存在；`.slnLaunch.user` 已忽略 |
 | P1-1 协议版本握手 | 已落地 | `MessageType` 改 `enum class uint16` + 显式分段编号（命令 1xx / 事件 2xx / 心跳 901）；`kProtocolVersion=2`；登录 / 注册包首字段带版本，不匹配返回可读拒绝 |
+| P1-2 序列化收敛 | 已落地 | `header/protocol/MessageCodec.h` + `source/protocol/MessageCodec.cpp`：游戏态消息（ConnectionInfo / GameStart / GameEnd / GameState / CharInfo / Choice / PointerUpdate / Heartbeat / ClientInput / ShopPurchase / ShopResult / CheckinResponse）统一成对 make/parse；Socket / ClientApp / PacketDispatcher 手写包全部改走 Codec；Tests 工程加 11 项 round-trip 单测；`header/core` 闭包无第三方头 |
 | P2-1 密码哈希 | 已落地 | salt + PBKDF2-HMAC-SHA256（12 万次，纯标准库实现于 `header/core/Crypto.h`）；落盘无明文；旧明文格式给出重置提示 |
 | P2-2 许可证 | 已落地 | 根目录 MIT `LICENSE` + `THIRD_PARTY_NOTICES.md` |
 | P2-3 配置外置 | 已落地 | 客户端 IP / 端口 / 存档路径支持命令行与环境变量覆盖；8888 / 14341 默认值不变 |
@@ -34,10 +35,9 @@
 
 ## 进行中 / 未完成
 
-- **P1-2 序列化收敛**：`Socket.cpp` 仍有约 20+ 处手写包，尚未统一为每种消息一对 `serialize` / `deserialize`。
 - **P1-3 收包模型显式化**：`peekMessageType()` 隐式跨阶段留包、迭代器式 `PacketDispatcher`、心跳 / 3 秒超时散落 Scene 与 `run()`，尚未收敛为连接状态机。
 - **P1-4 Scene 纯 View 化**：`LoginScene` / `ShopScene` 仍含 `sf::Packet` / `json` 符号；`skillsCache` / `itemPresentationCache` 仍是进程级 static；尚无 fake gateway headless 测试。
-- **P3-5 测试网（起点已建，待扩展）**：已有 `Projects/Tests` 零依赖单测工程，23 个断言覆盖 Crypto / 协议版本 / 消息方向 / 积分查表；冻结区（牌堆 / 出牌 / 技能顺序 / 摸牌来源 / 生命上限）与协议 round-trip、两个 Scene 的 headless 测试尚未补。
+- **P3-5 测试网（起点已建，待扩展）**：`Projects/Tests` 单测工程，23 个纯逻辑断言（Crypto / 协议版本 / 消息方向 / 积分查表）+ P1-2 新增 11 组 MessageCodec round-trip（需链接 SFML，已在 Tests 工程配置）；冻结区（牌堆 / 出牌 / 技能顺序 / 摸牌来源 / 生命上限）与两个 Scene 的 headless 测试尚未补。
 - **P3-6 Release 产物**：`tools/make_release.py` 免安装打包脚本已就位；实际 zip（需编译后）、运行截图（需实机截屏）、版本 tag 尚未产出。
 
 ## 不可丢的玩法语义
@@ -49,4 +49,4 @@
 ## 待办口径
 
 - 编译验证：Arch-C 改动尚未在 VS 中做 Debug / Release x64 Rebuild，需在交付后由用户本地确认。
-- P1-2 / P1-3 / P1-4 为相互耦合的深度重构，按用户决策暂停，待后续单独排期。
+- P1-3 / P1-4 为相互耦合的深度重构，P1-2 已落地，剩余两项待后续排期。

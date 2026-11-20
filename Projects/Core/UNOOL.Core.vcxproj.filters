@@ -183,6 +183,9 @@
     <ClCompile Include="..\..\source\protocol\GameState.cpp">
       <Filter>源文件\protocol</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\protocol\MessageCodec.cpp">
+      <Filter>源文件\protocol</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\protocol\ShopProtocol.cpp">
       <Filter>源文件\protocol</Filter>
     </ClCompile>
@@ -337,6 +340,9 @@
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\GameState.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\protocol\MessageCodec.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\MessageType.h">

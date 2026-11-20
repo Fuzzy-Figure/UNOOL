@@ -11,6 +11,7 @@
 #include "shell/JsonConfig.h"
 #include "AccountProtocol.h"
 #include "ShopProtocol.h"
+#include "MessageCodec.h"
 #include "core/IDecisionPort.h"
 #include <SFML/Network.hpp>
 #include "ShopData.h"
@@ -28,65 +29,23 @@
 // 仅按用户 46.5 口径③B 删除 gamePhase 中两支只 println + TODO 的商城死分支
 // （MessageType::ShopData / ShopResult），这两支原本不写回任何状态、不发任何包。
 
-// 解析 Choice 包并更新渲染器
+// 解析 Choice 包并更新渲染器（序列化统一走 MessageCodec）。
 static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
-	std::string title;
-	packet >> title;
-
-	std::size_t optionCount;
-	packet >> optionCount;
-	std::vector<std::string> options;
-	for (std::size_t i = 0; i < optionCount; ++i) {
-		std::string optionStr;
-		packet >> optionStr;
-		options.push_back(optionStr);
-	}
-
-	bool forced;
-	packet >> forced;
-
-	std::string errorMsg;
-	packet >> errorMsg;
-
-	bool hasTimeout;
-	packet >> hasTimeout;
-	std::optional<std::size_t> timeoutMs;
-	if (hasTimeout) {
-		std::size_t timeoutValue;
-		packet >> timeoutValue;
-		timeoutMs = timeoutValue;
-	}
-
-	std::size_t currentPage;
-	packet >> currentPage;
-	std::size_t totalPages;
-	packet >> totalPages;
-
-	//BP 预览元数据追加在 Choice 包尾部；旧服务端没有该字段时读失败即按空处理。
-	std::vector<unool::core::ChoiceOptionMeta> optionMeta;
-	std::size_t metaCount = 0;
-	if (packet >> metaCount) {
-		optionMeta.reserve(metaCount);
-		for (std::size_t i = 0; i < metaCount; ++i) {
-			unool::core::ChoiceOptionMeta meta;
-			if (!(packet >> meta.characterName >> meta.level >> meta.hp >> meta.skinName >> meta.imagePath)) break;
-			optionMeta.push_back(std::move(meta));
-		}
-	}
-
-	if (title.empty() && options.empty()) {
+	auto parsed = unool::protocol::parseChoice(packet);
+	if (!parsed) return;
+	if (parsed->title.empty() && parsed->options.empty()) {
 		renderer.clearChoicePrompt();
 	}
 	else {
 		GameRenderer::Choice prompt;
-		prompt.title = title;
-		prompt.options = options;
-		prompt.forced = forced;
-		prompt.errorMsg = errorMsg;
-		prompt.timeoutMs = timeoutMs;
-		prompt.currentPage = currentPage;
-		prompt.totalPages = totalPages;
-		prompt.optionMeta = std::move(optionMeta);
+		prompt.title = parsed->title;
+		prompt.options = std::move(parsed->options);
+		prompt.forced = parsed->forced;
+		prompt.errorMsg = parsed->errorMsg;
+		prompt.timeoutMs = parsed->timeoutMs;
+		prompt.currentPage = parsed->currentPage;
+		prompt.totalPages = parsed->totalPages;
+		prompt.optionMeta = std::move(parsed->optionMeta);
 		renderer.setChoicePrompt(prompt);
 	}
 }
@@ -115,9 +74,8 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 
 			switch (mt) {
 				case MessageType::ConnectionInfo: {
-					std::size_t playerId;
-					if (packet >> playerId) {
-						net.setPlayerId(playerId);
+					if (auto data = unool::protocol::parseConnectionInfo(packet)) {
+						net.setPlayerId(data->playerId);
 						std::println("{} 分配到玩家：{}", titleBrackets, net.getUsername());
 					}
 					break;
@@ -127,34 +85,30 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					break;
 				case MessageType::GameState: {
 					GameState state;
-					packet >> state;
-					renderer.updateState(state);
+					if (unool::protocol::parseGameState(packet, state)) renderer.updateState(state);
 					break;
 				}
 				case MessageType::PointerUpdate: {
-					std::size_t playerId, selectedIndex;
-					packet >> playerId >> selectedIndex;
-					renderer.updatePointer(playerId, selectedIndex);
+					if (auto data = unool::protocol::parsePointerUpdate(packet)) {
+						renderer.updatePointer(data->playerId, data->selectedIndex);
+					}
 					break;
 				}
 				case MessageType::CharInfo: {
 					CharInfo info;
-					packet >> info;
-					renderer.updateCharInfo(info.playerIndex, info.fullText);
+					if (unool::protocol::parseCharInfo(packet, info)) {
+						renderer.updateCharInfo(info.playerIndex, info.fullText);
+					}
 					break;
 				}
 				case MessageType::GameEnd: {
-					bool hasWinner;
-					if (packet >> hasWinner) {
-						if (hasWinner) {
-							std::size_t winnerId;
-							std::string winnerName;
-							packet >> winnerId >> winnerName;
-							if (const std::string charName = renderer.getCharacterName(winnerId); !charName.empty()) {
-								std::println("{} 游戏结束，{}（{}）获胜！", titleBrackets, winnerName, charName);
+					if (auto result = unool::protocol::parseGameEnd(packet)) {
+						if (result->hasWinner) {
+							if (const std::string charName = renderer.getCharacterName(result->winnerId); !charName.empty()) {
+								std::println("{} 游戏结束，{}（{}）获胜！", titleBrackets, result->winnerName, charName);
 							}
 							else {
-								std::println("{} 游戏结束，{}获胜！", titleBrackets, winnerName);
+								std::println("{} 游戏结束，{}获胜！", titleBrackets, result->winnerName);
 							}
 						}
 						else {
@@ -172,9 +126,8 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					break;
 				case MessageType::SkillInfoResponse: {
 					//BP 预览的技能全文：服务端按角色名生成，写入渲染器缓存供面板显示
-					std::string jsonStr;
-					if (packet >> jsonStr) {
-						if (auto parsed = unool::protocol::parseSkillInfoResponse(jsonStr)) {
+					if (auto strPayload = unool::protocol::parseStringPayload(packet)) {
+						if (auto parsed = unool::protocol::parseSkillInfoResponse(strPayload->text)) {
 							for (const auto& [name, text] : parsed->skills) {
 								renderer.setSkillInfo(name, text);
 							}

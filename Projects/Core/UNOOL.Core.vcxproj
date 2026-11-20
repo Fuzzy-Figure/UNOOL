@@ -161,6 +161,11 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\protocol\MessageCodec.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\protocol\ShopProtocol.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
@@ -235,6 +240,7 @@
     <ClInclude Include="..\..\header\protocol\AccountEvent.h" />
     <ClInclude Include="..\..\header\protocol\AccountProtocol.h" />
     <ClInclude Include="..\..\header\protocol\GameState.h" />
+    <ClInclude Include="..\..\header\protocol\MessageCodec.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
     <ClInclude Include="..\..\header\protocol\Protocol.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />

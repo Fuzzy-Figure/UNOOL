@@ -3,6 +3,7 @@
 #include "Crypto.h"
 #include "protocol/Protocol.h"
 #include "utils.h"
+#include "test_codec.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -89,6 +90,11 @@ int main() {
 	testProtocolVersion();
 	testMessageDirection();
 	testScoreboard();
+
+	// Arch-C P1-2：MessageCodec 成对序列化 round-trip（依赖 SFML，VS Tests 工程运行）。
+	const auto codec = runCodecRoundTripTests();
+	g_pass += codec.passed;
+	g_fail += codec.failed;
 
 	std::cout << "单测结果: " << g_pass << " 通过, " << g_fail << " 失败\n";
 	return g_fail == 0 ? 0 : 1;

@@ -1,6 +1,7 @@
 #include "PacketDispatcher.h"
 
 #include "IClientGateway.h"
+#include "MessageCodec.h"
 #include <SFML/Network.hpp>
 #include <utility>
 
@@ -11,8 +12,7 @@
 namespace unool::shell {
 
 	void PacketDispatcher::replyHeartbeat(IClientGateway& net) {
-		sf::Packet hb;
-		hb << static_cast<int>(MessageType::Heartbeat);
+		sf::Packet hb = unool::protocol::makeHeartbeat();
 		net.send(hb);
 	}
 
