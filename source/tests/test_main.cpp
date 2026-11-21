@@ -98,16 +98,21 @@ int main() {
 	testMessageDirection(total);
 	testScoreboard(total);
 
-	// 各测试文件的入口，按相加次序 = 执行次序汇总。
-	total = total
-	      + runCodecRoundTripTests()   // P1-2 MessageCodec 成对序列化 round-trip
-	      + runConnectionStateTests()  // P1-3 ConnectionState 入站队列 / 心跳 / 断线
-	      + runLoginViewModelTests()   // P1-4 登录状态机（headless）
-	      + runShopViewModelTests()    // P1-4 商城状态机 / 导航 / 购买（headless）
-	      + runProtocolRoundTripTests() // P3-5 账号 / 商城协议 round-trip
-	      + runRulesTests()            // P3-5 冻结区玩法规则
-	      + runUserDbTests()           // P3-5 账号存档 / 口令哈希 / 积分 / 购买 / 签到
-	      + runGameLogicTests();       // P3-5 GameLogic 测试台（fake-port）
+	// 各测试文件的入口，逐句累加 = 严格按此顺序执行。
+	//
+	// 不要写成 total = total + a() + b() + ... ：重载的 operator+ 是函数调用，
+	// 两个实参的求值顺序是 unspecified，之前就靠这条链把 runGameLogicTests()
+	// 排到了最前面——它装配的 FakeWorld 是栈对象，返回后 services() 里留着
+	// 悬空引用，随后 runUserDbTests() 调 checkin / 解锁 S 档取随机数时读到
+	// 已销毁对象（调试器里 services().random = 0xFFFFFFFFFFFFFFFF）。
+	total = total + runCodecRoundTripTests();    // P1-2 MessageCodec 成对序列化 round-trip
+	total = total + runConnectionStateTests();   // P1-3 ConnectionState 入站队列 / 心跳 / 断线
+	total = total + runLoginViewModelTests();    // P1-4 登录状态机（headless）
+	total = total + runShopViewModelTests();     // P1-4 商城状态机 / 导航 / 购买（headless）
+	total = total + runProtocolRoundTripTests(); // P3-5 账号 / 商城协议 round-trip
+	total = total + runRulesTests();             // P3-5 冻结区玩法规则
+	total = total + runUserDbTests();            // P3-5 账号存档 / 口令哈希 / 积分 / 购买 / 签到
+	total = total + runGameLogicTests();         // P3-5 GameLogic 测试台（fake-port）
 
 	std::println("单测结果: {} 通过, {} 失败", total.passed, total.failed);
 	return total.allPassed() ? 0 : 1;

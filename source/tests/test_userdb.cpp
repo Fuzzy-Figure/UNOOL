@@ -2,6 +2,7 @@
 
 #include "Character.h"
 #include "UserDB.h"
+#include "test_fakes.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -291,6 +292,13 @@ namespace {
 } // namespace
 
 TestResult runUserDbTests() {
+	// checkin / checkAndUnlockSRank 经 utils 的随机门面调 core::services().random。
+	// Tests 没有组合根（main() 里没 installServices），不装配就会撞到未安装的槽位。
+	// 用函数内 static 的 FakeWorld：装配的引用必须活得比任何一次 services() 调用久，
+	// 换成栈对象会在本函数返回后留下悬空引用。
+	static unool::tests::FakeWorld world;
+	unool::core::installServices(world.services);
+
 	TestResult r;
 	r.section("db.register", testRegister);
 	r.section("db.login", testLogin);

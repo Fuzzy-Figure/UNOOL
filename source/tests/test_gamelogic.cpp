@@ -216,8 +216,10 @@ void testCanUse(TestResult& r, unool::tests::FakeWorld& world) {
 } // namespace
 
 unool::tests::TestResult runGameLogicTests() {
-	unool::tests::FakeWorld world;
 	// Character / utils 的静态工具与随机门面都经服务定位器取端口，测试台必须先装配。
+	// 用函数内 static：installServices 保存的是引用，装配对象的寿命必须覆盖
+	// 之后任何一次 services() 调用；栈对象在函数返回后就成了悬空引用。
+	static unool::tests::FakeWorld world;
 	unool::core::installServices(world.services);
 
 	unool::tests::TestResult r;
