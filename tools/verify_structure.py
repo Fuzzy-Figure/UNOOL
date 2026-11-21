@@ -135,20 +135,24 @@ def expand_headers(pr):
 
 
 def cpp_item_block(rel, pch_create, pch_header, extra=None):
-    lines = ['    <ClCompile Include="%s">' % rel]
+    meta = {}
     if pch_create is None:
         # 无 PCH 工程（Tests）：每个单元显式 NotUsing，避免继承到默认的 Use。
-        lines.append('      <PrecompiledHeader>NotUsing</PrecompiledHeader>')
+        meta['PrecompiledHeader'] = 'NotUsing'
     elif norm(rel) == norm(pch_create):
-        lines.append('      <PrecompiledHeader>Create</PrecompiledHeader>')
-        lines.append('      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>' % pch_header)
+        meta['PrecompiledHeader'] = 'Create'
+        meta['PrecompiledHeaderFile'] = pch_header
     else:
-        lines.append('      <PrecompiledHeader>Use</PrecompiledHeader>')
-        lines.append('      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>' % pch_header)
-        lines.append('      <ForcedIncludeFiles>%s;%%(ForcedIncludeFiles)</ForcedIncludeFiles>' % pch_header)
+        meta['PrecompiledHeader'] = 'Use'
+        meta['PrecompiledHeaderFile'] = pch_header
+        meta['ForcedIncludeFiles'] = '%s;%%(ForcedIncludeFiles)' % pch_header
     # 按文件覆盖的编译选项（manifest 的 compile.perFileOptions）：
     # 条目上的元数据优先于 ItemDefinitionGroup，只影响这一个编译单元。
+    # 同名键覆盖（如 PrecompiledHeader=NotUsing 覆盖 Use）；空串表示清掉继承值。
     for key, value in (extra or {}).items():
+        meta[key] = value
+    lines = ['    <ClCompile Include="%s">' % rel]
+    for key, value in meta.items():
         lines.append('      <%s>%s</%s>' % (key, value, key))
     lines.append('    </ClCompile>')
     return '\n'.join(lines)

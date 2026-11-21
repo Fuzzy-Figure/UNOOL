@@ -39,6 +39,8 @@
         ],
         "perFileOptions": {
           "source/core/Crypto.cpp": {
+            "PrecompiledHeader": "NotUsing",
+            "ForcedIncludeFiles": "",
             "Optimization": "MaxSpeed",
             "BasicRuntimeChecks": "Default"
           }
