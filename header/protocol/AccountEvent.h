@@ -24,7 +24,7 @@ namespace unool::protocol {
 		std::size_t pid{};
 	};
 
-	// packet 已由 PacketDispatcher 消费掉开头的 int 消息号。
+	// packet 已由 ConnectionState 消费掉开头的 int 消息号。
 	// 解析失败返回 std::nullopt（与原 View 的「响应解析失败」分支一一对应）；
 	// CheckinResponse 与原 View 一致、不检查 >> 结果，恒返回值对象。
 	std::optional<AccountEvent> parseAccountEvent(MessageType type, sf::Packet& packet);

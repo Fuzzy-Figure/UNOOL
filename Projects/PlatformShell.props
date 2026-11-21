@@ -5,7 +5,7 @@
 
     平台能力（可执行文件路径 / 编码转换）的接口在 header/platform/Platform.h，
     共享编译单元 UNOOL.Core 只调用不实现；具体平台的实现由本清单登记，
-    在 3 个 exe 工程中各编译一次，由链接器解析 Core.lib 中的未定义符号。
+    在 3 个 exe 工程（Server / Client / Tests）中各编译一次，由链接器解析 Core.lib 中的未定义符号。
 
     换平台时只需提供 source/platform/<平台>/ 下的另一份实现，
     并让对应外壳工程导入替换后的清单；Core 与规则内核无需重编译。

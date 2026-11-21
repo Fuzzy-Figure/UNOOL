@@ -355,14 +355,18 @@ std::unique_ptr<Card> Cards::takeCardByIndex(std::size_t index) {
 	return card;
 }
 
+// number 是无符号的，直接写 number - 1 在 number == 0 时会下溢成 SIZE_MAX，
+// 变成死循环 + 无限分配；先挡掉 0 张，循环也从 1 起算，语义一目了然。
 void Cards::push_front(std::unique_ptr<Card> card, const std::size_t number) {
-	for (std::size_t i = 0; i < number - 1; ++i) {
+	if (number == 0) return;
+	for (std::size_t i = 1; i < number; ++i) {
 		cards.push_front(Card::make(card));
 	}
 	cards.push_front(std::move(card));
 }
 void Cards::push_back(std::unique_ptr<Card> card, const std::size_t number) {
-	for (std::size_t i = 0; i < number - 1; ++i) {
+	if (number == 0) return;
+	for (std::size_t i = 1; i < number; ++i) {
 		cards.push_back(Card::make(card));
 	}
 	cards.push_back(std::move(card));

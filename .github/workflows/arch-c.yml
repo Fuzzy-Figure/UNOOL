@@ -1,0 +1,78 @@
+name: Arch-C CI
+
+on:
+  push:
+    branches: [main, '架构C', arch-c]
+  pull_request:
+    branches: [main]
+
+jobs:
+  structure-and-static:
+    name: 结构 / 编码 / 统计校验
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 保留 CRLF：结构校验会检查行尾约定
+          config: core.autocrlf=false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 工程文件无漂移（--check）
+        run: python tools/verify_structure.py --check
+
+      - name: 角色 / 技能统计为最新
+        run: python tools/gen_stats.py --check
+
+      - name: git diff --check（空白错误）
+        run: git diff --check
+
+      - name: UTF-8 / CRLF / BOM 约定
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = Get-ChildItem -Recurse -File -Include *.h,*.cpp,*.vcxproj,*.filters,*.props,*.json |
+                   Where-Object { $_.FullName -notmatch '\\dep\\' -and $_.FullName -notmatch '\\x64\\' -and $_.FullName -notmatch '\.git\' }
+          $bad = @()
+          foreach ($f in $files) {
+            $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+            if ($bytes.Length -eq 0) { continue }
+            # UTF-8 合法性（有 BOM 则去 BOM 后校验）
+            $off = 0
+            if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { $off = 3 }
+            $enc = New-Object System.Text.UTF8Encoding($false, $true)
+            try { [void]$enc.GetString($bytes, $off, $bytes.Length - $off) } catch { $bad += "$($f.FullName): 非 UTF-8"; continue }
+            # .vcxproj / 源码无 BOM；.filters 有 BOM；行尾统一 CRLF
+            $bom = $off -eq 3
+            if ($f.Extension -eq '.vcxproj' -and $bom) { $bad += "$($f.FullName): vcxproj 不应带 BOM" }
+            if ($f.Extension -eq '.filters' -and -not $bom) { $bad += "$($f.FullName): filters 应带 BOM" }
+            $text = [System.Text.Encoding]::UTF8.GetString($bytes, $off, $bytes.Length - $off)
+            $lf = [regex]::Matches($text, "(?<!`r)`n").Count
+            if ($lf -gt 0) { $bad += "$($f.FullName): 含 $lf 处裸 LF（应为 CRLF）" }
+          }
+          if ($bad.Count -gt 0) { $bad | ForEach-Object { Write-Error $_ }; exit 1 }
+          Write-Host "编码 / 行尾检查通过：$($files.Count) 个文件"
+
+  build:
+    name: x64 Debug / Release 构建
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          config: core.autocrlf=false
+
+      - name: 添加 MSBuild 到 PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: 还原 / 构建 Debug|x64
+        run: msbuild UNOOL.slnx /t:Build /p:Configuration=Debug /p:Platform=x64 /m /v:minimal
+
+      - name: 构建 Release|x64
+        run: msbuild UNOOL.slnx /t:Build /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+
+      - name: 运行单测（Tests）
+        run: |
+          msbuild Projects/Tests/Tests.vcxproj /t:Build /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+          & "x64/Release/Tests.exe"

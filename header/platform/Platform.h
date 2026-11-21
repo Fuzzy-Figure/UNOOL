@@ -2,10 +2,10 @@
 // B+ 平台接缝：由「外壳」（各 exe 工程）提供的少量进程级平台能力。
 //
 // 这是 UNOOL.Core 与操作系统之间唯一的显式边界：Core 内的所有共享编译单元
-// 只声明并调用这三个函数，不再 include <Windows.h>；具体平台的实现由
+// 只声明并调用这几个函数，不再 include <Windows.h>；具体平台的实现由
 // source/platform/<平台>/ 下的 .cpp 提供，并只在 exe 工程里编译一次。
-// 安卓端只需提供同签名的另一份实现（APK assets 根目录 / UTF 转换），
-// 无需改动或重编译规则内核。
+// 安卓端只需提供同签名的另一份实现（APK assets 根目录 / UTF 转换 / 控制台编码
+// 可空实现），无需改动或重编译规则内核。
 //
 // 声明只使用标准库类型，因此本头本身可在任何平台编译。
 #include <filesystem>
@@ -19,4 +19,8 @@ namespace unool::platform {
 
 	std::wstring toWide(const std::string& utf8);
 	std::string fromWide(const std::wstring& wide);
+
+	// 把控制台输入/输出代码页切到 UTF-8，让中文日志与断言名不被按 CP936 渲染。
+	// 必须在任何输出之前调用。无控制台概念的平台实现为空函数。
+	void setupConsoleUtf8();
 }

@@ -14,7 +14,7 @@ namespace sf { class Packet; }
 
 namespace unool::protocol {
 
-	// 解析服务器下发的商城数据 JSON。packet 已由 PacketDispatcher 消费开头 int 消息号，
+	// 解析服务器下发的商城数据 JSON。packet 已由 ConnectionState 消费开头 int 消息号，
 	// 此处取已读出的 json 字符串，与 View 原「if (packet >> jsonStr)」门控保持一致：
 	// 提取失败由调用方保持静默（与原行为一致），解析异常由调用方转「商城数据解析失败」。
 	std::optional<ShopData> parseShopData(const std::string& jsonStr);
@@ -25,6 +25,13 @@ namespace unool::protocol {
 	// 解析购买结果 JSON。提取失败由调用方转「购买结果解析失败」。
 	std::optional<ShopPurchaseResult> parseShopPurchaseResult(const std::string& jsonStr);
 
+	// Arch-C P1-4：Packet 级重载（packet 已消费消息号）。
+	// 内部完成「读 json 字符串 + 解析」，让 Scene 不再出现 jsonStr 符号。
+	// 提取失败或解析失败均返回 nullopt（坏包静默忽略，与原提取门控行为等价）。
+	std::optional<ShopData> parseShopData(sf::Packet& packet);
+	std::optional<SkillInfoResponseBody> parseSkillInfoResponse(sf::Packet& packet);
+	std::optional<ShopPurchaseResult> parseShopPurchaseResult(sf::Packet& packet);
+
 	// 构造购买请求 JSON 字符串（经 IClientGateway::sendShopPurchase 发送）。
 	// 覆盖 4 处手写 ShopPurchaseRequest + j.dump()（Request / Character / Skin / Item），
 	// 字段顺序与线上包体逐字一致。
@@ -34,7 +41,7 @@ namespace unool::protocol {
 	                                 const std::string& skinName);
 
 	// 构造技能描述请求 packet（经 IClientGateway::send 发送）。
-	// names 应为调用方已去重的角色名集合（pendingSkills 去重仍在 ShopScene）。
+	// names 应为调用方已去重的角色名集合（pending 去重在 ShopViewModel）。
 	sf::Packet makeSkillInfoRequestPacket(const std::vector<std::string>& names);
 
 }

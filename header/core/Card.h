@@ -345,6 +345,7 @@ public:
 #pragma endregion
 
 #pragma region 修改容器
+	// number 为 0 时不插入任何牌（no-op），不是下溢或异常。
 	void push_front(std::unique_ptr<Card> card, const std::size_t number = 1);
 	void push_back(std::unique_ptr<Card> card, const std::size_t number = 1);
 	[[nodiscard]] std::unique_ptr<Card> takeCardByIndex(const std::size_t index);

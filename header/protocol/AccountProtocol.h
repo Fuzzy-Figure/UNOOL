@@ -1,7 +1,9 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <optional>
 #include "MessageType.h"
+#include "Protocol.h"
 
 // 头文件自足化（第十四批）：协议声明只需 sf::Packet 的类型声明；完整定义由
 // 各 .cpp 显式包含 <SFML/Network.hpp>，写法与 header/core/Card.h 一致。
@@ -13,6 +15,8 @@ namespace unool::protocol {
 	// 全部由本层构造；消息号与字段顺序逐字不变。
 	sf::Packet makeRegisterRequest(const std::string& username, const std::string& password);
 	sf::Packet makeLoginRequest(const std::string& username, const std::string& password);
+	// 版本不匹配时的明确拒绝响应（ok=false + 可读原因），不进入任何业务分支。
+	sf::Packet makeVersionMismatchResponse();
 	sf::Packet makeCheckUsernameRequest(const std::string& username);
 	sf::Packet makeCheckinRequest();
 	sf::Packet makeReadyToPlay();
@@ -32,8 +36,14 @@ namespace unool::protocol {
 	struct AccountRequest {
 		std::string username;
 		std::string password;
+		bool versionMatches = true; // LoginRequest/RegisterRequest 首字段版本校验结果
 	};
-	std::optional<AccountRequest> parseAccountRequest(sf::Packet& packet);
+	// withVersion=true 时先读 uint32 版本字段（LoginRequest/RegisterRequest），
+	// false 时保持旧行为只读 username/password（CheckUsernameRequest 等）。
+	std::optional<AccountRequest> parseAccountRequest(sf::Packet& packet, bool withVersion = false);
+	// 从 LoginRequest/RegisterRequest 读取版本字段（包已消费消息号）。
+	// 返回 nullopt 表示包缺少版本字段（视为旧版本，应拒绝）。
+	std::optional<std::uint32_t> peekProtocolVersion(sf::Packet& packet);
 	std::optional<std::string> parseCheckUsernameRequest(sf::Packet& packet);
 
 	// 解析响应（客户端用）—— packet 已 >> 过 msgType

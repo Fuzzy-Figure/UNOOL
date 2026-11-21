@@ -9,7 +9,9 @@
 #include "Character.h"
 
 struct UserInfo {
-	std::string password;
+	// Arch-C P2-1：不再落盘明文口令，仅存随机盐与 PBKDF2-HMAC-SHA256 派生哈希（十六进制）。
+	std::string passwordHash;
+	std::string salt;
 	int points = 0;
 	int wins = 0;
 	int losses = 0;
@@ -21,7 +23,7 @@ struct UserInfo {
 	std::string checkinPrize3Date;     // 当日“双抽”奖项统计所属日期
 	int checkinPrize3Today = 0;        // 当日“双抽”奖项已触发次数（用于当日概率衰减）
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, password, points, wins, losses,
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(UserInfo, passwordHash, salt, points, wins, losses,
 												 ownedCharacters, items,
 												 lastCheckinDate, checkinStreak,
 												 checkinPrize3Date, checkinPrize3Today)

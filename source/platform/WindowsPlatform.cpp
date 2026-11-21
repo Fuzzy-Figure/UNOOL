@@ -2,7 +2,7 @@
 
 // B+ 平台接缝 · Windows 实现。
 //
-// 本单元只在 3 个 exe 工程（Client1 / Client2 / Server）里编译，不进 UNOOL.Core：
+// 本单元只在 3 个 exe 工程（Client / Server / Tests）里编译，不进 UNOOL.Core：
 // 静态库 Core.lib 中被 utils.cpp 引用的 unool::platform::* 符号由外壳解析。
 // 因此「Core 的任一共享编译单元都不含 Windows.h」这一安卓前置条件成立，
 // 而 Windows 侧实现与重构前 source/utils.cpp 中的代码逐字等价。
@@ -51,5 +51,12 @@ namespace unool::platform {
 		WideCharToMultiByte(CP_UTF8, 0, wide.c_str(), -1, &utf8[0], len, nullptr, nullptr);
 		utf8.pop_back();
 		return utf8;
+	}
+
+	void setupConsoleUtf8() {
+		// 原三处 exe 入口（ClientMain / ServerMain / Tests）各写一遍的两行，收拢到这里：
+		// 共享编译单元与测试入口不再 include <Windows.h>。
+		::SetConsoleCP(CP_UTF8);
+		::SetConsoleOutputCP(CP_UTF8);
 	}
 }

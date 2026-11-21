@@ -1,6 +1,6 @@
 #include "shell/ClientApp.h"
 
-#include "PacketDispatcher.h"
+#include "shell/ConnectionState.h"
 #include "GameRenderer.h"
 #include "LoginScene.h"
 #include "ShopScene.h"
@@ -11,89 +11,50 @@
 #include "shell/JsonConfig.h"
 #include "AccountProtocol.h"
 #include "ShopProtocol.h"
+#include "MessageCodec.h"
 #include "core/IDecisionPort.h"
 #include <SFML/Network.hpp>
 #include "ShopData.h"
-#include <Windows.h>
-#include <thread>
-#include <chrono>
 #include <string>
 #include <cstdlib>
 #include <format>
 #include <print>
 #include <utility>
 
+// MessageType 归 protocol 层；本单元既有全局 static 函数也有 unool::shell 段，
+// 这里统一做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
 // 阶段 4 · S1：以下两个函数从 source/ClientMain.cpp 逐字平移到组合根实现单元。
 // 函数体、case 顺序、心跳回复、键位映射与线上 ClientInput.key 字节均未改动；
 // 仅按用户 46.5 口径③B 删除 gamePhase 中两支只 println + TODO 的商城死分支
 // （MessageType::ShopData / ShopResult），这两支原本不写回任何状态、不发任何包。
 
-// 解析 Choice 包并更新渲染器
+// 解析 Choice 包并更新渲染器（序列化统一走 MessageCodec）。
 static void handleChoicePacket(sf::Packet& packet, GameRenderer& renderer) {
-	std::string title;
-	packet >> title;
-
-	std::size_t optionCount;
-	packet >> optionCount;
-	std::vector<std::string> options;
-	for (std::size_t i = 0; i < optionCount; ++i) {
-		std::string optionStr;
-		packet >> optionStr;
-		options.push_back(optionStr);
-	}
-
-	bool forced;
-	packet >> forced;
-
-	std::string errorMsg;
-	packet >> errorMsg;
-
-	bool hasTimeout;
-	packet >> hasTimeout;
-	std::optional<std::size_t> timeoutMs;
-	if (hasTimeout) {
-		std::size_t timeoutValue;
-		packet >> timeoutValue;
-		timeoutMs = timeoutValue;
-	}
-
-	std::size_t currentPage;
-	packet >> currentPage;
-	std::size_t totalPages;
-	packet >> totalPages;
-
-	//BP 预览元数据追加在 Choice 包尾部；旧服务端没有该字段时读失败即按空处理。
-	std::vector<unool::core::ChoiceOptionMeta> optionMeta;
-	std::size_t metaCount = 0;
-	if (packet >> metaCount) {
-		optionMeta.reserve(metaCount);
-		for (std::size_t i = 0; i < metaCount; ++i) {
-			unool::core::ChoiceOptionMeta meta;
-			if (!(packet >> meta.characterName >> meta.level >> meta.hp >> meta.skinName >> meta.imagePath)) break;
-			optionMeta.push_back(std::move(meta));
-		}
-	}
-
-	if (title.empty() && options.empty()) {
+	auto parsed = unool::protocol::parseChoice(packet);
+	if (!parsed) return;
+	if (parsed->title.empty() && parsed->options.empty()) {
 		renderer.clearChoicePrompt();
 	}
 	else {
 		GameRenderer::Choice prompt;
-		prompt.title = title;
-		prompt.options = options;
-		prompt.forced = forced;
-		prompt.errorMsg = errorMsg;
-		prompt.timeoutMs = timeoutMs;
-		prompt.currentPage = currentPage;
-		prompt.totalPages = totalPages;
-		prompt.optionMeta = std::move(optionMeta);
+		prompt.title = parsed->title;
+		prompt.options = std::move(parsed->options);
+		prompt.forced = parsed->forced;
+		prompt.errorMsg = parsed->errorMsg;
+		prompt.timeoutMs = parsed->timeoutMs;
+		prompt.currentPage = parsed->currentPage;
+		prompt.totalPages = parsed->totalPages;
+		prompt.optionMeta = std::move(parsed->optionMeta);
 		renderer.setChoicePrompt(prompt);
 	}
 }
 
 // 游戏主循环
-static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::string& titleBrackets) {
-	renderer.setLocalPlayerId(net.getPlayerId());
+static void gamePhase(ClientNetwork& net, unool::shell::ConnectionState& conn,
+					  GameRenderer& renderer, const std::string& titleBrackets) {
+	renderer.setLocalPlayerId(conn.getPlayerId());
 	sf::Clock clock;
 	unool::shell::InputAdapter input(net, renderer);
 	while (renderer.windowIsOpen()) {
@@ -101,24 +62,24 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 
 		if (!input.pollAndDispatch()) return;
 
-		net.update();
+		// P1-3：连接状态机单一时序点，心跳回复/入站队列由 conn 统一驱动。
+		conn.pump();
 
-		if (!net.isConnected()) {
+		if (!conn.isConnected()) {
 			std::println("{} 与服务器断开连接，退出游戏", titleBrackets);
 			break;
 		}
 
 		//每帧消化所有积压包，防止服务器多包推送时延迟累积
-		// 阶段 4 · S2：DrainAll 模式，心跳回复由 PacketDispatcher 统一处理。
-		while (auto next = unool::shell::PacketDispatcher::next(net)) {
+		// P1-3：DrainAll 由 conn.takeAny() 提供，心跳已由 pump 内部回复。
+		while (auto next = conn.takeAny()) {
 			auto [mt, packet] = std::move(*next);
 
 			switch (mt) {
 				case MessageType::ConnectionInfo: {
-					std::size_t playerId;
-					if (packet >> playerId) {
-						net.setPlayerId(playerId);
-						std::println("{} 分配到玩家：{}", titleBrackets, net.getUsername());
+					if (auto data = unool::protocol::parseConnectionInfo(packet)) {
+						conn.setPlayerId(data->playerId);
+						std::println("{} 分配到玩家：{}", titleBrackets, conn.getUsername());
 					}
 					break;
 				}
@@ -127,34 +88,30 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					break;
 				case MessageType::GameState: {
 					GameState state;
-					packet >> state;
-					renderer.updateState(state);
+					if (unool::protocol::parseGameState(packet, state)) renderer.updateState(state);
 					break;
 				}
 				case MessageType::PointerUpdate: {
-					std::size_t playerId, selectedIndex;
-					packet >> playerId >> selectedIndex;
-					renderer.updatePointer(playerId, selectedIndex);
+					if (auto data = unool::protocol::parsePointerUpdate(packet)) {
+						renderer.updatePointer(data->playerId, data->selectedIndex);
+					}
 					break;
 				}
 				case MessageType::CharInfo: {
 					CharInfo info;
-					packet >> info;
-					renderer.updateCharInfo(info.playerIndex, info.fullText);
+					if (unool::protocol::parseCharInfo(packet, info)) {
+						renderer.updateCharInfo(info.playerIndex, info.fullText);
+					}
 					break;
 				}
 				case MessageType::GameEnd: {
-					bool hasWinner;
-					if (packet >> hasWinner) {
-						if (hasWinner) {
-							std::size_t winnerId;
-							std::string winnerName;
-							packet >> winnerId >> winnerName;
-							if (const std::string charName = renderer.getCharacterName(winnerId); !charName.empty()) {
-								std::println("{} 游戏结束，{}（{}）获胜！", titleBrackets, winnerName, charName);
+					if (auto result = unool::protocol::parseGameEnd(packet)) {
+						if (result->hasWinner) {
+							if (const std::string charName = renderer.getCharacterName(result->winnerId); !charName.empty()) {
+								std::println("{} 游戏结束，{}（{}）获胜！", titleBrackets, result->winnerName, charName);
 							}
 							else {
-								std::println("{} 游戏结束，{}获胜！", titleBrackets, winnerName);
+								std::println("{} 游戏结束，{}获胜！", titleBrackets, result->winnerName);
 							}
 						}
 						else {
@@ -172,9 +129,8 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 					break;
 				case MessageType::SkillInfoResponse: {
 					//BP 预览的技能全文：服务端按角色名生成，写入渲染器缓存供面板显示
-					std::string jsonStr;
-					if (packet >> jsonStr) {
-						if (auto parsed = unool::protocol::parseSkillInfoResponse(jsonStr)) {
+					if (auto strPayload = unool::protocol::parseStringPayload(packet)) {
+						if (auto parsed = unool::protocol::parseSkillInfoResponse(strPayload->text)) {
 							for (const auto& [name, text] : parsed->skills) {
 								renderer.setSkillInfo(name, text);
 							}
@@ -193,7 +149,7 @@ static void gamePhase(ClientNetwork& net, GameRenderer& renderer, const std::str
 		//BP 预览：把本次候选项中缺失的技能描述批量取回（服务端内联处理，不进输入队列）
 		if (auto names = renderer.takePendingSkillNames(); !names.empty()) {
 			sf::Packet req = unool::protocol::makeSkillInfoRequestPacket(names);
-			net.send(req);
+			conn.send(req);
 		}
 
 		renderer.display();
@@ -210,19 +166,19 @@ namespace unool::shell {
 		// 构造参数在原 renderer / net / username 之外多一个匹配提示状态引用。
 		class ShopOpener final : public IShopOpener {
 		public:
-			ShopOpener(GameRenderer& renderer, ClientNetwork& net)
-				: renderer_{ renderer }, net_{ net } {}
+			ShopOpener(GameRenderer& renderer, unool::shell::ConnectionState& conn,
+			           unool::shell::ShopPresentationCache& cache)
+				: renderer_{ renderer }, conn_{ conn }, cache_{ cache } {}
 
 			void openShop(const std::string& username, MatchNoticeState& notice) override {
-				// 把大厅持有的匹配提示状态传给商城：商城期间收到的匹配事件
-				// 由 ShopScene 就地写回，退出商城后大厅显示的就是最新状态。
-				ShopScene shop(renderer_, net_, username, notice);
+				ShopScene shop(renderer_, conn_, username, notice, cache_);
 				shop.run();
 			}
 
 		private:
 			GameRenderer& renderer_;
-			ClientNetwork& net_;
+			unool::shell::ConnectionState& conn_;
+			unool::shell::ShopPresentationCache& cache_;
 		};
 
 	} // namespace
@@ -244,12 +200,18 @@ namespace unool::shell {
 		GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle_));
 		GameRenderer renderer(rendererConfig);
 
+		// P1-3：单一连接状态机在此构造，Scene 与 gamePhase 共用同一个实例，
+		// 跨阶段留包（GameStart）由它的显式队列承载。
+		unool::shell::ConnectionState conn(net_);
+		// P1-4：商城展示缓存由组合根持有，跨多次进入商城保留（原 static 语义）。
+		unool::shell::ShopPresentationCache shopCache;
+
 		// S3a：商城由组合根经 IShopOpener 打开；只在登录场景之前多一个局部对象，
 		// 「连接 → 渲染器 → 登录场景 → 游戏阶段」的线性顺序不变。
-		ShopOpener shopOpener(renderer, net_);
+		ShopOpener shopOpener(renderer, conn, shopCache);
 
 		// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
-		LoginScene login(renderer, net_, shopOpener, titleBrackets_);
+		LoginScene login(renderer, conn, shopOpener, titleBrackets_);
 		auto session = login.run();
 		if (!session.ok) {
 			std::println(stderr, "{} 登录未完成或连接已断开，退出", titleBrackets_);
@@ -259,7 +221,7 @@ namespace unool::shell {
 
 		// LoginScene 现在要等到服务端 GameStart 才返回；退出匹配只是回到大厅继续等用户操作
 		std::println("{} 匹配完成，进入游戏...", titleBrackets_);
-		gamePhase(net_, renderer, titleBrackets_);
+		gamePhase(net_, conn, renderer, titleBrackets_);
 
 		return 0;
 	}

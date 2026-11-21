@@ -1,0 +1,136 @@
+# README 历史批次与架构决策归档
+
+> **归档横幅（Arch-C）**：本文件整包收录阶段 3 / 阶段 4（S1~S4、S3b1/b2/c）各批次日志与 B+ 架构决策记录原文。
+> 这些是历史记录，**不参与现状判断**；当前状态以仓库根 `CURRENT.md` 与重组的 `README.md` 为准。
+> 其中「零行为变化 / 线上字节不变 / 逐字平移 / 跨阶段留包语义未动」等验收口径自 Arch-C 起全部作废。
+> 原文保留不改，便于追溯当时的决策上下文。
+
+**当前架构（B+，2026-11-10 起）：轻量规则内核 + 单一共享契约 + 少量真实接缝。**
+`Core` 是唯一的规则内核编译单元（`GameLogic` / `Player` / 技能 / 角色表 / 用例服务 / 协议 DTO）；
+`header/contract/` 是不链接规则引擎的纯值类型契约；`header/platform/Platform.h` 是内核与操作系统之间
+唯一的显式接缝，其 Win32 实现 `source/platform/WindowsPlatform.cpp` 只在 3 个 exe 外壳编译
+（共用清单 `Projects/PlatformShell.props`）。三个 `main()` 都是组合根，显式装配 `DomainServices`，
+`services()` 不再有隐式默认回退。`Domain` / `Application` 两个占位库与四层物理边界已删除，
+目录只表达源码归属、不再是编译期屏障。规则主体（179 个技能类、96 个角色条目）为**冻结区**，零改动。
+历史六边形分层口径（依赖方向 `Adapters → Application → Domain`、Q8 纯标准库 Domain PCH、
+「零行为变化 / 线上字节不变」验收）见下文各批次记录与 `docs/UNOOL_六边形分层重构方案_确认版.md`，
+自 B+ 起仅作归档，不再是当前约束。
+
+> **命名语义声明（2026-11-11 改名后）**：`header/` 与 `source/` 下现行为
+> `core/`（规则内核）、`shell/`（IO 外壳）、`contract/`（共享值类型）、`protocol/`（协议 DTO）、
+> `platform/`（平台接缝）；命名空间对应 `unool::core` / `unool::shell` / `unool::contract` /
+> `unool::protocol` / `unool::platform`，`namespace unool` 只装 `utils` 等跨层工具。
+> **目录名与命名空间都不代表架构层**，只是源码归属；`core/` 里的 179 个技能类、`Character`、
+> `Card`、`Effect`、`GameLogic`、`Player` 仍是全局类（未加命名空间，以降低改动面）。
+> `Projects/` 下的工程目录名（`Adapters/` 等）是构建产物标识，保持历史名不改。
+> 下文各批次记录与 `docs/UNOOL_六边形分层重构方案_确认版.md` 中出现的
+> `domain/` `application/` `adapters/` 及旧命名空间，**均为改名前的历史路径**，不代表现状。
+
+`Core` 静态库（原名 `Protocol`，阶段 3 起为共享编译库）统一编译 20 个 `.cpp`：12 个共享业务逻辑（原由 3 个 exe 各编译一遍）、`source/protocol/` 下 `GameState.cpp` / `AccountProtocol.cpp` / `CardPacket.cpp` 三个协议与 DTO 单元、`source/application/AccountService.cpp` / `ShopService.cpp` 两个用例服务单元，以及 `source/application/Services.cpp` / `source/adapters/JsonConfig.cpp` / `LegacyBundle.cpp` 三个归位单元，使用独立的 `pch.core.h`（PCH 文件名与库名一致）。阶段 3 第十二批把默认服务定位器 `services()` 与 JSON 配置缓存门面分别从 `source/utils.cpp` 归位到前两个单元，`utils.cpp` 恢复为只含路径 / 编码 / 随机 / 数学工具、不包含任何 `adapters` 头的领域工具单元；第十三批再把默认组合的实例化（`LegacyServicesAdapter` 及其传递的 `json.hpp` / `UserDB.h`）剥离到 `source/adapters/LegacyBundle.cpp`，`Services.cpp` 因此也变成纯端口依赖，具备划入纯标准库 PCH 的 `Domain` / `Application` 库的条件。集中后 `Core.lib` 不再反向引用 exe 的对象文件符号，3 个 exe 只编译各自的入口 / 渲染 / 场景单元。`MessageType` 枚举已归位到 `header/protocol/MessageType.h`（同一个 25 值枚举逐字平移，值 / 顺序 / 隐式数值 / 线上字节全不变），`AccountProtocol` 因此不再反向包含 `Socket.h`；网络收发仍留在 `Socket.*`，枚举未拆分成 `ClientCommand` / `ServerEvent` 两组。W5 第一段把账号用例（注册 / 登录 / 查重 / 准备 / 积分消费）从 `Socket.cpp` 抽到 `AccountService`，经 `IAccountSession`（由 `ServerNetwork` 实现）与 `IUserRepository` 两个端口完成，组合根在 `ServerMain.cpp` 装配；`Socket.cpp` 只保留会话状态、端口实现与薄转发，线上包内容逐字不变。W5 第二段（分段第一段）把商城展示 `sendShopData`、技能描述 `handleSkillInfoRequest`、每日签到 `handleCheckin` 约 153 行抽到 `ShopService`，与账号服务共用 `IAccountSession` / `IUserRepository` 两个端口；分段第二段把购买决策 `handleShopPurchase` 约 146 行也抽到 `ShopService`（至此 W5 第二段收官），`IUserRepository` 扩到 20 个方法、`IAccountSession` 扩到 12 个方法；`ServerNetwork` 只保留 `sendShopResult` 的纯传输端口实现、会话状态与各薄转发，`sendShopData` 保留为对外接口，`Socket.cpp` 不再含商城业务判断。`ShopData.h` 因含 `<json.hpp>` 与序列化宏，从 `header/domain/` 归位到 `header/protocol/`，`Domain` 头闭包恢复纯标准库；3 个使用点的 `#include "ShopData.h"` 靠分层包含目录解析，写法未改。
+
+头文件自足化（阶段 3 第十四批）：`header/domain/`、`header/application/`、`header/protocol/` 下的头显式包含自身直接使用的标准库类型；`GameState.h` 与 `AccountProtocol.h` 改用 `namespace sf { class Packet; }` 前向声明（与 `Card.h` 一致），后者原先的 `<SFML/Network.hpp>` 下沉到 5 个使用它的 `.cpp`。头闭包不再依赖 PCH 的传递包含，`Domain` 纯标准库 PCH 口径（Q8）与线上字节、函数行为均未改变；这只是 B1 拆库的编译期前置，库归属尚未调整。
+
+第十五批只读评估（阶段 3）：确认第十四批只解决**编译期**依赖——`Core` 的 20 个业务单元构成强连通的符号闭包（11 个纯标准库候选单元 + 9 个必须依赖第三方头的单元），B1 拆库的死锁在**链接期**；在 Q8（`Domain` 纯标准库 PCH）与零函数体改写两条约束下，`Domain` 没有任何 `.cpp` 可以实装。方案文档第 45 节给出 4 静态库 / 3 exe 的精确工程矩阵、三个口径的可点选项与方向 A / B / C。本批不改代码与工程文件，库归属、`ProjectReference`、PCH 与包含目录一律保持现状，待用户确认方向后再动。
+
+**阶段 3 收官（用户选 A）**：`Domain` / `Application` 确认为「设计层目录 + 独立 PCH 占位库」——这是 Q8 与模型层强连通闭包下的**终态**，不是未完成项；四层目录只约束源码归属与依赖方向，所有 `.cpp` 仍由 `UNOOL.Core` 统一编译一次、3 个 exe 共同链接。B1 拆库结案，不再尝试。阶段 3 十四批（库改名 / 头与源码四层归位 / `MessageType` 物理归位 / W5 账号与商城用例 / 服务定位器与配置门面归位 / 默认组合剥离 / 头文件自足化）已逐批经本地 Debug / Release x64 Rebuild 闭环。
+
+阶段 4 客户端装配评估（第十六批只读）：6 个客户端专属单元共 **2428 行**，其中 `GameRenderer` / `TextManager` / `ImageManager`（721 行）已是零网络耦合的纯 View；`ClientMain.cpp`（入口 + 组合根 + 游戏阶段 13 个 `case` 的收包 switch）、`LoginScene.cpp`、`ShopScene.cpp` 各自持有 `ClientNetwork&` 并自建收包循环、各自回心跳，形成 3 处重复分发与「非账号包不消费、留给 `gamePhase`」的隐式队列约定。方案文档第 46 节给出 S1 组合根与端口骨架 → S2 统一收包分发 → S3 两个 Scene 纯 View 化 → S4 输入适配的分段设计，以及首批范围 / 心跳归属 / 死分支与零引用骨架三个待确认口径。本批零代码、零工程文件改动；`MessageType` 25 值、端口 8888 / 14341、JSON 存档与全部既有口径继续有效。
+
+**阶段 4 · S1（第十六批代码，用户选 ①A + ②A + ③B，已编译通过并提交 `cfa91f3`）**：新增 `header/application/IClientSession.h`（客户端会话端口，纯标准库、6 个纯虚方法，与服务端 `IAccountSession` 区分）、`header/adapters/ClientApp.h` + `source/adapters/ClientApp.cpp`（客户端组合根），`ClientNetwork` 只加继承与 `override`、零函数体改写，`source/ClientMain.cpp` 从 264 行瘦身为 28 行的入口组合根。原 `main` 的 `handleChoicePacket` / `gamePhase` 与装配顺序逐字平移到 `ClientApp::run()`；三个 Scene、三处收包循环、三处心跳回复与 `peekMessageType()` 跨阶段留包语义一律未动，②A 的 `PacketDispatcher` 顺延 S2。按用户 ③B 授权删除 `gamePhase` 中两支只打印的商城死分支（`ShopData` / `ShopResult`），这是本批**唯一对外行为变化**：客户端少 4 条控制台输出，商城功能仍由 `ShopScene` 自己的收包循环处理，线上协议与游戏状态不变；`ICommands.h` 零引用骨架保持原样。`Client1` / `Client2` 的 `ClCompile` 同步登记 `ClientApp.cpp` 并保持一致，`Application` / `Adapters` 静态库只补 IDE 显示用的 `ClInclude`。静态验证：7 个工程 158 条 Include 路径 0 缺失、XML 全解析、裸指针 0、`git diff --check` 干净、`MessageType` 25 值与端口未变；助手侧构建工具仍被拦截、未本地编译。详见方案文档第 47 节。
+
+**阶段 4 · S2（第十七批代码，已编译通过并提交 `6f9e71b`）**：用户确认 S1 编译通过后，助手提交 `cfa91f3` 并按 ②A 推进。新增 `header/adapters/PacketDispatcher.h` + `source/adapters/PacketDispatcher.cpp`，把三处收包循环里重复的「peek 过滤 / 心跳回复 / 包体消息号消费」收拢到单点：`next(net)` 为 DrainAll（对应 `gamePhase` 与 `ShopScene::handleNetwork`），`next(net, { 订阅集 })` 为 Filtered（对应 `LoginScene::pollAccountPackets`，**非账号包不消费、留在队列给 `gamePhase`** 的跨阶段留包约定逐字保留）。三处业务判定段零增删改，只换循环头并删各自的心跳分支 / `case`；心跳回复统一到 `replyHeartbeat()` 一处，包体字节不变。采用迭代器式而非订阅回调，是为了让 `continue` / `break` / `case` 顺序全部留在原函数里，把改动面压到最小；订阅回调留到 S3 两个 Scene 纯 View 化时再做。`ClientNetwork::reconnect()` 里还有第四处一次性收包循环（暂存非登录包、不回心跳），属传输层内部流程，本批零改动，心跳仍会因放回队列而由主循环统一回复。（第二十一批 S3b1 按用户 ③C 已删除该不可达函数，此句为 S2 当时状态记录。）`Client1` / `Client2` 同步登记新单元，`Adapters` 库只补 IDE 显示条目。**本批无对外行为变化**；静态验证：10 个工程 XML 全解析、163 条 Include 路径 0 缺失、双工程 `ClCompile` 一致、裸指针 0、`git diff --check` 干净、协议与端口文件未改。助手侧构建工具仍被拦截、未本地编译；用户已确认 Debug / Release x64 Rebuild 通过（新编译单元 PCH / `/FI`、`initializer_list` 重载解析、结构化绑定与 `sf::Packet` 移动、`/we4715` 均通过）。运行时重点仍是登录阶段的跨阶段留包与三处心跳超时。详见方案文档第 48 节。
+
+**阶段 4 · S3 前置评估（第十八批只读，S2 编译通过后继续）**：用户确认 S2 编译通过后提交 `6f9e71b`。本批零代码、零工程文件改动，只做 S3 精确盘点：两个 Scene 实测 **1591 行**（头 170 + 源 1421；46.2 的 1443 是当时两个 `.cpp` 的行数，S2 删心跳 / peek 段后降为 1421），三个纯 View 参照单元 6 个文件网络符号 0 命中。耦合分五类：`ClientNetwork&` 成员与构造、15 处 `net.*` 调用（send 6 / sendShopPurchase 4 / update 2 / isConnected 2 / setPlayerId 1）、协议构造与解析（`LoginScene` 4 个 `AccountProtocol` 请求 + 2 个手写包 + 3 处响应解析；`ShopScene` 3 处 `json::parse` + 3 处 `get<T>()` + 4 处 `dump()` + 1 个手写包）、两个 Scene 主循环里的 `net.update()` / `isConnected()`、6 个 `enum class` 共 50 处枚举分支；另有 `LoginScene.cpp:150` 的 Scene 内嵌 Scene 与 `ShopScene::skillsCache` 进程级静态业务缓存。**三个结构性障碍**：① S1 的 `IClientSession` 是纯标准库 6 方法端口，不覆盖 Scene 需要的 `send(sf::Packet&)` 等方法，直接扩会让 `Application` 层依赖 SFML；② 商城嵌套上移可能把 `ClientApp::run()` 从线性顺序改成状态机，属时序风险；③ `PacketDispatcher::next(ClientNetwork&)` 绑定具体类型、静态缓存归属未定。附带发现 `setCredentials()` 全项目零调用点（既有潜在缺陷，按 46.7 ③B 不擅改、仅记录）。建议把 S3 拆为 **S3a 端口边界与场景切换 → S3b `LoginScene` 纯 View 化 → S3c `ShopScene` 纯 View 化**，每段单独提交与回归；49.8 给出推进节奏 / 端口归属 / 场景切换三个待确认口径，默认 ①A + ②A + ③A（先跑 49.7 已积压 7 批的回归清单、端口放 adapters、商城嵌套等价上移）。详见方案文档第 49 节。
+
+**S3 口径已确认（49.10）**：用户一次点选 **①A + ②A + ③A** —— 先实跑 49.7 已积压 7 批的运行时与线上字节清单建立基线、**S3 暂缓**；S3a 开工时端口放 `adapters` 层网关（`IClientSession` 保持纯标准库不动）、`LoginScene.cpp:150` 的商城嵌套等价上移到 `ClientApp`（`run()` 线性顺序不变）、`ICommands.h` 零引用骨架继续不动。第十九批的前置条件是回归清单实跑完成，开工按 S3a → S3b → S3c 分段。本批零代码、零工程文件改动。
+
+**阶段 4 · S3a（第十九批代码，已编译通过并提交 `d8699a2`）**：按 49.10 既定口径 ②A + ③A 落地，**两个 Scene 内部业务判定零改动**。新增 `header/adapters/IClientGateway.h`（②A：`adapters` 层网关端口，继承 `unool::application::IClientSession` 以复用其纯标准库会话 6 方法，`sf::Packet` 只用前向声明，新增 `send` / `sendShopPurchase` / `setPlayerId` 三个纯虚，正好覆盖两个 Scene 的 15 处 `net.*` 调用）；`Socket.h` 基类改由它继承、3 个方法加 `override`，`IClientSession.h` / `ClientApp.h` / `Socket.cpp` 函数体零改动、`session_{ net }` 端口视图继续有效。新增 `header/adapters/IShopOpener.h`（③A：场景切换意图端口，单个 `openShop(username)`）；`ClientApp.cpp` 在匿名 namespace 定义文件局部 `ShopOpener`，函数体逐字是原商城两行；`LoginScene.cpp:150` 的同步嵌套改为 `shopOpener.openShop(username)`，断线 / 关窗判定原位置保留，`ClientApp::run()` 线性顺序不变、只多一个栈上局部对象。5 个工程文件补 2 个新头的 IDE 显示条目（`ClCompile` 集合不变）。**本批无对外行为变化**：构造参数指向同三个对象、栈上生命周期与返回大厅时序一致。结果回传通道与障碍 3（`PacketDispatcher` 具体类型绑定、`skillsCache` 归属）顺延 S3b / S3c。静态验证：7 个 `.vcxproj` + 3 个 `.filters` 全解析、169 条 Include 路径 0 缺失、双工程条目集合一致、裸指针 0、`git diff --check` 干净、11 个改动文件统一 UTF-8 无 BOM + CRLF（filters 保留 BOM）、协议与端口文件未改。助手侧构建工具仍被拦截、未本地编译；用户已确认 Debug / Release x64 Rebuild 通过（`sf::Packet` 前向声明与完整 SFML 定义共存、继承链变更与虚表 / `LNK2019`、3 个新 `override`、`LoginScene.cpp` 删 `ShopScene.h` 后的传递依赖均通过），第十九批以 `d8699a2` 闭环。运行时重点是大厅商城按钮 → 展示 / 购买 → 退出回大厅，以及商城期间断线 / 关窗的退出判定。详见方案文档第 50 节。
+
+**阶段 4 · S3b 前置评估（第二十批只读，S3a 编译通过后继续）**：本批**零代码、零工程文件改动**，只做 S3b 精确盘点并集中交口径。S3a 后 `LoginScene` 实测 **616 行**（头 70 + 源 546），其中 `drawCheckinPopup()` + `render()` 共 221 行零网络符号；耦合面为 `LoginScene.h` 仍 `#include "Socket.h"` 的传递依赖、`ClientNetwork& net` 成员、**8 处 `net.*`**（send 5 / update 1 / setPlayerId 1 / isConnected 1）+ 1 处 `PacketDispatcher::next(net, { 5 类订阅 })`、**5 个请求构造**（3 个 `AccountProtocol` helper + `ReadyToPlay` / `CheckinRequest` 手写包）、**4 处响应解析**（`parseCheckUsernameResponse` 1 / `parseAccountResponse` 2 / `CheckinResponse` 手写 1）与 `ConnectionInfo` 的 `packet >> pid`，以及 `Mode` / `Status` / `Focus` 三个状态机共 51 处枚举引用。**四个卡点**：① 端口切到 `IClientGateway&` 但该端口不含 `receivePacket()` / `peekMessageType()`；② 49.10 明确「顺延到 S3c 前再判」的障碍 3 —— `PacketDispatcher::next(ClientNetwork&)` 绑定具体类型；③ 49.4 要求的请求 / 解析上移缺「结果回传通道」（S3a 只建了意图通道）；④ `run()` 主循环的 `net.update()` + `pollAccountPackets()` 驱动位置上移会改变每帧时序。**不可动语义**：跨阶段留包、三处心跳与 3 秒超时、5 个请求包字节与 4 个响应字段顺序、全部文案与 S3a 刚固化的商城返回判定。方案 51.5 / 51.6 / 51.7 给出三组口径：① 本批范围（A 推荐类型解耦先行、协议上移拆 S3b2 / B 一步到位纯 View / C 只抽 helper / D 先做 S4）；② 障碍 3 收包通道（A 推荐扩 `IClientGateway` 并泛化 `PacketDispatcher` / B 独立入站端口 / C 组合根驱动 + 结果回调 / D 本批不泛化）；③ `setCredentials()` 零调用点（A 推荐继续原样保留 / B 补一次调用属行为变化 / C 删死方法）。默认 **①A + ②A + ③A**；选 ①A 时 S3b 拆 S3b1 类型解耦 → S3b2 协议上移两段。未确认前不写任何 S3b 代码。详见方案文档第 51 节。
+
+**S3b 口径已确认（51.11）**：用户一次点选 **①A 类型解耦先行 + ②A 扩网关并泛化 `PacketDispatcher` + ③C 删掉死方法**。③C 偏离推荐，助手先做只读核查：`setCredentials()` 与 `reconnect()` 均零调用，`username` / `password` 只被这两个函数与 `getUsername()` 引用；因 `setCredentials()` 从未调用，两字段恒空、`reconnect()` 恒在首行返回 `false` —— **整条链是不可达死代码，删除对外行为零变化**。安全落地：删 `setCredentials()` / `reconnect()` 声明与定义（含 S2 记录的第四处一次性收包循环）、删两个字段；`getUsername()` 作为 `IClientSession` 端口契约保留，实现改为返回静态空串（与现状恒空串逐字一致），`ClientApp.cpp:131` 的打印不动；`serverIp` / `serverPort`（`connect()` 仍赋值，只写不读）、`<thread>`（`ServerNetwork` 仍用）、`AccountProtocol.h`（`ServerNetwork` 仍用）与 `connect()` 函数体全部保留。**风险**：删掉的是客户端唯一的自动重连能力（当前不可达），将来恢复需重写，属用户 ③C 明确授权。①A + ②A 落地为 `IClientGateway` 加两个收包纯虚、`PacketDispatcher` 三个签名泛化、`LoginScene` 成员与构造切端口、其余业务代码逐字不动；协议上移归 S3b2。第二十一批 S3b1 无需再点选、确认后直接开工。
+
+**阶段 4 · S3b1（第二十一批代码，②A + ①A + ③C，已编译通过）**：**7 个代码文件、零工程文件改动**，对外行为零变化。②A：`IClientGateway.h` 加 `std::optional<sf::Packet> receivePacket()` / `std::optional<int> peekMessageType() const` 两个纯虚并 include `<SFML/Network.hpp>`（`std::optional<sf::Packet>` 要求完整类型），`Socket.h` 两方法加 `override`（`ClientNetwork` 共 11 个），`PacketDispatcher` 两个 `next()` 与 `replyHeartbeat()` 签名由 `ClientNetwork&` 泛化为 `IClientGateway&`、函数体逐字未改；三处调用点因派生→基类隐式转换零改动。①A：`LoginScene.h` 删 `#include "Socket.h"`、成员与构造参数切到 `IClientGateway&`，`LoginScene.cpp` **仅构造签名 1 行**变化，5 个请求构造 / 4 个响应解析 / 状态机 / `render()` / `run()` 主循环逐字留在原处，协议上移归 S3b2。③C：删零调用的 `setCredentials()` / `reconnect()` 与恒空的 `username` / `password`（含 S2 记录的第四处一次性收包循环，共 61 行），`getUsername()` 作为端口契约保留、改为返回静态空串（与现状恒空串逐字一致），`ClientApp.cpp:131` 打印不动；`serverIp` / `serverPort` 只写不读顺延。静态验证：10 个工程 XML 全解析、169 条 Include 路径 0 缺失、双客户端条目集合一致、裸指针 0、`git diff --check` 干净、7 个改动文件统一 UTF-8 无 BOM + CRLF、协议与端口文件未改。助手侧构建工具被客户端 LOLBin 硬黑名单拦截（用户两次加白名单均无效、助手未绕过），改由用户本地 `MSBuild.exe /t:Rebuild`：**`Debug|x64` 16.97s、`Release|x64` 23.22s，均「已成功生成 / 0 个警告 / 0 个错误」**，7 个工程（4 静态库 + 3 exe）全部生成，日志见 `%TEMP%\unool_debug.log` / `unool_release.log`。原 Rebuild 重点（`std::optional<sf::Packet>` 纯虚返回与完整 SFML 定义共存、11 个 `override` 与虚表 / `LNK2019`、两处 `next(ClientNetwork&)` 的重载解析与隐式转换、`LoginScene.h` 删 `Socket.h` 后的传递依赖）已全部排除。运行时重点仍是跨阶段留包、三处心跳与 3 秒超时、5 个请求包字节与 4 个响应字段顺序。本批已提交 `ea7293c`（10 文件，+133 / −94），提交时显式排除用户侧 `UNOOL.slnx`。详见方案文档第 52 节。
+
+**阶段 4 · S3b2 前置评估（第二十二批只读，零代码 / 零工程文件改动）**：S3b1 后 `LoginScene` 为 620 行（头 74 + 源 546），`ShopScene` 980 行，合计 1600 行。S3b2 要移走的是 **5 个请求构造**（3 个 `AccountProtocol` helper + 手写 `CheckinRequest` / `ReadyToPlay`）、**4 处响应解析**（`parseCheckUsernameResponse` 1 / `parseAccountResponse` 2 / 手写 `CheckinResponse` 1）与 `ConnectionInfo` 的 `packet >> pid`；8 处 `net.*` 与 51 处状态机枚举分支仍在 View。**三个卡点**：① 查重→注册→登录是 `pollAccountPackets()` **同一帧连续发包**，触发点移进用例自动机会改变发包时机；② 缺结果回传通道（S3a 只建了 `IShopOpener` 意图通道）；③ `run()` 每帧 `pollEvent → net.update → pollAccountPackets → render → Done break` 的固定顺序，把收包驱动上移组合根风险最高。**附带发现（未改）**：`Result::enterShop` 全项目零读取点（S3a 商城上移后的残留死字段），`ICommands.h` 的 `IGameCommands` 仍是零引用骨架。方案 53.7 给出三组口径：① 范围（A 推荐协议层上移、主循环留 View / B 一步到位纯 View / C 只抽 helper / D 跳过）；② 结果通道（A 推荐同步值 `std::optional<AccountEvent>` 返回 / B `ILoginEventSink` 回调 / C 组合根驱动 / D 裸 DTO）；③ 死字段（A 推荐删 `enterShop`、骨架不动 / B 都保留 / C 解禁 `IGameCommands`）。默认 **①A + ②A + ③A**；按 37.6 未确认前不写任何 S3b2 代码。详见方案文档第 53 节。
+
+**S3b2 口径已确认（53.9）**：用户一次点选 **①A 协议层上移、主循环留 View + ②A 同步值返回 + ③A 删 `enterShop`、骨架不动**。第二十三批将新建 `header/protocol/AccountEvent.h` 值对象、把 4 处响应解析与 `ConnectionInfo` 收拢为 `parseAccountEvent()`、补齐 `CheckinRequest` / `ReadyToPlay` 两个请求 helper，`pollAccountPackets()` 改为同步 `switch` 但链式请求触发点与每帧顺序逐字保留；实现并入既有 `source/protocol/AccountProtocol.cpp`（零工程文件改动，`Application` 仍是 Q8 占位库）；`ICommands.h` 骨架不动。口径记录独立提交后不再另行点选，直接开工 S3b2。
+
+**阶段 4 · S3b2（第二十三批代码，53.9 口径 ①A + ②A + ③A，用户本地 Rebuild 编译通过）**：**16 个文件（1 新增 + 15 修改：12 个代码 / 工程 + 3 个文档 + 1 个 `UNOOL.slnx`），对外行为零变化**。①A：新建 `header/protocol/AccountEvent.h` 纯值对象，`source/protocol/AccountProtocol.cpp` 补 `makeCheckinRequest()` / `makeReadyToPlay()` 两个 helper，5 个账号请求构造全部由 Protocol 层负责；`LoginScene.cpp` 两处手写包换 helper，`status = Done` 仍逐字先于 `ReadyToPlay` 发包。②A：4 处响应解析与 `ConnectionInfo` 的 `packet >> pid` 收拢为 `parseAccountEvent(MessageType, sf::Packet&) -> std::optional<AccountEvent>`，`pollAccountPackets()` 由 `if` 链改同步 `switch`，**5 类订阅集、每帧顺序、`continue`、链式请求（查重→注册→登录）同帧触发点、全部文案与状态机分支逐字保留**；`CheckinResponse` 沿用旧写法不检查 `>>` 结果、恒返回值对象，避免多出「响应解析失败」分支。③A：删 `Result::enterShop` 零读取死字段，`ICommands.h` 骨架不动。实现并入既有 `AccountProtocol.cpp`，**零 `ClCompile` / `ProjectReference` / 包含目录 / 链接项改动**（Core 仍 20 单元、`Application` 仍 Q8 占位库）；另按 S3a 先例给 7 个工程文件补 `AccountEvent.h` 的 IDE 显示 `ClInclude`，不影响编译集合。静态验证：10 个 XML 全解析、267 条 Include 路径 0 缺失（本批 +7）、双客户端条目集合 diff 0、裸指针 0、`git diff --check` 干净、12 文件统一 UTF-8 无 BOM + CRLF（filters 保留 BOM）。助手侧 PowerShell + `dangerouslyDisableSandbox: true` 调用 MSBuild 仍被命令校验黑名单拦截、未绕过，**编译由用户本地执行**；用户 21:59 改口径：`UNOOL.slnx`（VS 侧 7 个工程条目按字母重排 + `/doc/` 挂载方案文档，6+/5− 纯 IDE 显示、不动编译链接）**不再排除、一并提交**，本批共交付 16 个文件。运行时重点：链式同帧时序、跨阶段留包、三处心跳与 3 秒超时、签到弹窗与积分同步。之后 S3c `ShopScene`（980 行）→ S4 `InputAdapter`。详见方案文档第 54 节。
+
+**阶段 4 · S3c（第二十四批代码，①A + ②A + ③A 口径，用户本地 Rebuild 编译通过，已提交 `6fd96e9`）**：**14 个文件（2 新增 + 12 修改：11 个代码 / 工程 + 3 个文档 / 记忆），对外行为零变化**。①A：`ShopScene` 的 `ClientNetwork& net` 解耦为 `IClientGateway& net`（构造与 `net` 成员切端口，`ClientApp.cpp` 商城构造点因派生→基类隐式转换零改动），与 `LoginScene` 对称。②A：新建 `header/protocol/ShopProtocol.h` + `source/protocol/ShopProtocol.cpp`，3 处 `json::parse` + `get<T>()` 与 4 处 `dump()` 等价上移为 `parseShopData` / `parseSkillInfoResponse` / `parseShopPurchaseResult`（返回 `std::optional<T>`，由原 View 的 `try/catch` 分流逐字对应）+ `makeShopPurchaseJson` / `makeSkillInfoRequestPacket`；`pendingSkills` 去重集合仍留 View。实现并入 `UNOOL.Core`（新增 1 个 `ClCompile`，无新工程 / `ProjectReference` / 包含目录 / 链接项变更）。③A：`skillsCache` 进程级 static、`pendingSkills` 实例级集合均保留在 `ShopScene`，「退出再进仍命中缓存」行为不变。静态验证：10 个 XML 全解析、275 条 Include 路径 0 缺失（本批 +9）、双客户端条目 diff 0、裸指针 0、`git diff --check` 干净、11 文件统一 UTF-8 无 BOM + CRLF（filters 保留 BOM）。已提交闭环，之后 S4 `InputAdapter`（`ClientInput.key` 字节逐字不动）。详见方案文档第 55 节。
+
+**阶段 4 · S4（第二十五批代码，①A + ②A + ③A 口径，用户本地 Rebuild 编译通过，已提交闭环）**：**11 个文件（2 新增 + 6 修改代码 / 工程 + 3 个文档 / 记忆），对外行为零变化**。①A：把 `ClientApp::gamePhase()` 第 85–112 行的事件 `for` 循环（Closed / KeyPressed 左右 A·D / 其他键 `sendClientInput` / 鼠标左键点击）原样搬入 `unool::adapters::InputAdapter::pollAndDispatch()`，`gamePhase` 以 `unool::adapters::InputAdapter input(net, renderer); if (!input.pollAndDispatch()) return;` 取代、`GameRenderer` 公开方法面不变。②A：持 `ClientNetwork&`（与 `ShopOpener` 同构）、具体类落 `adapters/`，不新增端口接口（`sendClientInput` 是 `ClientNetwork` 专属方法，不在 `IClientGateway` 端口内）。③A：新增 `header/adapters/InputAdapter.h` + `source/adapters/InputAdapter.cpp`（同 `ClientApp.cpp` 编译进 Client1 / Client2，用 `pch.h`），Client1 / Client2 的 `.vcxproj` + `.filters` 与 `UNOOL.Adapters` 的 `.vcxproj` 补登记；代码 + 文档单批提交。等价性证据：线上 `ClientInput.key` 字节由 `ClientNetwork::sendClientInput`（`Socket.cpp:617`：`packet << static_cast<int>(key) << playerId << selectedIndex`，`key = keyEvent->scancode`）产生，提取后原样不动 → 字节逐字一致。静态验证：5 个 XML 全解析、Include 路径 0 缺失、双客户端条目 diff 0、裸指针 0、`git diff --check` 干净、`InputAdapter` 显式 `unool::adapters::` 命名空间限定（与 `PacketDispatcher` 同款）。已提交 `37cd2ae`（11 文件，+149 / −31，工作区干净）。详见方案文档第 56 节。
+
+**Domain 净化 Tier 1（路线 B/C 推荐子集，用户选 Tier 1，已提交 `843458d`）**：**6 个文件，对外行为与线上字节零变化**。把"打包/解析"彻底留在 adapter + protocol 层，应用层（AccountService / ShopService / IAccountSession 端口）去除 `sf::Packet`：`handleAccountPacket(sf::Packet)` → `handleAccountRequest(const AccountProtocol::AccountRequest&)`，端口方法结构化（`sendAccountResponse` / `sendCheckUsernameResponse` / `sendPayload(type,json)` / `sendCheckinResponse`）；出站包由 `ServerNetwork` 调用既有 `AccountProtocol::make*` 复刻线格式、逐字节不变。首编暴露 5 处错误（缺 `MessageType.h` 包含、`AccountProtocol::` 命名空间漏限定、临时对象传 `sendPacketToClient(sf::Packet&)` 非 const 引用）已修复；用户本地 Debug/Release x64 Rebuild 通过并重跑 #73 全绿。**Tier 0（utils 归位）评估为不需要**：`utils.cpp` 依赖 `application/Services.h` 属 application 层，归位 domain/ 会制造 domain→application 向上依赖（分层倒退），且涉及 24 处 `#include` + 工程登记，仅为 cosmetic。详见方案文档第 57 节。
+
+## 架构决策记录（ADR · B+，Accepted）
+
+**Decision**：放弃补全完整六边形（不拆 `Domain` / `Application` 真库、不把每个外部依赖都端口化），
+采用「轻量规则内核 + 单一共享契约 + 少量真实接缝」，并删除两个占位库与隐式服务定位回退。
+
+**Context**：自有代码约 1.96 万行、1–2 人维护、3–10 年周期、0 测试 0 CI；
+规则密度高（179 技能类、96 角色，规则代码占 64.5%）但内核是同步阻塞、强连通的交互式状态机；
+11 个端口各只有 1 个实现、无替换需求；历史上每批重构靠「零函数体改写 + 线上字节不变」做机械等价证明，
+放开约束后这条安全绳消失，而没有任何自动化验证替代品。安卓客户端与多桌都是「可能」而非确定立项，
+两者真正需要的是**内核可移植 + 可多实例**，不是四层物理分层。
+
+**Consequences**：
+- 获得：改动面集中在边界；`Core` 的共享编译单元不再含 `Windows.h`；协议 DTO 不再拉入技能类头闭包；
+  组合根装配显式可见；工程数 7 → 5、双 / 三 exe 共用同一份平台清单；
+  `python tools/verify_structure.py` 提供无 CI 条件下的结构护栏。
+- 放弃：Q8「纯标准库 Domain PCH」、按层独立编译、编译期分层屏障；回归从「机械比对没变」
+  降级为人工端到端「能玩」（见 `docs/UNOOL_运行时回归核对清单.md` 第 12 节）。
+- 冻结区：179 个技能类、96 个角色条目、`GameLogic` / `Player` 判定与数值零改动 ——
+  理由不是「不许改」，而是「改了就无法证明没改坏」。
+
+**本批已落地**：平台 IO 剥离（`header/platform/` + `source/platform/WindowsPlatform.cpp`）、
+共享契约第一步（`header/contract/CharacterTypes.h`，角色 / 皮肤纯值类型解耦）、
+组合根显式装配（三 exe 的 `main()` 均 `installServices`）、
+占位库与 `LegacyBundle.cpp` 删除、工程清单去重、验收清单换轴。
+
+**第二批（状态归属显式化，2026-11-10）**：
+- 口径修正：`MAX_PLAYERS = 2` 是「一桌两个座位」的**玩法规则**，不是「进程能开几桌」；
+  出牌、Ban/Pick、`1 - clientIdx` 对手判定、胜负结算都按两座位桌编写。把它改成运行期可变容量
+  等于改玩法，因此本批**不改它的值**，只把常量归属从 `utils.h` 全局环境移进
+  `header/contract/TableConfig.h` 的 `TableConfig::seatCount`（编译期常量，仍为 2）。
+- 已改：`AccountService` 的座位容量由组合根构造注入，用例服务不再读全局常量；
+  删除 `UserDB::instance()` 惰性单例，改由 `ServerMain` / `LegacyServicesAdapter` 显式构造，
+  `JsonUserRepository` 只持有引用；客户端控制台编码设置前移到服务组合构造之前
+  （`UserDB::load()` 会打印中文日志）；`tools/verify_structure.py` 增加对应不变量检查。
+- 刻意保留的全局状态（拆开反而错）：`IUserRepository` 账号积分跨桌共享、全进程一份；
+  `DomainServices` 的 config / assets / clock 与 `services()` 是进程级共享基础设施；
+  `Card` 牌池缓存、`Character::infos`、scoreboard 是只读常量或记忆化缓存；
+  `ShopScene` / `GameRenderer` / `ImageManager` 缓存只在客户端进程，与服务端开几桌无关。
+  真正支持多桌需要的是 N 个 `ServerNetwork` / `GameLogic` 实例并存 + 按桌分发连接与输入，
+  属于组合根与调度层的工作，不是「去全局常量」。
+
+**第三批（B+ 语义命名对齐，2026-11-11）**：
+- **Decision**：把仍指向六边形四层的目录名 / 命名空间一次性对齐到 B+ 的实际结构，
+  并让 `JsonConfig` 门面从裸 `namespace unool` 归入 `unool::shell`；
+  **不给全局类加命名空间**（4414 处 / 77 文件、formatter / ADL / JSON 宏 / `bit_cast` 静默失效风险）。
+- 映射：`domain/` + `application/` → `core/`，`adapters/` → `shell/`，
+  `domain/Types.h` + `Keys.h` → `contract/`；命名空间 `unool::application` → `unool::core`、
+  `unool::adapters` → `unool::shell`、`unool::domain` → `unool::contract`。
+  `protocol/` `contract/` `platform/` 及 5 个工程名保持不变。
+- 规模：69 个源码文件移动、57 个源码文件改写（含 40 处简写命名空间）、190 条工程条目、
+  14 个包含目录配置块、3 个 `.filters` 虚拟分组（domain/application 合并为单一 `core` 分组）、
+  61 处 `#include` 前缀、11 处 `unool::shell::getXxxConfig()` 全限定调用；
+  `tools/verify_structure.py` 新增第 7 类「旧目录 / 旧命名空间无残留」不变量。
+- **Context**：改名本身不产生架构能力，原判断是「叙事一致 ≠ 收益，成本是几百处机械替换」；
+  模型限免把**生成侧成本**降为约 0，且全部错误均为编译期可发现（路径 / 命名空间 / include
+  解析失败），合并后 0 重名、无静默错位，因此净收益转正。验证侧成本（两套 Rebuild + 端到端实跑）
+  不因限免下降，仍由人工完成。
+- **Consequences**：消除「`domain` 一词三义」（已删占位库 / 历史目录 / 只有 2 个值类型的命名空间）
+  与后续「该放哪一层」的口径困惑；`header/contract/` 成为完整纯值类型目录，安卓立项时可直接升为
+  独立编译单元。放弃的是历史批次记录与现行目录的路径字面一致性 —— 由上方「命名语义声明」兜住，
+  不改写 3028 行归档文档。README 与 ADR 之外，历史段落保持原样。
+
+**留待后续单独验收**（互不依赖，不阻塞本批）：
+① 共享契约与 `Card` 值类型的彻底拆分（`GameState.h` 仍依赖 `Card.h`）；
+② 多桌本身 —— `ServerMain` 单循环单桌改为 N 桌实例集合 + 连接 / 输入分发（立项时优先于任何分层动作）；
+③ 212 处 `println` 与 33 处 `ask` 收口到决策 / 呈现接缝（CI 立项时才兑现价值）；
+④ 安卓确定立项时把共享契约升为独立构建单元，并新增安卓外壳的平台实现。
+
+**改主意的门槛**：安卓确定立项 → ①；多桌确定立项 → ②（优先于任何分层动作）；
+CI 确定加入 → ③；出现第二套适配器且需独立发布 → 才重新评估完整六边形。

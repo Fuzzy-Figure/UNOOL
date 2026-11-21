@@ -1,6 +1,7 @@
 #include "Socket.h"
 #include "contract/TableConfig.h"
 #include "AccountProtocol.h"
+#include "MessageCodec.h"
 #include <SFML/Network.hpp>
 #include "UserDB.h"
 #include "GameState.h"
@@ -10,6 +11,9 @@
 #include <algorithm>
 #include <array>
 #include <utility>
+
+// MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
 
 ServerNetwork::~ServerNetwork() {
 	disconnect();
@@ -172,8 +176,7 @@ void ServerNetwork::onReadyToPlay(std::size_t clientIdx) {
 	// 已开局后收到迟到的 ReadyToPlay（客户端曾在商城 / 掉线重连而错过首次广播）：
 	// 补发一个 GameStart，避免它再次点「开始游戏」后永远等不到开局包。
 	if (serverReady) {
-		sf::Packet packet;
-		packet << static_cast<int>(MessageType::GameStart);
+		sf::Packet packet = unool::protocol::makeGameStart();
 		sendPacketToClient(clientIdx, packet);
 		return;
 	}
@@ -240,18 +243,12 @@ void ServerNetwork::onPointsChanged(std::size_t clientIdx, int points) {
 }
 
 bool ServerNetwork::sendPayload(std::size_t clientIdx, MessageType type, const std::string& jsonPayload) {
-	sf::Packet packet;
-	packet << static_cast<int>(type);
-	packet << jsonPayload;
+	sf::Packet packet = unool::protocol::makeStringMessage(type, jsonPayload);
 	return sendPacketToClient(clientIdx, packet);
 }
 
 void ServerNetwork::sendCheckinResponse(std::size_t clientIdx, const std::string& msg, bool ok, int points) {
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::CheckinResponse);
-	packet << msg;
-	packet << ok;
-	packet << points;
+	sf::Packet packet = unool::protocol::makeCheckinResponse(msg, ok, points);
 	sendPacketToClient(clientIdx, packet);
 }
 
@@ -388,9 +385,21 @@ void ServerNetwork::handlePendingSocket() {
 			sf::Packet peek = packet;
 			int msgType;
 			std::string reqUsername, reqPassword;
+			std::uint32_t reqVersion{};
 			if (peek >> msgType
 				&& msgType == static_cast<int>(MessageType::LoginRequest)
-				&& peek >> reqUsername >> reqPassword) {
+				&& peek >> reqVersion >> reqUsername >> reqPassword) {
+				// Arch-C P1-1：版本握手。首包版本不匹配则明确拒绝，不进入任何业务分支。
+				if (!unool::protocol::isProtocolVersionCompatible(reqVersion)) {
+					auto resp = unool::protocol::makeVersionMismatchResponse();
+					(void)pendingSocket->send(resp);
+					selector.remove(*pendingSocket);
+					pendingSocket->disconnect();
+					pendingSocket.reset();
+					std::println("[ServerNetwork] 拒绝旧版本客户端（版本 {}，期望 {}）",
+								 reqVersion, unool::protocol::kProtocolVersion);
+					return;
+				}
 				//找匹配的 loggedIn 或 disconnected 槽位（同账号）
 				std::size_t targetIdx = unool::contract::TableConfig::seatCount;
 				for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
@@ -464,8 +473,7 @@ void ServerNetwork::sendHeartbeat() {
 	//心跳机制：每秒向所有 loggedIn 客户端发 Heartbeat
 	if (heartbeatClock.getElapsedTime().asSeconds() >= 1.0f) {
 		heartbeatClock.restart();
-		sf::Packet hb;
-		hb << static_cast<int>(MessageType::Heartbeat);
+		sf::Packet hb = unool::protocol::makeHeartbeat();
 		for (std::size_t i = 0; i < unool::contract::TableConfig::seatCount; ++i) {
 			if (isClientLoggedIn(i)) {
 				sendPacketToClient(i, hb);
@@ -498,8 +506,16 @@ void ServerNetwork::handleAccountPacket(std::size_t clientIdx, MessageType type,
 		accountService_->get().handleAccountRequest(clientIdx, type, unool::protocol::AccountRequest{});
 		return;
 	}
-	auto req = unool::protocol::parseAccountRequest(packet);
+	// Arch-C P1-1：登录/注册包首字段带协议版本，不匹配时明确拒绝（不进业务分支）。
+	const bool withVersion = (type == MessageType::LoginRequest || type == MessageType::RegisterRequest);
+	auto req = unool::protocol::parseAccountRequest(packet, withVersion);
 	if (!req) return;
+	if (withVersion && !req->versionMatches) {
+		sf::Packet resp = unool::protocol::makeVersionMismatchResponse();
+		sendPacketToClient(clientIdx, resp);
+		removeClient(clientIdx);
+		return;
+	}
 	accountService_->get().handleAccountRequest(clientIdx, type, *req);
 }
 
@@ -510,10 +526,11 @@ std::optional<ClientInput> ServerNetwork::receiveClientInput() {
 
 		int msgType;
 		if (packet >> msgType && msgType == static_cast<int>(MessageType::ClientInput)) {
-			ClientInput input;
-			int keyCode;
-			if (packet >> keyCode >> input.playerId >> input.selectedIndex) {
-				input.key = static_cast<sf::Keyboard::Scancode>(keyCode);
+			if (auto data = unool::protocol::parseClientInput(packet)) {
+				ClientInput input;
+				input.key = static_cast<sf::Keyboard::Scancode>(data->key);
+				input.playerId = data->playerId;
+				input.selectedIndex = data->selectedIndex;
 				return input;
 			}
 		}
@@ -522,47 +539,38 @@ std::optional<ClientInput> ServerNetwork::receiveClientInput() {
 }
 
 bool ServerNetwork::sendGameState(const GameState& state) {
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::GameState);
-	packet << state;
+	sf::Packet packet = unool::protocol::makeGameStateMessage(state);
 	return sendPacketToAll(packet);
 }
 
 bool ServerNetwork::sendGameStateToClient(std::size_t clientIndex, const GameState& state) {
 	if (!isClientConnected(clientIndex)) return false;
 
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::GameState);
-	packet << state;
+	sf::Packet packet = unool::protocol::makeGameStateMessage(state);
 	return sendPacketToClient(clientIndex, packet);
 }
 
 bool ServerNetwork::sendConnectionInfo(std::size_t newPlayerId) {
 	if (!isClientConnected(newPlayerId)) return false;
 
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::ConnectionInfo) << newPlayerId;
+	sf::Packet packet = unool::protocol::makeConnectionInfo(newPlayerId);
 	return sendPacketToClient(newPlayerId, packet);
 }
 
 bool ServerNetwork::sendGameStart() {
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::GameStart);
+	sf::Packet packet = unool::protocol::makeGameStart();
 	return sendPacketToAll(packet);
 }
 
 bool ServerNetwork::sendGameEnd(std::optional<std::size_t> winnerId) {
-	sf::Packet packet;
-	const bool hasWinner = winnerId.has_value();
-	packet << static_cast<int>(MessageType::GameEnd) << hasWinner;
 	//附带胜者账号名，供客户端日志显示
-	if (hasWinner) packet << winnerId.value() << clientSlots_[winnerId.value()].username;
+	const std::string winnerName = winnerId ? clientSlots_[winnerId.value()].username : std::string{};
+	sf::Packet packet = unool::protocol::makeGameEnd(winnerId, winnerName);
 	return sendPacketToAll(packet);
 }
 
 bool ServerNetwork::sendCharInfo(const CharInfo& info) {
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::CharInfo) << info;
+	sf::Packet packet = unool::protocol::makeCharInfoMessage(info);
 	return sendPacketToAll(packet);
 }
 
@@ -577,28 +585,17 @@ bool ServerNetwork::sendPlayerChoice(std::size_t clientIndex,
 									 const std::vector<unool::core::ChoiceOptionMeta>& optionMeta) {
 	if (!isClientConnected(clientIndex)) return false;
 
-	sf::Packet packet;
-	packet << std::to_underlying(MessageType::Choice);
-	packet << title;
-	packet << options.size();
-	for (const auto& option : options) {
-		packet << option;
-	}
-	packet << forced;
-	packet << errorMsg;
-	bool hasTimeout = timeoutMs.has_value();
-	packet << hasTimeout;
-	if (hasTimeout) {
-		packet << timeoutMs.value();
-	}
-	packet << currentPage;
-	packet << totalPages;
-	// BP 预览元数据：只追加在包尾，既有字段与字节不变。
-	packet << optionMeta.size();
-	for (const auto& meta : optionMeta) {
-		packet << meta.characterName << meta.level << meta.hp << meta.skinName << meta.imagePath;
-	}
+	unool::core::ChoicePrompt prompt;
+	prompt.title = title;
+	prompt.options = options;
+	prompt.forced = forced;
+	prompt.errorMsg = errorMsg;
+	prompt.timeoutMs = timeoutMs;
+	prompt.currentPage = currentPage;
+	prompt.totalPages = totalPages;
+	prompt.optionMeta = optionMeta;
 
+	sf::Packet packet = unool::protocol::makeChoice(prompt);
 	return sendPacketToClient(clientIndex, packet);
 }
 
@@ -638,9 +635,7 @@ bool ServerNetwork::sendPacketToClient(std::size_t clientIndex, sf::Packet& pack
 // 消息号仍封装在适配器内，Application 层不接触协议枚举。
 bool ServerNetwork::sendShopResult(std::size_t clientIndex, const std::string& resultJson) {
 	if (!isClientConnected(clientIndex)) return false;
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::ShopResult);
-	packet << resultJson;
+	sf::Packet packet = unool::protocol::makeStringMessage(MessageType::ShopResult, resultJson);
 	return sendPacketToClient(clientIndex, packet);
 }
 
@@ -725,12 +720,8 @@ void ClientNetwork::update() {
 bool ClientNetwork::sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex) {
 	if (!socket) return false;
 
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::ClientInput)
-		<< static_cast<int>(key)
-		<< playerId
-		<< selectedIndex;
-
+	sf::Packet packet = unool::protocol::makeClientInput(
+		static_cast<int>(key), playerId, selectedIndex);
 	return sendPacket(packet);
 }
 
@@ -741,9 +732,7 @@ bool ClientNetwork::send(sf::Packet& packet) {
 
 bool ClientNetwork::sendShopPurchase(const std::string& purchaseData) {
 	if (!socket) return false;
-	sf::Packet packet;
-	packet << static_cast<int>(MessageType::ShopPurchase);
-	packet << purchaseData;
+	sf::Packet packet = unool::protocol::makeStringMessage(MessageType::ShopPurchase, purchaseData);
 	return sendPacket(packet);
 }
 
@@ -756,14 +745,6 @@ std::optional<sf::Packet> ClientNetwork::receivePacket() {
 		return packet;
 	}
 	return std::nullopt;
-}
-
-std::optional<int> ClientNetwork::peekMessageType() const {
-	if (receivedPackets.empty()) return std::nullopt;
-	sf::Packet copy = receivedPackets.front();
-	int msgType;
-	if (!(copy >> msgType)) return std::nullopt;
-	return msgType;
 }
 
 bool ClientNetwork::sendPacket(sf::Packet& packet) {

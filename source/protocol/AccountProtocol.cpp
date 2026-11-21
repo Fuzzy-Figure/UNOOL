@@ -7,6 +7,7 @@ namespace unool::protocol {
 	sf::Packet makeRegisterRequest(const std::string& username, const std::string& password) {
 		sf::Packet packet;
 		packet << static_cast<int>(MessageType::RegisterRequest);
+		packet << kProtocolVersion;
 		packet << username;
 		packet << password;
 		return packet;
@@ -15,10 +16,12 @@ namespace unool::protocol {
 	sf::Packet makeLoginRequest(const std::string& username, const std::string& password) {
 		sf::Packet packet;
 		packet << static_cast<int>(MessageType::LoginRequest);
+		packet << kProtocolVersion;
 		packet << username;
 		packet << password;
 		return packet;
 	}
+
 
 	sf::Packet makeCheckUsernameRequest(const std::string& username) {
 		sf::Packet packet;
@@ -81,8 +84,24 @@ namespace unool::protocol {
 		return packet;
 	}
 
-	std::optional<AccountRequest> parseAccountRequest(sf::Packet& packet) {
+	sf::Packet makeVersionMismatchResponse() {
+		return makeAccountResponse(MessageType::LoginResponse, false,
+		                           std::string(kProtocolVersionMismatch));
+	}
+
+	std::optional<std::uint32_t> peekProtocolVersion(sf::Packet& packet) {
+		std::uint32_t version{};
+		if (!(packet >> version)) return std::nullopt;
+		return version;
+	}
+
+	std::optional<AccountRequest> parseAccountRequest(sf::Packet& packet, bool withVersion) {
 		AccountRequest req;
+		if (withVersion) {
+			const auto version = peekProtocolVersion(packet);
+			if (!version) return std::nullopt;
+			req.versionMatches = isProtocolVersionCompatible(*version);
+		}
 		if (!(packet >> req.username >> req.password)) return std::nullopt;
 		return req;
 	}

@@ -371,6 +371,9 @@ userDatas.json
 
 todoList.txt
 
+# P3-6 打包产物（tools/make_release.py 输出，进 Release 附件不进版本库）
+dist/
+
 !dep/SFML/bin/
 !dep/SFML/bin/**
 

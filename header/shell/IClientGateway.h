@@ -12,15 +12,9 @@ namespace unool::shell {
 	// 以复用其纯标准库的会话状态 6 方法，IClientSession 本身保持不动（S1 口径：
 	// 纯标准库、不含 SFML / nlohmann）。
 	//
-	// 阶段 4 · S3b1（用户 51.11 口径②A）：新增两个入站纯虚 receivePacket /
-	// peekMessageType，使 PacketDispatcher 的 next() / replyHeartbeat() 可以从具体
-	// ClientNetwork& 泛化到本端口。std::optional<sf::Packet> 要求 sf::Packet 为完整
-	// 类型，因此本头显式包含 <SFML/Network.hpp>（②A 原文允许端口「可含 sf::Packet」，
-	// S3a 的仅前向声明轻量化在此让位于完整类型要求）。
-	//
-	// 端口现在覆盖两个 Scene 的 8 处 net.* 调用与 PacketDispatcher 的收包动作；
-	// 三处 PacketDispatcher::next(ClientNetwork&) 调用点因派生→基类隐式转换零改动。
-	// 协议构造 / 响应解析仍留在 LoginScene.cpp，按 51.5 ①A 归 S3b2 再上移。
+	// 入站只有 receivePacket：包一旦取走就从网关移除，是否消费由上层
+	// ConnectionState 的显式队列决定（P1-3）。原先的 peekMessageType 只服务于
+	// 已删除的 PacketDispatcher 的「peek 后不消费」约定，随之一并移除。
 	class IClientGateway : public unool::core::IClientSession {
 	public:
 		virtual bool send(sf::Packet& packet) = 0;
@@ -28,7 +22,6 @@ namespace unool::shell {
 		virtual void setPlayerId(std::size_t id) = 0;
 
 		virtual std::optional<sf::Packet> receivePacket() = 0;
-		virtual std::optional<int> peekMessageType() const = 0;
 	};
 
 }

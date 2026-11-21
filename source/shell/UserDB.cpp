@@ -1,4 +1,5 @@
 #include "UserDB.h"
+#include "Crypto.h"
 #include "utils.h"
 #include <algorithm>
 #include <chrono>
@@ -6,6 +7,7 @@
 #include <ctime>
 #include <fstream>
 #include <functional>
+#include <cstdlib>
 
 
 namespace {
@@ -15,6 +17,8 @@ namespace {
 	// 工作目录，也不会另建一份看似「玩家数据丢失」的空数据库。
 	const std::string& dataFile() {
 		static const std::string path = []() -> std::string {
+			// Arch-C P2-3：UNOOL_USERDATA 环境变量覆盖存档路径（支持双实例互不覆盖）。
+			if (auto overridePath = unool::envVar("UNOOL_USERDATA")) return *overridePath;
 			const auto underRoot = unool::paths::resourceRoot() / "userDatas.json";
 			if (std::filesystem::is_regular_file(underRoot)) return underRoot.string();
 			const auto found = unool::paths::locate("userDatas.json");
@@ -39,7 +43,8 @@ bool UserDB::registerUser(const std::string& username, const std::string& passwo
 		return false;
 	}
 	UserInfo info;
-	info.password = password;
+	info.salt = unool::crypto::makeRandomSaltHex();
+	info.passwordHash = unool::crypto::derivePasswordHash(password, info.salt);
 	info.points = 0;
 	info.wins = 0;
 	info.losses = 0;
@@ -55,7 +60,13 @@ std::optional<UserInfo> UserDB::login(const std::string& username, const std::st
 		errorMessage = "用户名不存在";
 		return std::nullopt;
 	}
-	if (it->second.password != password) {
+	const UserInfo& info = it->second;
+	if (info.passwordHash.empty() || info.salt.empty()) {
+		errorMessage = "账号数据为旧格式，请重置 userDatas.json 后重新注册（旧明文口令不再兼容）";
+		return std::nullopt;
+	}
+	const std::string attempt = unool::crypto::derivePasswordHash(password, info.salt);
+	if (!unool::crypto::constantTimeEqualsHex(attempt, info.passwordHash)) {
 		errorMessage = "密码错误";
 		return std::nullopt;
 	}
@@ -177,6 +188,22 @@ void UserDB::load() {
 		nlohmann::json j;
 		j = nlohmann::json::parse(file, nullptr, true, true);
 		users_ = j.get<std::unordered_map<std::string, UserInfo>>();
+		// Arch-C P2-1：检测旧明文口令格式（有 password 字段但无 passwordHash/salt）。
+		// 破坏性换代不兼容旧数据：这些账号无法登录，明确提示重置而不是静默放行。
+		std::size_t legacyCount = 0;
+		for (auto& [name, info] : users_) {
+			auto it = j.find(name);
+			if (it != j.end() && it->contains("password")
+				&& info.passwordHash.empty()) {
+				++legacyCount;
+			}
+		}
+		if (legacyCount > 0) {
+			std::println(stderr,
+				"[UserDB] 检测到 {} 个旧明文口令账号，已按新格式忽略其口令；"
+				"请删除 {} 中这些账号后重新注册（一次性迁移路径）",
+				legacyCount, dataFile());
+		}
 	} catch (const std::exception& e) {
 		std::println(stderr, "[UserDB] 解析 {} 失败: {}", dataFile(), e.what());
 		throw;

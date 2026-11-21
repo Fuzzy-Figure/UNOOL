@@ -2,13 +2,33 @@
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
 #include "AccountEvent.h"
-#include <SFML/Network.hpp>
 #include "shell/IShopOpener.h"
-#include "PacketDispatcher.h"
-#include <utility>
+#include <algorithm>
+#include <chrono>
+#include <format>
+#include <print>
+#include <string>
+#include <vector>
 
+// P1-3/P1-4：收发均经 ConnectionState；协议构造上移到语义方法，本单元只做 View 与事件翻译。
 
-LoginScene::LoginScene(GameRenderer& r, unool::shell::IClientGateway& n,
+// MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
+using unool::protocol::MessageType;
+
+namespace {
+
+	using Vm = unool::shell::LoginViewModel;
+
+	// 注入给 ViewModel 的单调时钟（毫秒）。VM 不读系统时钟，超时逻辑才能 headless 断言。
+	std::int64_t steadyNowMs() {
+		return std::chrono::duration_cast<std::chrono::milliseconds>(
+				   std::chrono::steady_clock::now().time_since_epoch())
+			.count();
+	}
+
+}
+
+LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
 					   unool::shell::IShopOpener& opener, const std::string& title)
 	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
@@ -54,32 +74,20 @@ LoginScene::Result LoginScene::run() {
 		for (auto ev = renderer.pollEvent(); ev; ev = renderer.pollEvent()) {
 			handleEvent(*ev);
 		}
-		net.update();
+		// P1-3：连接状态机每帧统一驱动 IO、心跳与入站队列。
+		net.pump();
 		pollAccountPackets();
 
-		// 服务端裁定开局后只 peek、不消费 GameStart：跨阶段留包约定要求把它交给
-		// gamePhase 打印并处理。大厅 / 匹配等待都生效，覆盖「刚点退出匹配、对手
-		// 同时点开始」的竞态——以服务端的 GameStart 为准直接进游戏。
-		if (auto peek = net.peekMessageType();
-			peek && *peek == static_cast<int>(MessageType::GameStart)
-			&& (mode == Mode::Lobby || mode == Mode::Matching)) {
-			status = Status::Done;
-		}
-		// 匹配阶段不再有「无限等待」：断线直接结束会话，取消请求 3 秒无应答则本地兜底回大厅。
-		else if (mode == Mode::Matching) {
-			if (!net.isConnected()) {
-				status = Status::Done;
-				result.ok = false;
-			}
-			else if (status == Status::WaitingCancel
-					 && std::chrono::steady_clock::now() - cancelRequestedAt_ >= std::chrono::seconds(3)) {
-				backToLobby(); // 超时兜底：静默回大厅，不显示文字提示
-			}
-		}
+		// 每帧判定交给 ViewModel：GameStart 可见即结束登录阶段（包留给 gamePhase），
+		// 匹配中断线结束会话，取消请求 3 秒无应答本地兜底回大厅。
+		vm.onFrame({ steadyNowMs(), net.contains(MessageType::GameStart), net.isConnected() });
+		executeActions();
+		printLogs();
+
 		render();
-		if (status == Status::Done) break;
+		if (vm.done()) break;
 	}
-	return result;
+	return vm.session();
 }
 
 void LoginScene::handleEvent(const sf::Event& event) {
@@ -104,214 +112,128 @@ void LoginScene::handleEvent(const sf::Event& event) {
 }
 
 void LoginScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
-	auto sc = key.scancode;
-	if (sc == sf::Keyboard::Scancode::Escape) {
-		// 匹配等待期间 Esc = 退出匹配（与按钮一致），不再直接关掉整个客户端
-		if (mode == Mode::Matching) {
-			if (status == Status::WaitingMatch) sendCancelMatchmaking();
+	// 所有「这个键在当前状态下有没有意义」的判断都在 ViewModel 里，这里只做键位翻译。
+	switch (key.scancode) {
+		case sf::Keyboard::Scancode::Escape:
+			vm.escape();
 			return;
-		}
-		renderer.closeWindow();
-		return;
-	}
-	if (mode == Mode::Lobby || mode == Mode::Matching) return; // 大厅 / 匹配等待仅鼠标操作
-	if (status != Status::Idle) return; // 等待响应时不接受输入
-	if (sc == sf::Keyboard::Scancode::Backspace) {
-		if (focus == Focus::Username && !username.empty()) username.pop_back();
-		else if (focus == Focus::Password && !password.empty()) password.pop_back();
-		return;
-	}
-	if (sc == sf::Keyboard::Scancode::Tab) {
-		if (focus == Focus::Username) focus = Focus::Password;
-		else if (focus == Focus::Password) focus = Focus::Username;
-		else focus = Focus::Username;
-		return;
-	}
-	if (sc == sf::Keyboard::Scancode::Enter) {
-		if (focus == Focus::Username) {
-			focus = Focus::Password;
-		}
-		else if (focus == Focus::Password) {
-			if (mode == Mode::Login) sendLoginRequest();
-			else sendCheckUsername();
-		}
-		return;
+		case sf::Keyboard::Scancode::Backspace:
+			vm.backspace();
+			return;
+		case sf::Keyboard::Scancode::Tab:
+			vm.toggleFocus();
+			return;
+		case sf::Keyboard::Scancode::Enter:
+			vm.submit();
+			return;
+		default:
+			return;
 	}
 }
 
 void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
-	if (mode == Mode::Lobby || mode == Mode::Matching) return;
-	if (status != Status::Idle) return;
-	if (focus == Focus::None) return;
-	char32_t ch = te.unicode;
-	// 只接受可打印 ASCII (33..126)，排除空格 (对齐 safeReadNoSpace 规则)
-	if (ch < 33 || ch > 126) return;
-	char c = static_cast<char>(ch);
-	if (focus == Focus::Username) {
-		if (username.size() < 32) username.push_back(c);
-	}
-	else if (focus == Focus::Password) {
-		if (password.size() < 32) password.push_back(c);
-	}
+	vm.typeChar(te.unicode);
 }
 
 void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
-	if (mode == Mode::Matching) {
-		// 退出中不再重复发请求，等服务端确认或 3 秒超时后由 run() 回到大厅
-		if (status == Status::WaitingMatch && cancelMatchBtn.contains(pos)) {
-			sendCancelMatchmaking();
-		}
-		return;
-	}
-	if (mode == Mode::Lobby) {
-		// 签到结果弹窗：点击任意位置关闭
-		if (checkinPopup) {
-			checkinPopup = false;
+	// 几何命中留在这里（矩形由 layoutBoxes 算好），命中之后一律交给 VM。
+	switch (vm.mode()) {
+		case Vm::Mode::Matching:
+			// 退出中不再重复发请求，等服务端确认或 3 秒超时后由 run() 回到大厅。
+			if (cancelMatchBtn.contains(pos)) vm.clickCancelMatch();
 			return;
-		}
-		if (status != Status::Idle) return;
-		if (checkinBtn.contains(pos)) {
-			sendCheckinRequest();
-			return;
-		}
-		if (startGameBtn.contains(pos)) {
-			// 退出匹配功能：不再点完就 Done 进入 gamePhase 空等，而是留在本场景的
-			// 匹配等待界面；收到 GameStart 后 run() 才结束（包留给 gamePhase）。
-			sf::Packet readyPkt = unool::protocol::makeReadyToPlay();
-			if (!net.send(readyPkt)) {
-				message = "发送失败，请重试";
+
+		case Vm::Mode::Lobby:
+			// 签到结果弹窗：点击任意位置关闭（优先于其它按钮）。
+			if (vm.checkinPopup()) {
+				vm.dismissCheckinPopup();
 				return;
 			}
-			mode = Mode::Matching;
-			status = Status::WaitingMatch;
-			clearMatchNotice(); // 自己已加入匹配，大厅的「对手已开始匹配」横幅不再需要
-			message.clear();
-			matchStartedAt_ = std::chrono::steady_clock::now();
-			return;
-		}
-		if (lobbyShopBtn.contains(pos)) {
-			// 进入商城，退出后回到大厅（S3a：只把构造 / 运行上移到组合根，
-			// 此处仅发意图；断线与关窗判定仍在原位置，行为等价）。
-		// 匹配提示状态随意图一起交给商城：商城期间对手开始 / 退出匹配时
-		// ShopScene 就地写回，退出商城后大厅横幅自动同步（无需回传文案）。
-			shopOpener.openShop(username, matchNotice_);
-			if (!net.isConnected() || !renderer.windowIsOpen()) {
-				status = Status::Done;
-				result.ok = false;
+			if (checkinBtn.contains(pos)) {
+				vm.clickCheckin();
+				return;
+			}
+			if (startGameBtn.contains(pos)) {
+				vm.clickStartGame();
+				return;
+			}
+			if (lobbyShopBtn.contains(pos)) {
+				vm.clickShop();
+				return;
 			}
 			return;
-		}
-		return;
+
+		default:
+			break;
 	}
-	if (status != Status::Idle) return;
+
 	if (usernameBox.contains(pos)) {
-		focus = Focus::Username;
+		vm.focusUsername();
 		return;
 	}
 	if (passwordBox.contains(pos)) {
-		focus = Focus::Password;
+		vm.focusPassword();
 		return;
 	}
 	if (loginBtn.contains(pos)) {
-		mode = Mode::Login;
-		focus = Focus::None;
-		sendLoginRequest();
+		vm.clickLogin();
 		return;
 	}
 	if (registerBtn.contains(pos)) {
-		mode = Mode::Register;
-		focus = Focus::None;
-		sendCheckUsername();
+		vm.clickRegister();
 		return;
 	}
 }
 
-void LoginScene::sendLoginRequest() {
-	if (username.empty() || password.empty()) {
-		message = "用户名和密码不能为空";
-		return;
+void LoginScene::executeActions() {
+	for (const auto action : vm.takeActions()) {
+		switch (action) {
+			case Vm::Action::SendLogin:
+				loginSentMs_ = steadyNowMs();
+				if (!net.sendLogin(vm.username(), vm.password())) {
+					loginSentMs_ = 0;
+					vm.onActionFailed(action);
+				}
+				break;
+			case Vm::Action::SendRegister:
+				if (!net.sendRegister(vm.username(), vm.password())) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SendCheckUsername:
+				if (!net.sendCheckUsername(vm.username())) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SendReadyToPlay:
+				if (!net.sendReadyToPlay()) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SendCheckin:
+				if (!net.sendCheckin()) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SendCancelMatchmaking:
+				if (!net.sendCancelMatchmaking()) vm.onActionFailed(action);
+				break;
+			case Vm::Action::OpenShop:
+				// 商城的断线 / 关窗判定仍在这里收口：返回值只表达「会话是否还能继续」。
+				shopOpener.openShop(vm.username(), vm.matchNotice());
+				vm.onShopClosed(net.isConnected() && renderer.windowIsOpen());
+				break;
+			case Vm::Action::CloseWindow:
+				renderer.closeWindow();
+				break;
+		}
 	}
-	sf::Packet req = unool::protocol::makeLoginRequest(username, password);
-	if (!net.send(req)) {
-		message = "发送失败，请关闭客户端的.exe文件后重试";
-		return;
-	}
-	status = Status::WaitingLogin;
-	message = "登录中...";
 }
 
-void LoginScene::sendRegisterRequest() {
-	if (password.empty()) {
-		message = "密码不能为空";
-		status = Status::Idle;
-		return;
+void LoginScene::printLogs() {
+	for (const auto& line : vm.takeLogs()) {
+		std::println("{} {}", titleBrackets, line);
 	}
-	sf::Packet req = unool::protocol::makeRegisterRequest(username, password);
-	if (!net.send(req)) {
-		message = "发送失败，请重试";
-		status = Status::Idle;
-		return;
-	}
-	status = Status::WaitingRegister;
-	message = "注册中...";
-}
-
-void LoginScene::sendCheckUsername() {
-	if (username.empty()) {
-		message = "用户名不能为空";
-		return;
-	}
-	sf::Packet req = unool::protocol::makeCheckUsernameRequest(username);
-	if (!net.send(req)) {
-		message = "发送失败，请重试";
-		return;
-	}
-	status = Status::WaitingCheck;
-	message = "检查用户名...";
-}
-
-void LoginScene::sendCheckinRequest() {
-	sf::Packet req = unool::protocol::makeCheckinRequest();
-	if (!net.send(req)) {
-		message = "发送失败，请重试";
-		return;
-	}
-	status = Status::WaitingCheckin;
-}
-
-void LoginScene::sendCancelMatchmaking() {
-	sf::Packet req = unool::protocol::makeCancelMatchmaking();
-	if (!net.send(req)) {
-		// 发包失败也不能把用户困在等待界面，本地直接回大厅（不显示文字提示）
-		backToLobby();
-		return;
-	}
-	status = Status::WaitingCancel;
-	message.clear();
-	cancelRequestedAt_ = std::chrono::steady_clock::now();
-}
-
-void LoginScene::backToLobby() {
-	mode = Mode::Lobby;
-	status = Status::Idle;
-	message.clear(); // 退出匹配静默返回大厅，不显示一次性文字提示
-}
-
-void LoginScene::clearMatchNotice() {
-	matchNotice_.opponentMatching = false;
-	matchNotice_.opponentName.clear();
 }
 
 void LoginScene::pollAccountPackets() {
-	// 阶段 4 · S2：收包动作收拢到 PacketDispatcher。订阅集在原有 5 类账号响应上
-	// 增加 MatchmakingCancelled / MatchmakingStarted（共 7 类；Heartbeat 由
-	// dispatcher 内部统一消费并回复），「非订阅包不消费、留给 gamePhase」的
-	// 跨阶段留包约定由 next() 逐字保留。
-	// 阶段 4 · S3b2（53.9 ②A）：响应解析上移到 unool::protocol::parseAccountEvent()，
-	// 结果以同步值对象返回；订阅集、每帧顺序、continue 与链式请求
-	// （查重→注册→登录）的同帧触发点逐字保留，message / status / mode /
-	// result / checkinPopup 仍由 View 写。
-	while (auto next = unool::shell::PacketDispatcher::next(net, {
+	// 收包动作收拢在 ConnectionState 的显式队列：只消费订阅的 7 类，
+	// 其余（尤其 GameStart）留在队列里交给 gamePhase。
+	// ConnectionInfo 属于「连接」而非「账号状态」，就地处理（setPlayerId + 日志）；
+	// 其余响应解析成值对象后交给 ViewModel，解析失败走 onAccountParseFailure。
+	while (auto next = net.take({
 			   MessageType::ConnectionInfo,
 			   MessageType::CheckUsernameResponse,
 			   MessageType::RegisterResponse,
@@ -326,107 +248,33 @@ void LoginScene::pollAccountPackets() {
 				auto event = unool::protocol::parseAccountEvent(mt, packet);
 				if (event) {
 					net.setPlayerId(event->pid);
-					std::println("{} 分配到玩家: {}", titleBrackets, username);
+					std::println("{} 分配到玩家: {}", titleBrackets, vm.username());
 				}
 				continue;
 			}
 
-			case MessageType::CheckUsernameResponse:
-				if (status != Status::WaitingCheck) continue;
-				{
-					auto event = unool::protocol::parseAccountEvent(mt, packet);
-					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
-					if (event->exists) {
-						message = "该用户名已存在";
-						status = Status::Idle;
-					}
-					else {
-						message = "用户名可用，继续注册";
-						sendRegisterRequest(); // 自动进入注册请求
-					}
-				}
+			case MessageType::MatchmakingStarted:
+				vm.onMatchmakingStarted(unool::protocol::parseMatchmakingStarted(packet).value_or(std::string{}));
 				continue;
 
-			case MessageType::RegisterResponse:
-				if (status != Status::WaitingRegister) continue;
-				{
-					auto event = unool::protocol::parseAccountEvent(mt, packet);
-					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
-					if (event->ok) {
-						message = "注册成功，自动登录中...";
-						sendLoginRequest(); // 注册成功，自动登录
-					}
-					else {
-						message = std::format("注册失败: {}", event->msg);
-						status = Status::Idle;
-					}
-				}
+			case MessageType::MatchmakingCancelled:
+				vm.onMatchmakingCancelled();
 				continue;
 
-			case MessageType::LoginResponse:
-				if (status != Status::WaitingLogin) continue;
-				{
-					auto event = unool::protocol::parseAccountEvent(mt, packet);
-					if (!event) { message = "响应解析失败"; status = Status::Idle; continue; }
-					if (event->ok) {
-						result.username = username;
-						result.password = password;
-						result.points = event->points;
-						result.wins = event->wins;
-						result.losses = event->losses;
-						result.ok = true;
-						// 登录成功后切换到大厅模式
-						mode = Mode::Lobby;
-						status = Status::Idle;
-						message = "登录成功";
-						std::println("{} 登录成功: {} 积分={} 胜={} 负={}", titleBrackets, event->msg, event->points, event->wins, event->losses);
-					}
-					else {
-						message = std::format("登录失败: {}", event->msg);
-						status = Status::Idle;
-					}
+			default: {
+				auto event = unool::protocol::parseAccountEvent(mt, packet);
+				if (!event) {
+					vm.onAccountParseFailure(mt);
+					continue;
 				}
-				continue;
-
-				// 签到结果：弹出结果框，同步最新积分
-			case MessageType::CheckinResponse:
-				if (status != Status::WaitingCheckin) continue;
-				{
-					auto event = unool::protocol::parseAccountEvent(mt, packet);
-					// parseAccountEvent 对该类型恒返回值对象（不检查 >> 结果），
-					// 与原 View 的 msg / points 默认值行为逐字一致。
-					checkinMsg = event ? event->msg : std::string{};
-					checkinPopup = true;
-					result.points = event ? event->points : 0;
-					status = Status::Idle;
+				// 登录往返耗时：把「服务端口令派生」与「网络 / 帧循环」分开看。
+				if (mt == MessageType::LoginResponse && loginSentMs_ != 0) {
+					std::println("{} 登录往返 {} ms", titleBrackets, steadyNowMs() - loginSentMs_);
+					loginSentMs_ = 0;
 				}
-				continue;
-
-				// 对手开始匹配：大厅显示常驻横幅，直到对手退出 / 掉线或自己点开始游戏。
-				// 不检查 status —— 该广播可能「先于 LoginResponse」到达（对手已准备、
-				// 自己才刚登录），服务端也会在 onLoginSucceeded 里补发一次。
-			case MessageType::MatchmakingStarted: {
-				auto who = unool::protocol::parseMatchmakingStarted(packet);
-				const std::string whoName = who.value_or(std::string{});
-				if (whoName.empty() || whoName == username) continue; // 坏包 / 自己发起
-				matchNotice_.opponentMatching = true;
-				matchNotice_.opponentName = whoName;
-				std::println("{} 对手「{}」已开始匹配，请点击「开始游戏」加入", titleBrackets, whoName);
+				vm.onAccountEvent(*event);
 				continue;
 			}
-
-												// 匹配解散事件由服务端广播给双方：清掉「对手已开始匹配」横幅，
-												// 处于匹配等待的一方静默回到大厅（不再显示退出匹配的文字提示）；
-												// 若此时 GameStart 已在队列中，run() 会优先让游戏开始。
-			case MessageType::MatchmakingCancelled: {
-				clearMatchNotice();
-				if (mode == Mode::Matching) backToLobby();
-				else if (mode == Mode::Lobby) message.clear();
-				continue;
-			}
-
-			default:
-				continue;
 		}
 	}
 }
@@ -435,6 +283,7 @@ void LoginScene::drawCheckinPopup() {
 	auto& window = renderer.getWindow();
 	auto& textMgr = renderer.getTextManager();
 	const sf::Vector2u winSize = window.getSize();
+	const std::string& checkinMsg = vm.checkinMsg();
 
 	// 先把文案拆成行，便于按行数动态计算弹窗高度
 	std::vector<std::string> lines;
@@ -559,13 +408,14 @@ void LoginScene::render() {
 	};
 
 	const sf::Vector2u winSize = window.getSize();
+	const std::string& message = vm.message();
 
-	if (mode == Mode::Matching) {
+	if (vm.mode() == Vm::Mode::Matching) {
 		// 顶部标题由 render() 开头统一绘制，此处不重复
-		std::string acctInfo = std::format("账号: {}  积分: {}", username, result.points);
+		std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
 		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
 
-		const bool cancelling = (status == Status::WaitingCancel);
+		const bool cancelling = (vm.status() == Vm::Status::WaitingCancel);
 		const std::string title = cancelling ? "正在退出匹配..." : "正在匹配对手...";
 		const sf::Vector2f titleSize = { 40, 80 };
 		const auto titleMeasured = textMgr.measureText(title, static_cast<unsigned int>(titleSize.y));
@@ -577,8 +427,7 @@ void LoginScene::render() {
 		const std::string sub = cancelling
 			? "正在等待服务器确认，请稍候"
 			: std::format("已准备，等待另一名玩家点击开始游戏（已等待 {} 秒）",
-						  std::chrono::duration_cast<std::chrono::seconds>(
-							  std::chrono::steady_clock::now() - matchStartedAt_).count());
+						  vm.matchElapsedSeconds());
 		const sf::Vector2f subSize = { 22, 44 };
 		const auto subMeasured = textMgr.measureText(sub, static_cast<unsigned int>(subSize.y));
 		textMgr.displayText(sub,
@@ -603,16 +452,16 @@ void LoginScene::render() {
 		return;
 	}
 
-	if (mode == Mode::Lobby) {
+	if (vm.mode() == Vm::Mode::Lobby) {
 		// 大厅模式：右上角显示账号名和积分
-		std::string acctInfo = std::format("账号: {}  积分: {}", username, result.points);
+		std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
 		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
 
 		// 「对手已开始匹配」常驻横幅：放在标题与签到按钮之间的空白区，
 		// 与底部的一次性 message 互不遮挡。
-		if (matchNotice_.opponentMatching) {
+		if (vm.matchNotice().opponentMatching) {
 			const std::string notice = std::format("对手「{}」已开始匹配，请点击「开始游戏」加入",
-												   matchNotice_.opponentName);
+												   vm.matchNotice().opponentName);
 			const sf::Vector2f noticeSize = { 26, 52 };
 			const auto noticeMeasured = textMgr.measureText(notice, static_cast<unsigned int>(noticeSize.y));
 			const float panelW = noticeMeasured.x + 100.f > 880.f ? noticeMeasured.x + 100.f : 880.f;
@@ -653,7 +502,7 @@ void LoginScene::render() {
 			gloss.setFillColor(sf::Color(255, 255, 255, 130));
 			window.draw(gloss);
 
-			const std::string label = (status == Status::WaitingCheckin) ? "签到中..." : "每日签到";
+			const std::string label = (vm.status() == Vm::Status::WaitingCheckin) ? "签到中..." : "每日签到";
 			const sf::Vector2f labelSize = { 28, 56 };
 			const sf::Vector2f labelMeasured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
 			textMgr.displayText(label,
@@ -685,16 +534,19 @@ void LoginScene::render() {
 							{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
 							hintSize, sf::Color(120, 120, 120));
 
-		if (checkinPopup) drawCheckinPopup();
+		if (vm.checkinPopup()) drawCheckinPopup();
 
 		window.display();
 		return;
 	}
 
 	// 登录/注册模式
+	const std::string& username = vm.username();
+	const std::string& password = vm.password();
+
 	// 用户名行
 	textMgr.displayText("用户名:", { usernameBox.position.x - 160.f, usernameBox.position.y + 15.f }, { 25, 50 });
-	drawBox(usernameBox, focus == Focus::Username);
+	drawBox(usernameBox, vm.focus() == Vm::Focus::Username);
 	textMgr.displayText(
 		username,
 		{ usernameBox.position.x + 15.f, usernameBox.position.y + 15.f },
@@ -703,7 +555,7 @@ void LoginScene::render() {
 
 	// 密码行 (明文显示)
 	textMgr.displayText("密码:", { passwordBox.position.x - 160.f, passwordBox.position.y + 15.f }, { 25, 50 });
-	drawBox(passwordBox, focus == Focus::Password);
+	drawBox(passwordBox, vm.focus() == Vm::Focus::Password);
 	textMgr.displayText(
 		password,
 		{ passwordBox.position.x + 15.f, passwordBox.position.y + 15.f },
@@ -717,7 +569,7 @@ void LoginScene::render() {
 	// 状态提示（按钮下方居中，避免与输入框重叠）
 	if (!message.empty()) {
 		const sf::Vector2f msgSize = { 25, 50 };
-		const sf::Vector2f msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
+		const auto msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
 		textMgr.displayText(message,
 							{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.78f },
 							msgSize, sf::Color::Red);
