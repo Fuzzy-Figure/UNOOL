@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  # Windows 运行器默认 ANSI 代码页是 1252，Python 的 stdout 会按它编码，
+  # 脚本里的中文 print 直接抛 UnicodeEncodeError（--check 第一条输出就挂）。
+  # 打开 UTF-8 模式后所有 python 步骤都能正常打印与读写中文。
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
 jobs:
   structure-and-static:
     name: 结构 / 编码 / 统计校验
@@ -14,7 +21,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # 保留 CRLF：结构校验会检查行尾约定
-          config: core.autocrlf=false
+          config: |
+            core.autocrlf=false
+            core.eol=crlf
 
       - uses: actions/setup-python@v5
         with:
@@ -61,7 +70,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          config: core.autocrlf=false
+          config: |
+            core.autocrlf=false
+            core.eol=crlf
 
       - name: 添加 MSBuild 到 PATH
         uses: microsoft/setup-msbuild@v2

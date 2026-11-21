@@ -17,4 +17,18 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
+  <!--
+    运行库复制。3 个 exe 都链接 SFML 的导入库，进程启动时必须能在输出目录
+    找到对应的 sfml-*.dll；缺了会直接 0xc0000135 起不来（CI 的「运行单测」
+    就是踩在这里：干净克隆的 x64\Release 里只有 exe，没有 dll）。
+    Debug / Release 各取 dep\SFML\bin 下的同名子目录，与 *-d.lib / *.lib 对应，
+    路径用 MSBuildThisFileDirectory 定位，不受工程目录深度影响。
+  -->
+  <Target Name="CopySfmlRuntime" AfterTargets="Build"
+          Condition="Exists('$(MSBuildThisFileDirectory)..\dep\SFML\bin\$(Configuration)')">
+    <ItemGroup>
+      <SfmlRuntimeDll Include="$(MSBuildThisFileDirectory)..\dep\SFML\bin\$(Configuration)\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SfmlRuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
