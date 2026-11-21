@@ -204,12 +204,13 @@ namespace {
 		r.check(vm.displayedIndices().size() == 25);
 		r.check(vm.totalPages() == 3);
 
-		// 输入会重置页码：先在 "h" 下翻到第 2 页
+		// 搜索模式下不翻页：A/D 已经变成关键词字符，翻页键在 View 的搜索分支里根本没绑。
 		vm.nextPage();
-		r.check(vm.page() == 1);
+		r.check(vm.page() == 0, "搜索模式翻页无效");
+		r.check(vm.rows().size() == 10, "仍停在第一页 10 行");
 		vm.typeChar(U'0');
 		r.check(vm.keyword() == "h0");
-		r.check(vm.page() == 0, "继续输入回到第 1 页");
+		r.check(vm.page() == 0);
 		r.check(vm.displayedIndices().size() == 10, "h0 匹配 h00..h09");
 		r.check(vm.rows().size() == 10);
 
@@ -303,22 +304,24 @@ namespace {
 		vm.setNow(1000);
 		(void)vm.takeActions();  // 清掉技能预取
 
-		// h00 已解锁：只提示，不发包
-		vm.clickRow(0);
+		// h00 已解锁：只提示，不发包（clickRow 会同时展开 h00 的两行皮肤）
+		moveCursorToHero(vm, 0);
 		r.check(!vm.currentRowBuyable());
 		vm.buyCurrent();
 		r.check(vm.purchaseMessage() == "已解锁");
 		r.check(vm.takeActions().empty());
+		vm.clickRow(0);  // 收起 h00：否则后面按行号点会命中它的皮肤行
+		r.check(vm.expandedHero() == static_cast<std::size_t>(-1));
 
-		// h01 无价：不可购买
-		vm.clickRow(1);
+		// h01 无价：不可购买（用 heroIdx 定位，免疫行号平移）
+		moveCursorToHero(vm, 1);
 		r.check(!vm.currentRowBuyable());
 		vm.buyCurrent();
 		r.check(vm.purchaseMessage() == "不可购买");
 		r.check(vm.takeActions().empty());
 
 		// h02 未解锁、售价 100、积分 150：可买
-		vm.clickRow(2);
+		moveCursorToHero(vm, 2);
 		r.check(vm.currentRowBuyable());
 		vm.buyCurrent();
 		r.check(vm.purchaseMessage() == "正在购买...");

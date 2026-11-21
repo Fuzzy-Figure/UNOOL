@@ -58,6 +58,8 @@ void enterLobby(LoginViewModel& vm) {
 	ok.wins = 5;
 	ok.losses = 2;
 	vm.onAccountEvent(ok);
+	// 登录成功会写一条日志；公共前置只负责「进大厅」，日志由各用例自己取。
+	(void)vm.takeLogs();
 }
 
 // --- 登录与输入 ---
@@ -222,12 +224,13 @@ void testRegisterChain(TestResult& r) {
 
 	// 可用但密码为空：链在注册前停住。
 	vm.clickRegister();
+	(void)vm.takeActions();  // 这一次查重请求已经发出，先排空再看后续
 	unool::protocol::AccountEvent free = makeEvent(MessageType::CheckUsernameResponse);
 	free.exists = false;
 	vm.onAccountEvent(free);
 	r.check(vm.status() == Status::Idle);
 	r.check(vm.message() == "密码不能为空");
-	r.check(vm.takeActions().empty());
+	r.check(vm.takeActions().empty(), "密码为空不再发注册请求");
 
 	// 有密码：查重 → 注册 → 自动登录。
 	LoginViewModel ok;
@@ -240,14 +243,17 @@ void testRegisterChain(TestResult& r) {
 	unool::protocol::AccountEvent okFree = makeEvent(MessageType::CheckUsernameResponse);
 	okFree.exists = false;
 	ok.onAccountEvent(okFree);
-	r.check(ok.message() == "用户名可用，继续注册");
+	// 「用户名可用，继续注册」会被紧接着的 requestRegister() 覆盖成「注册中...」，
+	// 与原 View 一致：用户实际看到的是注册中，不是可用提示。
+	r.check(ok.message() == "注册中...");
 	r.check(ok.status() == Status::WaitingRegister);
 	r.check(onlyAction(ok, Action::SendRegister));
 
 	unool::protocol::AccountEvent registered = makeEvent(MessageType::RegisterResponse);
 	registered.ok = true;
 	ok.onAccountEvent(registered);
-	r.check(ok.message() == "注册成功，自动登录中...");
+	// 同理：「注册成功，自动登录中...」被自动登录的「登录中...」覆盖。
+	r.check(ok.message() == "登录中...");
 	r.check(ok.status() == Status::WaitingLogin);
 	r.check(onlyAction(ok, Action::SendLogin));
 
