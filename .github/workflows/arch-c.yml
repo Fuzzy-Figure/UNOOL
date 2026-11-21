@@ -43,7 +43,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $files = Get-ChildItem -Recurse -File -Include *.h,*.cpp,*.vcxproj,*.filters,*.props,*.json |
-                   Where-Object { $_.FullName -notmatch '\\dep\\' -and $_.FullName -notmatch '\\x64\\' -and $_.FullName -notmatch '\.git\' }
+                   Where-Object { $_.FullName -notmatch '[\\/](dep|x64|\.git|\.vs)[\\/]' }
           $bad = @()
           foreach ($f in $files) {
             $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
