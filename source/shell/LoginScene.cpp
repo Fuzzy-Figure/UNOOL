@@ -2,7 +2,6 @@
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
 #include "AccountEvent.h"
-#include <SFML/Network.hpp>
 #include "shell/IShopOpener.h"
 #include <algorithm>
 #include <chrono>

@@ -7,6 +7,7 @@
 #include "test_connection.h"
 #include "test_gamelogic.h"
 #include "test_loginviewmodel.h"
+#include "test_protocol.h"
 #include "test_rules.h"
 #include "test_shopviewmodel.h"
 #include "platform/Platform.h"
@@ -102,6 +103,7 @@ int main() {
 	      + runConnectionStateTests()  // P1-3 ConnectionState 入站队列 / 心跳 / 断线
 	      + runLoginViewModelTests()   // P1-4 登录状态机（headless）
 	      + runShopViewModelTests()    // P1-4 商城状态机 / 导航 / 购买（headless）
+	      + runProtocolRoundTripTests() // P3-5 账号 / 商城协议 round-trip
 	      + runRulesTests()            // P3-5 冻结区玩法规则
 	      + runGameLogicTests();       // P3-5 GameLogic 测试台（fake-port）
 

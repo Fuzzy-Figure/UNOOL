@@ -100,6 +100,9 @@
     <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_protocol.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -120,6 +123,7 @@
     <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
     <ClInclude Include="..\..\source\tests\test_loginviewmodel.h" />
     <ClInclude Include="..\..\source\tests\test_shopviewmodel.h" />
+    <ClInclude Include="..\..\source\tests\test_protocol.h" />
     <ClInclude Include="..\..\source\tests\test_fakes.h" />
     <ClInclude Include="..\..\source\tests\test_support.h" />
   </ItemGroup>
