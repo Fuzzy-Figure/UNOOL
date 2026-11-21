@@ -11,8 +11,8 @@
 
 ## 构建与运行
 
-1. 用 Visual Studio 2026 打开 `UNOOL.slnx`，选 **x64**（Debug|x64 或 Release|x64），Ctrl+Shift+B 生成。**仅 x64**——Win32 配置为 C++20，无法通过编译。
-2. 把 `dep/SFML/bin` 下的 .dll 复制到 .exe 同目录（`x64/Debug/` 或 `x64/Release/`）。
+1. 用 Visual Studio 2026 打开 `UNOOL.slnx`，选 **x64**（Debug|x64 或 Release|x64），Ctrl+Shift+B 生成。解决方案只保留 x64 配置。
+2. SFML 的 .dll 由 `Projects/PlatformShell.props` 的 `CopySfmlRuntime` 在构建后自动复制到输出目录（Debug 取带 `-d` 的那套），一般无需手动处理；只有把 exe 单独拷走时才需要连带拷 dll。
 3. 先启动 `Server`（监听 **8888**，硬编码于 `ServerMain.cpp`），再启动 `Client`。多开客户端用同一 exe 启动多次，玩家座位由服务端分配。
 
 > 仓库 `client_config.json` 指向作者公网地址与 **14341** 端口，与服务端 8888 不同，这是内网穿透映射的**预期配置**，不是缺陷；本机直连把 `server.port` 改成 8888 即可。不要统一端口或加一致性校验。
@@ -70,7 +70,13 @@
 
 ## 工程结构
 
-`UNOOL.slnx` 含 5 个工程：`Server`、`Client`、`Tests`（可执行）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。仅 x64。`Core` 统一编译规则内核、协议与用例服务；`Adapters` 编译服务端适配器；`Tests` 为零依赖单测工程；平台实现由 `Projects/PlatformShell.props` 在 2 个 exe 中共用。新增源文件不手改工程文件——生成器以 `tools/projects.manifest.json` 为事实源，`--generate` 写条目、`--check` 阻止漂移（Tests 工程独立管理，不在该 manifest 内）。
+`UNOOL.slnx` 含 5 个工程：`Server`、`Client`、`Tests`（可执行）+ `UNOOL.Adapters`、`UNOOL.Core`（静态库）。仅 x64。`Core` 统一编译规则内核、协议与用例服务；`Adapters` 编译服务端适配器；`Tests` 为零依赖单测工程；平台实现由 `Projects/PlatformShell.props` 在 3 个 exe（Server / Client / Tests）中共用。新增源文件不手改工程文件——生成器以 `tools/projects.manifest.json` 为事实源，`--generate` 写条目、`--check` 阻止漂移（Tests 工程独立管理，不在该 manifest 内）。
+
+## 测试与 CI
+
+- **单测**：运行 `x64/<配置>/Tests.exe`，或在 VS 里把 `Tests` 设为启动项目。当前 714 项断言，覆盖规则内核与牌堆语义、协议全量 round-trip（含 27 个消息号方向分段）、`LoginViewModel` / `ShopViewModel` 状态机、UserDB 存档与等级差结算。断言器零宏，失败输出 `file:line: FAIL` 并以非零码退出；Debug / Release 结果一致（Debug 开着 `/RTC1` 与迭代器调试，判定更严格）。
+- **CI**（`.github/workflows/arch-c.yml`）：第一阶段做结构 / 编码 / 统计校验——`verify_structure.py --check` 防工程文件漂移、`gen_stats.py --check` 防角色表过期、全仓 UTF-8 · CRLF · BOM 约定；第二阶段 Debug / Release **矩阵并行**构建，两个配置各跑一遍单测。
+- **发布包**：`python tools/make_release.py x64/Release` 生成 `dist/UNOOL-Release.zip`，包内含 exe、SFML dll、素材、配置模板，以及「启动游戏.bat」「快速开始.txt」；`Tests.exe` 不进玩家包。
 
 ## 文档
 
@@ -91,7 +97,7 @@
 - 客户端断线后重连等待默认 600 秒；非阻塞 socket 的 `Partial` 重发可能破坏协议流。
 - 子技能强耦合父技能：父技能被移除后子技能仍可能触发并抛异常。
 - 协议为破坏性换代（Arch-C），旧版客户端 / 服务端互不兼容；版本握手在登录包完成。
-- 仅支持 Windows / x64；无单元测试与 CI（见 `CURRENT.md` 的待办）。
+- 仅支持 Windows / x64；单测与 CI 的现状见上文「测试与 CI」。
 
 ## License
 
