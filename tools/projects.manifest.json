@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Arch-C P0-1：工程文件的唯一事实源。verify_structure.py --generate 据此重写 4 个 vcxproj/filters 的 ClCompile/ClInclude/None 条目；--check 校验无漂移。新增 .cpp 放进 recursiveDirs 覆盖的目录即可被自动纳入；source/shell 为多工程共享目录，新增文件须在对应工程的 files 中登记一次（只改本文件，不改任何 .vcxproj/.filters）。",
+  "note": "Arch-C P0-1：工程文件的唯一事实源。verify_structure.py --generate 据此重写 5 个 vcxproj/filters 的 ClCompile/ClInclude/None 条目；--check 校验无漂移。新增 .cpp 放进 recursiveDirs 覆盖的目录即可被自动纳入；source/shell 为多工程共享目录，新增文件须在对应工程的 files 中登记一次（只改本文件，不改任何 .vcxproj/.filters）。pch 缺省或 {\"mode\": \"none\"} 表示该工程不用 PCH（Tests 全量 NotUsing）。",
   "conventions": {
     "lineEnding": "CRLF",
     "vcxprojBom": false,
@@ -208,6 +208,32 @@
       "none": [
         "client_config.json"
       ]
+    },
+    {
+      "name": "Tests",
+      "vcxproj": "Projects/Tests/Tests.vcxproj",
+      "filters": "Projects/Tests/Tests.vcxproj.filters",
+      "pch": {
+        "mode": "none"
+      },
+      "compile": {
+        "recursiveDirs": [
+          "source/tests"
+        ],
+        "files": [
+          "source/core/Crypto.cpp",
+          "source/shell/ConnectionState.cpp",
+          "source/shell/LoginViewModel.cpp",
+          "source/shell/ShopViewModel.cpp"
+        ]
+      },
+      "headers": {
+        "recursiveDirs": [
+          "source/tests"
+        ],
+        "files": []
+      },
+      "none": []
     }
   ]
 }

@@ -20,7 +20,7 @@
 
 | 项 | 状态 | 要点 |
 |---|---|---|
-| P0-1 工程文件生成器 | 已落地 | `verify_structure.py` 双模式；`tools/projects.manifest.json` 为工程条目唯一事实源；新增 `.cpp` 放进目录即可纳入；覆盖 PCH /FI、BOM、CRLF |
+| P0-1 工程文件生成器 | 已落地 | `verify_structure.py` 双模式；`tools/projects.manifest.json` 为工程条目唯一事实源（**5 个工程全纳入，含 Tests**）；新增 `.cpp` 放进目录即可纳入（测试文件放 `source/tests/` 亦然）；覆盖 PCH /FI、无 PCH 工程的全量 `NotUsing`、BOM、CRLF |
 | P0-2 合并 Client | 已落地 | 删除 Client2，保留单一 `Client` 工程；玩家座位由服务端分配；`Projects/Client2/` 构建残留（124 MB）已清除 |
 | P0-3 清理僵尸 | 已落地 | 移除 Win32 配置与 slnx 的 x86；`ICommands.h` / 占位库 / `reconnect()` / `setCredentials()` / `PacketDispatcher` + `peekMessageType` 已不存在（含 manifest 与 vcxproj 条目）；`.slnLaunch.user` 已忽略 |
 | P1-1 协议版本握手 | 已落地 | `MessageType` 改 `enum class uint16` + 显式分段编号（命令 1xx / 事件 2xx / 心跳 901），**枚举与 `toWire`/`isClientCommand`/`isServerEvent`/`isControlMessage` 均在 `unool::protocol`**；`kProtocolVersion=2`；登录 / 注册包首字段带版本，不匹配返回可读拒绝 |

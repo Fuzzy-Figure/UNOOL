@@ -1,5 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!-- ARCH-C:ITEMS:BEGIN -->
+  <ItemGroup>
+    <ClCompile Include="..\..\source\core\Crypto.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\LoginViewModel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_codec.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_connection.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_main.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_protocol.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_rules.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\source\tests\test_codec.h" />
+    <ClInclude Include="..\..\source\tests\test_connection.h" />
+    <ClInclude Include="..\..\source\tests\test_fakes.h" />
+    <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
+    <ClInclude Include="..\..\source\tests\test_loginviewmodel.h" />
+    <ClInclude Include="..\..\source\tests\test_protocol.h" />
+    <ClInclude Include="..\..\source\tests\test_rules.h" />
+    <ClInclude Include="..\..\source\tests\test_shopviewmodel.h" />
+    <ClInclude Include="..\..\source\tests\test_support.h" />
+  </ItemGroup>
+<!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -78,55 +129,6 @@
       <AdditionalDependencies>sfml-system.lib;sfml-network.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\source\tests\test_main.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_codec.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_connection.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_rules.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_protocol.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\LoginViewModel.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\source\core\Crypto.cpp">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\source\tests\test_codec.h" />
-    <ClInclude Include="..\..\source\tests\test_connection.h" />
-    <ClInclude Include="..\..\source\tests\test_rules.h" />
-    <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
-    <ClInclude Include="..\..\source\tests\test_loginviewmodel.h" />
-    <ClInclude Include="..\..\source\tests\test_shopviewmodel.h" />
-    <ClInclude Include="..\..\source\tests\test_protocol.h" />
-    <ClInclude Include="..\..\source\tests\test_fakes.h" />
-    <ClInclude Include="..\..\source\tests\test_support.h" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\UNOOL.Core.vcxproj">
       <Project>{a1000000-0000-4000-8000-000000000004}</Project>

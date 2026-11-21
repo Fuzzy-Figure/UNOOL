@@ -2,7 +2,7 @@
 
 两种模式：
   python tools/verify_structure.py --generate   依据 tools/projects.manifest.json 重写
-                                                4 个 .vcxproj 与 .filters 的条目区
+                                                5 个 .vcxproj 与 .filters 的条目区
   python tools/verify_structure.py --check      校验工程条目与 manifest 一致 + 结构不变量
                                                 （默认模式，CI 使用）
 
@@ -14,6 +14,7 @@ manifest 是工程文件条目的唯一事实源：
   - compile.recursiveDirs 下的 .cpp 自动纳入（新增 .cpp 放进这些目录即可）
   - compile.files / headers.files 是共享目录（source/shell）与显式需要的清单
   - 头文件、None、PCH、Filter 分类都由 manifest 推导
+  - pch 缺省 / "mode": "none" 表示该工程不用 PCH（Tests 全量 NotUsing）
 
 保留的既有结构检查（原 B+ 护栏）：
   1. XML 合法  2. slnx 引用  3. 条目指向的文件存在  4. #include 可解析
@@ -114,8 +115,10 @@ def expand_compile(pr):
             found.add(norm(f))
     for f in pr['compile'].get('files', []):
         found.add(norm(f))
-    pch_src = norm(pr['pch']['create'])
-    found.add(pch_src)
+    # 只有声明了 pch.create 的工程才有 PCH 创建单元；Tests 这类无 PCH 工程跳过
+    pch_src = (pr.get('pch') or {}).get('create')
+    if pch_src:
+        found.add(norm(pch_src))
     # 平台外壳由 PlatformShell.props 提供给 exe，不进任何工程条目
     return sorted(found)
 
@@ -132,6 +135,11 @@ def expand_headers(pr):
 
 
 def cpp_item_block(rel, pch_create, pch_header):
+    if pch_create is None:
+        # 无 PCH 工程（Tests）：每个单元显式 NotUsing，避免继承到默认的 Use。
+        return ('    <ClCompile Include="%s">\n'
+                '      <PrecompiledHeader>NotUsing</PrecompiledHeader>\n'
+                '    </ClCompile>' % rel)
     if norm(rel) == norm(pch_create):
         return ('    <ClCompile Include="%s">\n'
                 '      <PrecompiledHeader>Create</PrecompiledHeader>\n'
@@ -149,8 +157,9 @@ def build_items_xml(pr, m):
     proj_path = pr['vcxproj']
     # pch.create 是仓库根相对路径，需转成工程相对再与 cpp_rels 比较，
     # 否则 PCH 创建文件会被误标成 Use 导致 C1854 / C1083。
-    pch_create = rel_to(proj_path, pr['pch']['create'])
-    pch_header = pr['pch']['header']
+    pch = pr.get('pch') or {}
+    pch_create = rel_to(proj_path, pch['create']) if pch.get('create') else None
+    pch_header = pch.get('header', '')
 
     cpp_rels = [rel_to(proj_path, f) for f in expand_compile(pr)]
     h_rels = [rel_to(proj_path, f) for f in expand_headers(pr)]
@@ -286,6 +295,7 @@ def do_check(m):
         expect = build_items_xml(pr, m)
         a = [x.strip() for x in actual.splitlines() if x.strip()]
         e = [x.strip() for x in expect.splitlines() if x.strip()]
+        cpp_rels_expect = [rel_to(vp, f) for f in expand_compile(pr)]
         if a != e:
             missing = [x for x in e if x not in a]
             extra = [x for x in a if x not in e]
@@ -297,15 +307,25 @@ def do_check(m):
                 problems.append('%s: 另有 %d 缺 / %d 多' % (vp, max(0, len(missing) - 8), max(0, len(extra) - 8)))
         # PCH 语义护栏：manifest 声明的创建单元必须恰好被标为 Create。
         # 防止生成器把 pch.create 误判为普通 .cpp（曾导致 C1854 / C1083）。
-        pch_rel = rel_to(vp, pr['pch']['create'])
-        create_line = '<ClCompile Include="%s">' % pch_rel
-        if create_line in e:
-            idx = e.index(create_line)
-            if idx + 1 >= len(e) or e[idx + 1] != '<PrecompiledHeader>Create</PrecompiledHeader>':
-                problems.append('%s: PCH 创建单元 %s 未标记为 Create（会导致 C1854/C1083）' % (vp, pch_rel))
+        pch = pr.get('pch') or {}
         creates = [i for i, ln in enumerate(e) if ln == '<PrecompiledHeader>Create</PrecompiledHeader>']
-        if len(creates) != 1:
-            problems.append('%s: PCH Create 单元数量为 %d（应为 1）' % (vp, len(creates)))
+        if pch.get('create'):
+            pch_rel = rel_to(vp, pch['create'])
+            create_line = '<ClCompile Include="%s">' % pch_rel
+            if create_line in e:
+                idx = e.index(create_line)
+                if idx + 1 >= len(e) or e[idx + 1] != '<PrecompiledHeader>Create</PrecompiledHeader>':
+                    problems.append('%s: PCH 创建单元 %s 未标记为 Create（会导致 C1854/C1083）' % (vp, pch_rel))
+            if len(creates) != 1:
+                problems.append('%s: PCH Create 单元数量为 %d（应为 1）' % (vp, len(creates)))
+        else:
+            # 无 PCH 工程：不允许出现 Create，且每个编译单元都必须是 NotUsing。
+            if creates:
+                problems.append('%s: 未声明 PCH 却出现 Create 单元（%d 处）' % (vp, len(creates)))
+            not_using = sum(1 for ln in e if ln == '<PrecompiledHeader>NotUsing</PrecompiledHeader>')
+            if not_using != len(cpp_rels_expect):
+                problems.append('%s: NotUsing 单元 %d 个，与 .cpp 数 %d 不符'
+                                % (vp, not_using, len(cpp_rels_expect)))
         # filters 一致性
         fp = pr['filters']
         fa = [x.strip() for x in read_text(fp).splitlines() if x.strip()]
@@ -401,7 +421,8 @@ def do_legacy_checks():
             problems.append('协议头仍直接依赖规则内核: %s' % f)
     print('[5b] 协议头闭包检查完成')
 
-    shell_units = ('source/ClientMain.cpp', 'source/ServerMain.cpp', 'source/shell/ClientApp.cpp')
+    # 平台头只允许出现在 source/platform/ 与两个 exe 入口；shell 层一律走 platform:: 接口。
+    shell_units = ('source/ClientMain.cpp', 'source/ServerMain.cpp')
     for f in srcs:
         norm = f.replace('\\', '/')
         if win_include.search(read_code(f)) and not (norm.startswith('source/platform/') or norm in shell_units):

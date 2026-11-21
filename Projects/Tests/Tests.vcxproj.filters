@@ -1,81 +1,88 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\tests">
+      <UniqueIdentifier>{621B5400-5D5E-5386-9972-D50D9E1A7CD9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\core">
+      <UniqueIdentifier>{397E7E3E-ACCE-59D3-94F5-57C0E2252EF5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\shell">
+      <UniqueIdentifier>{585B3392-20E9-5081-A23F-B19395B8E7CE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\tests">
+      <UniqueIdentifier>{24594F2A-0264-564B-9D64-52BAABDC2C32}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\..\source\core\Crypto.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_codec.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_connection.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_rules.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\tests\test_protocol.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <Filter>源文件\shell</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\LoginViewModel.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\shell</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\shell</Filter>
     </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="..\..\source\tests\test_codec.cpp">
+      <Filter>源文件\tests</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="..\..\source\tests\test_connection.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_main.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_protocol.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_rules.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\source\tests\test_codec.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_connection.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_fakes.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_gamelogic.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\tests\test_rules.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_loginviewmodel.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\tests\test_shopviewmodel.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_protocol.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_rules.h">
+      <Filter>头文件\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_shopviewmodel.h">
+      <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_support.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\tests</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{7483de5b-9073-4f47-bc78-297b026a5ea7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{ab89e1bc-ba60-4a32-8c09-77c4da358387}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
 </Project>
