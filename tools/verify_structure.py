@@ -134,22 +134,24 @@ def expand_headers(pr):
     return sorted(found)
 
 
-def cpp_item_block(rel, pch_create, pch_header):
+def cpp_item_block(rel, pch_create, pch_header, extra=None):
+    lines = ['    <ClCompile Include="%s">' % rel]
     if pch_create is None:
         # 无 PCH 工程（Tests）：每个单元显式 NotUsing，避免继承到默认的 Use。
-        return ('    <ClCompile Include="%s">\n'
-                '      <PrecompiledHeader>NotUsing</PrecompiledHeader>\n'
-                '    </ClCompile>' % rel)
-    if norm(rel) == norm(pch_create):
-        return ('    <ClCompile Include="%s">\n'
-                '      <PrecompiledHeader>Create</PrecompiledHeader>\n'
-                '      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>\n'
-                '    </ClCompile>' % (rel, pch_header))
-    return ('    <ClCompile Include="%s">\n'
-            '      <PrecompiledHeader>Use</PrecompiledHeader>\n'
-            '      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>\n'
-            '      <ForcedIncludeFiles>%s;%%(ForcedIncludeFiles)</ForcedIncludeFiles>\n'
-            '    </ClCompile>' % (rel, pch_header, pch_header))
+        lines.append('      <PrecompiledHeader>NotUsing</PrecompiledHeader>')
+    elif norm(rel) == norm(pch_create):
+        lines.append('      <PrecompiledHeader>Create</PrecompiledHeader>')
+        lines.append('      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>' % pch_header)
+    else:
+        lines.append('      <PrecompiledHeader>Use</PrecompiledHeader>')
+        lines.append('      <PrecompiledHeaderFile>%s</PrecompiledHeaderFile>' % pch_header)
+        lines.append('      <ForcedIncludeFiles>%s;%%(ForcedIncludeFiles)</ForcedIncludeFiles>' % pch_header)
+    # 按文件覆盖的编译选项（manifest 的 compile.perFileOptions）：
+    # 条目上的元数据优先于 ItemDefinitionGroup，只影响这一个编译单元。
+    for key, value in (extra or {}).items():
+        lines.append('      <%s>%s</%s>' % (key, value, key))
+    lines.append('    </ClCompile>')
+    return '\n'.join(lines)
 
 
 def build_items_xml(pr, m):
@@ -164,11 +166,14 @@ def build_items_xml(pr, m):
     cpp_rels = [rel_to(proj_path, f) for f in expand_compile(pr)]
     h_rels = [rel_to(proj_path, f) for f in expand_headers(pr)]
     none_rels = [rel_to(proj_path, f) for f in pr.get('none', [])]
+    # 按文件覆盖的编译选项：manifest 里用仓库根相对路径登记，这里换成工程相对。
+    per_file = {rel_to(proj_path, k): v
+                for k, v in pr['compile'].get('perFileOptions', {}).items()}
 
     lines = []
     lines.append('  <ItemGroup>')
     for rel in cpp_rels:
-        lines.append(cpp_item_block(rel, pch_create, pch_header))
+        lines.append(cpp_item_block(rel, pch_create, pch_header, per_file.get(rel)))
     lines.append('  </ItemGroup>')
     lines.append('  <ItemGroup>')
     for rel in h_rels:

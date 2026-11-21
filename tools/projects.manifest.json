@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Arch-C P0-1：工程文件的唯一事实源。verify_structure.py --generate 据此重写 5 个 vcxproj/filters 的 ClCompile/ClInclude/None 条目；--check 校验无漂移。新增 .cpp 放进 recursiveDirs 覆盖的目录即可被自动纳入；source/shell 为多工程共享目录，新增文件须在对应工程的 files 中登记一次（只改本文件，不改任何 .vcxproj/.filters）。pch 缺省或 {\"mode\": \"none\"} 表示该工程不用 PCH（Tests 全量 NotUsing）。",
+  "note": "Arch-C P0-1：工程文件的唯一事实源。verify_structure.py --generate 据此重写 5 个 vcxproj/filters 的 ClCompile/ClInclude/None 条目；--check 校验无漂移。新增 .cpp 放进 recursiveDirs 覆盖的目录即可被自动纳入；source/shell 为多工程共享目录，新增文件须在对应工程的 files 中登记一次（只改本文件，不改任何 .vcxproj/.filters）。pch 缺省或 {\"mode\": \"none\"} 表示该工程不用 PCH（Tests 全量 NotUsing）。compile.perFileOptions 按文件覆盖编译选项（键为仓库根相对路径，值为 MSBuild 元数据名到取值的映射），生成到该 ClCompile 条目上，只影响这一个编译单元。",
   "conventions": {
     "lineEnding": "CRLF",
     "vcxprojBom": false,
@@ -36,7 +36,13 @@
           "source/shell/Socket.cpp",
           "source/shell/UserDB.cpp",
           "source/shell/JsonConfig.cpp"
-        ]
+        ],
+        "perFileOptions": {
+          "source/core/Crypto.cpp": {
+            "Optimization": "MaxSpeed",
+            "BasicRuntimeChecks": "Default"
+          }
+        }
       },
       "headers": {
         "recursiveDirs": [
