@@ -57,6 +57,9 @@
     <ClCompile Include="..\..\source\shell\ShopScene.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
+      <Filter>源文件\shell</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\TextManager.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
@@ -135,7 +138,13 @@
     <ClInclude Include="..\..\header\shell\LoginViewModel.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\shell\ShopPresentationCache.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\shell\ShopScene.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\ShopViewModel.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\Socket.h">

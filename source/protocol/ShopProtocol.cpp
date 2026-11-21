@@ -66,7 +66,7 @@ namespace unool::protocol {
 	}
 
 	// 阶段 4 · S3c（②A）：原 requestSkillInfo 手写 SkillInfoRequest 包（消息号 + dump）
-	// 逐字平移；pendingSkills 去重集合仍由 ShopScene 持有，本函数只接收去重后的 names。
+	// 逐字平移；pending 去重集合由 ShopViewModel 持有，本函数只接收去重后的 names。
 	sf::Packet makeSkillInfoRequestPacket(const std::vector<std::string>& names) {
 		SkillInfoRequestBody req;
 		req.names = names;

@@ -8,6 +8,7 @@
 #include "test_gamelogic.h"
 #include "test_loginviewmodel.h"
 #include "test_rules.h"
+#include "test_shopviewmodel.h"
 #include "platform/Platform.h"
 
 #include <cstdlib>
@@ -100,6 +101,7 @@ int main() {
 	      + runCodecRoundTripTests()   // P1-2 MessageCodec 成对序列化 round-trip
 	      + runConnectionStateTests()  // P1-3 ConnectionState 入站队列 / 心跳 / 断线
 	      + runLoginViewModelTests()   // P1-4 登录状态机（headless）
+	      + runShopViewModelTests()    // P1-4 商城状态机 / 导航 / 购买（headless）
 	      + runRulesTests()            // P3-5 冻结区玩法规则
 	      + runGameLogicTests();       // P3-5 GameLogic 测试台（fake-port）
 

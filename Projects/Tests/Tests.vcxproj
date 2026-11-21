@@ -97,10 +97,16 @@
     <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\LoginViewModel.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\source\core\Crypto.cpp">
@@ -113,6 +119,7 @@
     <ClInclude Include="..\..\source\tests\test_rules.h" />
     <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
     <ClInclude Include="..\..\source\tests\test_loginviewmodel.h" />
+    <ClInclude Include="..\..\source\tests\test_shopviewmodel.h" />
     <ClInclude Include="..\..\source\tests\test_fakes.h" />
     <ClInclude Include="..\..\source\tests\test_support.h" />
   </ItemGroup>

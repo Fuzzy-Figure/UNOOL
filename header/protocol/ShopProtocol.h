@@ -41,7 +41,7 @@ namespace unool::protocol {
 	                                 const std::string& skinName);
 
 	// 构造技能描述请求 packet（经 IClientGateway::send 发送）。
-	// names 应为调用方已去重的角色名集合（pendingSkills 去重仍在 ShopScene）。
+	// names 应为调用方已去重的角色名集合（pending 去重在 ShopViewModel）。
 	sf::Packet makeSkillInfoRequestPacket(const std::vector<std::string>& names);
 
 }

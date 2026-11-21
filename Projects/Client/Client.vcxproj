@@ -51,6 +51,11 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\shell\ShopViewModel.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\shell\TextManager.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -83,7 +88,9 @@
     <ClInclude Include="..\..\header\shell\InputAdapter.h" />
     <ClInclude Include="..\..\header\shell\LoginScene.h" />
     <ClInclude Include="..\..\header\shell\LoginViewModel.h" />
+    <ClInclude Include="..\..\header\shell\ShopPresentationCache.h" />
     <ClInclude Include="..\..\header\shell\ShopScene.h" />
+    <ClInclude Include="..\..\header\shell\ShopViewModel.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />
     <ClInclude Include="..\..\header\shell\TextManager.h" />
     <ClInclude Include="..\..\header\shell\UserDB.h" />
