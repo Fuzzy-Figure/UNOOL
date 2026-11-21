@@ -256,6 +256,12 @@ def build_filters_xml(pr, m):
     out.append('  </ItemGroup>')
     out.append('  <ItemGroup>')
     out.append('\n'.join(groups))
+    # props 提供的编译单元（PlatformShell.props 里的 WindowsPlatform.cpp）。
+    # 它们不进 vcxproj 条目（由 Import 带入），但 VS 会在 .filters 里补一行
+    # 以便在解决方案资源管理器里显示；这里照写一遍，避免 VS 保存后
+    # --check 报「与 manifest 派生结果不一致」而反复来回改。
+    for entry in pr.get('propsCompile', []):
+        out.append('    <ClCompile Include="%s" />' % entry)
     out.append('  </ItemGroup>')
     out.append('</Project>')
     return '\n'.join(out)

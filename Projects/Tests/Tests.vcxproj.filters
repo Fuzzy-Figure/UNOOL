@@ -90,5 +90,6 @@
     <ClInclude Include="..\..\source\tests\test_userdb.h">
       <Filter>头文件\tests</Filter>
     </ClInclude>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp" />
   </ItemGroup>
 </Project>

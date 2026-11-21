@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-<!-- ARCH-C:ITEMS:BEGIN -->
+  <!-- ARCH-C:ITEMS:BEGIN -->
   <ItemGroup>
     <ClCompile Include="pch.core.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -295,7 +295,7 @@
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /we4715 /MP /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -303,7 +303,7 @@
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\shell;$(SolutionDir)header\protocol;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /we4715 /MP /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -312,8 +312,7 @@
   <!-- 统一按源文件相对目录分层输出 obj，避免同名 cpp 的 obj 互相覆盖(MSB8027)。
        必须在 Target 内逐 item 展开相对目录：写在 ItemDefinitionGroup 中会在求值阶段被当成字面量，
        使 /Fo 收到未展开的元数据引用(不以反斜杠结尾)并触发 D8036。 -->
-  <Target Name="SetUniqueObjectFileName"
-          BeforeTargets="WarnCompileDuplicatedFilename;MakeDirsForCl;ClCompile">
+  <Target Name="SetUniqueObjectFileName" BeforeTargets="WarnCompileDuplicatedFilename;MakeDirsForCl;ClCompile">
     <ItemGroup>
       <ClCompile Condition="'%(ClCompile.Identity)' != ''">
         <ObjectFileName>$(IntDir)$([System.String]::new('%(ClCompile.RelativeDir)').Replace('..\', ''))</ObjectFileName>

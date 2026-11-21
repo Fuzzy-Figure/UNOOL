@@ -102,6 +102,9 @@
       "name": "Server",
       "vcxproj": "Projects/Server/Server.vcxproj",
       "filters": "Projects/Server/Server.vcxproj.filters",
+      "propsCompile": [
+        "$(MSBuildThisFileDirectory)..\\source\\platform\\WindowsPlatform.cpp"
+      ],
       "pch": {
         "create": "Projects/Server/pch.server.cpp",
         "header": "pch.server.h",
@@ -147,6 +150,9 @@
       "name": "Client",
       "vcxproj": "Projects/Client/Client.vcxproj",
       "filters": "Projects/Client/Client.vcxproj.filters",
+      "propsCompile": [
+        "$(MSBuildThisFileDirectory)..\\source\\platform\\WindowsPlatform.cpp"
+      ],
       "pch": {
         "create": "source/pch.cpp",
         "header": "pch.h",
@@ -213,6 +219,9 @@
       "name": "Tests",
       "vcxproj": "Projects/Tests/Tests.vcxproj",
       "filters": "Projects/Tests/Tests.vcxproj.filters",
+      "propsCompile": [
+        "$(MSBuildThisFileDirectory)..\\source\\platform\\WindowsPlatform.cpp"
+      ],
       "pch": {
         "mode": "none"
       },

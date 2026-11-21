@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-<!-- ARCH-C:ITEMS:BEGIN -->
+  <!-- ARCH-C:ITEMS:BEGIN -->
   <ItemGroup>
     <ClCompile Include="..\..\source\core\Crypto.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -105,7 +105,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\protocol;$(SolutionDir)header\contract;$(SolutionDir)header\shell;$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /we4715 /MP /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,7 +124,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)header;$(SolutionDir)header\core;$(SolutionDir)header\protocol;$(SolutionDir)header\contract;$(SolutionDir)header\shell;$(SolutionDir)dep\nlohmann;$(SolutionDir)dep\SFML\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 /MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /we4715 /MP /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

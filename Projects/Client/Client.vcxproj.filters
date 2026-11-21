@@ -162,5 +162,6 @@
     <None Include="..\..\client_config.json">
       <Filter>资源文件</Filter>
     </None>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp" />
   </ItemGroup>
 </Project>
