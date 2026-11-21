@@ -75,7 +75,7 @@
 ## 测试与 CI
 
 - **单测**：运行 `x64/<配置>/Tests.exe`，或在 VS 里把 `Tests` 设为启动项目。当前 714 项断言，覆盖规则内核与牌堆语义、协议全量 round-trip（含 27 个消息号方向分段）、`LoginViewModel` / `ShopViewModel` 状态机、UserDB 存档与等级差结算。断言器零宏，失败输出 `file:line: FAIL` 并以非零码退出；Debug / Release 结果一致（Debug 开着 `/RTC1` 与迭代器调试，判定更严格）。
-- **CI**（`.github/workflows/arch-c.yml`）：第一阶段做结构 / 编码 / 统计校验——`verify_structure.py --check` 防工程文件漂移、`gen_stats.py --check` 防角色表过期、全仓 UTF-8 · CRLF · BOM 约定；第二阶段 Debug / Release **矩阵并行**构建，两个配置各跑一遍单测。
+- **CI**（`.github/workflows/arch-c.yml`）：第一阶段做结构 / 编码 / 统计校验——`verify_structure.py --check` 防工程文件漂移、`gen_stats.py --check` 防角色表与本文件顶部数字过期、全仓 UTF-8 · CRLF · BOM 约定；第二阶段 Debug / Release **矩阵并行**构建，两个配置各跑一遍单测。
 - **发布包**：`python tools/make_release.py x64/Release` 生成 `dist/UNOOL-Release.zip`，包内含 exe、SFML dll、素材、配置模板，以及「启动游戏.bat」「快速开始.txt」；`Tests.exe` 不进玩家包。
 
 ## 文档
@@ -85,7 +85,7 @@
 - [`docs/characters.md`](docs/characters.md) — 自动生成的角色表与统计
 - [`docs/adr/`](docs/adr/) — 历史批次日志与旧 ADR 归档（不参与现状判断）
 - `tools/verify_structure.py` — 结构校验 + 工程文件生成器（`--check` / `--generate`）
-- `tools/gen_stats.py` — 角色 / 技能统计生成器（`--check`）
+- `tools/gen_stats.py` — 角色 / 技能统计生成器（`--generate` 同时同步本文件顶部的角色数与技能类数，`--check` 校验三处一致）
 
 ## 截图
 

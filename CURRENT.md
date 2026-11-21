@@ -30,7 +30,7 @@
 | P2-1 密码哈希 | 已落地 | salt + PBKDF2-HMAC-SHA256（12 万次，纯标准库实现于 `header/core/Crypto.h`）；落盘无明文；旧明文格式给出重置提示。单次派生 Release ≈46 ms / Debug ≈270 ms（HMAC 密钥块预计算、无堆分配；与优化前逐位等价，含 12 万次的落盘锚点由 `test_main.cpp` 的 RFC 向量锁定）；服务端每次登录/注册会打印这段耗时。**`Crypto.cpp` 单独开 MaxSpeed**（manifest 的 `compile.perFileOptions` → 条目级 `PrecompiledHeader=NotUsing` + `Optimization=MaxSpeed` + `BasicRuntimeChecks=Default`）：`/RTC1` 与优化互斥，Debug 下开着等于强制 `/Od`，实测同一份源码 `/Od+/RTC1` 318 ms、`/O2` 49 ms。**必须同时 `NotUsing` PCH**——`pch.core.h` 是 `/Od+/RTC1` 下生成的，优化选项与之不一致时 cl 只发 C4653 警告并**静默忽略命令行选项**（等于白改，仍在 700 ms）。只影响这一个编译单元，运行时库仍 `/MDd`，无 ODR 风险 |
 | P2-2 许可证 | 已落地 | 根目录 MIT `LICENSE` + `THIRD_PARTY_NOTICES.md` |
 | P2-3 配置外置 | 已落地 | 客户端 IP / 端口 / 存档路径支持命令行与环境变量覆盖；8888 / 14341 默认值不变 |
-| P3-1 角色数生成 | 已落地 | `tools/gen_stats.py` 生成 `docs/characters.md` + `tools/generated_stats.json`；当前 123 角色 / 238 技能类 |
+| P3-1 角色数生成 | 已落地 | `tools/gen_stats.py` 生成 `docs/characters.md` + `tools/generated_stats.json`，并把 README 顶部「N 名可选角色 / N 个技能类」的两个数字一并回写（`--check` 同时校验三处）；当前 123 角色 / 238 技能类 |
 | P3-2 README 重组 | 已落地 | 历史批次归档 `docs/adr/README-历史批次.md`，本文件为现状入口 |
 | P3-3 规则文档同步 | 已落地 | `docs/rules.md` 增量补充体力/生命上限、摸牌来源、技能触发顺序、积分查表与协议变更说明；一次性归一化为 CRLF |
 | P3-4 CI | 已落地 | `.github/workflows/arch-c.yml`：结构/编码/统计校验 + x64 Debug·Release **矩阵并行**构建，两个配置各跑一遍单测；PR 上同分支新 run 顶掉旧 run |

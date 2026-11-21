@@ -3,7 +3,8 @@
 唯一事实源：source/core/Character.cpp 的 Character::infos + header/core/skills/**/*.h。
 产出（生成物，勿手改）：
   docs/characters.md          角色表（名字 / 分组 / 等级 / 技能）
-  tools/generated_stats.json  机器可读统计（README / CI 引用）
+  tools/generated_stats.json  机器可读统计（CI 引用）
+  README.md                   只同步顶部的两个数字，其余内容不动
 
 用法：python tools/gen_stats.py [--check]
   --check 模式下只比对现有产物是否最新（CI 用）。
@@ -21,6 +22,13 @@ os.chdir(ROOT)
 CHARACTER_CPP = 'source/core/Character.cpp'
 OUT_MD = 'docs/characters.md'
 OUT_JSON = 'tools/generated_stats.json'
+README = 'README.md'
+
+# README 顶部那行「**123 名可选角色 / 238 个技能类**」里的两个数字。
+# 只替换数字本身，文案、加粗与链接都留给 README 自己，正则也不会因为
+# 整行改动（换措辞、换顺序）而失效到静默跳过——找不到锚点会直接报错。
+README_CHAR_COUNT = re.compile(r'\d+(?= 名可选角色)')
+README_SKILL_COUNT = re.compile(r'\d+(?= 个技能类)')
 
 LEVEL_ORDER = ['S', 'A', 'B', 'C', 'D', 'F']
 
@@ -81,12 +89,29 @@ def build_stats(rows):
     }
 
 
+def read_readme():
+    """newline='' 原样保留 CRLF：生成器只该改数字，不该顺手改动仓库的行尾约定。"""
+    with open(README, encoding='utf-8', newline='') as f:
+        return f.read()
+
+
+def sync_readme(text, stats):
+    """把 README 里的两个数字换成最新统计。
+
+    返回 (新文本, 是否两个锚点都找到)。找不到锚点说明那行文案被改写过，
+    由调用方决定报错（--check）还是给出提示（生成模式），不做静默跳过。
+    """
+    new, n_char = README_CHAR_COUNT.subn(str(stats['characterCount']), text, count=1)
+    new, n_skill = README_SKILL_COUNT.subn(str(stats['skillClassCount']), new, count=1)
+    return new, n_char == 1 and n_skill == 1
+
+
 def build_md(rows, stats):
     lines = [
         '# 角色表（自动生成）',
         '',
         '> 本文件由 `tools/gen_stats.py` 从 `source/core/Character.cpp` 生成，请勿手工编辑。',
-        '> 角色数 / 技能数为构建期统计结果，README 只引用本文件的数字。',
+        '> 角色数 / 技能数为构建期统计结果，README 顶部的两个数字由本脚本一并同步。',
         '',
         f"- 角色条目数：**{stats['characterCount']}**",
         f"- 技能类数：**{stats['skillClassCount']}**",
@@ -128,6 +153,12 @@ def main():
             print('characters.md 不是最新，请运行 python tools/gen_stats.py'); ok = False
         if not os.path.exists(OUT_JSON) or open(OUT_JSON, encoding='utf-8').read() != js:
             print('generated_stats.json 不是最新，请运行 python tools/gen_stats.py'); ok = False
+        readme = read_readme()
+        synced, found = sync_readme(readme, stats)
+        if not found:
+            print('README.md 里找不到「N 名可选角色 / N 个技能类」这两个数字，无法校验'); ok = False
+        elif synced != readme:
+            print('README.md 顶部的角色/技能数不是最新，请运行 python tools/gen_stats.py'); ok = False
         if ok:
             print(f'角色/技能统计为最新：{stats["characterCount"]} 角色 / {stats["skillClassCount"]} 技能类')
         sys.exit(0 if ok else 1)
@@ -136,6 +167,17 @@ def main():
     # 与仓库 CRLF 约定一致（--check 读取时 universal newline 会归一化为 \n 后比较）。
     open(OUT_MD, 'w', encoding='utf-8', newline='\r\n').write(md)
     open(OUT_JSON, 'w', encoding='utf-8', newline='\r\n').write(js)
+
+    readme = read_readme()
+    synced, found = sync_readme(readme, stats)
+    if not found:
+        print('警告：README.md 里找不到「N 名可选角色 / N 个技能类」，数字未同步', file=sys.stderr)
+    elif synced != readme:
+        # newline='' 写回，保留原有 CRLF，不做任何行尾转换。
+        with open(README, 'w', encoding='utf-8', newline='') as f:
+            f.write(synced)
+        print(f'已同步 {README} 的角色/技能数')
+
     print(f'已生成 {OUT_MD} 与 {OUT_JSON}')
     print(f'角色 {stats["characterCount"]} / 技能类 {stats["skillClassCount"]} / 技能引用 {stats["skillReferenceCount"]}')
 
