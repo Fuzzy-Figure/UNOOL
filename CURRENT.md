@@ -3,6 +3,7 @@
 > 本文件是仓库现状的单一入口。历史批次日志与旧 ADR 已归档到 [`docs/adr/`](docs/adr/)，
 > 其中的「零行为变化 / 线上字节不变 / 逐字平移 / 跨阶段留包语义未动」等验收口径自 Arch-C 起全部作废，
 > 不参与现状判断。规则以 [`docs/rules.md`](docs/rules.md) 为准；角色数以 [`docs/characters.md`](docs/characters.md) 为准。
+> Arch-C 的原始工单已归档为 [`docs/adr/UNOOL_优化工单_Arch-C.md`](docs/adr/UNOOL_优化工单_Arch-C.md)（P0~P3 全部落地，仅作追溯）。
 
 ## 代号与分支
 
