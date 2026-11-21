@@ -22,6 +22,12 @@
     <ClCompile Include="..\..\source\tests\test_rules.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_loginviewmodel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\LoginViewModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -40,6 +46,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_rules.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_loginviewmodel.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_support.h">
