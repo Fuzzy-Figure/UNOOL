@@ -72,9 +72,11 @@ void testPbkdf2(TestResult& r) {
 	            == "c5b2c687af553635d00d8c05b579025979d1bef11bee9aa728c970e2e5cdc7fd",
 	        "pbkdf2 61B salt");
 	// 生产参数（12 万次）：落盘格式的最终锚点。
+	// 期望值取自优化前实现（07ae24b 之前的 Crypto.cpp），优化后逐位一致；
+	// 上面四条 RFC 向量保证这个值本身是对的，不是「自己和自己比」。
 	r.check(unool::crypto::derivePasswordHash("123456", "0123456789abcdef0123456789abcdef",
 	                                          unool::crypto::kPbkdf2Iterations)
-	            == "c916b5a9128f0045151cffb1068605203fc9febaa303928ddf8f2785f5120869",
+	            == "a4eb55a2638441f2f1e666d302b52c5a861705f99090eda31a0329a1b495e7fb",
 	        "pbkdf2 production iterations");
 
 	const std::string salt = "0123456789abcdef";
