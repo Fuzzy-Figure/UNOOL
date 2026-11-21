@@ -38,6 +38,9 @@
     <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_userdb.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\tests\test_codec.h" />
@@ -49,6 +52,7 @@
     <ClInclude Include="..\..\source\tests\test_rules.h" />
     <ClInclude Include="..\..\source\tests\test_shopviewmodel.h" />
     <ClInclude Include="..\..\source\tests\test_support.h" />
+    <ClInclude Include="..\..\source\tests\test_userdb.h" />
   </ItemGroup>
 <!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">

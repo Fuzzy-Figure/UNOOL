@@ -10,6 +10,7 @@
 #include "test_protocol.h"
 #include "test_rules.h"
 #include "test_shopviewmodel.h"
+#include "test_userdb.h"
 #include "platform/Platform.h"
 
 #include <cstdlib>
@@ -105,6 +106,7 @@ int main() {
 	      + runShopViewModelTests()    // P1-4 商城状态机 / 导航 / 购买（headless）
 	      + runProtocolRoundTripTests() // P3-5 账号 / 商城协议 round-trip
 	      + runRulesTests()            // P3-5 冻结区玩法规则
+	      + runUserDbTests()           // P3-5 账号存档 / 口令哈希 / 积分 / 购买 / 签到
 	      + runGameLogicTests();       // P3-5 GameLogic 测试台（fake-port）
 
 	std::println("单测结果: {} 通过, {} 失败", total.passed, total.failed);

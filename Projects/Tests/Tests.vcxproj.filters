@@ -57,6 +57,9 @@
     <ClCompile Include="..\..\source\tests\test_shopviewmodel.cpp">
       <Filter>源文件\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_userdb.cpp">
+      <Filter>源文件\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\source\tests\test_codec.h">
       <Filter>头文件\tests</Filter>
     </ClInclude>
@@ -82,6 +85,9 @@
       <Filter>头文件\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\tests\test_support.h">
+      <Filter>头文件\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_userdb.h">
       <Filter>头文件\tests</Filter>
     </ClInclude>
   </ItemGroup>
