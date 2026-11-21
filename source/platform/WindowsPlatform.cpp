@@ -52,4 +52,11 @@ namespace unool::platform {
 		utf8.pop_back();
 		return utf8;
 	}
+
+	void setupConsoleUtf8() {
+		// 原三处 exe 入口（ClientMain / ServerMain / Tests）各写一遍的两行，收拢到这里：
+		// 共享编译单元与测试入口不再 include <Windows.h>。
+		::SetConsoleCP(CP_UTF8);
+		::SetConsoleOutputCP(CP_UTF8);
+	}
 }

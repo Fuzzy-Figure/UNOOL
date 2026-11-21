@@ -99,8 +99,5 @@
     <ClInclude Include="..\..\header\shell\NetworkServerView.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\shell\PacketDispatcher.h">
-      <Filter>头文件\shell</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

@@ -7,10 +7,9 @@ class ClientNetwork;
 namespace unool::shell {
 
 	// 客户端组合根（阶段 4 · S1）：唯一出现「谁构造谁、按什么顺序驱动」的地方。
-	// 三个 Scene 本批零改动，仍直接持有 ClientNetwork&；ClientApp 同时持有
-	// IClientSession& 端口视图（与 net_ 指向同一个对象），S2 的 PacketDispatcher
-	// 收拢收包后再由端口全面接管。S1 只把原 ClientMain.cpp 的装配与游戏阶段
-	// 主循环平移到这里，不改任何函数体的行为。
+	// ClientApp 同时持有 IClientSession& 端口视图（与 net_ 指向同一个对象），
+	// Scene 侧只经由端口收发；收包统一由 ConnectionState 的显式队列承担。
+	// 装配与游戏阶段主循环在这里，不改任何函数体的行为。
 	class ClientApp {
 	public:
 		ClientApp(ClientNetwork& net, const std::string& windowTitle,

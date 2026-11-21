@@ -82,7 +82,6 @@
           "header/shell/FilesystemAssetCatalog.h",
           "header/shell/JsonConfig.h",
           "header/shell/ClientApp.h",
-          "header/shell/PacketDispatcher.h",
           "header/shell/IClientGateway.h",
           "header/shell/IShopOpener.h",
           "header/shell/InputAdapter.h",
@@ -164,7 +163,6 @@
           "source/shell/TextManager.cpp",
           "source/shell/ClientApp.cpp",
           "source/shell/ConnectionState.cpp",
-          "source/shell/PacketDispatcher.cpp",
           "source/shell/InputAdapter.cpp"
         ]
       },
@@ -196,7 +194,6 @@
           "header/shell/UserDB.h",
           "header/shell/ClientApp.h",
           "header/shell/ConnectionState.h",
-          "header/shell/PacketDispatcher.h",
           "header/shell/IClientGateway.h",
           "header/shell/IShopOpener.h",
           "header/shell/InputAdapter.h",

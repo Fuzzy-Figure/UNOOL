@@ -9,9 +9,7 @@
 #include "shell/NetworkServerView.h"
 #include "shell/UserDB.h"
 #include "contract/TableConfig.h"
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include "platform/Platform.h"
 #include <chrono>
 #include <thread>
 #include <vector>
@@ -109,10 +107,7 @@ static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic,
 }
 
 int main() {
-#ifdef _WIN32
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
-#endif
+	unool::platform::setupConsoleUtf8();
 
 	std::println("[Server] 启动服务器...");
 

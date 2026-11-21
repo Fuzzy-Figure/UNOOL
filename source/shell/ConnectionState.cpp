@@ -7,7 +7,7 @@
 #include <utility>
 
 // Arch-C P1-3：连接状态机。收包 / 心跳 / 断线的唯一时序点。
-// 原三处 net.update() + PacketDispatcher::next() + 散落心跳分支全部收敛到这里；
+// 原三处 net.update() + 已删除的 PacketDispatcher::next() + 散落心跳分支全部收敛到这里；
 // 消息号与包体字节、心跳回复包均与重构前逐字一致。
 
 namespace unool::shell {

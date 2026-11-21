@@ -41,11 +41,6 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="..\..\source\shell\PacketDispatcher.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
     <ClCompile Include="..\..\source\shell\ShopScene.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -82,7 +77,6 @@
     <ClInclude Include="..\..\header\shell\ImageManager.h" />
     <ClInclude Include="..\..\header\shell\InputAdapter.h" />
     <ClInclude Include="..\..\header\shell\LoginScene.h" />
-    <ClInclude Include="..\..\header\shell\PacketDispatcher.h" />
     <ClInclude Include="..\..\header\shell\ShopScene.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />
     <ClInclude Include="..\..\header\shell\TextManager.h" />

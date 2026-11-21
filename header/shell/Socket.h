@@ -156,7 +156,7 @@ public:
 };
 
 // 实现 shell 层 IClientGateway 端口：该网关间接继承 core 层 IClientSession，
-// 本类提供 6 个会话方法 + 2 个入站方法（receivePacket / peekMessageType）的具体实现。
+// 本类提供 6 个会话方法 + 1 个入站方法（receivePacket）的具体实现。
 // 零调用的凭据写入/重连接口与恒为空的用户名/密码字段已删除。
 // ClientNetwork 是当前唯一的具体实现，IClientSession& 端口视图继续有效。
 class ClientNetwork : public unool::shell::IClientGateway {
@@ -186,7 +186,6 @@ public:
 	// 发送商城购买请求（purchaseData 为 JSON 字符串）
 	bool sendShopPurchase(const std::string& purchaseData) override;
 	std::optional<sf::Packet> receivePacket() override;
-	std::optional<int> peekMessageType() const override;
 
 	void setPlayerId(std::size_t id) override { playerId = id; }
 	std::size_t getPlayerId() const override { return playerId; }

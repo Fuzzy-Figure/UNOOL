@@ -41,7 +41,6 @@
     <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
     <ClInclude Include="..\..\header\shell\Mt19937Random.h" />
     <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
-    <ClInclude Include="..\..\header\shell\PacketDispatcher.h" />
   </ItemGroup>
 <!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">

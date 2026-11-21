@@ -4,9 +4,7 @@
 #include "shell/JsonConfig.h"
 #include "shell/LegacyServicesAdapter.h"
 #include "core/Services.h"
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include "platform/Platform.h"
 #include <charconv>
 #include <cstdlib>
 #include <print>
@@ -44,14 +42,10 @@ bool parseArgs(int argc, char* argv[], std::string& ip, int& port) {
 } // namespace
 
 // B+ 组合根：进程级服务组合在这里显式装配，不再依赖 services() 的隐式默认回退。
-// 本文件属于客户端外壳，与平台相关的控制台编码用 _WIN32 保护，
-// 以便将来替换外壳时不必改动共享编译单元。
+// 控制台编码是进程级平台能力，经 platform 接缝取得，本文件不含平台头。
 int main(int argc, char* argv[]) {
-#ifdef _WIN32
 	// 必须先设置控制台编码，再构造服务组合。UserDB 的 load() 首次运行会打印中文日志。
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
-#endif
+	unool::platform::setupConsoleUtf8();
 
 	unool::shell::LegacyServicesAdapter defaultServices{};
 	unool::core::installServices(defaultServices.bundle);

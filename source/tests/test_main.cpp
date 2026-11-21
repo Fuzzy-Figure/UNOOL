@@ -7,10 +7,7 @@
 #include "test_connection.h"
 #include "test_gamelogic.h"
 #include "test_rules.h"
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include "platform/Platform.h"
 
 #include <cstdlib>
 #include <print>
@@ -86,11 +83,8 @@ void testScoreboard(TestResult& r) {
 } // namespace
 
 int main() {
-#ifdef _WIN32
 	// 断言名是中文，控制台默认 CP936 会把 UTF-8 输出打成乱码。
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
-#endif
+	unool::platform::setupConsoleUtf8();
 
 	// 本文件内的纯逻辑断言（Crypto / 协议版本 / 消息方向 / 积分表）。
 	TestResult total;

@@ -747,14 +747,6 @@ std::optional<sf::Packet> ClientNetwork::receivePacket() {
 	return std::nullopt;
 }
 
-std::optional<int> ClientNetwork::peekMessageType() const {
-	if (receivedPackets.empty()) return std::nullopt;
-	sf::Packet copy = receivedPackets.front();
-	int msgType;
-	if (!(copy >> msgType)) return std::nullopt;
-	return msgType;
-}
-
 bool ClientNetwork::sendPacket(sf::Packet& packet) {
 	sf::Socket::Status status = socket->send(packet);
 	return status == sf::Socket::Status::Done;

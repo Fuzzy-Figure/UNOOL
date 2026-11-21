@@ -50,7 +50,6 @@ namespace {
 			inbound.pop_front();
 			return p;
 		}
-		std::optional<int> peekMessageType() const override { return std::nullopt; }
 	};
 
 	sf::Packet packetOf(MessageType type) {

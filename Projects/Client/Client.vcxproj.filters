@@ -51,9 +51,6 @@
     <ClCompile Include="..\..\source\shell\LoginScene.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\shell\PacketDispatcher.cpp">
-      <Filter>源文件\shell</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\shell\ShopScene.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
@@ -130,9 +127,6 @@
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\LoginScene.h">
-      <Filter>头文件\shell</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\header\shell\PacketDispatcher.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\ShopScene.h">

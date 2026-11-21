@@ -14,7 +14,7 @@ namespace sf { class Packet; }
 
 namespace unool::protocol {
 
-	// 解析服务器下发的商城数据 JSON。packet 已由 PacketDispatcher 消费开头 int 消息号，
+	// 解析服务器下发的商城数据 JSON。packet 已由 ConnectionState 消费开头 int 消息号，
 	// 此处取已读出的 json 字符串，与 View 原「if (packet >> jsonStr)」门控保持一致：
 	// 提取失败由调用方保持静默（与原行为一致），解析异常由调用方转「商城数据解析失败」。
 	std::optional<ShopData> parseShopData(const std::string& jsonStr);
