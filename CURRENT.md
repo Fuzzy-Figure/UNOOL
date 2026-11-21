@@ -21,10 +21,10 @@
 | 项 | 状态 | 要点 |
 |---|---|---|
 | P0-1 工程文件生成器 | 已落地 | `verify_structure.py` 双模式；`tools/projects.manifest.json` 为工程条目唯一事实源；新增 `.cpp` 放进目录即可纳入；覆盖 PCH /FI、BOM、CRLF |
-| P0-2 合并 Client | 已落地 | 删除 Client2，保留单一 `Client` 工程；玩家座位由服务端分配 |
-| P0-3 清理僵尸 | 已落地 | 移除 Win32 配置与 slnx 的 x86；`ICommands.h` / 占位库 / `reconnect()` / `setCredentials()` 已不存在；`.slnLaunch.user` 已忽略 |
+| P0-2 合并 Client | 已落地 | 删除 Client2，保留单一 `Client` 工程；玩家座位由服务端分配；`Projects/Client2/` 构建残留（124 MB）已清除 |
+| P0-3 清理僵尸 | 已落地 | 移除 Win32 配置与 slnx 的 x86；`ICommands.h` / 占位库 / `reconnect()` / `setCredentials()` / `PacketDispatcher` + `peekMessageType` 已不存在（含 manifest 与 vcxproj 条目）；`.slnLaunch.user` 已忽略 |
 | P1-1 协议版本握手 | 已落地 | `MessageType` 改 `enum class uint16` + 显式分段编号（命令 1xx / 事件 2xx / 心跳 901），**枚举与 `toWire`/`isClientCommand`/`isServerEvent`/`isControlMessage` 均在 `unool::protocol`**；`kProtocolVersion=2`；登录 / 注册包首字段带版本，不匹配返回可读拒绝 |
-| P1-2 序列化收敛 | 已落地 | `header/protocol/MessageCodec.h` + `source/protocol/MessageCodec.cpp`：游戏态消息（ConnectionInfo / GameStart / GameEnd / GameState / CharInfo / Choice / PointerUpdate / Heartbeat / ClientInput / ShopPurchase / ShopResult / CheckinResponse）统一成对 make/parse；Socket / ClientApp / PacketDispatcher 手写包全部改走 Codec；Tests 工程加 11 项 round-trip 单测；`header/core` 闭包无第三方头 |
+| P1-2 序列化收敛 | 已落地 | `header/protocol/MessageCodec.h` + `source/protocol/MessageCodec.cpp`：游戏态消息（ConnectionInfo / GameStart / GameEnd / GameState / CharInfo / Choice / PointerUpdate / Heartbeat / ClientInput / ShopPurchase / ShopResult / CheckinResponse）统一成对 make/parse；Socket / ClientApp 手写包全部改走 Codec；Tests 工程加 11 项 round-trip 单测；`header/core` 闭包无第三方头 |
 | P1-3 收包状态机 | 已落地 | `header/shell/ConnectionState.h` 单一连接状态机：显式入站队列 + 心跳回复 + 断线清队列；`pump()/take()/takeAny()/contains()` 取代 `peekMessageType` 隐式留包；三处 `net.update()`/`PacketDispatcher` 调用归零；Tests 加 fake gateway 三项单测 |
 | P2-1 密码哈希 | 已落地 | salt + PBKDF2-HMAC-SHA256（12 万次，纯标准库实现于 `header/core/Crypto.h`）；落盘无明文；旧明文格式给出重置提示 |
 | P2-2 许可证 | 已落地 | 根目录 MIT `LICENSE` + `THIRD_PARTY_NOTICES.md` |
@@ -37,7 +37,7 @@
 ## 进行中 / 未完成
 
 - **P1-4 Scene 纯 View 化（切片已落地，headless 待补）**：两个 Scene 内 `sf::Packet` 发包构造 / `jsonStr` 解析 / `skillsCache`+`itemPresentationCache` 进程级 static 已清零——语义收发上移到 `ConnectionState`（sendLogin/sendShopRequest/sendBuyXxx 等 + ShopProtocol Packet 重载），展示缓存抽为组合根持有的 `ShopPresentationCache`。剩余：6 个状态机尚未抽成 ViewModel，Scene 仍持 `GameRenderer&`，fake gateway 的 Scene 级 headless 测试待补。
-- **P3-5 测试网（已覆盖冻结区三项语义，Scene headless 待补）**：`Projects/Tests` 单测工程，23 个纯逻辑断言（Crypto / 协议版本 / 消息方向 / 积分查表）+ P1-2 的 11 组 MessageCodec round-trip + P1-3 的 3 项连接状态机 + `source/tests/test_rules.cpp`（牌值表 / 体力扣减 = 手牌分值之和 / 秘技牌归类与牌池隔离 / 容器与选择指针 / 弃牌元数据随复制保留 / 生命上限夹紧，共 63 项）+ `source/tests/test_gamelogic.cpp`（fake-port 测试台：`draw_begin` 摸牌来源、技能触发顺序，7 项），合计 70 项。fake-port 测试台在 `source/tests/test_fakes.h`：`IServerView` / `IDecisionPort` / `DomainServices` 全假实现，输入必须预置（未预置的 ask 直接抛异常，不会挂死），加新用例只需「装输入 → 造 GameLogic → 断言」。断言统一走 `source/tests/test_support.h` 的 `TestResult`（**零宏**：`check(ok, name = {})` 用 `std::source_location` 默认实参自带 `file:line`，用例分组用 `section`），五个测试文件共用一份计数与打印。**仍缺**：两个 Scene 的 headless 测试（依赖 P1-4 的 ViewModel 切片）。
+- **P3-5 测试网（已覆盖冻结区三项语义，Scene headless 待补）**：`Projects/Tests` 单测工程，23 个纯逻辑断言（Crypto / 协议版本 / 消息方向 / 积分查表）+ P1-2 的 11 组 MessageCodec round-trip + P1-3 的 3 项连接状态机 + `source/tests/test_rules.cpp`（牌值表 / 体力扣减 = 手牌分值之和 / 秘技牌归类与牌池隔离 / 容器与选择指针 / 弃牌元数据随复制保留 / 生命上限夹紧，共 63 项）+ `source/tests/test_gamelogic.cpp`（fake-port 测试台：`draw_begin` 摸牌来源、技能触发顺序、标准牌堆构成 172 张 / 弃牌堆回收 / `canUse` 出牌合法性，26 项），合计 89 项。fake-port 测试台在 `source/tests/test_fakes.h`：`IServerView` / `IDecisionPort` / `DomainServices` 全假实现，输入必须预置（未预置的 ask 直接抛异常，不会挂死），加新用例只需「装输入 → 造 GameLogic → 断言」。断言统一走 `source/tests/test_support.h` 的 `TestResult`（**零宏**：`check(ok, name = {})` 用 `std::source_location` 默认实参自带 `file:line`，用例分组用 `section`），五个测试文件共用一份计数与打印。**仍缺**：两个 Scene 的 headless 测试（依赖 P1-4 的 ViewModel 切片）。
 - **P3-6 Release 产物**：`tools/make_release.py` 免安装打包脚本已就位；实际 zip（需编译后）、运行截图（需实机截屏）、版本 tag 尚未产出。
 
 ## 不可丢的玩法语义
