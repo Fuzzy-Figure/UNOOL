@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <cstdint>
 #include <string>
 #include "shell/ConnectionState.h"
 #include "shell/IShopOpener.h"
@@ -31,6 +32,10 @@ private:
 
 	// P1-4：状态机与规则在这里；本 View 不持有任何状态迁移知识。
 	unool::shell::LoginViewModel vm;
+
+	// 发出 LoginRequest 的时刻（毫秒）。收到 LoginResponse 时打印往返耗时，
+	// 用于区分「服务端口令派生慢」与「网络 / 帧循环慢」，0 表示没有在途请求。
+	std::int64_t loginSentMs_ = 0;
 
 	// 固定布局矩形
 	sf::FloatRect usernameBox;

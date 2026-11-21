@@ -189,7 +189,11 @@ void LoginScene::executeActions() {
 	for (const auto action : vm.takeActions()) {
 		switch (action) {
 			case Vm::Action::SendLogin:
-				if (!net.sendLogin(vm.username(), vm.password())) vm.onActionFailed(action);
+				loginSentMs_ = steadyNowMs();
+				if (!net.sendLogin(vm.username(), vm.password())) {
+					loginSentMs_ = 0;
+					vm.onActionFailed(action);
+				}
 				break;
 			case Vm::Action::SendRegister:
 				if (!net.sendRegister(vm.username(), vm.password())) vm.onActionFailed(action);
@@ -259,8 +263,16 @@ void LoginScene::pollAccountPackets() {
 
 			default: {
 				auto event = unool::protocol::parseAccountEvent(mt, packet);
-				if (event) vm.onAccountEvent(*event);
-				else vm.onAccountParseFailure(mt);
+				if (!event) {
+					vm.onAccountParseFailure(mt);
+					continue;
+				}
+				// 登录往返耗时：把「服务端口令派生」与「网络 / 帧循环」分开看。
+				if (mt == MessageType::LoginResponse && loginSentMs_ != 0) {
+					std::println("{} 登录往返 {} ms", titleBrackets, steadyNowMs() - loginSentMs_);
+					loginSentMs_ = 0;
+				}
+				vm.onAccountEvent(*event);
 				continue;
 			}
 		}

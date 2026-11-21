@@ -33,9 +33,50 @@ void testSha256(TestResult& r) {
 	        "sha256(abc)");
 	r.check(hex("") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 	        "sha256(empty)");
+	// 块边界：64 字节不带 padding，65 字节要多一个块。补位逻辑改动最容易在这里出错。
+	r.check(hex(std::string(64, 'x')) == "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+	        "sha256(64B no padding)");
+	r.check(hex(std::string(65, 'x')) == "9537c5fdf120482f7d58d25e9ed583f52c02b4e304ea814db1633ad565aed7e9",
+	        "sha256(65B extra block)");
 }
 
 void testPbkdf2(TestResult& r) {
+	// RFC 参考向量（PBKDF2-HMAC-SHA256）：验的是「符合标准」而不只是「自己和自己一致」。
+	// 这些值一旦变化，存量账号的口令哈希就全部对不上 —— 优化实现时必须逐位保持。
+	r.check(unool::crypto::derivePasswordHash("password", "salt", 1)
+	            == "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b",
+	        "pbkdf2 rfc c=1");
+	r.check(unool::crypto::derivePasswordHash("password", "salt", 2)
+	            == "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43",
+	        "pbkdf2 rfc c=2");
+	r.check(unool::crypto::derivePasswordHash("password", "salt", 4096)
+	            == "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a",
+	        "pbkdf2 rfc c=4096");
+	// 长盐 32 字节：U1 的尾部要跨块。
+	r.check(unool::crypto::derivePasswordHash("passwordPASSWORDpassword",
+	                                          "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096)
+	            == "348c89dbcbd32b2f32d814b8116e84cf2b17347ebc1800181c4e2a1fb8dd53e1",
+	        "pbkdf2 rfc long salt");
+	// 口令 65 字节（超过 HMAC 的 64 字节密钥块）与 40 / 60 / 61 字节盐：
+	// 期望值取自优化前实现（同一份代码已通过上面四条标准向量）。
+	r.check(unool::crypto::derivePasswordHash(std::string(65, 'k'), "salt", 5)
+	            == "2eb6411f47dbd189beaab65a9abcc1baeabad0b5ee519cc5c4c274daccf2c474",
+	        "pbkdf2 65B password");
+	r.check(unool::crypto::derivePasswordHash("pw", std::string(40, 's'), 5)
+	            == "01de78de362c35c3f9ad8fb19c0ba4d0603ef8ec87d9878b7dd282a6ef8d8a35",
+	        "pbkdf2 40B salt");
+	r.check(unool::crypto::derivePasswordHash("pw", std::string(60, 's'), 5)
+	            == "08b401b757a48a446f0ae0a87cf0bf3320ba248882d3a98162f8c944dc8af756",
+	        "pbkdf2 60B salt");
+	r.check(unool::crypto::derivePasswordHash("pw", std::string(61, 's'), 5)
+	            == "c5b2c687af553635d00d8c05b579025979d1bef11bee9aa728c970e2e5cdc7fd",
+	        "pbkdf2 61B salt");
+	// 生产参数（12 万次）：落盘格式的最终锚点。
+	r.check(unool::crypto::derivePasswordHash("123456", "0123456789abcdef0123456789abcdef",
+	                                          unool::crypto::kPbkdf2Iterations)
+	            == "c916b5a9128f0045151cffb1068605203fc9febaa303928ddf8f2785f5120869",
+	        "pbkdf2 production iterations");
+
 	const std::string salt = "0123456789abcdef";
 	const auto h1 = unool::crypto::derivePasswordHash("password", salt, 1000);
 	const auto h2 = unool::crypto::derivePasswordHash("password", salt, 1000);

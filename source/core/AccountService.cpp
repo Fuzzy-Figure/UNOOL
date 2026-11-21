@@ -4,7 +4,20 @@
 #include "AccountProtocol.h"
 #include "utils.h"
 
+#include <chrono>
+#include <cstdint>
+#include <print>
+
 namespace unool::core {
+
+	namespace {
+		// 口令派生（PBKDF2 12 万次）是登录链上唯一的 CPU 热点，
+		// 把它的实际耗时打出来，「登录要等几秒」才能区分是服务端还是网络 / 客户端。
+		std::int64_t msSince(std::chrono::steady_clock::time_point start) {
+			return std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now() - start).count();
+		}
+	}
 
 	AccountService::AccountService(IAccountSession& session, IUserRepository& users,
 								   std::size_t seatCount)
@@ -23,13 +36,17 @@ namespace unool::core {
 
 		if (type == MessageType::RegisterRequest) {
 			std::string errMsg;
+			const auto started = std::chrono::steady_clock::now();
 			bool ok = users_.registerUser(req.username, req.password, errMsg);
+			std::println("[Server] 注册：口令派生 + 落盘 {} ms", msSince(started));
 			std::string msg = ok ? "注册成功" : errMsg;
 			session_.sendAccountResponse(clientIdx, MessageType::RegisterResponse, ok, msg, 0, 0, 0);
 		}
 		else if (type == MessageType::LoginRequest) {
 			std::string errMsg;
+			const auto started = std::chrono::steady_clock::now();
 			auto userInfo = users_.login(req.username, req.password, errMsg);
+			std::println("[Server] 登录：口令派生 {} ms", msSince(started));
 
 			bool ok = userInfo.has_value();
 

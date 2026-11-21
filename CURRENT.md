@@ -26,7 +26,7 @@
 | P1-1 协议版本握手 | 已落地 | `MessageType` 改 `enum class uint16` + 显式分段编号（命令 1xx / 事件 2xx / 心跳 901），**枚举与 `toWire`/`isClientCommand`/`isServerEvent`/`isControlMessage` 均在 `unool::protocol`**；`kProtocolVersion=2`；登录 / 注册包首字段带版本，不匹配返回可读拒绝 |
 | P1-2 序列化收敛 | 已落地 | `header/protocol/MessageCodec.h` + `source/protocol/MessageCodec.cpp`：游戏态消息（ConnectionInfo / GameStart / GameEnd / GameState / CharInfo / Choice / PointerUpdate / Heartbeat / ClientInput / ShopPurchase / ShopResult / CheckinResponse）统一成对 make/parse；Socket / ClientApp 手写包全部改走 Codec；Tests 工程加 11 项 round-trip 单测；`header/core` 闭包无第三方头 |
 | P1-3 收包状态机 | 已落地 | `header/shell/ConnectionState.h` 单一连接状态机：显式入站队列 + 心跳回复 + 断线清队列；`pump()/take()/takeAny()/contains()` 取代 `peekMessageType` 隐式留包；三处 `net.update()`/`PacketDispatcher` 调用归零；Tests 加 fake gateway 三项单测 |
-| P2-1 密码哈希 | 已落地 | salt + PBKDF2-HMAC-SHA256（12 万次，纯标准库实现于 `header/core/Crypto.h`）；落盘无明文；旧明文格式给出重置提示 |
+| P2-1 密码哈希 | 已落地 | salt + PBKDF2-HMAC-SHA256（12 万次，纯标准库实现于 `header/core/Crypto.h`）；落盘无明文；旧明文格式给出重置提示。单次派生 Release ≈46 ms / Debug ≈270 ms（HMAC 密钥块预计算、无堆分配；与优化前逐位等价，含 12 万次的落盘锚点由 `test_main.cpp` 的 RFC 向量锁定）；服务端每次登录/注册会打印这段耗时 |
 | P2-2 许可证 | 已落地 | 根目录 MIT `LICENSE` + `THIRD_PARTY_NOTICES.md` |
 | P2-3 配置外置 | 已落地 | 客户端 IP / 端口 / 存档路径支持命令行与环境变量覆盖；8888 / 14341 默认值不变 |
 | P3-1 角色数生成 | 已落地 | `tools/gen_stats.py` 生成 `docs/characters.md` + `tools/generated_stats.json`；当前 123 角色 / 238 技能类 |
