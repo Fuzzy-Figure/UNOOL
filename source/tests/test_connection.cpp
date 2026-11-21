@@ -17,6 +17,7 @@
 
 // MessageType 归 protocol 层；本文件在全局命名空间，这里做 TU 局部的名字转发。
 using unool::protocol::MessageType;
+using unool::tests::TestResult;
 
 namespace {
 
@@ -58,14 +59,8 @@ namespace {
 		return p;
 	}
 
-	struct Result {
-		int passed = 0;
-		int failed = 0;
-		void check(bool ok) { ok ? ++passed : ++failed; }
-	};
-
 	// 跨阶段留包：队首非订阅包不被消费，GameStart 留给下一阶段 takeAny 取出。
-	void testCrossStageLeaving(Result& r) {
+	void testCrossStageLeaving(TestResult& r) {
 		FakeGateway gw;
 		gw.inbound.push_back(packetOf(MessageType::GameStart));
 		gw.inbound.push_back(packetOf(MessageType::LoginResponse));
@@ -88,7 +83,7 @@ namespace {
 	}
 
 	// 心跳：pump 消费 Heartbeat 并回复一次，其余包正常入队。
-	void testHeartbeatAutoReply(Result& r) {
+	void testHeartbeatAutoReply(TestResult& r) {
 		FakeGateway gw;
 		gw.inbound.push_back(packetOf(MessageType::Heartbeat));
 		gw.inbound.push_back(packetOf(MessageType::GameState));
@@ -101,7 +96,7 @@ namespace {
 	}
 
 	// 断线：连接态→断线态时清空积压；isConnected 反映网关状态。
-	void testDisconnectClearsQueue(Result& r) {
+	void testDisconnectClearsQueue(TestResult& r) {
 		FakeGateway gw;
 		gw.inbound.push_back(packetOf(MessageType::GameState));
 		unool::shell::ConnectionState conn(gw);
@@ -118,10 +113,10 @@ namespace {
 
 } // namespace
 
-ConnectionTestResult runConnectionStateTests() {
-	Result r;
+unool::tests::TestResult runConnectionStateTests() {
+	unool::tests::TestResult r;
 	testCrossStageLeaving(r);
 	testHeartbeatAutoReply(r);
 	testDisconnectClearsQueue(r);
-	return { r.passed, r.failed };
+	return r;
 }

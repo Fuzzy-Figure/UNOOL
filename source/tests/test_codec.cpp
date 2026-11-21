@@ -2,35 +2,18 @@
 // 每个消息号 make -> 读消息号 -> parse -> 字段逐项比对，
 // 验证收发两端字节自洽（本地 g++ 无法链接 MSVC 的 SFML .lib，故在 VS 的 Tests 工程运行）。
 #include "test_codec.h"
+#include "test_support.h"
 
 #include "MessageCodec.h"
 #include "GameState.h"
 #include "core/IDecisionPort.h"
 #include <SFML/Network.hpp>
 
-#include <iostream>
 #include <string>
 
 using namespace unool::protocol;
 
 namespace {
-
-	int g_pass{};
-	int g_fail{};
-
-#define CHECK(cond)                                                          \
-	do {                                                                     \
-		if (cond) { ++g_pass; }                                              \
-		else { ++g_fail; std::cerr << "FAIL(codec): " #cond << '\n'; }          \
-	} while (false)
-
-#define TEST_CASE(fn)                                                        \
-	do {                                                                     \
-		const int before = g_fail;                                           \
-		fn();                                                                \
-		std::cout << "  codec." #fn ": "                                     \
-		          << (g_fail == before ? "OK" : "FAIL") << '\n';                \
-	} while (false)
 
 	int readWire(sf::Packet& packet) {
 		int raw{};
@@ -38,90 +21,83 @@ namespace {
 		return raw;
 	}
 
-	bool testConnectionInfo() {
+	void testConnectionInfo(unool::tests::TestResult& r) {
 		auto packet = makeConnectionInfo(7);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::ConnectionInfo));
+		r.check(readWire(packet) == static_cast<int>(MessageType::ConnectionInfo));
 		auto data = parseConnectionInfo(packet);
-		CHECK(data.has_value());
-		CHECK(data->playerId == 7u);
-		return true;
+		r.check(data.has_value());
+		r.check(data->playerId == 7u);
 	}
 
-	bool testGameStartHeartbeat() {
+	void testGameStartHeartbeat(unool::tests::TestResult& r) {
 		auto gs = makeGameStart();
-		CHECK(readWire(gs) == static_cast<int>(MessageType::GameStart));
+		r.check(readWire(gs) == static_cast<int>(MessageType::GameStart));
 		auto hb = makeHeartbeat();
-		CHECK(readWire(hb) == static_cast<int>(MessageType::Heartbeat));
-		return true;
+		r.check(readWire(hb) == static_cast<int>(MessageType::Heartbeat));
 	}
 
-	bool testCheckinResponse() {
+	void testCheckinResponse(unool::tests::TestResult& r) {
 		auto packet = makeCheckinResponse("签到成功", true, 123);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::CheckinResponse));
+		r.check(readWire(packet) == static_cast<int>(MessageType::CheckinResponse));
 		std::string msg;
 		bool ok{};
 		int points{};
-		CHECK(static_cast<bool>(packet >> msg >> ok >> points));
-		CHECK(msg == "签到成功");
-		CHECK(ok);
-		CHECK(points == 123);
-		return true;
+		r.check(static_cast<bool>(packet >> msg >> ok >> points));
+		r.check(msg == "签到成功");
+		r.check(ok);
+		r.check(points == 123);
 	}
 
-	bool testGameEnd() {
+	void testGameEnd(unool::tests::TestResult& r) {
 		auto withWinner = makeGameEnd(std::size_t{3}, "玩家A");
-		CHECK(readWire(withWinner) == static_cast<int>(MessageType::GameEnd));
+		r.check(readWire(withWinner) == static_cast<int>(MessageType::GameEnd));
 		auto a = parseGameEnd(withWinner);
-		CHECK(a.has_value());
-		CHECK(a->hasWinner);
-		CHECK(a->winnerId == 3u);
-		CHECK(a->winnerName == "玩家A");
+		r.check(a.has_value());
+		r.check(a->hasWinner);
+		r.check(a->winnerId == 3u);
+		r.check(a->winnerName == "玩家A");
 
 		auto noWinner = makeGameEnd(std::nullopt, "");
-		CHECK(readWire(noWinner) == static_cast<int>(MessageType::GameEnd));
+		r.check(readWire(noWinner) == static_cast<int>(MessageType::GameEnd));
 		auto b = parseGameEnd(noWinner);
-		CHECK(b.has_value());
-		CHECK(!b->hasWinner);
-		return true;
+		r.check(b.has_value());
+		r.check(!b->hasWinner);
 	}
 
-	bool testPointerUpdate() {
+	void testPointerUpdate(unool::tests::TestResult& r) {
 		auto packet = makePointerUpdate(2, 9);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::PointerUpdate));
+		r.check(readWire(packet) == static_cast<int>(MessageType::PointerUpdate));
 		auto data = parsePointerUpdate(packet);
-		CHECK(data.has_value());
-		CHECK(data->playerId == 2u);
-		CHECK(data->selectedIndex == 9u);
-		return true;
+		r.check(data.has_value());
+		r.check(data->playerId == 2u);
+		r.check(data->selectedIndex == 9u);
 	}
 
-	bool testClientInput() {
+	void testClientInput(unool::tests::TestResult& r) {
 		auto packet = makeClientInput(42, 1, 5);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::ClientInput));
+		r.check(readWire(packet) == static_cast<int>(MessageType::ClientInput));
 		auto data = parseClientInput(packet);
-		CHECK(data.has_value());
-		CHECK(data->key == 42);
-		CHECK(data->playerId == 1u);
-		CHECK(data->selectedIndex == 5u);
-		return true;
+		r.check(data.has_value());
+		r.check(data->key == 42);
+		r.check(data->playerId == 1u);
+		r.check(data->selectedIndex == 5u);
 	}
 
-	bool testStringMessages() {
+	void testStringMessages(unool::tests::TestResult& r) {
 		auto sr = makeStringMessage(MessageType::ShopResult, R"({"ok":true})");
-		CHECK(readWire(sr) == static_cast<int>(MessageType::ShopResult));
+		r.check(readWire(sr) == static_cast<int>(MessageType::ShopResult));
 		auto a = parseStringPayload(sr);
-		CHECK(a.has_value());
-		CHECK(a->text == R"({"ok":true})");
+		r.check(a.has_value());
+		r.check(a->text == R"({"ok":true})");
 
 		auto sp = makeStringMessage(MessageType::ShopPurchase, R"({"type":"item"})");
-		CHECK(readWire(sp) == static_cast<int>(MessageType::ShopPurchase));
+		r.check(readWire(sp) == static_cast<int>(MessageType::ShopPurchase));
 		auto b = parseStringPayload(sp);
-		CHECK(b.has_value());
-		CHECK(b->text == R"({"type":"item"})");
-		return true;
+		r.check(b.has_value());
+		r.check(b->text == R"({"type":"item"})");
 	}
 
-	bool testChoice() {
+	void testChoice(unool::tests::TestResult& r) {
 		unool::core::ChoicePrompt prompt;
 		prompt.title = "请选择";
 		prompt.options = {"甲", "乙", "丙"};
@@ -135,25 +111,24 @@ namespace {
 		prompt.optionMeta = {m1, m2};
 
 		auto packet = makeChoice(prompt);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::Choice));
+		r.check(readWire(packet) == static_cast<int>(MessageType::Choice));
 		auto parsed = parseChoice(packet);
-		CHECK(parsed.has_value());
-		CHECK(parsed->title == prompt.title);
-		CHECK(parsed->options == prompt.options);
-		CHECK(parsed->forced == prompt.forced);
-		CHECK(parsed->errorMsg == prompt.errorMsg);
-		CHECK(parsed->timeoutMs.has_value());
-		CHECK(parsed->timeoutMs.value() == 5000u);
-		CHECK(parsed->currentPage == 1u);
-		CHECK(parsed->totalPages == 3u);
-		CHECK(parsed->optionMeta.size() == 2u);
-		CHECK(parsed->optionMeta[0].characterName == "角色甲");
-		CHECK(parsed->optionMeta[0].imagePath == "images/a.jpg");
-		CHECK(parsed->optionMeta[1].skinName == "皮肤X");
-		return true;
+		r.check(parsed.has_value());
+		r.check(parsed->title == prompt.title);
+		r.check(parsed->options == prompt.options);
+		r.check(parsed->forced == prompt.forced);
+		r.check(parsed->errorMsg == prompt.errorMsg);
+		r.check(parsed->timeoutMs.has_value());
+		r.check(parsed->timeoutMs.value() == 5000u);
+		r.check(parsed->currentPage == 1u);
+		r.check(parsed->totalPages == 3u);
+		r.check(parsed->optionMeta.size() == 2u);
+		r.check(parsed->optionMeta[0].characterName == "角色甲");
+		r.check(parsed->optionMeta[0].imagePath == "images/a.jpg");
+		r.check(parsed->optionMeta[1].skinName == "皮肤X");
 	}
 
-	bool testGameState() {
+	void testGameState(unool::tests::TestResult& r) {
 		GameState state;
 		state.currentPlayerIndex = 1;
 		state.currentColor = Card::Color::red;
@@ -173,56 +148,52 @@ namespace {
 		state.players.push_back(player);
 
 		auto packet = makeGameStateMessage(state);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::GameState));
+		r.check(readWire(packet) == static_cast<int>(MessageType::GameState));
 		GameState parsed;
-		CHECK(parseGameState(packet, parsed));
-		CHECK(parsed.currentPlayerIndex == 1u);
-		CHECK(parsed.currentName == Card::Name::action_skip);
-		CHECK(parsed.direction == -1);
-		CHECK(parsed.gameCount == 4u);
-		CHECK(parsed.operatingPlayerId.has_value());
-		CHECK(parsed.players.size() == 1u);
-		CHECK(parsed.players[0].hp == 3);
-		CHECK(parsed.players[0].marks.at("标记") == 2u);
-		return true;
+		r.check(parseGameState(packet, parsed));
+		r.check(parsed.currentPlayerIndex == 1u);
+		r.check(parsed.currentName == Card::Name::action_skip);
+		r.check(parsed.direction == -1);
+		r.check(parsed.gameCount == 4u);
+		r.check(parsed.operatingPlayerId.has_value());
+		r.check(parsed.players.size() == 1u);
+		r.check(parsed.players[0].hp == 3);
+		r.check(parsed.players[0].marks.at("标记") == 2u);
 	}
 
-	bool testCharInfo() {
+	void testCharInfo(unool::tests::TestResult& r) {
 		CharInfo info;
 		info.playerIndex = 5;
 		info.fullText = "技能描述文本";
 		auto packet = makeCharInfoMessage(info);
-		CHECK(readWire(packet) == static_cast<int>(MessageType::CharInfo));
+		r.check(readWire(packet) == static_cast<int>(MessageType::CharInfo));
 		CharInfo parsed;
-		CHECK(parseCharInfo(packet, parsed));
-		CHECK(parsed.playerIndex == 5u);
-		CHECK(parsed.fullText == "技能描述文本");
-		return true;
+		r.check(parseCharInfo(packet, parsed));
+		r.check(parsed.playerIndex == 5u);
+		r.check(parsed.fullText == "技能描述文本");
 	}
 
-	bool testReadMessageType() {
+	void testReadMessageType(unool::tests::TestResult& r) {
 		auto packet = makeHeartbeat();
 		auto mt = readMessageType(packet);
-		CHECK(mt.has_value());
-		CHECK(*mt == MessageType::Heartbeat);
-		return true;
+		r.check(mt.has_value());
+		r.check(*mt == MessageType::Heartbeat);
 	}
 
 } // namespace
 
-CodecTestResult runCodecRoundTripTests() {
-	g_pass = 0;
-	g_fail = 0;
-	TEST_CASE(testConnectionInfo);
-	TEST_CASE(testGameStartHeartbeat);
-	TEST_CASE(testCheckinResponse);
-	TEST_CASE(testGameEnd);
-	TEST_CASE(testPointerUpdate);
-	TEST_CASE(testClientInput);
-	TEST_CASE(testStringMessages);
-	TEST_CASE(testChoice);
-	TEST_CASE(testGameState);
-	TEST_CASE(testCharInfo);
-	TEST_CASE(testReadMessageType);
-	return { g_pass, g_fail };
+unool::tests::TestResult runCodecRoundTripTests() {
+	unool::tests::TestResult r;
+	r.section("codec.testConnectionInfo", testConnectionInfo);
+	r.section("codec.testGameStartHeartbeat", testGameStartHeartbeat);
+	r.section("codec.testCheckinResponse", testCheckinResponse);
+	r.section("codec.testGameEnd", testGameEnd);
+	r.section("codec.testPointerUpdate", testPointerUpdate);
+	r.section("codec.testClientInput", testClientInput);
+	r.section("codec.testStringMessages", testStringMessages);
+	r.section("codec.testChoice", testChoice);
+	r.section("codec.testGameState", testGameState);
+	r.section("codec.testCharInfo", testCharInfo);
+	r.section("codec.testReadMessageType", testReadMessageType);
+	return r;
 }

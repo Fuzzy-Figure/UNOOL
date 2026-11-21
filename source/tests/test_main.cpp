@@ -13,81 +13,74 @@
 #endif
 
 #include <cstdlib>
-#include <iostream>
+#include <print>
 #include <string>
 #include <string_view>
 #include <utility>
 
+using unool::tests::TestResult;
+
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond, name)                                                   \
-	do {                                                                    \
-		if (cond) { ++g_pass; }                                             \
-		else { ++g_fail; std::cerr << "FAIL: " << (name) << '\n'; }         \
-	} while (false)
 
 std::string hex(std::string_view s) {
 	return unool::crypto::toHex(unool::crypto::sha256(s));
 }
 
-void testSha256() {
+void testSha256(TestResult& r) {
 	// 标准 SHA-256 测试向量。
-	CHECK(hex("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-	      "sha256(abc)");
-	CHECK(hex("") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-	      "sha256(empty)");
+	r.check(hex("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+	        "sha256(abc)");
+	r.check(hex("") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+	        "sha256(empty)");
 }
 
-void testPbkdf2() {
+void testPbkdf2(TestResult& r) {
 	const std::string salt = "0123456789abcdef";
 	const auto h1 = unool::crypto::derivePasswordHash("password", salt, 1000);
 	const auto h2 = unool::crypto::derivePasswordHash("password", salt, 1000);
-	CHECK(h1 == h2, "pbkdf2 deterministic");
-	CHECK(h1.size() == 64, "pbkdf2 hash is 64 hex chars");
-	CHECK(h1 != unool::crypto::derivePasswordHash("password", "different-salt", 1000),
-	      "pbkdf2 salt affects hash");
-	CHECK(h1 != unool::crypto::derivePasswordHash("other", salt, 1000),
-	      "pbkdf2 password affects hash");
-	CHECK(unool::crypto::constantTimeEqualsHex(h1, h2), "hex equals");
-	CHECK(!unool::crypto::constantTimeEqualsHex(h1, unool::crypto::derivePasswordHash("x", salt, 1000)),
-	      "hex not equals");
+	r.check(h1 == h2, "pbkdf2 deterministic");
+	r.check(h1.size() == 64, "pbkdf2 hash is 64 hex chars");
+	r.check(h1 != unool::crypto::derivePasswordHash("password", "different-salt", 1000),
+	        "pbkdf2 salt affects hash");
+	r.check(h1 != unool::crypto::derivePasswordHash("other", salt, 1000),
+	        "pbkdf2 password affects hash");
+	r.check(unool::crypto::constantTimeEqualsHex(h1, h2), "hex equals");
+	r.check(!unool::crypto::constantTimeEqualsHex(h1, unool::crypto::derivePasswordHash("x", salt, 1000)),
+	        "hex not equals");
 	const auto saltA = unool::crypto::makeRandomSaltHex();
 	const auto saltB = unool::crypto::makeRandomSaltHex();
-	CHECK(saltA.size() == 32 && saltA != saltB, "random salt distinct");
+	r.check(saltA.size() == 32 && saltA != saltB, "random salt distinct");
 }
 
-void testProtocolVersion() {
+void testProtocolVersion(TestResult& r) {
 	using namespace unool::protocol;
-	CHECK(isProtocolVersionCompatible(kProtocolVersion), "current version compatible");
-	CHECK(!isProtocolVersionCompatible(kProtocolVersion - 1), "old version rejected");
-	CHECK(!isProtocolVersionCompatible(kProtocolVersion + 1), "future version rejected");
-	CHECK(!kProtocolVersionMismatch.empty(), "mismatch message readable");
+	r.check(isProtocolVersionCompatible(kProtocolVersion), "current version compatible");
+	r.check(!isProtocolVersionCompatible(kProtocolVersion - 1), "old version rejected");
+	r.check(!isProtocolVersionCompatible(kProtocolVersion + 1), "future version rejected");
+	r.check(!kProtocolVersionMismatch.empty(), "mismatch message readable");
 }
 
-void testMessageDirection() {
+void testMessageDirection(TestResult& r) {
 	// MessageType 与 isClientCommand / isServerEvent / isControlMessage 均在 unool::protocol。
 	using namespace unool::protocol;
 	// 命令段 1xx
-	CHECK(isClientCommand(MessageType::LoginRequest), "LoginRequest is command");
-	CHECK(isClientCommand(MessageType::ClientInput), "ClientInput is command");
-	CHECK(!isServerEvent(MessageType::LoginRequest), "command is not server event");
+	r.check(isClientCommand(MessageType::LoginRequest), "LoginRequest is command");
+	r.check(isClientCommand(MessageType::ClientInput), "ClientInput is command");
+	r.check(!isServerEvent(MessageType::LoginRequest), "command is not server event");
 	// 事件段 2xx
-	CHECK(isServerEvent(MessageType::LoginResponse), "LoginResponse is event");
-	CHECK(isServerEvent(MessageType::GameState), "GameState is event");
-	CHECK(!isClientCommand(MessageType::GameStart), "event is not command");
+	r.check(isServerEvent(MessageType::LoginResponse), "LoginResponse is event");
+	r.check(isServerEvent(MessageType::GameState), "GameState is event");
+	r.check(!isClientCommand(MessageType::GameStart), "event is not command");
 	// 控制段 9xx
-	CHECK(isControlMessage(MessageType::Heartbeat), "Heartbeat is control");
-	CHECK(!isClientCommand(MessageType::Heartbeat) && !isServerEvent(MessageType::Heartbeat),
-	      "control is neither command nor event");
+	r.check(isControlMessage(MessageType::Heartbeat), "Heartbeat is control");
+	r.check(!isClientCommand(MessageType::Heartbeat) && !isServerEvent(MessageType::Heartbeat),
+	        "control is neither command nor event");
 }
 
-void testScoreboard() {
+void testScoreboard(TestResult& r) {
 	// 等级序 S/A/B/C/D/F；低等级战胜高等级得分更多。
-	CHECK(unool::scoreboard[0][0] == 10, "S beats S = 10");
-	CHECK(unool::scoreboard[5][0] > unool::scoreboard[0][5], "F beats S > S beats F");
+	r.check(unool::scoreboard[0][0] == 10, "S beats S = 10");
+	r.check(unool::scoreboard[5][0] > unool::scoreboard[0][5], "F beats S > S beats F");
 }
 
 } // namespace
@@ -99,32 +92,21 @@ int main() {
 	SetConsoleOutputCP(CP_UTF8);
 #endif
 
-	testSha256();
-	testPbkdf2();
-	testProtocolVersion();
-	testMessageDirection();
-	testScoreboard();
+	// 本文件内的纯逻辑断言（Crypto / 协议版本 / 消息方向 / 积分表）。
+	TestResult total;
+	testSha256(total);
+	testPbkdf2(total);
+	testProtocolVersion(total);
+	testMessageDirection(total);
+	testScoreboard(total);
 
-	// Arch-C P1-2：MessageCodec 成对序列化 round-trip（依赖 SFML，VS Tests 工程运行）。
-	const auto codec = runCodecRoundTripTests();
-	g_pass += codec.passed;
-	g_fail += codec.failed;
+	// 各测试文件的入口，按相加次序 = 执行次序汇总。
+	total = total
+	      + runCodecRoundTripTests()   // P1-2 MessageCodec 成对序列化 round-trip
+	      + runConnectionStateTests()  // P1-3 ConnectionState 入站队列 / 心跳 / 断线
+	      + runRulesTests()            // P3-5 冻结区玩法规则
+	      + runGameLogicTests();       // P3-5 GameLogic 测试台（fake-port）
 
-	// Arch-C P1-3：ConnectionState 显式入站队列 / 心跳 / 断线单测（fake gateway）。
-	const auto conn = runConnectionStateTests();
-	g_pass += conn.passed;
-	g_fail += conn.failed;
-
-	// Arch-C P3-5：冻结区玩法规则（牌值 / 体力扣减依据 / 秘技牌 / 容器与选择指针）。
-	const auto rules = runRulesTests();
-	g_pass += rules.passed;
-	g_fail += rules.failed;
-
-	// Arch-C P3-5：GameLogic 测试台（fake-port）——摸牌来源 / 技能触发顺序。
-	const auto gamelogic = runGameLogicTests();
-	g_pass += gamelogic.passed;
-	g_fail += gamelogic.failed;
-
-	std::cout << "单测结果: " << g_pass << " 通过, " << g_fail << " 失败\n";
-	return g_fail == 0 ? 0 : 1;
+	std::println("单测结果: {} 通过, {} 失败", total.passed, total.failed);
+	return total.allPassed() ? 0 : 1;
 }

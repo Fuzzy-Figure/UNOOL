@@ -1,20 +1,57 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp" />
-    <ClCompile Include="..\..\source\tests\test_main.cpp" />
-    <ClCompile Include="..\..\source\tests\test_codec.cpp" />
-    <ClCompile Include="..\..\source\tests\test_connection.cpp" />
-    <ClCompile Include="..\..\source\tests\test_rules.cpp" />
-    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp" />
-    <ClCompile Include="..\..\source\shell\ConnectionState.cpp" />
-    <ClCompile Include="..\..\source\core\Crypto.cpp" />
+    <ClCompile Include="..\..\source\shell\ConnectionState.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\core\Crypto.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_codec.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_connection.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_gamelogic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\tests\test_rules.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\source\platform\WindowsPlatform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\source\tests\test_codec.h" />
-    <ClInclude Include="..\..\source\tests\test_connection.h" />
-    <ClInclude Include="..\..\source\tests\test_rules.h" />
-    <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
-    <ClInclude Include="..\..\source\tests\test_fakes.h" />
+    <ClInclude Include="..\..\source\tests\test_codec.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_connection.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_fakes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_gamelogic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_rules.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\tests\test_support.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{7483de5b-9073-4f47-bc78-297b026a5ea7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{ab89e1bc-ba60-4a32-8c09-77c4da358387}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

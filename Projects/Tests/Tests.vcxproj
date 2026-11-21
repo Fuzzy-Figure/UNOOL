@@ -107,6 +107,7 @@
     <ClInclude Include="..\..\source\tests\test_rules.h" />
     <ClInclude Include="..\..\source\tests\test_gamelogic.h" />
     <ClInclude Include="..\..\source\tests\test_fakes.h" />
+    <ClInclude Include="..\..\source\tests\test_support.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\UNOOL.Core.vcxproj">

@@ -7,31 +7,19 @@
 #include "core/Character.h"
 
 #include <cstddef>
-#include <cstdio>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace {
+using unool::tests::TestResult;
 
-struct Result {
-	int passed = 0;
-	int failed = 0;
-	void check(bool ok, const char* name) {
-		if (ok) {
-			++passed;
-			return;
-		}
-		++failed;
-		std::fprintf(stderr, "FAIL: %s\n", name);
-	}
-};
+namespace {
 
 // 牌值表：数字牌 = 点数、功能牌 20、万能牌 50、秘技牌 10。
 // 这张表就是「体力扣减 = 手牌分值之和」的乘数，改动等于改玩法。
-void testCardValues(Result& r) {
+void testCardValues(TestResult& r) {
 	for (std::size_t pip = 0; pip < Card::numberCardsFrom0.size(); ++pip) {
 		const auto c = Card::make(Card::Color::red, Card::numberCardsFrom0[pip]);
 		r.check(c->value() == pip, "number card value equals its pip");
@@ -64,7 +52,7 @@ void testCardValues(Result& r) {
 }
 
 // 体力扣减依据：Hand::value() 是逐张牌值求和，空手牌为 0。
-void testHandValueIsSum(Result& r) {
+void testHandValueIsSum(TestResult& r) {
 	Hand hand;
 	r.check(hand.value() == 0, "empty hand value is 0");
 
@@ -76,7 +64,7 @@ void testHandValueIsSum(Result& r) {
 }
 
 // 秘技牌：独立类型、不进标准牌池与随机牌池（只由角色技能发放）。
-void testSecretCardClassification(Result& r) {
+void testSecretCardClassification(TestResult& r) {
 	for (const Card::Name name : { Card::Name::secret_毒酒, Card::Name::secret_药酒,
 								   Card::Name::secret_过载, Card::Name::secret_指虎 }) {
 		const auto c = Card::make(Card::Color::no, name);
@@ -114,7 +102,7 @@ void testSecretCardClassification(Result& r) {
 }
 
 // 卡牌容器：批量插入张数、按索引取走、越界抛、克隆是深拷贝。
-void testCardsContainer(Result& r) {
+void testCardsContainer(TestResult& r) {
 	Cards cards;
 	cards.push_back(Card::make(Card::Color::red, Card::Name::number_7), 3);
 	r.check(cards.count() == 3, "push_back(count) inserts that many copies");
@@ -147,7 +135,7 @@ void testCardsContainer(Result& r) {
 }
 
 // 手牌选择指针：空手牌恒 0、越界夹紧、左右回绕、出牌后跟随修正。
-void testHandSelection(Result& r) {
+void testHandSelection(TestResult& r) {
 	Hand hand;
 	r.check(hand.getSelectedIndex() == 0, "empty hand selected index is 0");
 	hand.setSelectedIndex(3);
@@ -186,7 +174,7 @@ void testHandSelection(Result& r) {
 }
 
 // 弃牌元数据随复制保留：结算与摸牌来源依赖这些字段不丢。
-void testCardCopyKeepsMetadata(Result& r) {
+void testCardCopyKeepsMetadata(TestResult& r) {
 	auto source = Card::make(Card::Color::red, Card::Name::number_4);
 	source->setDiscardReason(Card::DiscardReason::use);
 	source->setExtraDamage(2);
@@ -204,7 +192,7 @@ void testCardCopyKeepsMetadata(Result& r) {
 // 生命上限：改上限时当前体力同步压到新上限，提高上限不回复体力。
 // 白板只有 1 点体力，所以用「降到 0」「升到 10」两端验证同一条规则，
 // 数值大小不影响判定，只是【发射】那种「减上限到 75」的同一段代码。
-void testMaxHp(Result& r) {
+void testMaxHp(TestResult& r) {
 	auto character = Character::make("白板");
 	r.check(character->getHp() == 1 && character->getMaxHp() == 1, "max hp defaults to hp");
 
@@ -220,8 +208,8 @@ void testMaxHp(Result& r) {
 
 } // namespace
 
-RulesTestResult runRulesTests() {
-	Result r;
+unool::tests::TestResult runRulesTests() {
+	unool::tests::TestResult r;
 	testCardValues(r);
 	testHandValueIsSum(r);
 	testSecretCardClassification(r);
@@ -229,5 +217,5 @@ RulesTestResult runRulesTests() {
 	testHandSelection(r);
 	testCardCopyKeepsMetadata(r);
 	testMaxHp(r);
-	return { r.passed, r.failed };
+	return r;
 }

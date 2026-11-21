@@ -16,7 +16,6 @@
 #include "core/Player.h"
 #include "core/Skill.h"
 
-#include <cstdio>
 #include <format>
 #include <functional>
 #include <memory>
@@ -24,20 +23,9 @@
 #include <utility>
 #include <vector>
 
-namespace {
+using unool::tests::TestResult;
 
-struct Result {
-	int passed = 0;
-	int failed = 0;
-	void check(bool ok, const char* name) {
-		if (ok) {
-			++passed;
-			return;
-		}
-		++failed;
-		std::fprintf(stderr, "FAIL: %s\n", name);
-	}
-};
+namespace {
 
 // 记录型被动：不改变对局，只把触发时拿到的 player / source 记到日志里。
 // forced=true 是关键——否则 launch() 会先 ask() 一次「是否发动」。
@@ -76,7 +64,7 @@ void initBlankGame(GameLogic& game, unool::tests::FakeWorld& world) {
 }
 
 // 摸牌来源：只有「牌效果摸牌」带 source，普通摸牌必须为空。
-void testDrawSource(Result& r, unool::tests::FakeWorld& world) {
+void testDrawSource(TestResult& r, unool::tests::FakeWorld& world) {
 	GameLogic game(world.view, world.decision, world.services);
 	initBlankGame(game, world);
 
@@ -106,7 +94,7 @@ void testDrawSource(Result& r, unool::tests::FakeWorld& world) {
 }
 
 // 技能触发顺序：载体顺序（players 数组）+ 载体内部注册顺序，且只看时机匹配。
-void testTriggerOrder(Result& r, unool::tests::FakeWorld& world) {
+void testTriggerOrder(TestResult& r, unool::tests::FakeWorld& world) {
 	GameLogic game(world.view, world.decision, world.services);
 	initBlankGame(game, world);
 
@@ -133,13 +121,13 @@ void testTriggerOrder(Result& r, unool::tests::FakeWorld& world) {
 
 } // namespace
 
-GameLogicTestResult runGameLogicTests() {
+unool::tests::TestResult runGameLogicTests() {
 	unool::tests::FakeWorld world;
 	// Character / utils 的静态工具与随机门面都经服务定位器取端口，测试台必须先装配。
 	unool::core::installServices(world.services);
 
-	Result r;
+	unool::tests::TestResult r;
 	testDrawSource(r, world);
 	testTriggerOrder(r, world);
-	return { r.passed, r.failed };
+	return r;
 }
