@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# 同一分支的新提交直接顶掉还在排队的旧 run，不用等上一次跑完。
+# main 上不取消：合并后的验证要留完整记录。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   # Windows 运行器默认 ANSI 代码页是 1252，Python 的 stdout 会按它编码，
   # 脚本里的中文 print 直接抛 UnicodeEncodeError（--check 第一条输出就挂）。
@@ -64,9 +70,24 @@ jobs:
           if ($bad.Count -gt 0) { $bad | ForEach-Object { Write-Error $_ }; exit 1 }
           Write-Host "编码 / 行尾检查通过：$($files.Count) 个文件"
 
-  build:
-    name: x64 Debug / Release 构建
+  build-and-test:
+    name: x64 ${{ matrix.config }} 构建 + 单测
     runs-on: windows-latest
+    # Debug 与 Release 之间没有依赖，拆成两个 job 交给两个 runner 并行跑。
+    # 原来是单 job 里「Debug 构建 → Release 构建 → Tests」串行，墙钟是两者之和；
+    # 并行后墙钟只取较慢的一侧，额外代价仅是各自 checkout 一次（~10 s）。
+    # 单测两边都跑：Debug 版开着 /RTC1 与迭代器调试，能抓到 Release 看不见的问题。
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: Debug
+            # /Z7（OldStyle）：调试信息写进各自的 obj，绕开所有 cl 争抢同一个
+            # mspdbsrv PDB 的串行锁，/MP 的文件级并行才真正吃满 4 核。
+            # 只在 CI 注入，本地工程设置不动。
+            extra: /p:DebugInformationFormat=OldStyle
+          - config: Release
+            extra: ''
     steps:
       - uses: actions/checkout@v4
         with:
@@ -77,13 +98,14 @@ jobs:
       - name: 添加 MSBuild 到 PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: 还原 / 构建 Debug|x64
-        run: msbuild UNOOL.slnx /t:Build /p:Configuration=Debug /p:Platform=x64 /m /v:minimal
+      # /nr:false  —— 不复用常驻节点，避免 runner 收尾时被残留节点拖住
+      # TrackFileAccess=false —— 干净构建没有增量可算，省掉每个文件的访问追踪
+      - name: 构建（${{ matrix.config }}|x64）
+        run: >-
+          msbuild UNOOL.slnx /t:Build
+          /p:Configuration=${{ matrix.config }} /p:Platform=x64
+          /m /nr:false /v:minimal /p:TrackFileAccess=false ${{ matrix.extra }}
 
-      - name: 构建 Release|x64
-        run: msbuild UNOOL.slnx /t:Build /p:Configuration=Release /p:Platform=x64 /m /v:minimal
-
-      - name: 运行单测（Tests）
-        run: |
-          msbuild Projects/Tests/Tests.vcxproj /t:Build /p:Configuration=Release /p:Platform=x64 /m /v:minimal
-          & "x64/Release/Tests.exe"
+      # slnx 里已含 Tests 工程，单独再 build 一次只是增量空转，直接跑。
+      - name: 单测（${{ matrix.config }}）
+        run: '& "x64/${{ matrix.config }}/Tests.exe"'

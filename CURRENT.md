@@ -33,7 +33,7 @@
 | P3-1 角色数生成 | 已落地 | `tools/gen_stats.py` 生成 `docs/characters.md` + `tools/generated_stats.json`；当前 123 角色 / 238 技能类 |
 | P3-2 README 重组 | 已落地 | 历史批次归档 `docs/adr/README-历史批次.md`，本文件为现状入口 |
 | P3-3 规则文档同步 | 已落地 | `docs/rules.md` 增量补充体力/生命上限、摸牌来源、技能触发顺序、积分查表与协议变更说明；一次性归一化为 CRLF |
-| P3-4 CI | 已落地 | `.github/workflows/arch-c.yml`：结构/编码/统计校验 + x64 Debug·Release 构建 + 单测运行 |
+| P3-4 CI | 已落地 | `.github/workflows/arch-c.yml`：结构/编码/统计校验 + x64 Debug·Release **矩阵并行**构建，两个配置各跑一遍单测；PR 上同分支新 run 顶掉旧 run |
 | P1-4 Scene 纯 View 化 | 已落地 | 两个 Scene 内 `sf::Packet` 发包构造 / `jsonStr` 解析 / 进程级 static 缓存清零；语义收发上移 `ConnectionState`，展示缓存抽为组合根持有的 `ShopPresentationCache`；状态机在 `LoginViewModel` / `ShopViewModel`（纯标准库、无 SFML / 无网络、时间按毫秒注入），出站走 `takeActions()` 队列；View 只剩几何命中、Actions 执行与绘制 |
 | P3-5 测试网 | 已落地 | `Projects/Tests` 单测工程，9 个测试文件覆盖冻结区玩法语义、两个 ViewModel、协议全量 round-trip（含 27 个消息号方向分段清单）、UserDB 存档与结算；fake-port 测试台在 `source/tests/test_fakes.h`，断言器零宏（`TestResult` + `std::source_location`） |
 
