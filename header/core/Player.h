@@ -80,7 +80,8 @@ private:
 	bool handleDigitKey(unool::contract::Key input,
 						const std::vector<ref<InstantSkill>>& instantRefs,
 						const std::vector<ref<TransformSkill>>& transformRefs,
-						opt_ref<TransformSkill>& activeMode);
+						opt_ref<TransformSkill>& activeMode,
+						const std::string& title, bool forced);
 	//处理确认选择（Up/W）：返回索引表示出牌成功，nullopt表示继续循环
 	std::optional<std::size_t> handleConfirm(const std::function<bool(const Card&)>& condition,
 											 const opt_ref<TransformSkill>& activeMode);

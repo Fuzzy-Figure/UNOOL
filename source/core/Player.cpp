@@ -591,17 +591,19 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 
 		//数字1-9：即时技发动 / 转换技切换（仅出牌阶段）
 		if (phase != ActiveSkill::TriggerTime::never
-			&& handleDigitKey(input, instantRefs, transformRefs, activeMode))
+			&& handleDigitKey(input, instantRefs, transformRefs, activeMode, title, forced))
 			continue;
 
 		//B：使用炸弹卡（对一名其他角色造成5点伤害，每局限两次）
 		if (phase != ActiveSkill::TriggerTime::never
 			&& input == unool::contract::Key::B) {
-			if (tryUseBombCard()) {
-				game.setOperatingPlayer(id);
-				decision.showChoice(id, { title,{}, forced });
-				game.broadcastState();
-			}
+			tryUseBombCard();
+			//无论成功失败都恢复出牌等待状态：tryUseBombCard 内部的 hint/选目标走 ask()，
+			//ask 的 OperatingGuard 析构会 clearOperatingPlayer + clearChoice。失败分支若不恢复，
+			//客户端将失去操作权和出牌提示，双方都无法出牌（炸弹次数用尽时必现）。
+			game.setOperatingPlayer(id);
+			decision.showChoice(id, { title,{}, forced });
+			game.broadcastState();
 			continue;
 		}
 
@@ -657,7 +659,8 @@ void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 bool Player::handleDigitKey(unool::contract::Key input,
 							const std::vector<ref<InstantSkill>>& instantRefs,
 							const std::vector<ref<TransformSkill>>& transformRefs,
-							opt_ref<TransformSkill>& activeMode) {
+							opt_ref<TransformSkill>& activeMode,
+							const std::string& title, bool forced) {
 	auto digit = digitFromScancode(input);
 	if (!digit.has_value() || digit.value() == 0) return false;
 
@@ -671,7 +674,9 @@ bool Player::handleDigitKey(unool::contract::Key input,
 		if (confirm == 1) {
 			skill.tryActivate(game, *this);
 		}
+		//ask 的 guard 已 clearChoice + clearOperatingPlayer，恢复出牌等待状态
 		game.setOperatingPlayer(id);
+		decision.showChoice(id, { title,{}, forced });
 		game.broadcastState();
 	}
 	//后续键：切换转换技激活态
@@ -680,7 +685,8 @@ bool Player::handleDigitKey(unool::contract::Key input,
 		TransformSkill& skill = transformRefs[tIdx].get();
 		if (activeMode.has_value() && &activeMode.value().get() == &skill) {
 			activeMode.reset();
-			decision.clearChoice(id);
+			//取消激活后恢复出牌选择框
+			decision.showChoice(id, { title,{}, forced });
 		}
 		else {
 			activeMode = skill;
