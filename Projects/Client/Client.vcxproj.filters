@@ -105,6 +105,9 @@
     <ClInclude Include="..\..\header\protocol\MessageType.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\protocol\RoomProtocol.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopData.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>

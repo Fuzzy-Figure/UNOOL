@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <initializer_list>
 #include <optional>
@@ -62,8 +63,12 @@ namespace unool::shell {
 		bool sendRegister(const std::string& username, const std::string& password);
 		bool sendCheckUsername(const std::string& username);
 		bool sendCheckin();
-		bool sendReadyToPlay();
-		bool sendCancelMatchmaking();
+		// 房间语义出站（协议版本 3）：匹配已下线，组队改走房间。
+		bool requestRoomList();
+		bool createRoom(const std::string& roomName);
+		bool joinRoom(std::uint64_t roomId);
+		bool leaveRoom();
+		bool sendRoomReady(bool ready);
 		bool sendSkillInfoRequest(const std::vector<std::string>& names);
 		// 商城语义出站：内部构造购买 JSON 并经网关发送（4 类请求）。
 		bool sendShopRequest();

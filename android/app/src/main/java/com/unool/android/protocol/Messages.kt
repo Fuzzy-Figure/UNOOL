@@ -8,11 +8,15 @@ object Msg {
     const val REGISTER_REQUEST = 102
     const val LOGIN_REQUEST = 103
     const val CHECK_USERNAME_REQUEST = 104
-    const val READY_TO_PLAY = 105
-    const val CANCEL_MATCHMAKING = 106
     const val SHOP_PURCHASE = 107
     const val SKILL_INFO_REQUEST = 108
     const val CHECKIN_REQUEST = 109
+    // 房间功能（协议版本 3）：登录后不再匹配，改为房间组队
+    const val ROOM_LIST_REQUEST = 110
+    const val ROOM_CREATE_REQUEST = 111
+    const val ROOM_JOIN_REQUEST = 112
+    const val ROOM_LEAVE_REQUEST = 113
+    const val ROOM_READY_REQUEST = 114
 
     // 服务端 -> 客户端
     const val CONNECTION_INFO = 201
@@ -30,11 +34,15 @@ object Msg {
     const val SHOP_RESULT = 213
     const val SKILL_INFO_RESPONSE = 214
     const val CHECKIN_RESPONSE = 215
-    const val MATCHMAKING_CANCELLED = 216
-    const val MATCHMAKING_STARTED = 217
+    const val ROOM_LIST_RESPONSE = 218
+    const val ROOM_STATE_RESPONSE = 219
+    const val ROOM_ERROR_RESPONSE = 220
 
     const val HEARTBEAT = 901
-    const val PROTOCOL_VERSION = 2L
+    const val PROTOCOL_VERSION = 3L
+
+    // 房间容量：一桌两个座位
+    const val ROOM_CAPACITY = 2
 }
 
 /** PC 端 sf::Keyboard::Scancode 数值，必须原样发给服务端 */
@@ -112,16 +120,46 @@ data class ChoicePrompt(
     val optionMeta: List<ChoiceMeta>
 )
 
+// ---------------------------------------------------------------- 房间
+
+/** 大厅房间列表里的一行 */
+data class RoomSummary(
+    val id: Long,
+    val name: String,
+    val owner: String,
+    val members: Int,
+    val capacity: Int,
+    val inGame: Boolean
+)
+
+/** 房间内的一名成员 */
+data class RoomMember(val name: String, val ready: Boolean, val owner: Boolean)
+
+/** 当前所在房间的完整快照；closed=true 表示已离开 / 已解散 */
+data class RoomSnapshot(
+    val id: Long,
+    val name: String,
+    val owner: String,
+    val capacity: Int,
+    val inGame: Boolean,
+    val closed: Boolean,
+    val reason: String,
+    val members: List<RoomMember>
+)
+
 sealed interface ClientMessage {
     data class Login(val username: String, val password: String) : ClientMessage
     data class Register(val username: String, val password: String) : ClientMessage
     data class CheckUsername(val username: String) : ClientMessage
-    data object ReadyToPlay : ClientMessage
-    data object CancelMatchmaking : ClientMessage
     data object Checkin : ClientMessage
     data class ShopPurchase(val json: String) : ClientMessage
     data class SkillInfoRequest(val json: String) : ClientMessage
     data class ClientInput(val key: Int, val playerId: Long, val selectedIndex: Long) : ClientMessage
+    data object RoomListRequest : ClientMessage
+    data class RoomCreate(val roomName: String) : ClientMessage
+    data class RoomJoin(val roomId: Long) : ClientMessage
+    data object RoomLeave : ClientMessage
+    data class RoomReady(val ready: Boolean) : ClientMessage
     data object Heartbeat : ClientMessage
 }
 
@@ -130,7 +168,8 @@ sealed interface ServerMessage {
     data object ConnectionRefused : ServerMessage
     data class AccountResponse(val type: Int, val ok: Boolean, val msg: String, val points: Int, val wins: Int, val losses: Int) : ServerMessage
     data class CheckUsernameResponse(val exists: Boolean) : ServerMessage
-    data object GameStart : ServerMessage
+    /** seat：本局座位号（0/1），房间模式下由服务端指定 */
+    data class GameStart(val seat: Long) : ServerMessage
     data class GameEnd(val hasWinner: Boolean, val winnerId: Long, val winnerName: String) : ServerMessage
     data class State(val state: GameStateData) : ServerMessage
     data class Choice(val prompt: ChoicePrompt) : ServerMessage
@@ -138,8 +177,9 @@ sealed interface ServerMessage {
     data class CharInfo(val playerIndex: Long, val fullText: String) : ServerMessage
     data class StringPayload(val type: Int, val json: String) : ServerMessage
     data class CheckinResponse(val msg: String, val ok: Boolean, val points: Int) : ServerMessage
-    data class MatchmakingCancelled(val username: String) : ServerMessage
-    data class MatchmakingStarted(val username: String) : ServerMessage
+    data class RoomList(val rooms: List<RoomSummary>) : ServerMessage
+    data class RoomState(val room: RoomSnapshot) : ServerMessage
+    data class RoomError(val msg: String) : ServerMessage
     data object Heartbeat : ServerMessage
     data class Unknown(val type: Int) : ServerMessage
     data object Disconnected : ServerMessage

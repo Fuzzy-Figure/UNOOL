@@ -1,150 +1,42 @@
-#include "GameLogic.h"
-#include "Socket.h"
+#include "ServerNetwork.h"
+#include "RoomManager.h"
 #include "utils.h"
 #include "core/Services.h"
 #include "core/AccountService.h"
 #include "core/ShopService.h"
-#include "shell/LegacyBlockingDecisionAdapter.h"
 #include "shell/LegacyServicesAdapter.h"
-#include "shell/NetworkServerView.h"
-#include "shell/UserDB.h"
-#include "contract/TableConfig.h"
 #include "platform/Platform.h"
+
+#include <algorithm>
 #include <chrono>
+#include <print>
 #include <thread>
-#include <vector>
 
-// 根据 server_config.json 初始化角色（指定或随机）
-static void initCharacters(GameLogic& gameLogic,
-						   unool::core::IConfigProvider& config) {
-	if (auto chars = config.assignedCharacters(); chars.has_value()) {
-		//角色数量由 GameLogic::initPlayers(vector) 按 mode 校验
-		gameLogic.initPlayers(*chars);
-	}
-	else {
-		gameLogic.initPlayers();
-	}
-}
+// 服务端组合根（协议版本 3：房间功能）。
+//
+// 与房间功能之前的差别：
+//   - 登录后不再匹配，大厅里创建 / 加入房间，房内双方准备后开局；
+//   - 服务端同时主持多个房间：每个房间一份 GameLogic + 一个独立线程（RoomGame）；
+//   - 主线程只剩一件事——驱动 ServerNetwork 的 IO（收发 / 心跳 / 超时 / 出站冲刷），
+//     socket 因此始终单线程使用，房间线程只与输入队列和出站队列打交道。
 
-// 端口只用标准库类型：角色档位以底层整数透传，由适配器还原为 Character::Level
-static std::vector<int> toLevelInts(const std::vector<Character::Level>& levels) {
-	std::vector<int> result;
-	result.reserve(levels.size());
-	for (const auto lv : levels) result.push_back(static_cast<int>(lv));
-	return result;
-}
-
-// 获取玩家穿戴皮肤中最高品质（饮料限定视为普通，因为其效果在万能牌时实时结算）
-static Character::SkinQuality bestSkinQuality(const Player& p) {
-	const auto& names = p.getNames();
-	const auto& skins = p.getSkins();
-	Character::SkinQuality best = Character::SkinQuality::normal;
-	for (std::size_t i = 0; i < names.size() && i < skins.size(); ++i) {
-		auto q = Character::getSkinQuality(names[i], skins[i]);
-		if (q == Character::SkinQuality::drink) continue; //饮料限定不参与品质加成
-		if (q > best) best = q;
-	}
-	return best;
-}
-
-// 处理游戏结束：发送 GameEnd 包、按角色等级加分、打印日志
-static void handleGameOver(ServerNetwork& serverNetwork, GameLogic& gameLogic,
-						   unool::core::IUserRepository& users) {
-	std::optional<std::size_t> winnerId = gameLogic.getWinnerId();
-	serverNetwork.sendGameEnd(winnerId);
-	gameLogic.clearGameCount();
-
-	if (winnerId.has_value()) {
-		std::size_t wId = winnerId.value();
-		std::size_t lId = 1 - wId;
-
-		auto& players = gameLogic.getPlayers();
-		const auto& slots = serverNetwork.getClientSlots();
-		//查询双方皮肤品质，供结算加成使用
-		const Character::SkinQuality wQuality = bestSkinQuality(players[wId].get());
-		const Character::SkinQuality lQuality = bestSkinQuality(players[lId].get());
-		const bool wBonusCard = gameLogic.hasUsedBonusCard(wId);
-		users.addMatchResult(
-			slots[wId].username, slots[lId].username,
-			toLevelInts(players[wId].get().getLevels()),
-			toLevelInts(players[lId].get().getLevels()),
-			players[wId].get().getHp() == players[wId].get().getMaxHp(),
-			static_cast<int>(wQuality), static_cast<int>(lQuality), wBonusCard);
-
-		std::println("[Server] 游戏结束，{}获胜！", players[wId].get().displayName());
-	}
-	else {
-		std::println("[Server] 游戏结束，无人获胜！");
-	}
-}
-
-// 游戏主循环
-static void gameLoop(ServerNetwork& serverNetwork, GameLogic& gameLogic,
-					 unool::core::IUserRepository& users) {
-	while (!gameLogic.isGameOver()) {
-		bool roundEnded = gameLogic.runTurn();
-
-		// 回合结束后立即检查游戏是否结束（技能杀人等情况）
-		if (gameLogic.isGameOver()) {
-			handleGameOver(serverNetwork, gameLogic, users);
-			break;
-		}
-
-		if (!roundEnded) continue;
-
-		// 一局结束，处理体力扣除
-		gameLogic.launchPassiveSkills(PassiveSkill::TriggerTime::game_end, PassiveSkill::Trigger{});
-		gameLogic.checkRoundEnd();
-		gameLogic.broadcastState();
-
-		if (gameLogic.isGameOver()) {
-			handleGameOver(serverNetwork, gameLogic, users);
-			break;
-		}
-		// 开始新一局
-		gameLogic.resetGame();
-	}
+namespace {
+	constexpr unsigned short kDefaultPort = 8888;
+	// 没有任何 socket 就绪时主循环的让出粒度：selector 自身最多等 10ms，
+	// 这里再补 2ms，避免满核空转。
+	constexpr int kIdleSleepMs = 2;
 }
 
 int main() {
 	unool::platform::setupConsoleUtf8();
 
-	std::println("[Server] 启动服务器...");
-
-	ServerNetwork serverNetwork;
-	unsigned short port = 8888;
-	if (!serverNetwork.start(port)) {
-		std::println(stderr, "[Server] 启动失败");
-		std::this_thread::sleep_for(std::chrono::seconds(3));
-		return 1;
-	}
+	std::println("[Server] 启动服务器（房间模式）...");
 
 	// Composition Root：唯一出现「谁实现谁」的地方。
-	// 五个出站服务端口各由独立适配器实现（由 LegacyServicesAdapter.h 统一引入）；
-	// IServerView 由 NetworkServerView 实现、IDecisionPort 由
-	// LegacyBlockingDecisionAdapter 实现，两者分别注入棋局。
-	// installServices 让无法构造注入的静态工具（Character）
-	// 与全局随机门面也指向同一组实例；B+ 起该装配在每个 exe 的 main() 中
-	// 显式完成，services() 不再有隐式默认回退。
-	// 随机引擎硬约束：Mt19937Random 在此处只构造一份，DomainServices::random 与
-	// RandomEngine 门面都经 services() 指向它，随机序列与重构前逐字等价。
+	// 五个出站端口各有独立适配器；随机引擎硬约束仍然是「全进程只有一份」。
 	unool::shell::JsonConfigProvider configService;
-	// B+：账号数据由组合根显式构造，进程级共享一份；JsonUserRepository 只持有引用。
-	// 不要每桌各建一份 UserDB，否则积分与存档会分叉。
 	UserDB userDatabase;
 	unool::shell::JsonUserRepository userRepository(userDatabase);
-	// W5 第一段：账号用例服务。ServerNetwork 实现 IAccountSession 端口，
-	// 注册 / 登录 / 查重 / 准备 / 积分消费经 AccountService 与 IUserRepository 完成。
-	// 座位容量由组合根显式注入，用例服务不再读取进程级全局常量。
-	// serverNetwork 在装配前只监听、未调用 update()，不存在「未装配」窗口。
-	unool::core::AccountService accountService(
-		serverNetwork, userRepository, unool::contract::TableConfig::seatCount);
-	serverNetwork.installAccountService(accountService);
-	// W5 第二段（分段第一段）：商城展示 / 技能描述 / 签到用例服务，
-	// 与账号服务共用 IAccountSession（由 ServerNetwork 实现）与 IUserRepository。
-	// 同样在首次 update() 之前装配，不存在「未装配」窗口。
-	unool::core::ShopService shopService(serverNetwork, userRepository);
-	serverNetwork.installShopService(shopService);
 	unool::shell::Mt19937Random randomService;
 	unool::shell::ChronoClock clockService;
 	unool::shell::FilesystemAssetCatalog assetCatalog;
@@ -152,43 +44,39 @@ int main() {
 		configService, userRepository, randomService, clockService, assetCatalog };
 	unool::core::installServices(domainServices);
 
-	unool::shell::NetworkServerView serverView(serverNetwork);
-	unool::shell::LegacyBlockingDecisionAdapter decisionAdapter(serverNetwork, configService);
-	GameLogic gameLogic(serverView, decisionAdapter, domainServices);
-	serverView.attach(gameLogic);
+	// 连接槽位上限来自 server_config.json（network.maxClients，默认 32）
+	const std::size_t maxClients = std::max<std::size_t>(configService.maxClients(), 2);
+
+	// 多连接网络层在 unool::shell：Server 端不再有「全局命名空间的 ServerNetwork」
+	unool::shell::ServerNetwork serverNetwork;
+	if (!serverNetwork.start(kDefaultPort, maxClients)) {
+		std::println(stderr, "[Server] 启动失败");
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+		return 1;
+	}
+
+	// 账号 / 商城 / 房间三个用例层共用同一份 UserDB 与同一张连接表。
+	// 三者都在首次 update() 之前装配，不存在「未装配」窗口。
+	unool::core::AccountService accountService(serverNetwork, userRepository, maxClients);
+	serverNetwork.installAccountService(accountService);
+
+	unool::core::ShopService shopService(serverNetwork, userRepository);
+	serverNetwork.installShopService(shopService);
+
+	unool::shell::RoomManager roomManager(serverNetwork, domainServices);
+	serverNetwork.installRoomManager(roomManager);
 
 	std::println("[Server] 等待客户端连接...");
-	while (!serverNetwork.isReady()) {
-		serverNetwork.update();
-		std::this_thread::sleep_for(std::chrono::milliseconds(16));
-	}
 
 	try {
 		while (true) {
-			std::println("[Server] 游戏开始！");
-			domainServices.config.reload();
-			initCharacters(gameLogic, domainServices.config);
-			gameLogic.broadcastState();
-			gameLoop(serverNetwork, gameLogic, domainServices.users);
-
-			// 询问双方是否继续
-			for (std::size_t i = 0; i < 2; ++i) {
-				auto& player = gameLogic.getPlayerById(i);
-				std::size_t choice = player.ask(
-					"是否继续下一场对战？", { "继续", "退出" }, true);
-				if (choice == 2) {
-					std::println("[Server] {}选择退出，游戏结束", player.displayName());
-					goto gameSessionEnd;
-				}
-			}
+			serverNetwork.update();
+			std::this_thread::sleep_for(std::chrono::milliseconds(kIdleSleepMs));
 		}
-	gameSessionEnd:
-	} catch (std::exception& e) {
-		std::println(stderr, "{}", e.what());
+	}
+	catch (const std::exception& e) {
+		std::println(stderr, "[Server] 主循环异常退出：{}", e.what());
 	}
 
-	while (true) {
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
 	return 0;
 }

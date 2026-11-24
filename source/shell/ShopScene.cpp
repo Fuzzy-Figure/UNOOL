@@ -17,9 +17,8 @@ using unool::protocol::MessageType;
 using ViewModel = unool::shell::ShopViewModel;
 
 ShopScene::ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& uname,
-					 unool::shell::MatchNoticeState& notice,
 					 unool::shell::ShopPresentationCache& cache)
-	: renderer(r), net(n), username(uname), matchNotice(notice), vm(cache) {}
+	: renderer(r), net(n), username(uname), vm(cache) {}
 
 void ShopScene::run() {
 	// 进入商城即请求一次商城数据（动作由 VM 排队，这里立即执行）
@@ -60,24 +59,8 @@ void ShopScene::handleNetwork() {
 	while (auto next = net.takeAny()) {
 		auto [mt, packet] = std::move(*next);
 
-		// 匹配提示：商城阶段是 DrainAll，若此处不接管这两个事件，大厅将永远
-		// 收不到（「非订阅包留队」只对 LoginScene 的 Filtered 模式生效）。
-		// 写回的是 LoginScene 持有的同一份状态，退出商城后大厅横幅自动同步。
-		// 退出匹配不产生文字提示，只把横幅清掉。
-		if (mt == MessageType::MatchmakingStarted) {
-			if (auto who = unool::protocol::parseMatchmakingStarted(packet);
-				who && !who->empty() && *who != username) {
-				matchNotice.opponentMatching = true;
-				matchNotice.opponentName = *who;
-			}
-			continue;
-		}
-		if (mt == MessageType::MatchmakingCancelled) {
-			matchNotice.opponentMatching = false;
-			matchNotice.opponentName.clear();
-			continue;
-		}
-
+		// 房间功能上线后商城不再需要跨场景的匹配提示：房间列表 / 房间快照
+		// 在大厅与房间界面各自消费，商城阶段直接忽略即可（退出商城后由大厅重新拉取）。
 		if (mt == MessageType::ShopData) {
 			if (auto parsed = unool::protocol::parseShopData(packet)) {
 				vm.onShopData(std::move(*parsed));
@@ -247,10 +230,6 @@ void ShopScene::render() {
 
 	renderBuyButton();
 
-	// 匹配提示横幅放在最后绘制：详情面板 / 行表从 y=140 一直铺到屏幕下部，
-	// 只有后置绘制才能保证横幅完整可见、不被面板覆盖。
-	renderMatchNotice();
-
 	// 消息提示（底部居中）
 	if (vm.messageVisible()) {
 		auto& textMgr = renderer.getTextManager();
@@ -285,34 +264,6 @@ void ShopScene::render() {
 	}
 
 	window.display();
-}
-
-void ShopScene::renderMatchNotice() {
-	if (!matchNotice.opponentMatching) return;
-	auto& window = renderer.getWindow();
-	auto& textMgr = renderer.getTextManager();
-	const auto& cfg = renderer.getConfig();
-
-	const std::string text = std::format("对手「{}」已开始匹配，请退出商城并点击「开始游戏」加入",
-										 matchNotice.opponentName);
-	const sf::Vector2f textSize = { 20, 40 };
-	const auto measured = textMgr.measureText(text, static_cast<unsigned int>(textSize.y));
-	const float panelW = measured.x + 80.f > 900.f ? measured.x + 80.f : 900.f;
-	const float panelH = 62.f;
-	const float panelX = (static_cast<float>(cfg.windowSize.x) - panelW) / 2.f;
-	const float panelY = (static_cast<float>(cfg.windowSize.y)) - 190.f;
-
-	sf::RectangleShape panel({ panelW, panelH });
-	panel.setPosition({ panelX, panelY });
-	panel.setFillColor(sf::Color(78, 66, 32));
-	panel.setOutlineThickness(2.f);
-	panel.setOutlineColor(sf::Color(255, 205, 90));
-	window.draw(panel);
-
-	textMgr.displayText(text,
-						{ panelX + (panelW - measured.x) / 2.f,
-						  panelY + (panelH - measured.y) / 2.f },
-						textSize, sf::Color(255, 228, 150));
 }
 
 void ShopScene::renderTopBar() {

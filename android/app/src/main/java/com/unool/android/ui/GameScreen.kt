@@ -100,32 +100,6 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
             Text("当前牌名：${CardName.label(state?.currentName ?: 0)}", fontSize = 12.sp)
         }
 
-        // 主动技面板：轮到自己出牌且有可用技能时，按数字键顺序显示在右侧，点击发动（绿底白字）
-        if (canSelect && state?.availableSkills?.isNotEmpty() == true) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 150.dp)
-                    .width(150.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                state.availableSkills.forEachIndexed { i, name ->
-                    Button(
-                        onClick = { viewModel.useSkill(i + 1) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp)
-                            .padding(bottom = 4.dp),
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1B7F3A),
-                            contentColor = Color.White
-                        )
-                    ) { Text("${i + 1}·$name", fontSize = 11.sp) }
-                }
-            }
-        }
-
         // 右上：局数 / 胜负 / 结果
         Column(modifier = Modifier.align(Alignment.TopEnd).padding(end = 140.dp)) {
             localPlayer?.let {
@@ -136,12 +110,12 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
             }
         }
 
-        // 右侧选择提示（Windows 的 displayTextInRight，改成可点）
+        // 选择提示（ask 文字）：贴最右侧居中，仅留少量间距避开导航键
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 108.dp)
-                .width(240.dp)
+                .padding(end = 28.dp)
+                .width(200.dp)
                 .background(Color(0xD6FFFFFF))
                 .padding(6.dp)
                 .verticalScroll(rememberScrollState())
@@ -149,41 +123,65 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
             ChoicePanel(choice, remainingSeconds, viewModel)
         }
 
-        // 最右侧竖排操作：↑ 出牌，↓ 取消；下方两个小按钮保留整理/炸弹
+        // 右下角操作区：第1行主动技横排；第2行 整理 + ↑；第3行 炸弹 + ↓
         Column(
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 72.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 72.dp, bottom = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Bottom
         ) {
-            Button(
-                onClick = viewModel::confirmPlay,
-                enabled = canSelect,
-                modifier = Modifier.size(width = 64.dp, height = 56.dp)
-            ) { Text("↑", fontSize = 28.sp) }
+            // 第1行：主动技按钮，横向排列（绿底白字）
+            if (canSelect && state?.availableSkills?.isNotEmpty() == true) {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    state.availableSkills.forEachIndexed { i, name ->
+                        Button(
+                            onClick = { viewModel.useSkill(i + 1) },
+                            modifier = Modifier.height(28.dp).padding(end = 3.dp),
+                            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1B7F3A),
+                                contentColor = Color.White
+                            )
+                        ) { Text("${i + 1}·$name", fontSize = 10.sp) }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+            }
 
-            Spacer(Modifier.height(8.dp))
-
-            Button(
-                onClick = viewModel::cancelSelection,
-                enabled = canSelect,
-                modifier = Modifier.size(width = 64.dp, height = 56.dp)
-            ) { Text("↓", fontSize = 28.sp) }
-
-            Spacer(Modifier.height(12.dp))
-
-            Button(
-                onClick = viewModel::sortHand,
-                enabled = canSelect,
-                modifier = Modifier.size(width = 64.dp, height = 40.dp)
-            ) { Text("整", fontSize = 13.sp) }
+            // 第2行：整理手牌 + 上箭头
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = viewModel::sortHand,
+                    enabled = canSelect,
+                    modifier = Modifier.size(width = 62.dp, height = 34.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("整理手牌", fontSize = 11.sp) }
+                Spacer(Modifier.width(4.dp))
+                Button(
+                    onClick = viewModel::confirmPlay,
+                    enabled = canSelect,
+                    modifier = Modifier.size(width = 44.dp, height = 40.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("↑", fontSize = 22.sp) }
+            }
 
             Spacer(Modifier.height(4.dp))
 
-            Button(
-                onClick = viewModel::useBomb,
-                enabled = canSelect,
-                modifier = Modifier.size(width = 64.dp, height = 40.dp)
-            ) { Text("炸", fontSize = 13.sp) }
+            // 第3行：炸弹 + 下箭头
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = viewModel::useBomb,
+                    enabled = canSelect,
+                    modifier = Modifier.size(width = 62.dp, height = 34.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("炸弹", fontSize = 11.sp) }
+                Spacer(Modifier.width(4.dp))
+                Button(
+                    onClick = viewModel::cancelSelection,
+                    enabled = canSelect,
+                    modifier = Modifier.size(width = 44.dp, height = 40.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("↓", fontSize = 22.sp) }
+            }
         }
 
         infoPlayerIndex?.let { idx ->
@@ -394,7 +392,7 @@ private fun ChoicePanel(choice: ChoicePrompt?, remainingSeconds: Long?, viewMode
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .width(220.dp)
+                    .width(168.dp)
                     .clickable(enabled = index < 9) { viewModel.chooseOption(index + 1) }
                     .padding(vertical = 2.dp)
             )

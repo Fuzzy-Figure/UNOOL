@@ -5,6 +5,7 @@
 - 新增角色技能优先复用既有分组目录的 `Passive.h/.cpp`、`Instant.h/.cpp`，不动 `.vcxproj` / `.filters`。
 - 枚举扩展（`Color::purple`、`Name::secret_*`、`DrawReason::card_draw*` 等）一律追加在枚举末尾，保证线上序列化数值不变。
 - 中文标识符在本项目可正常使用（已有大量中文类名/技能名），MSVC 与 GCC 均可编译。
+- 新代码不用 TU 局部 `using`（尤其 `using unool::protocol::MessageType`）：直接写全名 `unool::protocol::MessageType::X`（用户 2026-11-24 明确要求；旧的 Socket.cpp / LoginScene.cpp / ShopScene.cpp / ClientApp.cpp 里的 using 属历史写法）。
 - **契定技** = 初始非锁定技（构造 `forced=false`），发动一次后 `setForced(true)` 变锁定技，`reset()` 里 `setForced(false)` 每局重置；先例在「网络」分组（举报 / 爆缸 / 落水）。
 - 被动技次数可动态增加：`increaseLimit(n)`；`limit=0` 即「每局限零次」，`Skill::reset()` 每局把 limit 恢复为构造值。
 - 座位顺序 = `game.getPlayers()` 的数组顺序（`nextPlayerIndex` 按该数组推进）；轮末用 `round_end` + `TriggerPlayer::anybody`（`TriggerPlayer::self` 只在自己是轮末玩家时触发）。

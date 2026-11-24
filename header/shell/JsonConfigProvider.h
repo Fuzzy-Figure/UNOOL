@@ -3,6 +3,7 @@
 #include <json.hpp>
 
 #include <cstddef>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
@@ -17,27 +18,37 @@ namespace unool::shell {
 	// 每个 override 都是重构前 GameLogic / Character / ServerMain / utils
 	// 里对应表达式的逐字平移（含默认值、缺键异常行为与每局 reload 时机）。
 	// header-only：避免给 Client1/Client2 引入新的 .cpp 与链接依赖。
+	//
+	// 多房间并发（协议版本 3）：多个房间线程会同时读配置，而每局开始前会 reload。
+	// 因此每个 override 都在 serverConfigMutex() 保护下读取，reload 同样持锁。
 	class JsonConfigProvider final : public core::IConfigProvider {
 	public:
 		std::string mode() const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig().value("mode", "normal");
 		}
 		std::size_t candidateCount(const std::string& rulesKey) const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["rules"][rulesKey].value("candidateCount", 5);
 		}
 		std::size_t initHandCount(const std::string& rulesKey) const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["rules"][rulesKey]["initHandCount"].get<std::size_t>();
 		}
 		std::size_t banCount() const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["rules"].value("banCount", 0);
 		}
 		std::vector<std::string> shieldedCharacters() const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["characters"]["shielded"]["characters"].get<std::vector<std::string>>();
 		}
 		std::vector<std::string> shieldedGroups() const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["characters"]["shielded"]["groups"].get<std::vector<std::string>>();
 		}
 		std::optional<std::vector<std::string>> assignedCharacters() const override {
+			std::lock_guard lock(serverConfigMutex());
 			auto& config = unool::shell::getServerConfig();
 			if (config.contains("characters") && config["characters"].contains("assign")) {
 				return config["characters"]["assign"].get<std::vector<std::string>>();
@@ -45,7 +56,13 @@ namespace unool::shell {
 			return std::nullopt;
 		}
 		int reconnectTimeoutSec() const override {
+			std::lock_guard lock(serverConfigMutex());
 			return unool::shell::getServerConfig()["network"].value("reconnectTimeoutSec", 600);
+		}
+		// 房间功能：进程可容纳的连接槽位上限（默认 32 = 16 个房间）
+		std::size_t maxClients() const override {
+			std::lock_guard lock(serverConfigMutex());
+			return unool::shell::getServerConfig()["network"].value("maxClients", 32);
 		}
 		void reload() override {
 			unool::shell::reloadServerConfig();

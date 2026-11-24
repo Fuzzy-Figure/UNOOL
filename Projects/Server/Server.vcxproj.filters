@@ -69,19 +69,25 @@
     <ClInclude Include="..\..\header\protocol\MessageType.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\protocol\RoomProtocol.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopData.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h">
-      <Filter>头文件\shell</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h">
+    <ClInclude Include="..\..\header\shell\RoomGame.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\RoomManager.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\ServerNetwork.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\Socket.h">

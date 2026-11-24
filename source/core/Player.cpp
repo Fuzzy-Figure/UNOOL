@@ -995,6 +995,9 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		}
 		const auto clientInput = inputOpt.value();
 		if (clientInput.player != id) {
+			// 别的玩家的按键：不是给自己的提示，丢弃（打印出来便于定位「点了没反应 / 报超出范围」）
+			std::println("[ask] 丢弃非本座位输入：提示属于 {}，收到座位 {} 的按键 {}",
+						 displayName(), clientInput.player, static_cast<int>(clientInput.key));
 			continue;
 		}
 		unool::contract::Key input = clientInput.key;
@@ -1009,6 +1012,13 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		//5. 数字键解析
 		auto choice = resolveChoice(input, options, forced, usePaging, currentPage, errorMsg);
 		if (!choice.has_value()) {
+			// 输入被拒绝时把「实际收到的键 + 当前提示的选项数」打出来：
+			// 客户端画面与服务端状态分叉（收到的按键属于上一个提示 / 另一个玩家）时一眼可见
+			const auto digit = digitFromScancode(input);
+			std::println("[ask] 拒绝输入：{} 标题“{}”，收到数字键 {}，选项 {} 个，提示：{}",
+						 displayName(), title,
+						 (digit.has_value() ? std::to_string(*digit) : std::string("非数字键")),
+						 options.size(), errorMsg);
 			sendPage();
 			continue;
 		}

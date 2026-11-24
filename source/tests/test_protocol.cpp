@@ -7,6 +7,7 @@
 #include "AccountEvent.h"
 #include "AccountProtocol.h"
 #include "MessageCodec.h"
+#include "RoomProtocol.h"
 #include "ShopData.h"
 #include "ShopProtocol.h"
 #include <SFML/Network.hpp>
@@ -79,25 +80,108 @@ namespace {
 			std::string leftover;
 			r.check(!(packet >> leftover), "checkin has no payload");
 		}
+	}
+
+	// 房间功能（协议版本 3）：命令是「消息号 + 少量字段」，事件是「消息号 + JSON 载荷」。
+	void testRoomCommands(unool::tests::TestResult& r) {
 		{
-			auto packet = makeReadyToPlay();
-			r.check(takeType(packet) == MessageType::ReadyToPlay, "ready type");
+			auto packet = makeRoomListRequest();
+			r.check(takeType(packet) == MessageType::RoomListRequest, "room list request type");
+			std::string leftover;
+			r.check(!(packet >> leftover), "room list request has no payload");
 		}
 		{
-			auto packet = makeCancelMatchmaking();
-			r.check(takeType(packet) == MessageType::CancelMatchmaking, "cancel type");
+			auto packet = makeRoomCreateRequest("三分基地");
+			r.check(takeType(packet) == MessageType::RoomCreateRequest, "room create type");
+			const auto name = parseRoomNameRequest(packet);
+			r.check(name.has_value() && name.value_or("") == "三分基地", "room create name");
 		}
 		{
-			auto packet = makeMatchmakingStarted("erin");
-			r.check(takeType(packet) == MessageType::MatchmakingStarted, "started type");
-			const auto name = parseMatchmakingStarted(packet);
-			r.check(name.has_value() && name.value_or("") == "erin", "started username");
+			auto packet = makeRoomJoinRequest(42);
+			r.check(takeType(packet) == MessageType::RoomJoinRequest, "room join type");
+			const auto id = parseRoomIdRequest(packet);
+			r.check(id.has_value() && id.value_or(0) == 42u, "room join id");
 		}
 		{
-			auto packet = makeMatchmakingCancelled("frank");
-			r.check(takeType(packet) == MessageType::MatchmakingCancelled, "cancelled type");
-			const auto name = parseMatchmakingStarted(packet);
-			r.check(name.has_value() && name.value_or("") == "frank", "cancelled username");
+			auto packet = makeRoomLeaveRequest();
+			r.check(takeType(packet) == MessageType::RoomLeaveRequest, "room leave type");
+		}
+		{
+			auto packet = makeRoomReadyRequest(true);
+			r.check(takeType(packet) == MessageType::RoomReadyRequest, "room ready type");
+			const auto ready = parseRoomReadyRequest(packet);
+			r.check(ready.has_value() && ready.value_or(false), "room ready value");
+		}
+		{
+			// 坏包不能被当成「空房间列表」：缺字段返回 nullopt。
+			sf::Packet broken;
+			r.check(!parseRoomListResponse(broken).has_value(), "room list missing payload rejected");
+			r.check(!parseRoomNameRequest(broken).has_value(), "room create missing payload rejected");
+		}
+	}
+
+	void testRoomEvents(unool::tests::TestResult& r) {
+		{
+			RoomSummary summary;
+			summary.id = 7;
+			summary.name = "甲的房间";
+			summary.owner = "甲";
+			summary.members = 2;
+			summary.capacity = kRoomCapacity;
+			summary.inGame = true;
+
+			auto packet = makeRoomListResponse({ summary });
+			r.check(takeType(packet) == MessageType::RoomListResponse, "room list response type");
+			const auto rooms = parseRoomListResponse(packet);
+			r.check(rooms.has_value(), "room list response parses");
+			r.check(rooms.has_value() && rooms->size() == 1u, "room list count");
+			r.check(rooms.has_value() && rooms->front().id == 7u, "room list id");
+			r.check(rooms.has_value() && rooms->front().name == "甲的房间", "room list name");
+			r.check(rooms.has_value() && rooms->front().owner == "甲", "room list owner");
+			r.check(rooms.has_value() && rooms->front().members == 2u, "room list members");
+			r.check(rooms.has_value() && rooms->front().inGame, "room list inGame");
+		}
+		{
+			RoomSnapshot snapshot;
+			snapshot.id = 9;
+			snapshot.name = "乙的房间";
+			snapshot.owner = "乙";
+			snapshot.capacity = kRoomCapacity;
+			snapshot.members = { RoomMember{ "乙", true, true }, RoomMember{ "丙", false, false } };
+
+			auto packet = makeRoomStateResponse(snapshot);
+			r.check(takeType(packet) == MessageType::RoomStateResponse, "room state response type");
+			const auto parsed = parseRoomStateResponse(packet);
+			r.check(parsed.has_value(), "room state response parses");
+			r.check(parsed.has_value() && parsed->members.size() == 2u, "room state member count");
+			r.check(parsed.has_value() && parsed->members[0].ready, "room state ready flag");
+			r.check(parsed.has_value() && parsed->members[0].owner, "room state owner flag");
+			r.check(parsed.has_value() && !parsed->closed, "room state not closed");
+		}
+		{
+			// 解散 / 离开：closed=true 携带可读原因
+			RoomSnapshot snapshot;
+			snapshot.id = 9;
+			snapshot.name = "乙的房间";
+			snapshot.closed = true;
+			snapshot.reason = "房主已解散房间";
+			auto packet = makeRoomStateResponse(snapshot);
+			takeType(packet);
+			const auto parsed = parseRoomStateResponse(packet);
+			r.check(parsed.has_value() && parsed->closed, "room state closed flag");
+			r.check(parsed.has_value() && parsed->reason == "房主已解散房间", "room state reason");
+		}
+		{
+			auto packet = makeRoomErrorResponse("房间已满");
+			r.check(takeType(packet) == MessageType::RoomErrorResponse, "room error type");
+			const auto msg = parseRoomErrorResponse(packet);
+			r.check(msg.has_value() && msg.value_or("") == "房间已满", "room error message");
+		}
+		{
+			sf::Packet garbage;
+			garbage << static_cast<int>(MessageType::RoomStateResponse) << std::string("not json");
+			takeType(garbage);
+			r.check(!parseRoomStateResponse(garbage).has_value(), "room state bad json rejected");
 		}
 	}
 
@@ -277,14 +361,16 @@ namespace {
 		// 每个消息号必须且只能落在一个方向段里；新增枚举值忘了分段会在这里暴露。
 		const MessageType all[] = {
 			MessageType::ClientInput, MessageType::RegisterRequest, MessageType::LoginRequest,
-			MessageType::CheckUsernameRequest, MessageType::ReadyToPlay, MessageType::CancelMatchmaking,
-			MessageType::ShopPurchase, MessageType::SkillInfoRequest, MessageType::CheckinRequest,
+			MessageType::CheckUsernameRequest, MessageType::ShopPurchase, MessageType::SkillInfoRequest,
+			MessageType::CheckinRequest, MessageType::RoomListRequest, MessageType::RoomCreateRequest,
+			MessageType::RoomJoinRequest, MessageType::RoomLeaveRequest, MessageType::RoomReadyRequest,
 			MessageType::ConnectionInfo, MessageType::ConnectionRefused, MessageType::RegisterResponse,
 			MessageType::LoginResponse, MessageType::CheckUsernameResponse, MessageType::GameStart,
 			MessageType::GameEnd, MessageType::GameState, MessageType::Choice,
 			MessageType::PointerUpdate, MessageType::CharInfo, MessageType::ShopData,
 			MessageType::ShopResult, MessageType::SkillInfoResponse, MessageType::CheckinResponse,
-			MessageType::MatchmakingCancelled, MessageType::MatchmakingStarted, MessageType::Heartbeat,
+			MessageType::RoomListResponse, MessageType::RoomStateResponse, MessageType::RoomErrorResponse,
+			MessageType::Heartbeat,
 		};
 		int commands = 0;
 		int events = 0;
@@ -297,9 +383,9 @@ namespace {
 			else if (isServerEvent(type)) ++events;
 			else if (isControlMessage(type)) ++controls;
 		}
-		r.check(std::size(all) == 27u, "message inventory size");
-		r.check(commands == 9, "9 client commands");
-		r.check(events == 17, "17 server events");
+		r.check(std::size(all) == 31u, "message inventory size");
+		r.check(commands == 12, "12 client commands");
+		r.check(events == 18, "18 server events");
 		r.check(controls == 1, "1 control message");
 		// None 不属于任何方向段，接收端不应把它当业务消息。
 		r.check(!isClientCommand(MessageType::None) && !isServerEvent(MessageType::None)
@@ -319,6 +405,8 @@ unool::tests::TestResult runProtocolRoundTripTests() {
 	unool::tests::TestResult r;
 	r.section("protocol.testVersionedAccountRequests", testVersionedAccountRequests);
 	r.section("protocol.testOneShotRequests", testOneShotRequests);
+	r.section("protocol.testRoomCommands", testRoomCommands);
+	r.section("protocol.testRoomEvents", testRoomEvents);
 	r.section("protocol.testAccountResponses", testAccountResponses);
 	r.section("protocol.testShopPurchaseRequest", testShopPurchaseRequest);
 	r.section("protocol.testShopPayloads", testShopPayloads);

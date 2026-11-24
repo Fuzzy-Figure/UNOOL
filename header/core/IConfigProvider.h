@@ -31,6 +31,9 @@ namespace unool::core {
 		virtual std::optional<std::vector<std::string>> assignedCharacters() const = 0;
 		// getServerConfig()["network"].value("reconnectTimeoutSec", 600)
 		virtual int reconnectTimeoutSec() const = 0;
+		// getServerConfig()["network"].value("maxClients", 32)
+		// 房间功能：进程可同时容纳的连接槽位上限（决定可开房间数 = maxClients / 2）
+		virtual std::size_t maxClients() const = 0;
 		// reloadServerConfig()
 		virtual void reload() = 0;
 	};

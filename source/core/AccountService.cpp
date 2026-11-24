@@ -20,11 +20,11 @@ namespace unool::core {
 	}
 
 	AccountService::AccountService(IAccountSession& session, IUserRepository& users,
-								   std::size_t seatCount)
-		: session_(session), users_(users), seatCount_(seatCount) {}
+								   std::size_t capacity)
+		: session_(session), users_(users), capacity_(capacity) {}
 
 	bool AccountService::spendPoints(std::size_t clientIdx, int amount) {
-		if (clientIdx >= seatCount_) return false;
+		if (clientIdx >= capacity_) return false;
 		std::string username = session_.usernameOf(clientIdx);
 		if (!users_.trySpendPoints(username, amount)) return false;
 		session_.onPointsSpent(clientIdx, amount);
@@ -59,18 +59,12 @@ namespace unool::core {
 				session_.dropConnection(clientIdx);
 			}
 
-			// 检查另一端是否已用同一账号登录。
-			// B+：1 - clientIdx 是「两座位桌的对手槽位」这一玩法规则，不是可开桌数；
-			// 若将来改座位数，对手判定必须随玩法一起重定，不能只把它换成
-			// seatCount_ - 1 - clientIdx（那会假装支持 N 人桌而语义并不成立）。
-			if (ok) {
-				const std::size_t other = 1 - clientIdx;
-				if (other < seatCount_
-					&& session_.isLoggedIn(other)
-					&& session_.usernameOf(other) == req.username) {
-					ok = false;
-					errMsg = "该账号已在另一端登录";
-				}
+			// 检查是否有另一个槽位已用同一账号在线。
+			// 房间功能上线后槽位数不再等于 2，这里按「除自己以外是否还有同名登录」判定；
+			// 同账号重连顶替已由 ServerNetwork 在解析 LoginRequest 时先行处理。
+			if (ok && session_.isUsernameLoggedInElsewhere(clientIdx, req.username)) {
+				ok = false;
+				errMsg = "该账号已在另一端登录";
 			}
 
 			int pts = ok ? userInfo->points : 0;
@@ -87,14 +81,6 @@ namespace unool::core {
 		else if (type == MessageType::CheckUsernameRequest) {
 			bool exists = users_.exists(req.username);
 			session_.sendCheckUsernameResponse(clientIdx, exists);
-		}
-		else if (type == MessageType::ReadyToPlay) {
-			if (!session_.isLoggedIn(clientIdx)) return;
-			session_.onReadyToPlay(clientIdx);
-		}
-		else if (type == MessageType::CancelMatchmaking) {
-			if (!session_.isLoggedIn(clientIdx)) return;
-			session_.onCancelMatchmaking(clientIdx);
 		}
 	}
 }

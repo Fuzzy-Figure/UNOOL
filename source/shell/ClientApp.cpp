@@ -83,9 +83,19 @@ static void gamePhase(ClientNetwork& net, unool::shell::ConnectionState& conn,
 					}
 					break;
 				}
-				case MessageType::GameStart:
-					std::println("{} 游戏开始！", titleBrackets);
+				case MessageType::GameStart: {
+					// 房间模式：开局包携带本局座位号（0/1），座位是桌面内的玩法身份，
+					// 与连接槽位号无关；渲染器据此认出「自己的手牌」。
+					if (auto seat = unool::protocol::parseGameStart(packet)) {
+						conn.setPlayerId(*seat);
+						renderer.setLocalPlayerId(*seat);
+						std::println("{} 游戏开始！本局座位：{}", titleBrackets, *seat);
+					}
+					else {
+						std::println("{} 游戏开始！", titleBrackets);
+					}
 					break;
+				}
 				case MessageType::GameState: {
 					GameState state;
 					if (unool::protocol::parseGameState(packet, state)) renderer.updateState(state);
@@ -162,16 +172,15 @@ namespace unool::shell {
 
 		// 阶段 4 · S3a（用户 49.10 口径③A）：组合根侧的商城意图实现。
 		// 原 LoginScene::handleMouseClick 在这里同步构造并运行 ShopScene；
-		// 上移后只换调用者，栈上生命周期、同步 run() 与返回后回到大厅的时序不变；
-		// 构造参数在原 renderer / net / username 之外多一个匹配提示状态引用。
+		// 房间功能上线后匹配横幅下线，商城不再需要共享匹配提示状态。
 		class ShopOpener final : public IShopOpener {
 		public:
 			ShopOpener(GameRenderer& renderer, unool::shell::ConnectionState& conn,
 			           unool::shell::ShopPresentationCache& cache)
 				: renderer_{ renderer }, conn_{ conn }, cache_{ cache } {}
 
-			void openShop(const std::string& username, MatchNoticeState& notice) override {
-				ShopScene shop(renderer_, conn_, username, notice, cache_);
+			void openShop(const std::string& username) override {
+				ShopScene shop(renderer_, conn_, username, cache_);
 				shop.run();
 			}
 
@@ -219,8 +228,8 @@ namespace unool::shell {
 			return 1;
 		}
 
-		// LoginScene 现在要等到服务端 GameStart 才返回；退出匹配只是回到大厅继续等用户操作
-		std::println("{} 匹配完成，进入游戏...", titleBrackets_);
+		// LoginScene 现在要等到服务端 GameStart（双方在房间内准备）才返回
+		std::println("{} 房间已开局，进入游戏...", titleBrackets_);
 		gamePhase(net_, conn, renderer, titleBrackets_);
 
 		return 0;

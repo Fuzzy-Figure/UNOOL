@@ -10,7 +10,8 @@ namespace unool::protocol {
 // 破坏性换代后旧客户端/旧服务端一律不兼容；LoginRequest 的首字段携带本版本，
 // 服务端先读版本再读账号名，不匹配则回 LoginResponse(ok=false) 并给出可读原因。
 // 版本不一致时不会进入任何业务分支，避免解析出乱码或崩溃。
-inline constexpr std::uint32_t kProtocolVersion = 2;
+// 版本 3：匹配下线、房间功能上线（房间列表 / 创建 / 加入 / 房内准备）。
+inline constexpr std::uint32_t kProtocolVersion = 3;
 inline constexpr std::string_view kProtocolVersionMismatch = "协议版本不匹配，请升级客户端";
 
 // 首包版本校验：返回 false 表示版本不匹配（调用方应拒绝并断开）。

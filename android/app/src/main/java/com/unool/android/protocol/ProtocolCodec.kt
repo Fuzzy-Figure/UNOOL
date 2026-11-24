@@ -1,5 +1,8 @@
 package com.unool.android.protocol
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 /** 与 PC 端 source/protocol 逐字段对应的编解码器（SFML 3.1 大端线格式）。 */
 object ProtocolCodec {
 
@@ -25,8 +28,6 @@ object ProtocolCodec {
                 w.str(message.username)
             }
 
-            ClientMessage.ReadyToPlay -> w.i32(Msg.READY_TO_PLAY)
-            ClientMessage.CancelMatchmaking -> w.i32(Msg.CANCEL_MATCHMAKING)
             ClientMessage.Checkin -> w.i32(Msg.CHECKIN_REQUEST)
 
             is ClientMessage.ShopPurchase -> {
@@ -44,6 +45,22 @@ object ProtocolCodec {
                 w.i32(message.key)
                 w.u64(message.playerId)
                 w.u64(message.selectedIndex)
+            }
+
+            // 房间（协议版本 3）：列表无载荷，创建带房间名，加入带房间号，准备带布尔
+            ClientMessage.RoomListRequest -> w.i32(Msg.ROOM_LIST_REQUEST)
+            is ClientMessage.RoomCreate -> {
+                w.i32(Msg.ROOM_CREATE_REQUEST)
+                w.str(message.roomName)
+            }
+            is ClientMessage.RoomJoin -> {
+                w.i32(Msg.ROOM_JOIN_REQUEST)
+                w.u64(message.roomId)
+            }
+            ClientMessage.RoomLeave -> w.i32(Msg.ROOM_LEAVE_REQUEST)
+            is ClientMessage.RoomReady -> {
+                w.i32(Msg.ROOM_READY_REQUEST)
+                w.bool(message.ready)
             }
 
             ClientMessage.Heartbeat -> w.i32(Msg.HEARTBEAT)
@@ -68,7 +85,8 @@ object ProtocolCodec {
 
             Msg.CHECK_USERNAME_RESPONSE -> ServerMessage.CheckUsernameResponse(r.bool())
 
-            Msg.GAME_START -> ServerMessage.GameStart
+            // 房间模式：开局包携带本局座位号（0/1），与连接槽位号无关
+            Msg.GAME_START -> ServerMessage.GameStart(r.u64())
 
             Msg.GAME_END -> {
                 val hasWinner = r.bool()
@@ -117,14 +135,74 @@ object ProtocolCodec {
                 ServerMessage.CheckinResponse(msg, ok, points)
             }
 
-            Msg.MATCHMAKING_CANCELLED -> ServerMessage.MatchmakingCancelled(r.str())
-            Msg.MATCHMAKING_STARTED -> ServerMessage.MatchmakingStarted(r.str())
+            // 房间事件：消息号 + JSON 字符串载荷（与商城载荷同构）
+            Msg.ROOM_LIST_RESPONSE -> ServerMessage.RoomList(parseRoomList(r.str()))
+            Msg.ROOM_STATE_RESPONSE -> ServerMessage.RoomState(parseRoomSnapshot(r.str()))
+            Msg.ROOM_ERROR_RESPONSE -> ServerMessage.RoomError(parseRoomError(r.str()))
 
             Msg.HEARTBEAT -> ServerMessage.Heartbeat
 
             else -> ServerMessage.Unknown(type)
         }
     }
+
+    // ---------------------------------------------------------------- 房间 JSON
+
+    // 解析失败一律退化为「空列表 / 空快照」，不让一个坏包把整条连接打断
+    private fun parseRoomList(json: String): List<RoomSummary> = try {
+        val root = JSONObject(json)
+        val array: JSONArray = root.optJSONArray("rooms") ?: JSONArray()
+        List(array.length()) { index ->
+            val item = array.getJSONObject(index)
+            RoomSummary(
+                id = item.optLong("id"),
+                name = item.optString("name"),
+                owner = item.optString("owner"),
+                members = item.optInt("members"),
+                capacity = item.optInt("capacity", Msg.ROOM_CAPACITY),
+                inGame = item.optBoolean("inGame")
+            )
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    private fun parseRoomSnapshot(json: String): RoomSnapshot = try {
+        val item = JSONObject(json)
+        val array: JSONArray = item.optJSONArray("members") ?: JSONArray()
+        val members = List(array.length()) { index ->
+            val member = array.getJSONObject(index)
+            RoomMember(
+                name = member.optString("name"),
+                ready = member.optBoolean("ready"),
+                owner = member.optBoolean("owner")
+            )
+        }
+        RoomSnapshot(
+            id = item.optLong("id"),
+            name = item.optString("name"),
+            owner = item.optString("owner"),
+            capacity = item.optInt("capacity", Msg.ROOM_CAPACITY),
+            inGame = item.optBoolean("inGame"),
+            closed = item.optBoolean("closed"),
+            reason = item.optString("reason"),
+            members = members
+        )
+    } catch (_: Exception) {
+        // 解析失败当成「房间已关闭」处理，客户端会稳定回到大厅
+        RoomSnapshot(0, "", "", Msg.ROOM_CAPACITY, false, true, "房间状态解析失败", emptyList())
+    }
+
+    private fun parseRoomError(json: String): String {
+        return try {
+            val msg = JSONObject(json).optString("msg")
+            if (msg.isBlank()) "房间操作失败" else msg
+        } catch (_: Exception) {
+            if (json.isBlank()) "房间操作失败" else json
+        }
+    }
+
+    // ---------------------------------------------------------------- 对局状态
 
     private fun readCard(r: PacketReader): CardData {
         val color = r.i32()

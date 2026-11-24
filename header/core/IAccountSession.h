@@ -19,11 +19,18 @@ namespace unool::core {
 	public:
 		virtual ~IAccountSession() = default;
 
+		// 连接槽位上限（房间功能上线后不再是「一桌两座位」，而是进程可容纳的连接数）
+		virtual std::size_t capacity() const = 0;
+
 		// 连接与槽位状态；越界一律返回 false / 空串
 		virtual bool isConnected(std::size_t clientIdx) const = 0;
 		virtual bool isLoggedIn(std::size_t clientIdx) const = 0;
 		virtual bool isDisconnected(std::size_t clientIdx) const = 0;
 		virtual std::string usernameOf(std::size_t clientIdx) const = 0;
+
+		// 除 excludeIdx 之外是否已有同名账号在线（多槽位后不能用 1 - clientIdx 判定）
+		virtual bool isUsernameLoggedInElsewhere(std::size_t excludeIdx,
+												 const std::string& username) const = 0;
 
 		// 座位被其他账号占用时，只清理 socket（保留 username 与 disconnected 标记供重连识别）
 		virtual void dropConnection(std::size_t clientIdx) = 0;
@@ -34,13 +41,6 @@ namespace unool::core {
 
 		// 积分消费成功后同步 ClientSlot.points 缓存
 		virtual void onPointsSpent(std::size_t clientIdx, int amount) = 0;
-
-		// 「开始游戏」：置 playerReady、双方齐备且未开局时发 GameStart 并打印日志
-		virtual void onReadyToPlay(std::size_t clientIdx) = 0;
-
-		// 「退出匹配」：未开局时清空双方准备状态、向双方广播解散事件；已开局则忽略。
-		// 由服务端按收包顺序仲裁，客户端不自行判定是否还在匹配中。
-		virtual void onCancelMatchmaking(std::size_t clientIdx) = 0;
 
 	// 回送已编码的账号响应包（适配器按既有 AccountProtocol 线格式打包，Application 不接触 sf::Packet）
 	virtual void sendAccountResponse(std::size_t clientIdx, MessageType type, bool ok,

@@ -15,6 +15,10 @@ namespace unool::protocol {
 	//
 	// 发送端只应产生本方向的消息号；parse 时可用 isClientCommand / isServerEvent
 	// 做方向校验，避免把命令当事件解析（旧单枚举靠人工约定，现由数值分段表达）。
+	//
+	// 房间功能（协议版本 3）：登录后不再匹配，改为「大厅房间列表 → 创建/加入房间 →
+	// 房内双方准备 → 开局」。原匹配消息号（105 ReadyToPlay / 106 CancelMatchmaking /
+	// 216 MatchmakingCancelled / 217 MatchmakingStarted）已下线，编号留空不复用。
 	enum class MessageType : std::uint16_t {
 		None = 0,
 
@@ -23,11 +27,14 @@ namespace unool::protocol {
 		RegisterRequest   = 102,
 		LoginRequest      = 103,
 		CheckUsernameRequest = 104,
-		ReadyToPlay       = 105,
-		CancelMatchmaking = 106,
 		ShopPurchase      = 107,
 		SkillInfoRequest  = 108,
 		CheckinRequest    = 109,
+		RoomListRequest   = 110,
+		RoomCreateRequest = 111,
+		RoomJoinRequest   = 112,
+		RoomLeaveRequest  = 113,
+		RoomReadyRequest  = 114,
 
 		// ---- 服务端 -> 客户端（2xx）----
 		ConnectionInfo    = 201,
@@ -45,8 +52,9 @@ namespace unool::protocol {
 		ShopResult        = 213,
 		SkillInfoResponse = 214,
 		CheckinResponse   = 215,
-		MatchmakingCancelled = 216,
-		MatchmakingStarted   = 217,
+		RoomListResponse  = 218,
+		RoomStateResponse = 219,
+		RoomErrorResponse = 220,
 
 		// ---- 双向控制（9xx）----
 		Heartbeat         = 901,

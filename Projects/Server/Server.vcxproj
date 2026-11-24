@@ -26,11 +26,13 @@
     <ClInclude Include="..\..\header\protocol\GameState.h" />
     <ClInclude Include="..\..\header\protocol\MessageCodec.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
+    <ClInclude Include="..\..\header\protocol\RoomProtocol.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
     <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\RoomGame.h" />
+    <ClInclude Include="..\..\header\shell\RoomManager.h" />
+    <ClInclude Include="..\..\header\shell\ServerNetwork.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />
     <ClInclude Include="..\..\header\shell\UserDB.h" />
     <ClInclude Include="..\..\header\utils.h" />

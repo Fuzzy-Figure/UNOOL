@@ -44,10 +44,16 @@ namespace unool::protocol {
 		return data;
 	}
 
-	sf::Packet makeGameStart() {
+	sf::Packet makeGameStart(std::size_t seatId) {
 		sf::Packet packet;
-		packet << static_cast<int>(MessageType::GameStart);
+		packet << static_cast<int>(MessageType::GameStart) << seatId;
 		return packet;
+	}
+
+	std::optional<std::size_t> parseGameStart(sf::Packet& packet) {
+		std::size_t seatId{};
+		if (!(packet >> seatId)) return std::nullopt;
+		return seatId;
 	}
 
 	sf::Packet makeHeartbeat() {

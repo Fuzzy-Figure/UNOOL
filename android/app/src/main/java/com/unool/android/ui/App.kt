@@ -46,6 +46,8 @@ fun UnoolApp(viewModel: AppViewModel) {
         when (ui.screen) {
             Screen.Login -> LoginScreen(ui, viewModel)
             Screen.Lobby -> LobbyScreen(ui, viewModel)
+            Screen.Rooms -> RoomsScreen(ui, viewModel)
+            Screen.Room -> RoomScreen(ui, viewModel)
             Screen.Shop -> ShopScreen(ui, viewModel)
             Screen.Game -> GameScreen(ui, viewModel)
         }

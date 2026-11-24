@@ -24,10 +24,7 @@
     <ClCompile Include="pch.adapters.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
-      <Filter>源文件\shell</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\NetworkServerView.cpp">
+    <ClCompile Include="..\..\source\shell\RoomKeyMapping.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
     <ClInclude Include="pch.adapters.h">
@@ -87,16 +84,13 @@
     <ClInclude Include="..\..\header\shell\JsonUserRepository.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h">
-      <Filter>头文件\shell</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\Mt19937Random.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h">
+    <ClInclude Include="..\..\header\shell\RoomGame.h">
       <Filter>头文件\shell</Filter>
     </ClInclude>
   </ItemGroup>

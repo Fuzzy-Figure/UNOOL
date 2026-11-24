@@ -6,12 +6,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="..\..\source\shell\LegacyBlockingDecisionAdapter.cpp">
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-    </ClCompile>
-    <ClCompile Include="..\..\source\shell\NetworkServerView.cpp">
+    <ClCompile Include="..\..\source\shell\RoomKeyMapping.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.adapters.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.adapters.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -37,10 +32,9 @@
     <ClInclude Include="..\..\header\shell\JsonConfig.h" />
     <ClInclude Include="..\..\header\shell\JsonConfigProvider.h" />
     <ClInclude Include="..\..\header\shell\JsonUserRepository.h" />
-    <ClInclude Include="..\..\header\shell\LegacyBlockingDecisionAdapter.h" />
     <ClInclude Include="..\..\header\shell\LegacyServicesAdapter.h" />
     <ClInclude Include="..\..\header\shell\Mt19937Random.h" />
-    <ClInclude Include="..\..\header\shell\NetworkServerView.h" />
+    <ClInclude Include="..\..\header\shell\RoomGame.h" />
   </ItemGroup>
 <!-- ARCH-C:ITEMS:END -->
   <ItemGroup Label="ProjectConfigurations">

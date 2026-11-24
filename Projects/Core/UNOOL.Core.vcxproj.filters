@@ -186,10 +186,22 @@
     <ClCompile Include="..\..\source\protocol\MessageCodec.cpp">
       <Filter>源文件\protocol</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\protocol\RoomProtocol.cpp">
+      <Filter>源文件\protocol</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\protocol\ShopProtocol.cpp">
       <Filter>源文件\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\JsonConfig.cpp">
+      <Filter>源文件\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\RoomGame.cpp">
+      <Filter>源文件\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\RoomManager.cpp">
+      <Filter>源文件\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ServerNetwork.cpp">
       <Filter>源文件\shell</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\Socket.cpp">
@@ -351,11 +363,23 @@
     <ClInclude Include="..\..\header\protocol\Protocol.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\header\protocol\RoomProtocol.h">
+      <Filter>头文件\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopData.h">
       <Filter>头文件\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h">
       <Filter>头文件\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\RoomGame.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\RoomManager.h">
+      <Filter>头文件\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\header\shell\ServerNetwork.h">
+      <Filter>头文件\shell</Filter>
     </ClInclude>
     <ClInclude Include="..\..\header\shell\Socket.h">
       <Filter>头文件\shell</Filter>

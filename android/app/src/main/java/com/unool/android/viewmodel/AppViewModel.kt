@@ -13,6 +13,8 @@ import com.unool.android.protocol.ClientMessage
 import com.unool.android.protocol.GameStateData
 import com.unool.android.protocol.Key
 import com.unool.android.protocol.Msg
+import com.unool.android.protocol.RoomSnapshot
+import com.unool.android.protocol.RoomSummary
 import com.unool.android.protocol.ServerMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class Screen { Login, Lobby, Shop, Game }
+// 房间功能（协议版本 3）：登录后不再匹配，改为
+// Login → Lobby（开始游戏 / 商城 / 签到）→ Rooms（房间列表）→ Room（房内准备）→ Game
+enum class Screen { Login, Lobby, Rooms, Room, Shop, Game }
 enum class LoginMode { Login, Register }
 
 data class ShopUiState(
@@ -62,13 +66,24 @@ data class UiState(
     val wins: Int = 0,
     val losses: Int = 0,
     val loggedIn: Boolean = false,
-    val matching: Boolean = false,
-    val matchNotice: String = "",
     val checkinPopup: String? = null,
     val playerId: Long = 0L,
+    // === 房间 ===
+    val roomNameInput: String = "",
+    val rooms: List<RoomSummary> = emptyList(),
+    val selectedRoom: Int = 0,
+    val room: RoomSnapshot? = null,
     val shop: ShopUiState = ShopUiState(),
     val game: GameUiState = GameUiState()
-)
+) {
+    /** 自己在房间内是否已准备 */
+    val selfReady: Boolean
+        get() = room?.members?.any { it.name == username && it.ready } == true
+
+    /** 自己是否是房主 */
+    val isOwner: Boolean
+        get() = room != null && room.owner == username
+}
 
 class AppViewModel : ViewModel() {
 
@@ -121,9 +136,9 @@ class AppViewModel : ViewModel() {
         _ui.update {
             it.copy(
                 loggedIn = false,
-                matching = false,
-                matchNotice = "",
                 screen = Screen.Login,
+                room = null,
+                rooms = emptyList(),
                 message = "已断开连接"
             )
         }
@@ -168,20 +183,65 @@ class AppViewModel : ViewModel() {
 
     fun dismissCheckin() = _ui.update { it.copy(checkinPopup = null) }
 
-    fun readyToPlay() {
-        _ui.update {
-            it.copy(
-                matching = true,
-                matchNotice = "",
-                status = "已准备，等待另一名玩家点击开始游戏"
-            )
-        }
-        connection.send(ClientMessage.ReadyToPlay)
+    // ---------------------------------------------------------------- 房间
+
+    /** 主大厅「开始游戏」：进入房间界面并拉一次房间列表 */
+    fun startGame() {
+        if (!_ui.value.loggedIn) return
+        _ui.update { it.copy(screen = Screen.Rooms, message = "", status = "") }
+        connection.send(ClientMessage.RoomListRequest)
     }
 
-    fun cancelMatchmaking() {
-        _ui.update { it.copy(status = "正在退出匹配...") }
-        connection.send(ClientMessage.CancelMatchmaking)
+    /** 房间界面「返回大厅」 */
+    fun backToLobby() {
+        _ui.update { it.copy(screen = Screen.Lobby, message = "", status = "") }
+    }
+
+    fun setRoomName(value: String) = _ui.update { it.copy(roomNameInput = value) }
+
+    fun refreshRooms() {
+        if (!_ui.value.loggedIn) return
+        connection.send(ClientMessage.RoomListRequest)
+    }
+
+    fun selectRoom(index: Int) = _ui.update { it.copy(selectedRoom = index) }
+
+    /** 创建房间：房间名留空时以「账号的房间」命名（服务端同样兜底） */
+    fun createRoom() {
+        val s = _ui.value
+        if (!s.loggedIn) return
+        val name = s.roomNameInput.ifBlank { "${s.username}的房间" }
+        _ui.update { it.copy(message = "正在创建房间...") }
+        connection.send(ClientMessage.RoomCreate(name))
+    }
+
+    fun joinRoom(index: Int) {
+        val s = _ui.value
+        if (!s.loggedIn) return
+        val room = s.rooms.getOrNull(index) ?: return
+        if (room.inGame) {
+            _ui.update { it.copy(message = "该房间正在对局中，无法加入") }
+            return
+        }
+        if (room.members >= room.capacity) {
+            _ui.update { it.copy(message = "该房间已满") }
+            return
+        }
+        _ui.update { it.copy(selectedRoom = index, message = "正在加入房间...") }
+        connection.send(ClientMessage.RoomJoin(room.id))
+    }
+
+    fun leaveRoom() {
+        // 离开房间回到「房间界面」（列表），不是主大厅
+        _ui.update { it.copy(room = null, screen = Screen.Rooms, message = "", status = "") }
+        connection.send(ClientMessage.RoomLeave)
+        connection.send(ClientMessage.RoomListRequest)
+    }
+
+    fun toggleReady() {
+        val s = _ui.value
+        if (s.room == null || s.room.inGame) return
+        connection.send(ClientMessage.RoomReady(!s.selfReady))
     }
 
     fun openShop() {
@@ -191,7 +251,11 @@ class AppViewModel : ViewModel() {
         )
     }
 
-    fun exitShop() = _ui.update { it.copy(screen = Screen.Lobby) }
+    fun exitShop() {
+        _ui.update { it.copy(screen = Screen.Lobby) }
+        // 商城期间房间列表可能变了：回大厅立刻重拉一次
+        refreshRooms()
+    }
 
     // ---------------------------------------------------------------- 商城操作
 
@@ -341,22 +405,46 @@ class AppViewModel : ViewModel() {
                 )
             }
 
-            is ServerMessage.MatchmakingStarted -> {
-                if (message.username.isBlank() || message.username == _ui.value.username) return
-                val notice = "对手「${message.username}」已开始匹配，请点击「开始游戏」加入"
-                _ui.update { it.copy(matchNotice = notice, status = notice) }
-                appendLog(notice)
+            is ServerMessage.RoomList -> _ui.update { state ->
+                val selected = if (message.rooms.isEmpty()) 0
+                else state.selectedRoom.coerceIn(0, message.rooms.size - 1)
+                state.copy(rooms = message.rooms, selectedRoom = selected)
             }
 
-            is ServerMessage.MatchmakingCancelled -> _ui.update {
-                it.copy(matching = false, matchNotice = "", status = "", message = "")
-            }
-
-            ServerMessage.GameStart -> {
-                _ui.update {
-                    it.copy(screen = Screen.Game, matching = false, status = "游戏开始！")
+            is ServerMessage.RoomState -> {
+                val room = message.room
+                if (room.closed) {
+                    // 房间解散 / 已离开：回到房间界面（列表）并提示原因
+                    _ui.update {
+                        it.copy(
+                            room = null,
+                            screen = Screen.Rooms,
+                            message = room.reason.ifBlank { "已离开房间" },
+                            status = ""
+                        )
+                    }
+                } else {
+                    _ui.update {
+                        it.copy(room = room, screen = Screen.Room, message = "")
+                    }
                 }
-                appendLog("游戏开始！")
+            }
+
+            is ServerMessage.RoomError -> _ui.update {
+                it.copy(message = message.msg, status = "")
+            }
+
+            is ServerMessage.GameStart -> {
+                // 房间模式：开局包携带本局座位号（0/1），对局内所有玩家索引都用座位号
+                _ui.update {
+                    it.copy(
+                        screen = Screen.Game,
+                        playerId = message.seat,
+                        room = null,
+                        status = "游戏开始！"
+                    )
+                }
+                appendLog("游戏开始！座位 ${message.seat}")
             }
 
             is ServerMessage.GameEnd -> {
@@ -448,6 +536,7 @@ class AppViewModel : ViewModel() {
                         )
                     }
                     appendLog("登录成功: ${_ui.value.username} 积分=${message.points} 胜=${message.wins} 负=${message.losses}")
+                    // 主大厅只有按钮：房间列表在点「开始游戏」进入房间界面时才拉
                 } else {
                     _ui.update { it.copy(message = "登录失败: ${message.msg}") }
                 }

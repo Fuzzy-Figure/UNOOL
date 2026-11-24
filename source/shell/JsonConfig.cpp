@@ -29,8 +29,15 @@ namespace unool::shell {
 		return config;
 	}
 
+	std::mutex& serverConfigMutex() {
+		static std::mutex mutex;
+		return mutex;
+	}
+
 	void reloadServerConfig() {
-		getServerConfig() = readConfig("server_config.json");
+		nlohmann::json fresh = readConfig("server_config.json");
+		std::lock_guard lock(serverConfigMutex());
+		getServerConfig() = std::move(fresh);
 	}
 
 	nlohmann::json& getClientConfig() {

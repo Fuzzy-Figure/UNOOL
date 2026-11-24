@@ -1,12 +1,14 @@
 // Arch-C P1-4：LoginViewModel 单测。
 //
 // 这里断言的是「登录场景会怎么变」而不是「怎么画」：状态机搬到 ViewModel 之后，
-// 点退出匹配后 3 秒兜底、断线结束会话、注册链自动流转这些分支都能直接喂时间与事件，
-// 不必开窗口、连服务端、真等 3 秒。
+// 注册链自动流转、房间列表刷新时机、创建/加入/离开房间、房内准备与开局判定这些分支
+// 都能直接喂时间与事件，不必开窗口、连服务端。
+//
+// 房间功能（协议版本 3）：登录后不再匹配，而是「大厅房间列表 → 创建/加入 → 房内准备 → 开局」。
 //
 // 输入侧一律走语义方法（typeChar / submit / clickXxx），输出侧看两样：
 //   - takeActions()：VM 要 View 去做的事（发包 / 开商城 / 关窗）；
-//   - 只读状态：mode / status / message / session / 弹窗与横幅。
+//   - 只读状态：mode / status / message / session / 房间与弹窗。
 // 发包失败用 onActionFailed() 回告，验证状态回滚与原 View 的发包失败分支一致。
 
 #include "test_loginviewmodel.h"
@@ -14,6 +16,7 @@
 #include "shell/LoginViewModel.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 using unool::protocol::MessageType;
@@ -37,13 +40,52 @@ bool onlyAction(LoginViewModel& vm, const Action expected) {
 	return actions.size() == 1 && actions.front() == expected;
 }
 
+// 取出 Actions 并判断「恰好是这两个，且顺序一致」。
+bool onlyActions(LoginViewModel& vm, const Action first, const Action second) {
+	const auto actions = vm.takeActions();
+	return actions.size() == 2 && actions[0] == first && actions[1] == second;
+}
+
 unool::protocol::AccountEvent makeEvent(const MessageType type) {
 	unool::protocol::AccountEvent event{};
 	event.type = type;
 	return event;
 }
 
-// 把 VM 送进大厅：登录成功路径的公共前置。
+unool::protocol::RoomSummary makeSummary(const std::uint64_t id, std::string name, std::string owner,
+										const std::size_t members, const bool inGame = false) {
+	unool::protocol::RoomSummary summary{};
+	summary.id = id;
+	summary.name = std::move(name);
+	summary.owner = std::move(owner);
+	summary.members = members;
+	summary.capacity = unool::protocol::kRoomCapacity;
+	summary.inGame = inGame;
+	return summary;
+}
+
+unool::protocol::RoomSnapshot makeSnapshot(const std::uint64_t id, std::string name, std::string owner,
+										   std::vector<unool::protocol::RoomMember> members,
+										   const bool inGame = false) {
+	unool::protocol::RoomSnapshot snapshot{};
+	snapshot.id = id;
+	snapshot.name = std::move(name);
+	snapshot.owner = std::move(owner);
+	snapshot.capacity = unool::protocol::kRoomCapacity;
+	snapshot.inGame = inGame;
+	snapshot.members = std::move(members);
+	return snapshot;
+}
+
+unool::protocol::RoomMember makeMember(std::string name, const bool ready, const bool owner) {
+	unool::protocol::RoomMember member{};
+	member.name = std::move(name);
+	member.ready = ready;
+	member.owner = owner;
+	return member;
+}
+
+// 把 VM 送进主大厅：登录成功路径的公共前置（主大厅只有按钮：开始游戏 / 商城 / 签到）。
 void enterLobby(LoginViewModel& vm) {
 	typeText(vm, "alice");
 	vm.toggleFocus();
@@ -58,8 +100,24 @@ void enterLobby(LoginViewModel& vm) {
 	ok.wins = 5;
 	ok.losses = 2;
 	vm.onAccountEvent(ok);
-	// 登录成功会写一条日志；公共前置只负责「进大厅」，日志由各用例自己取。
+	// 登录成功会写一条日志；公共前置只负责「进大厅」
 	(void)vm.takeLogs();
+	(void)vm.takeActions();
+}
+
+// 主大厅「开始游戏」→ 房间界面（会立刻排一次房间列表请求）
+void enterRoomBrowser(LoginViewModel& vm) {
+	enterLobby(vm);
+	vm.clickStartGame();
+	(void)vm.takeActions();
+}
+
+// 房间界面「创建房间」→ 拿到自己的房间快照，进入房间
+void enterRoom(LoginViewModel& vm) {
+	enterRoomBrowser(vm);
+	vm.clickCreateRoom();
+	(void)vm.takeActions();
+	vm.onRoomState(makeSnapshot(1, "alice的房间", "alice", { makeMember("alice", false, true) }));
 }
 
 // --- 登录与输入 ---
@@ -98,6 +156,9 @@ void testLoginSuccess(TestResult& r) {
 	r.check(vm.session().points == 120);
 	r.check(vm.session().wins == 7);
 	r.check(vm.session().losses == 3);
+	// 主大厅只有按钮：登录成功不拉房间列表（点「开始游戏」进房间界面时才拉）
+	r.check(vm.focus() == Focus::None);
+	r.check(vm.takeActions().empty());
 
 	const auto logs = vm.takeLogs();
 	r.check(logs.size() == 1);
@@ -194,11 +255,20 @@ void testInputRules(TestResult& r) {
 	typeText(vm, "xxx");
 	r.check(vm.password() == "pw");
 
-	// 大厅 / 匹配状态同样不接受输入。
+	// 主大厅没有输入框：打字不改变任何字段；房间界面才接收房间名（上限 20 字符）
 	LoginViewModel lobby;
 	enterLobby(lobby);
 	typeText(lobby, "zzz");
 	r.check(lobby.username() == "alice");
+	r.check(lobby.roomNameInput().empty());
+
+	LoginViewModel browser;
+	enterRoomBrowser(browser);
+	typeText(browser, "zzz");
+	r.check(browser.username() == "alice");
+	r.check(browser.roomNameInput() == "zzz");
+	typeText(browser, std::string(40, 'q'));
+	r.check(browser.roomNameInput().size() == 20);
 }
 
 // --- 注册链：查重 → 注册 → 登录 ---
@@ -305,142 +375,253 @@ void testParseFailure(TestResult& r) {
 	r.check(vm.message() == "响应解析失败");
 }
 
-// --- 匹配等待与 3 秒兜底 ---
+// --- 房间界面：进入 / 返回 / 房间列表 ---
 
-void testMatchingCancelTimeout(TestResult& r) {
+void testEnterRoomBrowser(TestResult& r) {
 	LoginViewModel vm;
-	vm.setNow(1000);
 	enterLobby(vm);
+	r.check(vm.mode() == Mode::Lobby);
 
+	// 「开始游戏」不再匹配：进入房间界面并立刻拉一次列表
 	vm.clickStartGame();
-	r.check(vm.mode() == Mode::Matching);
-	r.check(vm.status() == Status::WaitingMatch);
-	r.check(vm.message().empty());
-	r.check(onlyAction(vm, Action::SendReadyToPlay));
+	r.check(vm.mode() == Mode::RoomBrowser);
+	r.check(vm.focus() == Focus::RoomName);
+	r.check(onlyAction(vm, Action::RequestRoomList));
 
-	// 等待秒数按注入的时间算：3.5 秒后显示 3。
-	vm.onFrame({ 4500, false, true });
-	r.check(vm.matchElapsedSeconds() == 3);
-	r.check(vm.status() == Status::WaitingMatch);
-
-	// 点退出匹配：立刻进入 WaitingCancel，并补一次静默。
-	vm.setNow(5000);
-	vm.clickCancelMatch();
-	r.check(vm.status() == Status::WaitingCancel);
-	r.check(vm.message().empty());
-	r.check(onlyAction(vm, Action::SendCancelMatchmaking));
-
-	// 退出中再点/再按 Esc 不重复发包。
-	vm.clickCancelMatch();
-	vm.escape();
+	// 房间界面「返回大厅」：回到主大厅，不关窗、不发包
+	vm.clickBackToLobby();
+	r.check(vm.mode() == Mode::Lobby);
+	r.check(vm.focus() == Focus::None);
 	r.check(vm.takeActions().empty());
 
-	// 2999ms 仍在等，3000ms 本地兜底回大厅。
-	vm.onFrame({ 7999, false, true });
-	r.check(vm.status() == Status::WaitingCancel);
-	vm.onFrame({ 8000, false, true });
-	r.check(vm.mode() == Mode::Lobby);
-	r.check(vm.status() == Status::Idle);
-	r.check(vm.message().empty());
+	// 房间界面 Esc = 返回大厅（主大厅 Esc 才是关窗）
+	LoginViewModel escVm;
+	enterRoomBrowser(escVm);
+	escVm.escape();
+	r.check(escVm.mode() == Mode::Lobby);
+	r.check(escVm.takeActions().empty());
 }
 
-void testMatchingSendFailureReturnsLobby(TestResult& r) {
+void testRoomListRefresh(TestResult& r) {
 	LoginViewModel vm;
-	enterLobby(vm);
-	vm.clickStartGame();
-	r.check(onlyAction(vm, Action::SendReadyToPlay));
+	vm.setNow(1000);
+	enterRoomBrowser(vm);   // 进界面已经拉过一次（动作在上面的 helper 里排空）
 
-	// 开始游戏发包失败：回大厅，文案提示，不把人困在匹配界面。
-	vm.onActionFailed(Action::SendReadyToPlay);
-	r.check(vm.mode() == Mode::Lobby);
-	r.check(vm.status() == Status::Idle);
-	r.check(vm.message() == "发送失败，请重试");
+	// 主大厅不刷新列表：这里用大厅验证「不请求」
+	LoginViewModel lobby;
+	enterLobby(lobby);
+	lobby.onFrame({ 5000, false, true });
+	r.check(lobby.takeActions().empty(), "主大厅不拉房间列表");
 
-	// 退出匹配发包失败同样直接回大厅（静默）。
-	vm.clickStartGame();
-	vm.takeActions();
-	vm.clickCancelMatch();
-	r.check(onlyAction(vm, Action::SendCancelMatchmaking));
-	vm.onActionFailed(Action::SendCancelMatchmaking);
-	r.check(vm.mode() == Mode::Lobby);
-	r.check(vm.message().empty());
+	// 房间界面：1 秒内不重复请求。
+	vm.onFrame({ 1900, false, true });
+	r.check(vm.takeActions().empty(), "1 秒内不重复拉列表");
+
+	// 满 2 秒自动刷新一次。
+	vm.onFrame({ 3000, false, true });
+	r.check(onlyAction(vm, Action::RequestRoomList));
+
+	// 列表内容进 VM，选中项越界时自动夹紧。
+	vm.onRoomList({ makeSummary(3, "甲的房间", "甲", 1), makeSummary(4, "乙的房间", "乙", 2, true) });
+	r.check(vm.rooms().size() == 2);
+	r.check(vm.selectedRoom() == 0);
+	vm.selectRoom(1);
+	r.check(vm.selectedRoom() == 1);
+	vm.selectRoom(1);
+	r.check(vm.selectedRoom() == 0, "循环选择");
+	r.check(vm.selectedRoomInfo() != nullptr && vm.selectedRoomInfo()->id == 3u);
+
+	// 只剩一个房间时，选中项夹到最后一行。
+	vm.onRoomList({ makeSummary(9, "丙的房间", "丙", 1) });
+	r.check(vm.selectedRoom() == 0);
+	r.check(vm.selectedRoomInfo() != nullptr && vm.selectedRoomInfo()->id == 9u);
+
+	// 点行 = 选中，不直接加入。
+	vm.clickRoom(0);
+	r.check(vm.mode() == Mode::RoomBrowser);
+	r.check(vm.takeActions().empty());
 }
 
-void testMatchingDisconnectAndGameStart(TestResult& r) {
-	LoginViewModel matching;
-	enterLobby(matching);
-	matching.clickStartGame();
-	matching.takeActions();
+void testCreateRoom(TestResult& r) {
+	LoginViewModel vm;
+	enterRoomBrowser(vm);
 
-	// 匹配中断线：会话失败结束。
-	matching.onFrame({ 0, false, false });
-	r.check(matching.done());
-	r.check(!matching.session().ok);
+	// 房间名留空：回退为「账号的房间」
+	r.check(vm.effectiveRoomName() == "alice的房间");
 
-	LoginViewModel started;
-	enterLobby(started);
-	started.clickStartGame();
-	started.takeActions();
-	started.onFrame({ 0, true, false });
-	r.check(started.done());
-	r.check(started.session().ok);
+	vm.clickCreateRoom();
+	r.check(vm.status() == Status::WaitingCreateRoom);
+	r.check(onlyAction(vm, Action::CreateRoom));
+
+	// 服务端回快照 → 进入房间态
+	vm.onRoomState(makeSnapshot(1, "alice的房间", "alice",
+								{ makeMember("alice", false, true) }));
+	r.check(vm.mode() == Mode::Room);
+	r.check(vm.inRoom());
+	r.check(vm.isOwner());
+	r.check(!vm.selfReady());
+	r.check(!vm.roomInGame());
+
+	// 建房间失败：服务端回错误 → 留在房间界面，显示原因
+	LoginViewModel bad;
+	enterRoomBrowser(bad);
+	bad.clickCreateRoom();
+	(void)bad.takeActions();
+	bad.onRoomError("房间数量已达上限，请稍后再试");
+	r.check(bad.mode() == Mode::RoomBrowser);
+	r.check(bad.status() == Status::Idle);
+	r.check(bad.message() == "房间数量已达上限，请稍后再试");
+}
+
+void testJoinRoom(TestResult& r) {
+	LoginViewModel vm;
+	enterRoomBrowser(vm);
+
+	// 没有房间时点加入：提示，不发包
+	vm.clickJoinRoom();
+	r.check(vm.message() == "当前没有可加入的房间");
+	r.check(vm.takeActions().empty());
+
+	vm.onRoomList({ makeSummary(5, "满人房", "甲", 2), makeSummary(6, "对局房", "乙", 2, true),
+					makeSummary(7, "可加入", "丙", 1) });
+
+	// 已满 / 对局中：提示且不发包
+	vm.clickRoom(0);
+	vm.clickJoinRoom();
+	r.check(vm.message() == "该房间已满");
+	r.check(vm.takeActions().empty());
+
+	vm.clickRoom(1);
+	vm.clickJoinRoom();
+	r.check(vm.message() == "该房间正在对局中，无法加入");
+	r.check(vm.takeActions().empty());
+
+	// 可加入：进入等待，发包
+	vm.clickRoom(2);
+	vm.clickJoinRoom();
+	r.check(vm.status() == Status::WaitingJoinRoom);
+	r.check(onlyAction(vm, Action::JoinRoom));
+
+	// 服务端回快照：房主是丙，自己是成员但非房主
+	vm.onRoomState(makeSnapshot(7, "可加入", "丙",
+								{ makeMember("丙", false, true), makeMember("alice", false, false) }));
+	r.check(vm.mode() == Mode::Room);
+	r.check(!vm.isOwner());
+	r.check(vm.room() != nullptr && vm.room()->members.size() == 2u);
+
+	// 加入失败（房间已解散）：留在房间界面并提示
+	LoginViewModel gone;
+	enterRoomBrowser(gone);
+	gone.onRoomList({ makeSummary(8, "已解散", "丁", 1) });
+	gone.clickJoinRoom();
+	(void)gone.takeActions();
+	gone.onRoomError("房间不存在或已解散");
+	r.check(gone.mode() == Mode::RoomBrowser);
+	r.check(gone.message() == "房间不存在或已解散");
+}
+
+// --- 房间内：准备 / 离开 / 开局 ---
+
+void testReadyToggle(TestResult& r) {
+	LoginViewModel vm;
+	enterRoom(vm);
+
+	vm.clickReady();
+	r.check(onlyAction(vm, Action::SetReady));
+
+	// 服务端广播自己已准备 → 再点就是取消准备
+	vm.onRoomState(makeSnapshot(1, "alice的房间", "alice",
+								{ makeMember("alice", true, true) }));
+	r.check(vm.selfReady());
+	vm.clickReady();
+	r.check(onlyAction(vm, Action::SetUnready));
+
+	// 对局中不能改准备
+	vm.onRoomState(makeSnapshot(1, "alice的房间", "alice",
+								{ makeMember("alice", true, true), makeMember("bob", true, false) }, true));
+	r.check(vm.roomInGame());
+	vm.clickReady();
+	r.check(vm.takeActions().empty());
+
+	// 发包失败：回滚到可重试，不留在等响应状态
+	LoginViewModel failing;
+	enterRoom(failing);
+	failing.clickReady();
+	(void)failing.takeActions();
+	failing.onActionFailed(Action::SetReady);
+	r.check(failing.message() == "发送失败，请重试");
+}
+
+void testLeaveRoom(TestResult& r) {
+	LoginViewModel vm;
+	enterRoom(vm);
+
+	vm.clickLeaveRoom();
+	// 离开房间回到「房间界面」（列表），不是主大厅
+	r.check(vm.mode() == Mode::RoomBrowser);
+	r.check(!vm.inRoom());
+	r.check(onlyActions(vm, Action::LeaveRoom, Action::RequestRoomList));
+
+	// 服务端确认离开（closed 快照）：只作为提示文案
+	unool::protocol::RoomSnapshot closed{};
+	closed.id = 1;
+	closed.name = "alice的房间";
+	closed.closed = true;
+	closed.reason = "已离开房间";
+	vm.onRoomState(closed);
+	r.check(vm.mode() == Mode::RoomBrowser);
+	r.check(vm.message() == "已离开房间");
+
+	// 房内 Esc = 离开房间（不关窗）
+	LoginViewModel escVm;
+	enterRoom(escVm);
+	escVm.escape();
+	r.check(escVm.mode() == Mode::RoomBrowser);
+	r.check(onlyActions(escVm, Action::LeaveRoom, Action::RequestRoomList));
+}
+
+void testOwnerTransferAndDissolve(TestResult& r) {
+	LoginViewModel vm;
+	enterRoom(vm);
+
+	// 房主退出后服务端把房主转让给另一名玩家：VM 只跟随快照
+	vm.onRoomState(makeSnapshot(1, "alice的房间", "bob",
+								{ makeMember("bob", false, true), makeMember("alice", false, false) }));
+	r.check(vm.mode() == Mode::Room);
+	r.check(!vm.isOwner());
+
+	// 房间解散：回房间界面并提示原因
+	unool::protocol::RoomSnapshot closed{};
+	closed.id = 1;
+	closed.closed = true;
+	closed.reason = "房主已解散房间";
+	vm.onRoomState(closed);
+	r.check(vm.mode() == Mode::RoomBrowser);
+	r.check(!vm.inRoom());
+	r.check(vm.message() == "房主已解散房间");
+	r.check(onlyAction(vm, Action::RequestRoomList));
+}
+
+void testGameStartAndDisconnect(TestResult& r) {
+	LoginViewModel inRoom;
+	enterRoom(inRoom);
+	// 房间内收到 GameStart：结束登录阶段（包留给 gamePhase）
+	inRoom.onFrame({ 0, true, true });
+	r.check(inRoom.done());
+	r.check(inRoom.session().ok);
+
+	// 大厅中断线：会话失败结束
+	LoginViewModel lobby;
+	enterLobby(lobby);
+	lobby.onFrame({ 0, false, false });
+	r.check(lobby.done());
+	r.check(!lobby.session().ok);
 }
 
 void testEscapeClosesWindow(TestResult& r) {
 	LoginViewModel vm;
 	vm.escape();
 	r.check(onlyAction(vm, Action::CloseWindow));
-
-	// 匹配界面 Esc = 退出匹配，不关窗。
-	LoginViewModel matching;
-	enterLobby(matching);
-	matching.clickStartGame();
-	matching.takeActions();
-	matching.escape();
-	r.check(matching.status() == Status::WaitingCancel);
-	r.check(onlyAction(matching, Action::SendCancelMatchmaking));
-}
-
-// --- 匹配横幅 ---
-
-void testMatchNotice(TestResult& r) {
-	LoginViewModel vm;
-	enterLobby(vm);
-
-	// 自己发起 / 空名字：忽略。
-	vm.onMatchmakingStarted("alice");
-	vm.onMatchmakingStarted("");
-	r.check(!vm.matchNotice().opponentMatching);
-	r.check(vm.takeLogs().empty());
-
-	vm.onMatchmakingStarted("bob");
-	r.check(vm.matchNotice().opponentMatching);
-	r.check(vm.matchNotice().opponentName == "bob");
-	const auto logs = vm.takeLogs();
-	r.check(logs.size() == 1);
-
-	// 自己点开始游戏：横幅清掉，随后收到解散广播也无副作用。
-	vm.clickStartGame();
-	vm.takeActions();
-	r.check(!vm.matchNotice().opponentMatching);
-
-	// 大厅里收到解散：清横幅 + 清一次性文案（登录成功文案也一并清掉）。
-	LoginViewModel lobby;
-	enterLobby(lobby);
-	lobby.onMatchmakingStarted("bob");
-	lobby.onMatchmakingCancelled();
-	r.check(!lobby.matchNotice().opponentMatching);
-	r.check(lobby.mode() == Mode::Lobby);
-	r.check(lobby.message().empty());
-
-	// 匹配中收到解散：静默回大厅。
-	LoginViewModel matching;
-	enterLobby(matching);
-	matching.clickStartGame();
-	matching.takeActions();
-	matching.onMatchmakingCancelled();
-	r.check(matching.mode() == Mode::Lobby);
-	r.check(matching.status() == Status::Idle);
 }
 
 // --- 签到与商城 ---
@@ -481,10 +662,11 @@ void testShopAndSessionCheck(TestResult& r) {
 	vm.clickShop();
 	r.check(onlyAction(vm, Action::OpenShop));
 
-	// 商城期间没断线、窗口还在：继续留在大厅。
+	// 商城期间没断线、窗口还在：继续留在主大厅（房间列表等进房间界面时再拉）
 	vm.onShopClosed(true);
 	r.check(vm.mode() == Mode::Lobby);
 	r.check(!vm.done());
+	r.check(vm.takeActions().empty());
 
 	// 商城之后发现断线 / 关窗：本次登录会话判定失败。
 	vm.onShopClosed(false);
@@ -505,11 +687,15 @@ TestResult runLoginViewModelTests() {
 	r.section("register.chain", testRegisterChain);
 	r.section("register.failure", testRegisterFailure);
 	r.section("account.parse_failure", testParseFailure);
-	r.section("matching.cancel_timeout", testMatchingCancelTimeout);
-	r.section("matching.send_failure", testMatchingSendFailureReturnsLobby);
-	r.section("matching.disconnect_and_gamestart", testMatchingDisconnectAndGameStart);
-	r.section("matching.escape", testEscapeClosesWindow);
-	r.section("match_notice", testMatchNotice);
+	r.section("room.enter_browser", testEnterRoomBrowser);
+	r.section("room.list_refresh", testRoomListRefresh);
+	r.section("room.create", testCreateRoom);
+	r.section("room.join", testJoinRoom);
+	r.section("room.ready_toggle", testReadyToggle);
+	r.section("room.leave", testLeaveRoom);
+	r.section("room.owner_transfer", testOwnerTransferAndDissolve);
+	r.section("room.game_start_and_disconnect", testGameStartAndDisconnect);
+	r.section("lobby.escape", testEscapeClosesWindow);
 	r.section("lobby.checkin", testCheckinPopup);
 	r.section("lobby.shop", testShopAndSessionCheck);
 

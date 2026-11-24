@@ -50,7 +50,11 @@ namespace unool::protocol {
 	sf::Packet makeConnectionInfo(std::size_t playerId);
 	std::optional<ConnectionInfoData> parseConnectionInfo(sf::Packet& packet);
 
-	sf::Packet makeGameStart();
+	// 房间功能（协议版本 3）：开局包携带「本局座位号」（0/1）。
+	// 座位是桌面内的玩法身份，与连接槽位号无关：房间把两名成员映射到两个座位，
+	// 客户端据此从 GameState 里认出自己的手牌。
+	sf::Packet makeGameStart(std::size_t seatId);
+	std::optional<std::size_t> parseGameStart(sf::Packet& packet);
 	sf::Packet makeHeartbeat();
 
 	// 签到响应：msg / ok / points 三字段（与 parseAccountEvent 的 CheckinResponse 分支对应）。

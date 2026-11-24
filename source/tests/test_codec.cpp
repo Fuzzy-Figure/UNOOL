@@ -30,8 +30,13 @@ namespace {
 	}
 
 	void testGameStartHeartbeat(unool::tests::TestResult& r) {
-		auto gs = makeGameStart();
+		// 房间功能：开局包携带本局座位号（0/1）
+		auto gs = makeGameStart(1);
 		r.check(readWire(gs) == static_cast<int>(MessageType::GameStart));
+		auto seat = parseGameStart(gs);
+		r.check(seat.has_value());
+		r.check(seat.value_or(99u) == 1u);
+
 		auto hb = makeHeartbeat();
 		r.check(readWire(hb) == static_cast<int>(MessageType::Heartbeat));
 	}

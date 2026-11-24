@@ -34,6 +34,9 @@
         "files": [
           "source/utils.cpp",
           "source/shell/Socket.cpp",
+          "source/shell/ServerNetwork.cpp",
+          "source/shell/RoomManager.cpp",
+          "source/shell/RoomGame.cpp",
           "source/shell/UserDB.cpp",
           "source/shell/JsonConfig.cpp"
         ],
@@ -55,6 +58,9 @@
         ],
         "files": [
           "header/shell/Socket.h",
+          "header/shell/ServerNetwork.h",
+          "header/shell/RoomManager.h",
+          "header/shell/RoomGame.h",
           "Projects/Core/pch.core.h"
         ]
       },
@@ -72,16 +78,14 @@
       "compile": {
         "recursiveDirs": [],
         "files": [
-          "source/shell/LegacyBlockingDecisionAdapter.cpp",
-          "source/shell/NetworkServerView.cpp"
+          "source/shell/RoomKeyMapping.cpp"
         ]
       },
       "headers": {
         "recursiveDirs": [],
         "files": [
           "Projects/Adapters/pch.adapters.h",
-          "header/shell/LegacyBlockingDecisionAdapter.h",
-          "header/shell/NetworkServerView.h",
+          "header/shell/RoomGame.h",
           "header/shell/LegacyServicesAdapter.h",
           "header/shell/JsonConfigProvider.h",
           "header/shell/JsonUserRepository.h",
@@ -130,6 +134,7 @@
           "Projects/Server/pch.server.h",
           "header/protocol/AccountEvent.h",
           "header/protocol/AccountProtocol.h",
+          "header/protocol/RoomProtocol.h",
           "header/protocol/ShopProtocol.h",
           "header/protocol/MessageType.h",
           "header/protocol/MessageCodec.h",
@@ -143,9 +148,10 @@
           "header/core/Skill.h",
           "header/core/skills/Skills.h",
           "header/shell/Socket.h",
+          "header/shell/ServerNetwork.h",
+          "header/shell/RoomManager.h",
+          "header/shell/RoomGame.h",
           "header/shell/UserDB.h",
-          "header/shell/LegacyBlockingDecisionAdapter.h",
-          "header/shell/NetworkServerView.h",
           "header/shell/LegacyServicesAdapter.h",
           "header/utils.h"
         ]
@@ -188,6 +194,7 @@
           "header/pch.h",
           "header/protocol/AccountEvent.h",
           "header/protocol/AccountProtocol.h",
+          "header/protocol/RoomProtocol.h",
           "header/protocol/ShopProtocol.h",
           "header/protocol/MessageType.h",
           "header/protocol/MessageCodec.h",

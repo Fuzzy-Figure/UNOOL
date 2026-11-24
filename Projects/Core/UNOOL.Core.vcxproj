@@ -168,12 +168,32 @@
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <ClCompile Include="..\..\source\protocol\RoomProtocol.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
     <ClCompile Include="..\..\source\protocol\ShopProtocol.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="..\..\source\shell\JsonConfig.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\RoomGame.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\RoomManager.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\source\shell\ServerNetwork.cpp">
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.core.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>pch.core.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -245,8 +265,12 @@
     <ClInclude Include="..\..\header\protocol\MessageCodec.h" />
     <ClInclude Include="..\..\header\protocol\MessageType.h" />
     <ClInclude Include="..\..\header\protocol\Protocol.h" />
+    <ClInclude Include="..\..\header\protocol\RoomProtocol.h" />
     <ClInclude Include="..\..\header\protocol\ShopData.h" />
     <ClInclude Include="..\..\header\protocol\ShopProtocol.h" />
+    <ClInclude Include="..\..\header\shell\RoomGame.h" />
+    <ClInclude Include="..\..\header\shell\RoomManager.h" />
+    <ClInclude Include="..\..\header\shell\ServerNetwork.h" />
     <ClInclude Include="..\..\header\shell\Socket.h" />
   </ItemGroup>
 <!-- ARCH-C:ITEMS:END -->

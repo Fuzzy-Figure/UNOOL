@@ -47,6 +47,8 @@ namespace unool::tests {
 		std::vector<std::string> shieldedGroups() const override { return {}; }
 		std::optional<std::vector<std::string>> assignedCharacters() const override { return std::nullopt; }
 		int reconnectTimeoutSec() const override { return 600; }
+		// 房间功能：测试台固定给 4 个槽位（= 2 个房间）
+		std::size_t maxClients() const override { return 4; }
 		void reload() override {}
 	};
 

@@ -19,7 +19,6 @@ class GameRenderer;
 class ShopScene {
 public:
 	ShopScene(GameRenderer& r, unool::shell::ConnectionState& n, const std::string& username,
-	          unool::shell::MatchNoticeState& notice,
 	          unool::shell::ShopPresentationCache& cache);
 	// 跑商城主循环，ESC 或关窗后返回
 	void run();
@@ -28,9 +27,6 @@ private:
 	GameRenderer& renderer;
 	unool::shell::ConnectionState& net;
 	const std::string username;
-	// 「对手已开始匹配」提示：引用 LoginScene 持有的同一份状态，商城期间收到的
-	// 匹配事件就地写回，退出商城后大厅无需额外同步即可显示。
-	unool::shell::MatchNoticeState& matchNotice;
 
 	// 状态机、导航与购买规则（无 SFML / 无网络）
 	unool::shell::ShopViewModel vm;
@@ -44,8 +40,6 @@ private:
 	// 渲染
 	void render();
 	void renderTopBar();
-	// 商城内的「对手已开始匹配」横幅（深色界面用浅色文字）
-	void renderMatchNotice();
 	void renderHeroView();
 	void renderItemView();
 	void renderSearchBar();

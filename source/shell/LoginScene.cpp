@@ -2,15 +2,18 @@
 #include "GameRenderer.h"
 #include "AccountProtocol.h"
 #include "AccountEvent.h"
+#include "RoomProtocol.h"
 #include "shell/IShopOpener.h"
 #include <algorithm>
 #include <chrono>
 #include <format>
 #include <print>
 #include <string>
+#include <utility>
 #include <vector>
 
 // P1-3/P1-4：收发均经 ConnectionState；协议构造上移到语义方法，本单元只做 View 与事件翻译。
+// 房间功能（协议版本 3）：大厅 = 房间列表（创建 / 加入 / 刷新），房间内 = 准备 / 离开。
 
 // MessageType 归 protocol 层；本单元类在全局命名空间，这里做 TU 局部的名字转发。
 using unool::protocol::MessageType;
@@ -36,7 +39,11 @@ LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
 
 void LoginScene::layoutBoxes() {
 	const auto& cfg = renderer.getConfig();
-	const float cx = static_cast<float>(cfg.windowSize.x) / 2.f;
+	const float w = static_cast<float>(cfg.windowSize.x);
+	const float h = static_cast<float>(cfg.windowSize.y);
+	const float cx = w / 2.f;
+
+	// === 登录 / 注册 ===
 	const float boxW = 600.f;
 	const float boxH = 70.f;
 	const float btnW = 220.f;
@@ -44,29 +51,50 @@ void LoginScene::layoutBoxes() {
 	const float gap = 40.f;
 	const float totalBtnW = btnW * 2 + gap;
 
-	const float unameY = static_cast<float>(cfg.windowSize.y) * 0.38f;
-	const float pwdY = static_cast<float>(cfg.windowSize.y) * 0.50f;
-	const float btnY = static_cast<float>(cfg.windowSize.y) * 0.62f;
+	const float unameY = h * 0.38f;
+	const float pwdY = h * 0.50f;
+	const float btnY = h * 0.62f;
 
 	usernameBox = sf::FloatRect({ cx - boxW / 2, unameY }, { boxW, boxH });
 	passwordBox = sf::FloatRect({ cx - boxW / 2, pwdY }, { boxW, boxH });
 	loginBtn = sf::FloatRect({ cx - totalBtnW / 2, btnY }, { btnW, btnH });
 	registerBtn = sf::FloatRect({ cx - totalBtnW / 2 + btnW + gap, btnY }, { btnW, btnH });
 
-	// 大厅按钮：开始游戏 + 商城
-	const float lobbyBtnY = static_cast<float>(cfg.windowSize.y) * 0.55f;
-	startGameBtn = sf::FloatRect({ cx - totalBtnW / 2, lobbyBtnY }, { btnW, btnH });
-	lobbyShopBtn = sf::FloatRect({ cx - totalBtnW / 2 + btnW + gap, lobbyBtnY }, { btnW, btnH });
+	// === 主大厅：开始游戏 / 商城 / 每日签到 ===
+	const float lobbyW = 480.f;
+	checkinBtn = sf::FloatRect({ cx - 300.f, h * 0.28f }, { 600.f, 76.f });
+	startGameBtn = sf::FloatRect({ cx - lobbyW / 2, h * 0.44f }, { lobbyW, 92.f });
+	lobbyShopBtn = sf::FloatRect({ cx - lobbyW / 2, h * 0.44f + 116.f }, { lobbyW, 70.f });
 
-	// 签到按钮：位于两个按钮上方，水平居中
-	const float checkinW = totalBtnW;
-	const float checkinH = 64.f;
-	const float checkinY = lobbyBtnY - checkinH - 30.f;
-	checkinBtn = sf::FloatRect({ cx - checkinW / 2, checkinY }, { checkinW, checkinH });
+	// === 房间界面：房间名输入 + 创建 + 返回大厅 + 房间列表 ===
+	const float rowY = h * 0.24f;
+	roomNameBox = sf::FloatRect({ cx - 620.f, rowY }, { 460.f, 60.f });
+	createRoomBtn = sf::FloatRect({ cx - 140.f, rowY }, { 220.f, 60.f });
+	backToLobbyBtn = sf::FloatRect({ cx + 100.f, rowY }, { 220.f, 60.f });
 
-	// 匹配等待界面：居中的「退出匹配」按钮
-	const float cancelY = static_cast<float>(cfg.windowSize.y) * 0.58f;
-	cancelMatchBtn = sf::FloatRect({ cx - totalBtnW / 2, cancelY }, { totalBtnW, btnH });
+	// 房间列表：固定可见行数，选中项超出时自动滚动
+	roomListArea = sf::FloatRect({ cx - 620.f, h * 0.33f }, { 1200.f, roomRowHeight * visibleRoomRows });
+
+	// 列表下方一排操作按钮
+	const float actionY = roomListArea.position.y + roomListArea.size.y + 28.f;
+	joinRoomBtn = sf::FloatRect({ cx - 620.f, actionY }, { 300.f, 64.f });
+	refreshRoomsBtn = sf::FloatRect({ cx - 300.f, actionY }, { 220.f, 64.f });
+
+	// === 房间内 ===
+	readyBtn = sf::FloatRect({ cx - 240.f, h * 0.60f }, { 480.f, 80.f });
+	leaveRoomBtn = sf::FloatRect({ cx - 240.f, h * 0.60f + 112.f }, { 480.f, 70.f });
+}
+
+sf::FloatRect LoginScene::roomRowRect(const std::size_t visibleIndex) const {
+	return sf::FloatRect(
+		{ roomListArea.position.x, roomListArea.position.y + static_cast<float>(visibleIndex) * roomRowHeight },
+		{ roomListArea.size.x, roomRowHeight - 6.f });
+}
+
+std::size_t LoginScene::firstVisibleRoom() const {
+	const std::size_t selected = vm.selectedRoom();
+	if (selected < visibleRoomRows) return 0;
+	return selected - visibleRoomRows + 1;
 }
 
 LoginScene::Result LoginScene::run() {
@@ -79,7 +107,7 @@ LoginScene::Result LoginScene::run() {
 		pollAccountPackets();
 
 		// 每帧判定交给 ViewModel：GameStart 可见即结束登录阶段（包留给 gamePhase），
-		// 匹配中断线结束会话，取消请求 3 秒无应答本地兜底回大厅。
+		// 大厅 / 房间阶段断线结束会话，房间列表定时刷新。
 		vm.onFrame({ steadyNowMs(), net.contains(MessageType::GameStart), net.isConnected() });
 		executeActions();
 		printLogs();
@@ -126,6 +154,12 @@ void LoginScene::handleKeyPressed(const sf::Event::KeyPressed& key) {
 		case sf::Keyboard::Scancode::Enter:
 			vm.submit();
 			return;
+		case sf::Keyboard::Scancode::Up:
+			if (vm.mode() == Vm::Mode::RoomBrowser) vm.selectRoom(-1);
+			return;
+		case sf::Keyboard::Scancode::Down:
+			if (vm.mode() == Vm::Mode::RoomBrowser) vm.selectRoom(+1);
+			return;
 		default:
 			return;
 	}
@@ -138,31 +172,15 @@ void LoginScene::handleTextEntered(const sf::Event::TextEntered& te) {
 void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 	// 几何命中留在这里（矩形由 layoutBoxes 算好），命中之后一律交给 VM。
 	switch (vm.mode()) {
-		case Vm::Mode::Matching:
-			// 退出中不再重复发请求，等服务端确认或 3 秒超时后由 run() 回到大厅。
-			if (cancelMatchBtn.contains(pos)) vm.clickCancelMatch();
+		case Vm::Mode::Room:
+			handleRoomClick(pos);
 			return;
-
+		case Vm::Mode::RoomBrowser:
+			handleRoomBrowserClick(pos);
+			return;
 		case Vm::Mode::Lobby:
-			// 签到结果弹窗：点击任意位置关闭（优先于其它按钮）。
-			if (vm.checkinPopup()) {
-				vm.dismissCheckinPopup();
-				return;
-			}
-			if (checkinBtn.contains(pos)) {
-				vm.clickCheckin();
-				return;
-			}
-			if (startGameBtn.contains(pos)) {
-				vm.clickStartGame();
-				return;
-			}
-			if (lobbyShopBtn.contains(pos)) {
-				vm.clickShop();
-				return;
-			}
+			handleLobbyClick(pos);
 			return;
-
 		default:
 			break;
 	}
@@ -185,6 +203,76 @@ void LoginScene::handleMouseClick(const sf::Vector2f& pos) {
 	}
 }
 
+void LoginScene::handleLobbyClick(const sf::Vector2f& pos) {
+	// 主大厅只有三个入口：签到（含结果弹窗）/ 开始游戏 / 商城
+	if (vm.checkinPopup()) {
+		vm.dismissCheckinPopup();
+		return;
+	}
+	if (checkinBtn.contains(pos)) {
+		vm.clickCheckin();
+		return;
+	}
+	if (startGameBtn.contains(pos)) {
+		vm.clickStartGame();
+		return;
+	}
+	if (lobbyShopBtn.contains(pos)) {
+		vm.clickShop();
+		return;
+	}
+}
+
+void LoginScene::handleRoomBrowserClick(const sf::Vector2f& pos) {
+	if (roomNameBox.contains(pos)) {
+		vm.focusRoomName();
+		return;
+	}
+	if (createRoomBtn.contains(pos)) {
+		vm.clickCreateRoom();
+		return;
+	}
+	if (backToLobbyBtn.contains(pos)) {
+		vm.clickBackToLobby();
+		return;
+	}
+	if (joinRoomBtn.contains(pos)) {
+		vm.clickJoinRoom();
+		return;
+	}
+	if (refreshRoomsBtn.contains(pos)) {
+		vm.clickRefreshRooms();
+		return;
+	}
+
+	// 房间列表：点未选中的行 = 选中；点已选中的行 = 直接加入
+	const auto& rooms = vm.rooms();
+	const std::size_t first = firstVisibleRoom();
+	for (std::size_t i = 0; i < visibleRoomRows; ++i) {
+		const std::size_t index = first + i;
+		if (index >= rooms.size()) break;
+		if (!roomRowRect(i).contains(pos)) continue;
+		if (vm.selectedRoom() == index) {
+			vm.clickJoinRoom();
+		}
+		else {
+			vm.clickRoom(index);
+		}
+		return;
+	}
+}
+
+void LoginScene::handleRoomClick(const sf::Vector2f& pos) {
+	if (readyBtn.contains(pos)) {
+		vm.clickReady();
+		return;
+	}
+	if (leaveRoomBtn.contains(pos)) {
+		vm.clickLeaveRoom();
+		return;
+	}
+}
+
 void LoginScene::executeActions() {
 	for (const auto action : vm.takeActions()) {
 		switch (action) {
@@ -201,18 +289,32 @@ void LoginScene::executeActions() {
 			case Vm::Action::SendCheckUsername:
 				if (!net.sendCheckUsername(vm.username())) vm.onActionFailed(action);
 				break;
-			case Vm::Action::SendReadyToPlay:
-				if (!net.sendReadyToPlay()) vm.onActionFailed(action);
-				break;
 			case Vm::Action::SendCheckin:
 				if (!net.sendCheckin()) vm.onActionFailed(action);
 				break;
-			case Vm::Action::SendCancelMatchmaking:
-				if (!net.sendCancelMatchmaking()) vm.onActionFailed(action);
+			case Vm::Action::RequestRoomList:
+				if (!net.requestRoomList()) vm.onActionFailed(action);
+				break;
+			case Vm::Action::CreateRoom:
+				if (!net.createRoom(vm.effectiveRoomName())) vm.onActionFailed(action);
+				break;
+			case Vm::Action::JoinRoom: {
+				const auto* info = vm.selectedRoomInfo();
+				if (!info || !net.joinRoom(info->id)) vm.onActionFailed(action);
+				break;
+			}
+			case Vm::Action::LeaveRoom:
+				if (!net.leaveRoom()) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SetReady:
+				if (!net.sendRoomReady(true)) vm.onActionFailed(action);
+				break;
+			case Vm::Action::SetUnready:
+				if (!net.sendRoomReady(false)) vm.onActionFailed(action);
 				break;
 			case Vm::Action::OpenShop:
 				// 商城的断线 / 关窗判定仍在这里收口：返回值只表达「会话是否还能继续」。
-				shopOpener.openShop(vm.username(), vm.matchNotice());
+				shopOpener.openShop(vm.username());
 				vm.onShopClosed(net.isConnected() && renderer.windowIsOpen());
 				break;
 			case Vm::Action::CloseWindow:
@@ -229,18 +331,19 @@ void LoginScene::printLogs() {
 }
 
 void LoginScene::pollAccountPackets() {
-	// 收包动作收拢在 ConnectionState 的显式队列：只消费订阅的 7 类，
+	// 收包动作收拢在 ConnectionState 的显式队列：只消费订阅的 8 类，
 	// 其余（尤其 GameStart）留在队列里交给 gamePhase。
 	// ConnectionInfo 属于「连接」而非「账号状态」，就地处理（setPlayerId + 日志）；
-	// 其余响应解析成值对象后交给 ViewModel，解析失败走 onAccountParseFailure。
+	// 房间类事件解析成值对象后交给 ViewModel。
 	while (auto next = net.take({
 			   MessageType::ConnectionInfo,
 			   MessageType::CheckUsernameResponse,
 			   MessageType::RegisterResponse,
 			   MessageType::LoginResponse,
 			   MessageType::CheckinResponse,
-			   MessageType::MatchmakingCancelled,
-			   MessageType::MatchmakingStarted })) {
+			   MessageType::RoomListResponse,
+			   MessageType::RoomStateResponse,
+			   MessageType::RoomErrorResponse })) {
 		auto [mt, packet] = std::move(*next);
 
 		switch (mt) {
@@ -248,17 +351,36 @@ void LoginScene::pollAccountPackets() {
 				auto event = unool::protocol::parseAccountEvent(mt, packet);
 				if (event) {
 					net.setPlayerId(event->pid);
-					std::println("{} 分配到玩家: {}", titleBrackets, vm.username());
+					std::println("{} 连接槽位: {}", titleBrackets, event->pid);
 				}
 				continue;
 			}
 
-			case MessageType::MatchmakingStarted:
-				vm.onMatchmakingStarted(unool::protocol::parseMatchmakingStarted(packet).value_or(std::string{}));
+			case MessageType::RoomListResponse:
+				if (auto rooms = unool::protocol::parseRoomListResponse(packet)) {
+					vm.onRoomList(std::move(*rooms));
+				}
+				else {
+					vm.onRoomError("房间列表解析失败");
+				}
 				continue;
 
-			case MessageType::MatchmakingCancelled:
-				vm.onMatchmakingCancelled();
+			case MessageType::RoomStateResponse:
+				if (auto room = unool::protocol::parseRoomStateResponse(packet)) {
+					vm.onRoomState(std::move(*room));
+				}
+				else {
+					vm.onRoomError("房间状态解析失败");
+				}
+				continue;
+
+			case MessageType::RoomErrorResponse:
+				if (auto msg = unool::protocol::parseRoomErrorResponse(packet)) {
+					vm.onRoomError(std::move(*msg));
+				}
+				else {
+					vm.onRoomError("房间操作失败");
+				}
 				continue;
 
 			default: {
@@ -374,6 +496,283 @@ void LoginScene::drawCheckinPopup() {
 						hintSize, sf::Color(140, 140, 140));
 }
 
+void LoginScene::drawLobby() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const sf::Vector2u winSize = window.getSize();
+	const float w = static_cast<float>(winSize.x);
+	const float h = static_cast<float>(winSize.y);
+
+	auto drawButton = [&](const sf::FloatRect& r, const std::string& label,
+						  const sf::Color& fill = sf::Color(220, 230, 240),
+						  const sf::Color& textColor = sf::Color::Black,
+						  const sf::Vector2f& labelSize = { 26, 52 }) {
+		sf::RectangleShape shape({ r.size.x, r.size.y });
+		shape.setPosition({ r.position.x, r.position.y });
+		shape.setFillColor(fill);
+		shape.setOutlineThickness(3.f);
+		shape.setOutlineColor(sf::Color::Black);
+		window.draw(shape);
+		const sf::Vector2f measured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
+		textMgr.displayText(label,
+							{ r.position.x + (r.size.x - measured.x) / 2.f,
+							  r.position.y + (r.size.y - measured.y) / 2.f },
+							labelSize, textColor);
+	};
+
+	// 右上角账号信息
+	const std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
+	textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
+
+	// 每日签到（金色高亮）
+	const bool checkingIn = (vm.status() == Vm::Status::WaitingCheckin);
+	drawButton(checkinBtn, checkingIn ? "签到中..." : "每日签到",
+			   checkingIn ? sf::Color(235, 235, 235) : sf::Color(255, 224, 140),
+			   sf::Color(110, 72, 12), { 30, 60 });
+
+	// 开始游戏：进入房间界面（创建 / 加入房间）
+	drawButton(startGameBtn, "开始游戏", sf::Color(190, 220, 255), sf::Color(20, 40, 70), { 40, 80 });
+	drawButton(lobbyShopBtn, "商城", sf::Color(240, 232, 210), sf::Color::Black, { 30, 60 });
+
+	// 提示文案
+	const std::string& message = vm.message();
+	if (!message.empty() && message != "登录成功") {
+		const sf::Vector2f msgSize = { 24, 48 };
+		const auto measured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
+		textMgr.displayText(message, { (w - measured.x) / 2.f, h * 0.82f },
+							msgSize, sf::Color(180, 90, 20));
+	}
+
+	// 操作提示
+	const std::string hint = "点击「开始游戏」进入房间界面 | Esc 退出";
+	const sf::Vector2f hintSize = { 18, 36 };
+	const auto hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+	textMgr.displayText(hint, { (w - hintMeasured.x) / 2.f, h * 0.95f },
+						hintSize, sf::Color(120, 120, 120));
+
+	if (vm.checkinPopup()) drawCheckinPopup();
+}
+
+void LoginScene::drawRoomBrowser() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const sf::Vector2u winSize = window.getSize();
+	const float w = static_cast<float>(winSize.x);
+	const float h = static_cast<float>(winSize.y);
+
+	auto drawButton = [&](const sf::FloatRect& r, const std::string& label,
+						  const sf::Color& fill = sf::Color(220, 230, 240),
+						  const sf::Color& textColor = sf::Color::Black) {
+		sf::RectangleShape shape({ r.size.x, r.size.y });
+		shape.setPosition({ r.position.x, r.position.y });
+		shape.setFillColor(fill);
+		shape.setOutlineThickness(3.f);
+		shape.setOutlineColor(sf::Color::Black);
+		window.draw(shape);
+		const sf::Vector2f labelSize = { 26, 52 };
+		const sf::Vector2f measured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
+		textMgr.displayText(label,
+							{ r.position.x + (r.size.x - measured.x) / 2.f,
+							  r.position.y + (r.size.y - measured.y) / 2.f },
+							labelSize, textColor);
+	};
+
+	// 右上角账号信息
+	const std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
+	textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
+
+	// 房间名输入框 + 创建房间 + 返回大厅
+	textMgr.displayText("房间名:", { roomNameBox.position.x - 150.f, roomNameBox.position.y + 10.f },
+						{ 22, 44 }, sf::Color(70, 70, 70));
+	{
+		sf::RectangleShape box({ roomNameBox.size.x, roomNameBox.size.y });
+		box.setPosition({ roomNameBox.position.x, roomNameBox.position.y });
+		box.setFillColor(sf::Color::White);
+		box.setOutlineThickness(3.f);
+		box.setOutlineColor(vm.focus() == Vm::Focus::RoomName ? sf::Color::Blue : sf::Color::Black);
+		window.draw(box);
+		textMgr.displayText(vm.roomNameInput(),
+							{ roomNameBox.position.x + 14.f, roomNameBox.position.y + 10.f },
+							{ 22, 44 });
+		const std::string hint = "留空则以「账号的房间」命名";
+		textMgr.displayText(hint, { roomNameBox.position.x, roomNameBox.position.y + 68.f },
+							{ 15, 30 }, sf::Color(140, 140, 140));
+	}
+	drawButton(createRoomBtn, "创建房间", sf::Color(210, 240, 210));
+	drawButton(backToLobbyBtn, "返回大厅", sf::Color(238, 238, 238));
+
+	// 房间列表
+	const auto& rooms = vm.rooms();
+	{
+		sf::RectangleShape panel({ roomListArea.size.x, roomListArea.size.y });
+		panel.setPosition({ roomListArea.position.x, roomListArea.position.y });
+		panel.setFillColor(sf::Color(246, 248, 252));
+		panel.setOutlineThickness(2.f);
+		panel.setOutlineColor(sf::Color(180, 190, 205));
+		window.draw(panel);
+
+		const std::string header = std::format("房间列表（{} 个，↑↓ 选择，点两次或按「加入选中房间」加入）",
+											   rooms.size());
+		textMgr.displayText(header, { roomListArea.position.x, roomListArea.position.y - 38.f },
+							{ 18, 36 }, sf::Color(90, 90, 100));
+
+		if (rooms.empty()) {
+			const std::string empty = "当前没有房间，先创建一个吧";
+			textMgr.displayText(empty,
+								{ roomListArea.position.x + 30.f, roomListArea.position.y + 40.f },
+								{ 22, 44 }, sf::Color(150, 150, 160));
+		}
+
+		const std::size_t first = firstVisibleRoom();
+		for (std::size_t i = 0; i < visibleRoomRows; ++i) {
+			const std::size_t index = first + i;
+			if (index >= rooms.size()) break;
+			const auto& room = rooms[index];
+			const sf::FloatRect row = roomRowRect(i);
+			const bool selected = (index == vm.selectedRoom());
+
+			sf::RectangleShape shape({ row.size.x, row.size.y });
+			shape.setPosition({ row.position.x, row.position.y });
+			shape.setFillColor(selected ? sf::Color(214, 233, 255) : sf::Color::White);
+			shape.setOutlineThickness(selected ? 3.f : 1.f);
+			shape.setOutlineColor(selected ? sf::Color(60, 130, 220) : sf::Color(210, 215, 225));
+			window.draw(shape);
+
+			textMgr.displayText(room.name,
+								{ row.position.x + 20.f, row.position.y + 8.f },
+								{ 22, 44 },
+								room.inGame ? sf::Color(150, 150, 150) : sf::Color(40, 40, 40));
+			textMgr.displayText(std::format("房主：{}", room.owner),
+								{ row.position.x + 520.f, row.position.y + 8.f },
+								{ 20, 40 }, sf::Color(80, 80, 90));
+			textMgr.displayText(std::format("{}/{} 人", room.members, room.capacity),
+								{ row.position.x + 900.f, row.position.y + 8.f },
+								{ 20, 40 }, sf::Color(80, 80, 90));
+			textMgr.displayText(room.inGame ? "对局中" : "等待中",
+								{ row.position.x + 1060.f, row.position.y + 8.f },
+								{ 20, 40 },
+								room.inGame ? sf::Color(190, 110, 40) : sf::Color(60, 140, 80));
+		}
+	}
+
+	drawButton(joinRoomBtn, "加入选中房间", sf::Color(225, 235, 250));
+	drawButton(refreshRoomsBtn, "刷新列表", sf::Color(238, 238, 238));
+
+	// 提示文案
+	const std::string& message = vm.message();
+	if (!message.empty() && message != "登录成功") {
+		const sf::Vector2f msgSize = { 24, 48 };
+		const auto measured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
+		textMgr.displayText(message, { (w - measured.x) / 2.f, h * 0.90f },
+							msgSize, sf::Color(180, 90, 20));
+	}
+
+	// 操作提示
+	const std::string hint = "↑↓ 选择房间 | Enter 创建房间 | Esc 返回大厅";
+	const sf::Vector2f hintSize = { 18, 36 };
+	const auto hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+	textMgr.displayText(hint, { (w - hintMeasured.x) / 2.f, h * 0.95f },
+						hintSize, sf::Color(120, 120, 120));
+}
+
+void LoginScene::drawRoom() {
+	auto& window = renderer.getWindow();
+	auto& textMgr = renderer.getTextManager();
+	const sf::Vector2u winSize = window.getSize();
+	const float w = static_cast<float>(winSize.x);
+	const float h = static_cast<float>(winSize.y);
+	const auto* room = vm.room();
+
+	auto drawButton = [&](const sf::FloatRect& r, const std::string& label, const sf::Color& fill) {
+		sf::RectangleShape shape({ r.size.x, r.size.y });
+		shape.setPosition({ r.position.x, r.position.y });
+		shape.setFillColor(fill);
+		shape.setOutlineThickness(3.f);
+		shape.setOutlineColor(sf::Color::Black);
+		window.draw(shape);
+		const sf::Vector2f labelSize = { 28, 56 };
+		const sf::Vector2f measured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
+		textMgr.displayText(label,
+							{ r.position.x + (r.size.x - measured.x) / 2.f,
+							  r.position.y + (r.size.y - measured.y) / 2.f },
+							labelSize);
+	};
+
+	const std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
+	textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
+
+	if (!room) {
+		// 房间快照还没到（刚加入 / 刚重连）：本帧只画标题，下一帧补上
+		return;
+	}
+
+	// 房间标题
+	const sf::Vector2f titleSize = { 40, 80 };
+	const auto titleMeasured = textMgr.measureText(room->name, static_cast<unsigned int>(titleSize.y));
+	textMgr.displayText(room->name, { (w - titleMeasured.x) / 2.f, h * 0.16f },
+						titleSize, sf::Color(40, 40, 40));
+
+	const std::string sub = std::format("房主：{}  |  {}/{} 人{}",
+										room->owner, room->members.size(), room->capacity,
+										room->inGame ? "  |  对局中" : "");
+	const sf::Vector2f subSize = { 22, 44 };
+	const auto subMeasured = textMgr.measureText(sub, static_cast<unsigned int>(subSize.y));
+	textMgr.displayText(sub, { (w - subMeasured.x) / 2.f, h * 0.25f },
+						subSize, sf::Color(90, 90, 100));
+
+	// 成员列表
+	float memberY = h * 0.36f;
+	for (const auto& member : room->members) {
+		const std::string line = std::format("{}{}    {}", member.name,
+											 (member.owner ? "（房主）" : ""),
+											 (member.ready ? "已准备" : "未准备"));
+		const sf::Vector2f lineSize = { 26, 52 };
+		const auto measured = textMgr.measureText(line, static_cast<unsigned int>(lineSize.y));
+		textMgr.displayText(line, { (w - measured.x) / 2.f, memberY }, lineSize,
+							member.ready ? sf::Color(50, 140, 80) : sf::Color(80, 80, 90));
+		memberY += 64.f;
+	}
+	// 空位
+	if (room->members.size() < room->capacity) {
+		const std::string waiting = "等待其他玩家加入...";
+		const sf::Vector2f lineSize = { 24, 48 };
+		const auto measured = textMgr.measureText(waiting, static_cast<unsigned int>(lineSize.y));
+		textMgr.displayText(waiting, { (w - measured.x) / 2.f, memberY }, lineSize,
+							sf::Color(150, 150, 160));
+	}
+
+	// 准备 / 取消准备
+	const bool ready = vm.selfReady();
+	const bool canAct = !room->inGame;
+	const std::string readyLabel = room->inGame ? "对局已开始" : (ready ? "取消准备" : "准备");
+	drawButton(readyBtn, readyLabel,
+			   !canAct ? sf::Color(225, 225, 225) : (ready ? sf::Color(215, 240, 215) : sf::Color(230, 240, 255)));
+	drawButton(leaveRoomBtn, canAct ? "离开房间" : "对局进行中", sf::Color(245, 215, 215));
+
+	// 提示
+	const std::string hintText = room->members.size() < room->capacity
+		? "等待第二名玩家加入房间"
+		: (ready ? "已准备，等待对手准备后开局" : "双方都准备后自动开局");
+	const sf::Vector2f hintSize = { 20, 40 };
+	const auto hintMeasured = textMgr.measureText(hintText, static_cast<unsigned int>(hintSize.y));
+	textMgr.displayText(hintText, { (w - hintMeasured.x) / 2.f, h * 0.80f },
+						hintSize, sf::Color(90, 110, 140));
+
+	const std::string& message = vm.message();
+	if (!message.empty()) {
+		const sf::Vector2f msgSize = { 22, 44 };
+		const auto measured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
+		textMgr.displayText(message, { (w - measured.x) / 2.f, h * 0.88f },
+							msgSize, sf::Color(180, 90, 20));
+	}
+
+	const std::string hint = "点击「准备」后等待开局 | Esc 离开房间";
+	const sf::Vector2f tailSize = { 18, 36 };
+	const auto tailMeasured = textMgr.measureText(hint, static_cast<unsigned int>(tailSize.y));
+	textMgr.displayText(hint, { (w - tailMeasured.x) / 2.f, h * 0.95f },
+						tailSize, sf::Color(120, 120, 120));
+}
+
 void LoginScene::render() {
 	auto& window = renderer.getWindow();
 	auto& textMgr = renderer.getTextManager();
@@ -382,6 +781,24 @@ void LoginScene::render() {
 	// 标题（靠上居中，避免与输入框重叠）
 	textMgr.displayTextInUp("UNOOL", { 50, 100 });
 
+	if (vm.mode() == Vm::Mode::Lobby) {
+		drawLobby();
+		window.display();
+		return;
+	}
+	if (vm.mode() == Vm::Mode::RoomBrowser) {
+		drawRoomBrowser();
+		window.display();
+		return;
+	}
+	if (vm.mode() == Vm::Mode::Room) {
+		drawRoom();
+		window.display();
+		return;
+	}
+
+	// 登录/注册模式
+	const sf::Vector2u winSize = window.getSize();
 	auto drawBox = [&](const sf::FloatRect& r, bool highlighted) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
 		shape.setPosition({ r.position.x, r.position.y });
@@ -390,7 +807,6 @@ void LoginScene::render() {
 		shape.setOutlineColor(highlighted ? sf::Color::Blue : sf::Color::Black);
 		window.draw(shape);
 	};
-
 	auto drawButton = [&](const sf::FloatRect& r, const std::string& label,
 						  const sf::Color& fill = sf::Color(220, 230, 240)) {
 		sf::RectangleShape shape({ r.size.x, r.size.y });
@@ -407,140 +823,6 @@ void LoginScene::render() {
 							labelSize);
 	};
 
-	const sf::Vector2u winSize = window.getSize();
-	const std::string& message = vm.message();
-
-	if (vm.mode() == Vm::Mode::Matching) {
-		// 顶部标题由 render() 开头统一绘制，此处不重复
-		std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
-		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
-
-		const bool cancelling = (vm.status() == Vm::Status::WaitingCancel);
-		const std::string title = cancelling ? "正在退出匹配..." : "正在匹配对手...";
-		const sf::Vector2f titleSize = { 40, 80 };
-		const auto titleMeasured = textMgr.measureText(title, static_cast<unsigned int>(titleSize.y));
-		textMgr.displayText(title,
-							{ (static_cast<float>(winSize.x) - titleMeasured.x) / 2.f,
-							  static_cast<float>(winSize.y) * 0.28f },
-							titleSize, sf::Color(40, 40, 40));
-
-		const std::string sub = cancelling
-			? "正在等待服务器确认，请稍候"
-			: std::format("已准备，等待另一名玩家点击开始游戏（已等待 {} 秒）",
-						  vm.matchElapsedSeconds());
-		const sf::Vector2f subSize = { 22, 44 };
-		const auto subMeasured = textMgr.measureText(sub, static_cast<unsigned int>(subSize.y));
-		textMgr.displayText(sub,
-							{ (static_cast<float>(winSize.x) - subMeasured.x) / 2.f,
-							  static_cast<float>(winSize.y) * 0.42f },
-							subSize, sf::Color(90, 90, 90));
-
-		drawButton(cancelMatchBtn, cancelling ? "退出中..." : "退出匹配",
-				   cancelling ? sf::Color(210, 210, 210) : sf::Color(245, 205, 205));
-
-		const std::string hint = cancelling
-			? "正在等待服务器确认..."
-			: "点击「退出匹配」或按 Esc 返回大厅";
-		const sf::Vector2f hintSize = { 18, 36 };
-		const auto hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
-		textMgr.displayText(hint,
-							{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f,
-							  static_cast<float>(winSize.y) * 0.92f },
-							hintSize, sf::Color(120, 120, 120));
-
-		window.display();
-		return;
-	}
-
-	if (vm.mode() == Vm::Mode::Lobby) {
-		// 大厅模式：右上角显示账号名和积分
-		std::string acctInfo = std::format("账号: {}  积分: {}", vm.username(), vm.session().points);
-		textMgr.displayTextInUpRight(acctInfo, { 20, 40 }, sf::Color(60, 60, 60));
-
-		// 「对手已开始匹配」常驻横幅：放在标题与签到按钮之间的空白区，
-		// 与底部的一次性 message 互不遮挡。
-		if (vm.matchNotice().opponentMatching) {
-			const std::string notice = std::format("对手「{}」已开始匹配，请点击「开始游戏」加入",
-												   vm.matchNotice().opponentName);
-			const sf::Vector2f noticeSize = { 26, 52 };
-			const auto noticeMeasured = textMgr.measureText(notice, static_cast<unsigned int>(noticeSize.y));
-			const float panelW = noticeMeasured.x + 100.f > 880.f ? noticeMeasured.x + 100.f : 880.f;
-			const float panelH = 92.f;
-			const float panelX = (static_cast<float>(winSize.x) - panelW) / 2.f;
-			const float panelY = static_cast<float>(winSize.y) * 0.28f;
-
-			sf::RectangleShape panel({ panelW, panelH });
-			panel.setPosition({ panelX, panelY });
-			panel.setFillColor(sf::Color(255, 244, 205));
-			panel.setOutlineThickness(3.f);
-			panel.setOutlineColor(sf::Color(210, 160, 40));
-			window.draw(panel);
-
-			textMgr.displayText(notice,
-								{ panelX + (panelW - noticeMeasured.x) / 2.f,
-								  panelY + (panelH - noticeMeasured.y) / 2.f },
-								noticeSize, sf::Color(130, 85, 10));
-		}
-
-		// 签到按钮（金色系，突出显示）
-		{
-			sf::RectangleShape shadow({ checkinBtn.size.x, checkinBtn.size.y });
-			shadow.setPosition({ checkinBtn.position.x + 3.f, checkinBtn.position.y + 5.f });
-			shadow.setFillColor(sf::Color(0, 0, 0, 55));
-			window.draw(shadow);
-
-			sf::RectangleShape shape({ checkinBtn.size.x, checkinBtn.size.y });
-			shape.setPosition({ checkinBtn.position.x, checkinBtn.position.y });
-			shape.setFillColor(sf::Color(255, 224, 140));
-			shape.setOutlineThickness(3.f);
-			shape.setOutlineColor(sf::Color(198, 148, 42));
-			window.draw(shape);
-
-			// 顶部高光
-			sf::RectangleShape gloss({ checkinBtn.size.x, 8.f });
-			gloss.setPosition({ checkinBtn.position.x, checkinBtn.position.y });
-			gloss.setFillColor(sf::Color(255, 255, 255, 130));
-			window.draw(gloss);
-
-			const std::string label = (vm.status() == Vm::Status::WaitingCheckin) ? "签到中..." : "每日签到";
-			const sf::Vector2f labelSize = { 28, 56 };
-			const sf::Vector2f labelMeasured = textMgr.measureText(label, static_cast<unsigned int>(labelSize.y));
-			textMgr.displayText(label,
-								{ checkinBtn.position.x + (checkinBtn.size.x - labelMeasured.x) / 2.f,
-								  checkinBtn.position.y + (checkinBtn.size.y - labelMeasured.y) / 2.f },
-								labelSize, sf::Color(110, 72, 12));
-		}
-
-		// 两个按钮
-		drawButton(startGameBtn, "开始游戏");
-		drawButton(lobbyShopBtn, "商城");
-
-		// 大厅提示：登录 / 注册 / 签到等状态与错误文案（「登录成功」不在大厅展示）；
-		// 退出匹配不产生文字提示，静默回到大厅。
-		if (!message.empty() && message != "登录成功") {
-			const sf::Vector2f msgSize = { 25, 50 };
-			const auto msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
-			textMgr.displayText(message,
-								{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f,
-								  static_cast<float>(winSize.y) * 0.78f },
-								msgSize, sf::Color(180, 90, 20));
-		}
-
-		// 操作提示
-		const std::string hint = "点击按钮选择 | Esc 退出";
-		const sf::Vector2f hintSize = { 18, 36 };
-		const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
-		textMgr.displayText(hint,
-							{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
-							hintSize, sf::Color(120, 120, 120));
-
-		if (vm.checkinPopup()) drawCheckinPopup();
-
-		window.display();
-		return;
-	}
-
-	// 登录/注册模式
 	const std::string& username = vm.username();
 	const std::string& password = vm.password();
 
@@ -567,20 +849,23 @@ void LoginScene::render() {
 	drawButton(registerBtn, "注册");
 
 	// 状态提示（按钮下方居中，避免与输入框重叠）
+	const std::string& message = vm.message();
 	if (!message.empty()) {
 		const sf::Vector2f msgSize = { 25, 50 };
 		const auto msgMeasured = textMgr.measureText(message, static_cast<unsigned int>(msgSize.y));
 		textMgr.displayText(message,
-							{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.78f },
+							{ (static_cast<float>(winSize.x) - msgMeasured.x) / 2.f,
+							  static_cast<float>(winSize.y) * 0.78f },
 							msgSize, sf::Color::Red);
 	}
 
 	// 操作提示（底部居中）
 	const std::string hint = "Tab 切换输入框 | Enter 提交 | Esc 退出";
 	const sf::Vector2f hintSize = { 18, 36 };
-	const sf::Vector2f hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
+	const auto hintMeasured = textMgr.measureText(hint, static_cast<unsigned int>(hintSize.y));
 	textMgr.displayText(hint,
-						{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f, static_cast<float>(winSize.y) * 0.92f },
+						{ (static_cast<float>(winSize.x) - hintMeasured.x) / 2.f,
+						  static_cast<float>(winSize.y) * 0.92f },
 						hintSize, sf::Color(120, 120, 120));
 
 	window.display();

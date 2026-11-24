@@ -3,6 +3,7 @@
 #include "IClientGateway.h"
 #include "MessageCodec.h"
 #include "AccountProtocol.h"
+#include "RoomProtocol.h"
 #include "ShopProtocol.h"
 #include <utility>
 
@@ -116,13 +117,28 @@ namespace unool::shell {
 		return gateway_.send(p);
 	}
 
-	bool ConnectionState::sendReadyToPlay() {
-		sf::Packet p = unool::protocol::makeReadyToPlay();
+	bool ConnectionState::requestRoomList() {
+		sf::Packet p = unool::protocol::makeRoomListRequest();
 		return gateway_.send(p);
 	}
 
-	bool ConnectionState::sendCancelMatchmaking() {
-		sf::Packet p = unool::protocol::makeCancelMatchmaking();
+	bool ConnectionState::createRoom(const std::string& roomName) {
+		sf::Packet p = unool::protocol::makeRoomCreateRequest(roomName);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::joinRoom(const std::uint64_t roomId) {
+		sf::Packet p = unool::protocol::makeRoomJoinRequest(roomId);
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::leaveRoom() {
+		sf::Packet p = unool::protocol::makeRoomLeaveRequest();
+		return gateway_.send(p);
+	}
+
+	bool ConnectionState::sendRoomReady(const bool ready) {
+		sf::Packet p = unool::protocol::makeRoomReadyRequest(ready);
 		return gateway_.send(p);
 	}
 
