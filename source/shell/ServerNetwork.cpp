@@ -169,6 +169,13 @@ namespace unool::shell {
 				std::println("[ServerNetwork] 发送时检测到槽位{} 断开", item.slot);
 				removeClient(item.slot);
 			}
+			else if (status != sf::Socket::Status::Done) {
+				// 非阻塞 socket 偶发 NotReady / Partial：这个包发不出去就会被丢掉。
+				// 不重发（重发会把已发出的前段再写一遍），但必须留痕，避免出现「某个事件没到」
+				// 却完全无法定位的情况。
+				std::println(stderr, "[ServerNetwork] 槽位{} 发送未完成（status={}），该包丢弃",
+							 item.slot, static_cast<int>(status));
+			}
 		}
 	}
 

@@ -344,6 +344,12 @@ namespace unool::shell {
 			names[seat] = room.members[seat].name;
 		}
 
+		// 开局只发 GameStart，不再补发「inGame=true」的房间快照：
+		// 客户端见到 GameStart 就切到对局界面，而任何后到的 RoomState 都会把界面按回房间页
+		// （旧客户端更是无条件回房间页，表现为「双方准备后停在房间页，要重连才进对局」）。
+		// 房间快照在 setReadyLocked 里已经随准备状态发过，对局结束才算需要再发。
+		// 大厅房间列表仍要刷新，「对局中」标记靠它广播。
+
 		// 开局包携带座位号：客户端据此认出自己的手牌
 		for (std::size_t seat = 0; seat < unool::protocol::kRoomCapacity; ++seat) {
 			sf::Packet start = unool::protocol::makeGameStart(seat);
@@ -355,7 +361,6 @@ namespace unool::shell {
 		game->start();
 
 		broadcastRoomListLocked();
-		broadcastRoomStateLocked(room);
 		std::println("[Room {}] 双方已准备，对局开始：{} vs {}", room.id, names[0], names[1]);
 	}
 

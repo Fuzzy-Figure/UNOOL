@@ -425,7 +425,14 @@ class AppViewModel : ViewModel() {
                     }
                 } else {
                     _ui.update {
-                        it.copy(room = room, screen = Screen.Room, message = "")
+                        // 房间页 / 对局页由快照里的 inGame 决定：开局快照（inGame=true）可能在
+                        // GameStart 之后到达，不能无条件把界面按回房间页；对局结束（inGame=false）
+                        // 时再退回房间页等下一局。
+                        it.copy(
+                            room = room,
+                            screen = if (room.inGame) Screen.Game else Screen.Room,
+                            message = ""
+                        )
                     }
                 }
             }
@@ -479,7 +486,12 @@ class AppViewModel : ViewModel() {
                     ?.firstOrNull { it.id == state.playerId }
                     ?.hand?.cards?.size?.minus(1) ?: -1
                 val selected = if (maxIndex < 0) 0 else state.game.selectedIndex.coerceIn(0, maxIndex)
-                state.copy(game = state.game.copy(state = message.state, selectedIndex = selected))
+                // 对局状态只在对局中存在：收到它就说明对局已经开始，兜底切到对局页，
+                // 避免「漏掉 GameStart 后一直停在房间页」时没有任何自救路径。
+                state.copy(
+                    screen = Screen.Game,
+                    game = state.game.copy(state = message.state, selectedIndex = selected)
+                )
             }
 
             is ServerMessage.PointerUpdate -> _ui.update { state ->
