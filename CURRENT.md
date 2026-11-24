@@ -62,7 +62,9 @@
 
 - 编译验证：Arch-C 全部改动已在 VS 中 x64 Debug / Release 编译通过，Tests 单测全绿。
 - P0-1 ~ P3-5 全部落地；P1-3 / P1-4 的相互耦合重构已完成。P3-6 只剩用户侧两件（截图、tag）。
-- **房间功能（协议版本 3）待用户 VS 编译验证**：服务端换成「IO 线程 + 每房一线程」，
-  客户端大厅 / 房间界面与安卓房间界面均为新增；工程条目已用
+- **房间功能（协议版本 3）已验证通过**：Windows + 安卓双端完成创建 / 加入 / 准备 / 开局 / 顶下线
+  全流程实测。服务端为「IO 线程 + 每房一线程」，工程条目已用
   `python tools/verify_structure.py --generate` 按 manifest 重写（新增 4 个 .cpp / 4 个头，
   删除 `LegacyBlockingDecisionAdapter.*` 与 `NetworkServerView.*`）。
+- `server_config.json` 默认**不指定角色**（无 `characters.assign`），开局走 BP 选角；
+  需要固定角色时把 `assign` 数组加回去（normal 2 个 / double 4 个，数量不符会抛异常）。

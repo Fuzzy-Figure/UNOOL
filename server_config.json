@@ -1,7 +1,6 @@
 {
   "mode": "normal",
   "characters": {
-    "assign": [ "棍母", "科比" ],
     "shielded": {
       "characters": [],
       "groups": [ "实验" ]
