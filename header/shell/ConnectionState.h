@@ -50,6 +50,13 @@ namespace unool::shell {
 		// 连接状态：收敛原先散在 Scene 与 run() 的 isConnected 判定。
 		bool isConnected() const;
 
+		// 本端是否被「同账号在别处登录」顶下线（收到 SessionReplaced）。
+		// pump() 收到该消息时就地记录原因并主动断开，各阶段随后按普通断线退出；
+		// 组合根据此把用户带回登录界面并展示原因。
+		bool wasKickedOffline() const { return kicked_; }
+		const std::string& kickedReason() const { return kickedReason_; }
+		void clearKickedOffline() { kicked_ = false; kickedReason_.clear(); }
+
 		// 出站转发：保持各调用点发包路径不变（P1-3 不动出站语义）。
 		bool send(sf::Packet& packet);
 		bool sendShopPurchase(const std::string& purchaseData);
@@ -80,6 +87,8 @@ namespace unool::shell {
 		IClientGateway& gateway_;
 		std::deque<Inbound> queue_{};
 		bool wasConnected_{};
+		bool kicked_{};
+		std::string kickedReason_{};
 	};
 
 }

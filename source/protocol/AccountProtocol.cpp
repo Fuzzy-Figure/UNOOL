@@ -61,6 +61,20 @@ namespace unool::protocol {
 		                           std::string(kProtocolVersionMismatch));
 	}
 
+	// 顶下线通知：服务端在断开旧连接之前直发这一条，包体只有一个原因串。
+	sf::Packet makeSessionReplaced(const std::string& reason) {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::SessionReplaced);
+		packet << reason;
+		return packet;
+	}
+
+	std::optional<std::string> parseSessionReplaced(sf::Packet& packet) {
+		std::string reason;
+		if (!(packet >> reason)) return std::nullopt;
+		return reason;
+	}
+
 	std::optional<std::uint32_t> peekProtocolVersion(sf::Packet& packet) {
 		std::uint32_t version{};
 		if (!(packet >> version)) return std::nullopt;

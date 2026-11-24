@@ -26,6 +26,10 @@ namespace unool::protocol {
 	sf::Packet makeAccountResponse(MessageType type, bool ok,
 								   const std::string& msg, int points = 0, int wins = 0, int losses = 0);
 	sf::Packet makeCheckUsernameResponse(bool exists);
+	// 顶下线通知（SessionReplaced）：同账号在另一端登录时，服务端断开旧连接前直发，
+	// 包体只有一个可读原因串。旧客户端不认识该消息号会直接丢弃，不影响其它流程。
+	sf::Packet makeSessionReplaced(const std::string& reason);
+	std::optional<std::string> parseSessionReplaced(sf::Packet& packet);
 
 	// 解析请求（服务端用）—— packet 已 >> 过 msgType
 	struct AccountRequest {

@@ -30,6 +30,17 @@ namespace unool::shell {
 				gateway_.send(hb);
 				continue;
 			}
+			// 顶下线通知：服务端随后就会关连接。这里先记下原因再主动断开，
+			// 让所有阶段立刻按「断线」退出，组合根再据此把用户带回登录界面。
+			if (type == MessageType::SessionReplaced) {
+				kickedReason_ = unool::protocol::parseSessionReplaced(packet)
+									.value_or(std::string{ "你已在别处登录，本端被顶下线" });
+				kicked_ = true;
+				queue_.clear();
+				gateway_.disconnect();
+				wasConnected_ = false;
+				return;
+			}
 			queue_.push_back(Inbound{ type, std::move(packet) });
 		}
 

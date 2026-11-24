@@ -101,15 +101,40 @@ namespace unool::shell {
 
 	// 只在 IO 线程内使用：某些「发完就断开」的包必须直发，不能走会在 disconnect 时被清空的出站队列
 	bool ServerNetwork::sendNow(const std::size_t slot, const sf::Packet& packet) {
-		sf::TcpSocket* socket = nullptr;
-		{
-			std::lock_guard lock(mutex_);
-			if (slot >= slots_.size() || !slots_[slot].socket) return false;
-			socket = slots_[slot].socket.get();
-		}
+		std::lock_guard lock(mutex_);
+		return sendNowLocked(slot, packet);
+	}
+
+	// 已持有 mutex_ 时使用（sendNow 会再次加锁 → 自锁）。
+	bool ServerNetwork::sendNowLocked(const std::size_t slot, const sf::Packet& packet) {
+		if (slot >= slots_.size() || !slots_[slot].socket) return false;
 		// sf::TcpSocket::send 只接受非 const 引用（发送会消费包内读指针），这里复制一份再发
 		sf::Packet outbound = packet;
-		return socket->send(outbound) == sf::Socket::Status::Done;
+		return slots_[slot].socket->send(outbound) == sf::Socket::Status::Done;
+	}
+
+	void ServerNetwork::kickSlotLocked(const std::size_t slot, const std::string& reason) {
+		if (slot >= slots_.size()) return;
+		auto& target = slots_[slot];
+		if (!target.socket) return;
+
+		// 出站队列在 disconnect 后会被清空，所以顶下线通知必须直发；
+		// 先清队列保证旧端把这条通知当作最后一条有效包处理。
+		target.outbox.clear();
+
+		// 关闭前把接收缓冲抽空：close() 时若还有未读入站数据，内核可能发 RST，
+		// 连带把刚写出去的通知一起丢掉。socket 是非阻塞的，取完立即返回 NotReady。
+		while (true) {
+			sf::Packet discardedPacket;
+			if (target.socket->receive(discardedPacket) != sf::Socket::Status::Done) break;
+		}
+
+		sf::Packet notice = unool::protocol::makeSessionReplaced(reason);
+		(void)sendNowLocked(slot, notice);
+
+		selector.remove(*target.socket);
+		target.socket->disconnect();
+		target.socket.reset();
 	}
 
 	void ServerNetwork::flushOutboxes() {
@@ -350,6 +375,8 @@ namespace unool::shell {
 			for (std::size_t i = 0; i < slots_.size(); ++i) {
 				if (i == newSlot) continue;
 				const auto& slot = slots_[i];
+				// 同账号在此槽位登录过（在线或掉线保留）都算命中：新端顶替旧端。
+				// 在线的那一端不能静默断线 —— kickSlotLocked 会先发「被顶下线」通知再关连接。
 				if ((slot.loggedIn || slot.disconnected) && slot.username == username) {
 					target = i;
 					break;
@@ -358,12 +385,10 @@ namespace unool::shell {
 			if (target >= slots_.size()) return newSlot;
 
 			auto& oldSlot = slots_[target];
-			// 旧连接还活着就踢掉；socket 对象地址不变，selector 里的注册仍然有效
 			if (oldSlot.socket) {
-				selector.remove(*oldSlot.socket);
-				oldSlot.socket->disconnect();
-				oldSlot.socket.reset();
+				kickSlotLocked(target, "你已在别处登录，本端被顶下线");
 			}
+			// socket 对象地址不变，selector 里的注册仍然有效
 			oldSlot.socket = std::move(slots_[newSlot].socket);
 			oldSlot.disconnected = false;
 			oldSlot.lastRecv = std::chrono::steady_clock::now();
@@ -424,7 +449,8 @@ namespace unool::shell {
 			return;
 		}
 
-		// 先找同账号的在线 / 掉线槽位（重连顶替），再找真正的空槽位
+		// 先找同账号的在线 / 掉线槽位（重连或顶替），再找真正的空槽位。
+		// 在线槽位被顶替时会先收到「你已在别处登录，本端被顶下线」通知，不会静默断线。
 		std::size_t target = capacity_;
 		{
 			std::lock_guard lock(mutex_);
@@ -445,9 +471,7 @@ namespace unool::shell {
 			if (target < slots_.size()) {
 				auto& slot = slots_[target];
 				if (slot.socket) {
-					selector.remove(*slot.socket);
-					slot.socket->disconnect();
-					slot.socket.reset();
+					kickSlotLocked(target, "你已在别处登录，本端被顶下线");
 				}
 				slot.socket = std::move(pendingSocket);
 				slot.disconnected = false;

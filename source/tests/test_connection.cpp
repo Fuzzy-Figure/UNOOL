@@ -7,6 +7,7 @@
 
 #include "shell/ConnectionState.h"
 #include "shell/IClientGateway.h"
+#include "AccountProtocol.h"
 #include <SFML/Network.hpp>
 
 #include <cstddef>
@@ -110,6 +111,26 @@ namespace {
 		r.check(!conn.contains(MessageType::GameState));
 	}
 
+	// 被顶下线：pump 记录原因并主动断开，积压包丢弃，不再当作普通业务包入队。
+	void testSessionReplaced(TestResult& r) {
+		FakeGateway gw;
+		gw.inbound.push_back(packetOf(MessageType::GameState));
+		gw.inbound.push_back(unool::protocol::makeSessionReplaced("你已在别处登录，本端被顶下线"));
+		unool::shell::ConnectionState conn(gw);
+
+		conn.pump();
+		r.check(conn.wasKickedOffline());
+		r.check(conn.kickedReason() == "你已在别处登录，本端被顶下线");
+		r.check(!conn.isConnected());
+		r.check(!conn.contains(MessageType::GameState));
+		r.check(!conn.contains(MessageType::SessionReplaced));
+
+		// 重连前清标记：新连接不再带着上一轮的顶下线状态
+		conn.clearKickedOffline();
+		r.check(!conn.wasKickedOffline());
+		r.check(conn.kickedReason().empty());
+	}
+
 } // namespace
 
 unool::tests::TestResult runConnectionStateTests() {
@@ -117,5 +138,6 @@ unool::tests::TestResult runConnectionStateTests() {
 	testCrossStageLeaving(r);
 	testHeartbeatAutoReply(r);
 	testDisconnectClearsQueue(r);
+	testSessionReplaced(r);
 	return r;
 }

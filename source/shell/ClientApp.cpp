@@ -16,9 +16,10 @@
 #include <SFML/Network.hpp>
 #include "ShopData.h"
 #include <string>
-#include <cstdlib>
+#include <chrono>
 #include <format>
 #include <print>
+#include <thread>
 #include <utility>
 
 // MessageType 归 protocol 层；本单元既有全局 static 函数也有 unool::shell 段，
@@ -199,13 +200,6 @@ namespace unool::shell {
 		titleBrackets_{ titleBrackets }, ipAddress_{ ipAddress }, port_{ port } {}
 
 	int ClientApp::run() {
-		// 与原 ClientMain.cpp::main 的装配顺序逐字一致：连接 → 渲染器 → 登录场景 → 游戏阶段。
-		if (!session_.connect(ipAddress_, port_)) {
-			std::println(stderr, "{} 连接服务器失败", titleBrackets_);
-			system("pause");
-			return 1;
-		}
-
 		GameRenderer::Config rendererConfig(std::format("UNOOL - {}", windowTitle_));
 		GameRenderer renderer(rendererConfig);
 
@@ -215,22 +209,52 @@ namespace unool::shell {
 		// P1-4：商城展示缓存由组合根持有，跨多次进入商城保留（原 static 语义）。
 		unool::shell::ShopPresentationCache shopCache;
 
-		// S3a：商城由组合根经 IShopOpener 打开；只在登录场景之前多一个局部对象，
-		// 「连接 → 渲染器 → 登录场景 → 游戏阶段」的线性顺序不变。
+		// S3a：商城由组合根经 IShopOpener 打开。
 		ShopOpener shopOpener(renderer, conn, shopCache);
 
-		// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
-		LoginScene login(renderer, conn, shopOpener, titleBrackets_);
-		auto session = login.run();
-		if (!session.ok) {
-			std::println(stderr, "{} 登录未完成或连接已断开，退出", titleBrackets_);
-			system("pause");
-			return 1;
-		}
+		// 被「同账号在别处登录」顶下线后不退出程序：带着原因重连并回到登录界面。
+		// 其它断线（服务端关闭 / 网络断）仍然直接退出，避免无意义的重连风暴。
+		std::string notice;
 
-		// LoginScene 现在要等到服务端 GameStart（双方在房间内准备）才返回
-		std::println("{} 房间已开局，进入游戏...", titleBrackets_);
-		gamePhase(net_, conn, renderer, titleBrackets_);
+		while (renderer.windowIsOpen()) {
+			if (!session_.connect(ipAddress_, port_)) {
+				// 不用 system("pause")：主线程一卡住，游戏窗口就不重绘，
+				// 表现为「客户端卡死」（而且控制台被窗口挡着，等按键等于永远等）。
+				std::println(stderr, "{} 连接服务器失败，2 秒后退出", titleBrackets_);
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+				return 1;
+			}
+			conn.clearKickedOffline();
+
+			// 登录场景：登录成功后进入大厅，从大厅选择开始游戏或进入商城
+			LoginScene login(renderer, conn, shopOpener, titleBrackets_, notice);
+			notice.clear();
+			auto result = login.run();
+
+			if (!result.ok) {
+				if (conn.wasKickedOffline()) {
+					notice = conn.kickedReason();
+					std::println(stderr, "{} {}", titleBrackets_, notice);
+					continue;   // 新连接 + 登录界面，提示文案随 notice 带入
+				}
+				if (!renderer.windowIsOpen()) return 0;   // 用户主动关窗
+				std::println(stderr, "{} 登录未完成或连接已断开，2 秒后退出", titleBrackets_);
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+				return 1;
+			}
+
+			// LoginScene 现在要等到服务端 GameStart（双方在房间内准备）才返回
+			std::println("{} 房间已开局，进入游戏...", titleBrackets_);
+			gamePhase(net_, conn, renderer, titleBrackets_);
+
+			// 对局中也可能被顶下线：同样回到登录界面而不是直接退出
+			if (conn.wasKickedOffline()) {
+				notice = conn.kickedReason();
+				std::println(stderr, "{} {}", titleBrackets_, notice);
+				continue;
+			}
+			return 0;
+		}
 
 		return 0;
 	}

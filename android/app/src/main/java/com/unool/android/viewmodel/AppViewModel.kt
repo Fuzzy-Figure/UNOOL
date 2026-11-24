@@ -434,6 +434,22 @@ class AppViewModel : ViewModel() {
                 it.copy(message = message.msg, status = "")
             }
 
+            // 被顶下线：不当作普通断线，提示原因并退回登录界面
+            is ServerMessage.SessionReplaced -> {
+                appendLog(message.reason)
+                connection.disconnect()
+                _ui.update {
+                    it.copy(
+                        screen = Screen.Login,
+                        loggedIn = false,
+                        room = null,
+                        rooms = emptyList(),
+                        message = message.reason,
+                        status = ""
+                    )
+                }
+            }
+
             is ServerMessage.GameStart -> {
                 // 房间模式：开局包携带本局座位号（0/1），对局内所有玩家索引都用座位号
                 _ui.update {

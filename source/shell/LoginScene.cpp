@@ -32,9 +32,12 @@ namespace {
 }
 
 LoginScene::LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
-					   unool::shell::IShopOpener& opener, const std::string& title)
+					   unool::shell::IShopOpener& opener, const std::string& title,
+					   std::string initialMessage)
 	: renderer(r), net(n), shopOpener(opener), titleBrackets(title) {
 	layoutBoxes();
+	// 顶下线等原因带到登录界面：只写提示文案，登录状态机从干净的说起
+	if (!initialMessage.empty()) vm.setMessage(std::move(initialMessage));
 }
 
 void LoginScene::layoutBoxes() {

@@ -77,6 +77,10 @@ namespace unool::shell {
 		bool sendPacketLocked(std::size_t slot, const sf::Packet& packet);
 		// 只在 IO 线程内使用：直发（用于「发完就断开」的包）
 		bool sendNow(std::size_t slot, const sf::Packet& packet);
+		// 同上，但调用方已持有 mutex_（避免 sendNow 内部再次加锁自锁）
+		bool sendNowLocked(std::size_t slot, const sf::Packet& packet);
+		// 顶着下线通知关掉旧连接：先直发原因，再摘 socket（不通知房间，槽位随后被新连接接管）
+		void kickSlotLocked(std::size_t slot, const std::string& reason);
 		void flushOutboxes();
 		void handleNewConnections();
 		void handleClientPackets();

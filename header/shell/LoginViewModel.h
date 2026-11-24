@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "protocol/AccountEvent.h"
@@ -138,6 +139,8 @@ namespace unool::shell {
 		// 实际发送的房间名：输入框为空时回退为「<账号>的房间」（服务端同样兜底）
 		std::string effectiveRoomName() const;
 		const std::string& message() const { return message_; }
+		// 外部注入的提示（如被顶下线后回到登录界面时的原因），只写文案不改状态机
+		void setMessage(std::string message) { message_ = std::move(message); }
 		const Session& session() const { return session_; }
 		bool checkinPopup() const { return checkinPopup_; }
 		const std::string& checkinMsg() const { return checkinMsg_; }

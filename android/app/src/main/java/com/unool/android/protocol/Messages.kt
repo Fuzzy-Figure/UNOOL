@@ -37,6 +37,8 @@ object Msg {
     const val ROOM_LIST_RESPONSE = 218
     const val ROOM_STATE_RESPONSE = 219
     const val ROOM_ERROR_RESPONSE = 220
+    /** 同账号在另一端登录，本端被顶下线（包体只有一个原因串） */
+    const val SESSION_REPLACED = 221
 
     const val HEARTBEAT = 901
     const val PROTOCOL_VERSION = 3L
@@ -180,6 +182,8 @@ sealed interface ServerMessage {
     data class RoomList(val rooms: List<RoomSummary>) : ServerMessage
     data class RoomState(val room: RoomSnapshot) : ServerMessage
     data class RoomError(val msg: String) : ServerMessage
+    /** 被顶下线：提示原因后回登录界面，不当作普通断线处理 */
+    data class SessionReplaced(val reason: String) : ServerMessage
     data object Heartbeat : ServerMessage
     data class Unknown(val type: Int) : ServerMessage
     data object Disconnected : ServerMessage

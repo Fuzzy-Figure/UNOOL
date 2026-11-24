@@ -55,6 +55,9 @@ namespace unool::protocol {
 		RoomListResponse  = 218,
 		RoomStateResponse = 219,
 		RoomErrorResponse = 220,
+		// 同账号在另一端登录，本端被顶下线：服务端在断开旧连接前先发这一条，
+		// 客户端据此提示原因并退回登录界面（否则只能看到一次静默断线）。
+		SessionReplaced   = 221,
 
 		// ---- 双向控制（9xx）----
 		Heartbeat         = 901,

@@ -216,6 +216,14 @@ namespace {
 			r.check(exists.has_value() && !exists.value(), "check-username response false");
 		}
 		{
+			// 顶下线通知：单个原因串，客户端据此提示并退回登录界面。
+			auto packet = makeSessionReplaced("你已在别处登录，本端被顶下线");
+			r.check(takeType(packet) == MessageType::SessionReplaced, "session replaced type");
+			const auto reason = parseSessionReplaced(packet);
+			r.check(reason.has_value() && *reason == "你已在别处登录，本端被顶下线",
+					"session replaced reason");
+		}
+		{
 			// 版本不匹配包仍是 LoginResponse(ok=false)，客户端据此展示可读原因。
 			auto packet = makeVersionMismatchResponse();
 			r.check(takeType(packet) == MessageType::LoginResponse, "mismatch response type");
@@ -370,6 +378,7 @@ namespace {
 			MessageType::PointerUpdate, MessageType::CharInfo, MessageType::ShopData,
 			MessageType::ShopResult, MessageType::SkillInfoResponse, MessageType::CheckinResponse,
 			MessageType::RoomListResponse, MessageType::RoomStateResponse, MessageType::RoomErrorResponse,
+			MessageType::SessionReplaced,
 			MessageType::Heartbeat,
 		};
 		int commands = 0;
@@ -383,9 +392,9 @@ namespace {
 			else if (isServerEvent(type)) ++events;
 			else if (isControlMessage(type)) ++controls;
 		}
-		r.check(std::size(all) == 31u, "message inventory size");
+		r.check(std::size(all) == 32u, "message inventory size");
 		r.check(commands == 12, "12 client commands");
-		r.check(events == 18, "18 server events");
+		r.check(events == 19, "19 server events");
 		r.check(controls == 1, "1 control message");
 		// None 不属于任何方向段，接收端不应把它当业务消息。
 		r.check(!isClientCommand(MessageType::None) && !isServerEvent(MessageType::None)

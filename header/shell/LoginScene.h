@@ -68,8 +68,11 @@ private:
 	std::size_t firstVisibleRoom() const;
 
 public:
+	// initialMessage：进入登录界面时直接展示的提示（例如被顶下线的原因）。
+	// 只写 VM 的提示文案，不改状态机。
 	LoginScene(GameRenderer& r, unool::shell::ConnectionState& n,
-	           unool::shell::IShopOpener& opener, const std::string& title);
+	           unool::shell::IShopOpener& opener, const std::string& title,
+	           std::string initialMessage = {});
 	Result run(); // 跑登录循环，成功/失败/关窗后返回
 
 private:

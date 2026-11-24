@@ -140,6 +140,9 @@ object ProtocolCodec {
             Msg.ROOM_STATE_RESPONSE -> ServerMessage.RoomState(parseRoomSnapshot(r.str()))
             Msg.ROOM_ERROR_RESPONSE -> ServerMessage.RoomError(parseRoomError(r.str()))
 
+            // 顶下线通知：单串原因，客户端提示后回登录界面
+            Msg.SESSION_REPLACED -> ServerMessage.SessionReplaced(r.str())
+
             Msg.HEARTBEAT -> ServerMessage.Heartbeat
 
             else -> ServerMessage.Unknown(type)
