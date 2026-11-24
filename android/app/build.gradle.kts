@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.unool.android"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.unool.android"
@@ -14,6 +15,23 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0-android"
+
+        ndk {
+            abiFilters += listOf("x86_64", "arm64-v8a")
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_STL=c++_shared")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildFeatures {

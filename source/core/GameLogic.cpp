@@ -6,6 +6,7 @@
 #include <ranges>
 #include <algorithm>
 #include <format>
+#include <numeric>
 
 //获取curIndex的下一个玩家的id（curIndex不一定是当前回合玩家的id）
 std::size_t GameLogic::nextPlayerIndex(const std::size_t curIndex) const {
@@ -134,7 +135,7 @@ GameLogic::~GameLogic() {}
 void GameLogic::determineSeatOrder() {
 	constexpr std::size_t playerCount = 2;
 	seatOrder.resize(playerCount);
-	std::ranges::iota(seatOrder, 0);
+	std::iota(seatOrder.begin(), seatOrder.end(), std::size_t{ 0 });
 	std::ranges::shuffle(seatOrder, unool::random::rng);
 	for (std::size_t id = 0; id < 2; ++id) {
 		players[id]->hint(std::format("你是{}号位", seatOrder[id] + 1));
@@ -331,8 +332,8 @@ void GameLogic::askTotem(std::size_t playerId) {
 }
 
 std::size_t GameLogic::getSeatPlayerId(std::size_t seat) const {
-	for (const auto& [playerId, seatNumber] : seatOrder | std::views::enumerate) {
-		if (seatNumber == seat) return playerId;
+	for (std::size_t playerId = 0; playerId < seatOrder.size(); ++playerId) {
+		if (seatOrder[playerId] == seat) return playerId;
 	}
 	throw std::logic_error("座位号无效");
 }
@@ -599,7 +600,8 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 	state.seatOrder = seatOrder;
 
 	state.players.resize(players.size());
-	for (const auto& [i, pl] : players | std::views::enumerate) {
+	for (std::size_t i = 0; i < players.size(); ++i) {
+		const auto& pl = players[i];
 		state.players[i].id = pl->getId();
 		state.players[i].characterNames = pl->getNames();
 		state.players[i].skins = pl->getSkins();

@@ -464,7 +464,7 @@ void Hand::sort() {
 void Hand::print() const {
 	std::print("{}", *this);
 	if (!empty()) std::print("；当前选择了第{}张牌：{}", getSelectedIndex(), getSelectedCard());
-	std::println();
+	std::println("");
 }
 // 工具方法
 std::size_t Hand::value() const {

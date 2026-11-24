@@ -64,7 +64,8 @@ namespace unool::contract {
 // 与重构前 Character.h 中的特化等价：别名指向同一类型，格式化输出不变。
 template<>
 struct std::formatter<unool::contract::CharacterLevel> : std::formatter<std::string_view> {
-	auto format(const unool::contract::CharacterLevel level, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(const unool::contract::CharacterLevel level, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(
 			unool::contract::to_string(level), ctx);
 	}

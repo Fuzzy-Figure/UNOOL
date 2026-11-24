@@ -562,15 +562,16 @@ bool 捉奸::content(GameLogic& game, Player& carrier, Trigger& trigger) {
 	Hand& hand = carrier.getHand();
 	//寻找非红的非万能牌下标
 	std::vector<std::size_t> notRedIndex;
-	for (const auto [i, c] : hand | std::views::enumerate) {
-		if (c->getColor() != Card::Color::red && c->isNotWild())
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		const Card& c = hand[i];
+		if (c.getColor() != Card::Color::red && c.isNotWild())
 			notRedIndex.push_back(i);
 	}
 
 	//寻找红牌下标
 	std::vector<std::size_t> redIndex;
-	for (const auto [i, c] : hand | std::views::enumerate) {
-		if (c->is(Card::Color::red))
+	for (std::size_t i = 0; i < hand.count(); ++i) {
+		if (hand[i].is(Card::Color::red))
 			redIndex.push_back(i);
 	}
 

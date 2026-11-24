@@ -5,6 +5,7 @@
 #include <array>
 #include <bit>
 #include <cstddef>
+#include <cstring>
 #include <deque>
 #include <functional>
 #include <iosfwd>
@@ -89,7 +90,15 @@ public:
 	static const std::vector<Card::ColorName>& getAllCards();
 	struct CardMemFnHash {
 		std::size_t operator()(CardMemFn fn) const noexcept {
-			return std::hash<uintptr_t>{}(std::bit_cast<uintptr_t>(fn));
+			// 成员函数指针在 MSVC x64 为 8 字节、ARM64 为 16 字节。
+			// 按对象表示逐字节散列，跨平台且只影响 unordered_map 的桶分布。
+			std::array<unsigned char, sizeof(fn)> bytes{};
+			std::memcpy(bytes.data(), &fn, sizeof(fn));
+			std::size_t hashValue = 0;
+			for (const unsigned char byte : bytes) {
+				hashValue = hashValue * 131u + byte;
+			}
+			return hashValue;
 		}
 	};
 	static std::unordered_map<CardMemFn, std::vector<Card::ColorName>, CardMemFnHash>& getPoolCache();
@@ -285,31 +294,36 @@ sf::Packet& operator<<(sf::Packet& packet, const Card& card);
 #pragma region std::formatter特化
 template<>
 struct std::formatter<Card::Color> : std::formatter<std::string_view> {
-	auto format(Card::Color c, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(Card::Color c, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(Card::to_string(c), ctx);
 	}
 };
 template<>
 struct std::formatter<Card::Name> : std::formatter<std::string_view> {
-	auto format(Card::Name n, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(Card::Name n, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(Card::to_string(n), ctx);
 	}
 };
 template<>
 struct std::formatter<Card::Type> : std::formatter<std::string_view> {
-	auto format(Card::Type t, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(Card::Type t, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(Card::to_string(t), ctx);
 	}
 };
 template<>
 struct std::formatter<Card::DiscardReason> : std::formatter<std::string_view> {
-	auto format(const Card::DiscardReason& r, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(const Card::DiscardReason& r, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(Card::to_string(r), ctx);
 	}
 };
 template<>
 struct std::formatter<Card> : std::formatter<std::string_view> {
-	auto format(const Card& c, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(const Card& c, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(c.toString(), ctx);
 	}
 };
@@ -379,7 +393,8 @@ public:
 
 template<>
 struct std::formatter<Cards> : std::formatter<std::string_view> {
-	auto format(const Cards& cards, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(const Cards& cards, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(cards.toString(), ctx);
 	}
 };
@@ -424,7 +439,8 @@ public:
 
 template<>
 struct std::formatter<Hand> : std::formatter<std::string_view> {
-	auto format(const Hand& hand, std::format_context& ctx) const {
+	template <class FormatContext>
+	auto format(const Hand& hand, FormatContext& ctx) const {
 		return std::formatter<std::string_view>::format(hand.toString(), ctx);
 	}
 };
