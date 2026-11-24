@@ -317,8 +317,27 @@ namespace unool::shell {
 			}
 		}
 
+		// 查重请求的包体只有用户名（见 makeCheckUsernameRequest），不能用
+		// parseAccountRequest 读「用户名 + 口令」——那样会解析失败并静默 return，
+		// 客户端就一直卡在「检查用户名」。单独走只有用户名的解析函数。
+		if (type == unool::protocol::MessageType::CheckUsernameRequest) {
+			auto username = unool::protocol::parseCheckUsernameRequest(packet);
+			if (!username) {
+				std::println(stderr, "[ServerNetwork] 槽位{} 的查重包缺少用户名", clientIdx);
+				return;
+			}
+			unool::protocol::AccountRequest req;
+			req.username = std::move(*username);
+			accountService_->get().handleAccountRequest(slot, type, req);
+			return;
+		}
+
 		auto req = unool::protocol::parseAccountRequest(packet, withVersion);
-		if (!req) return;
+		if (!req) {
+			std::println(stderr, "[ServerNetwork] 槽位{} 的账号包解析失败（type={}）",
+						 clientIdx, static_cast<int>(type));
+			return;
+		}
 		accountService_->get().handleAccountRequest(slot, type, *req);
 	}
 

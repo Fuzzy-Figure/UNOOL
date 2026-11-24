@@ -34,7 +34,8 @@ namespace unool::protocol {
 		bool versionMatches = true; // LoginRequest/RegisterRequest 首字段版本校验结果
 	};
 	// withVersion=true 时先读 uint32 版本字段（LoginRequest/RegisterRequest），
-	// false 时保持旧行为只读 username/password（CheckUsernameRequest 等）。
+	// 之后读 username/password。只适用于这两个「用户名 + 口令」的请求；
+	// CheckUsernameRequest 的包体只有用户名，必须用 parseCheckUsernameRequest。
 	std::optional<AccountRequest> parseAccountRequest(sf::Packet& packet, bool withVersion = false);
 	// 从 LoginRequest/RegisterRequest 读取版本字段（包已消费消息号）。
 	// 返回 nullopt 表示包缺少版本字段（视为旧版本，应拒绝）。
