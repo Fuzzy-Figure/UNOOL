@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -98,19 +100,27 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
             Text("当前牌名：${CardName.label(state?.currentName ?: 0)}", fontSize = 12.sp)
         }
 
-        // 主动技面板：轮到自己出牌且有可用技能时，按数字键顺序显示，点击发动
+        // 主动技面板：轮到自己出牌且有可用技能时，按数字键顺序显示在右侧，点击发动（绿底白字）
         if (canSelect && state?.availableSkills?.isNotEmpty() == true) {
-            Row(
+            Column(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 26.dp)
-                    .horizontalScroll(rememberScrollState())
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 150.dp)
+                    .width(150.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 state.availableSkills.forEachIndexed { i, name ->
                     Button(
                         onClick = { viewModel.useSkill(i + 1) },
-                        modifier = Modifier.height(30.dp).padding(end = 4.dp),
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .padding(bottom = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1B7F3A),
+                            contentColor = Color.White
+                        )
                     ) { Text("${i + 1}·$name", fontSize = 11.sp) }
                 }
             }
