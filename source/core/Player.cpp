@@ -546,6 +546,8 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 	std::vector<ref<InstantSkill>>   instantRefs;
 	std::vector<ref<TransformSkill>> transformRefs;
 	collectAvailableSkills(phase, instantRefs, transformRefs);
+	//技能列表已在上面填充，补发一次状态让客户端拿到可用主动技面板
+	game.broadcastState();
 
 	while (true) {
 		decision.poll();
@@ -565,6 +567,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			}
 			if (!reconnected) {
 				std::println("[Player] {} 掉线超时，结束选择", displayName());
+				availableSkills_.clear();
 				return std::nullopt;
 			}
 			std::println("[Player] {} 重连成功，恢复选择", displayName());
@@ -611,6 +614,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			case unool::contract::Key::W:
 				if (auto result = handleConfirm(condition, activeMode); result.has_value()) {
 					decision.clearChoice(id);
+					availableSkills_.clear();
 					return result.value();
 				}
 				break;
@@ -618,6 +622,7 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 			case unool::contract::Key::S:
 				if (!forced) {
 					decision.clearChoice(id);
+					availableSkills_.clear();
 					return std::nullopt;
 				}
 				break;
@@ -630,14 +635,22 @@ std::optional<std::size_t> Player::chooseCard(const std::string& title, std::fun
 void Player::collectAvailableSkills(ActiveSkill::TriggerTime phase,
 									std::vector<ref<InstantSkill>>& instantRefs,
 									std::vector<ref<TransformSkill>>& transformRefs) {
+	//非出牌阶段/封印状态下没有可用主动技，清空下发缓存
+	availableSkills_.clear();
 	if (phase == ActiveSkill::TriggerTime::never) return;
 	//封印状态下所有主动技能失效
 	if (isSealed()) return;
 	for (auto& s : getInstantSkills()) {
-		if (s->canTriggerAt(phase) && s->canUse()) instantRefs.emplace_back(*s);
+		if (s->canTriggerAt(phase) && s->canUse()) {
+			instantRefs.emplace_back(*s);
+			availableSkills_.push_back(s->getName());
+		}
 	}
 	for (auto& s : getTransformSkills()) {
-		if (s->canTriggerAt(phase) && s->canUse()) transformRefs.emplace_back(*s);
+		if (s->canTriggerAt(phase) && s->canUse()) {
+			transformRefs.emplace_back(*s);
+			availableSkills_.push_back(s->getName());
+		}
 	}
 }
 

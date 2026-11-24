@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.unool.android.model.CardCatalog
 import com.unool.android.model.CardColor
 import com.unool.android.model.CardName
@@ -63,17 +66,26 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
         (timeout - (now - game.choiceStartedAt)).coerceAtLeast(0) / 1000
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-        // 玩家区：与 Windows 一致，一号位在左上、二号位在左下
+    var infoPlayerIndex by remember { mutableStateOf<Int?>(null) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 0.dp)
+    ) {
+        // 玩家区：己方（本地玩家）始终在下方，对手在上方
         state?.players?.forEachIndexed { index, player ->
+            val isLocal = player.id == ui.playerId
             PlayerArea(
                 player = player,
                 index = index,
                 localId = ui.playerId,
-                selectedIndex = if (player.id == ui.playerId) game.selectedIndex else -1,
-                canSelect = canSelect && player.id == ui.playerId,
+                selectedIndex = if (isLocal) game.selectedIndex else -1,
+                canSelect = canSelect && isLocal,
                 onSelect = { viewModel.selectCard(it) },
-                modifier = Modifier.align(if (index == 0) Alignment.TopStart else Alignment.BottomStart)
+                charInfo = game.charInfo[index],
+                onPortraitClick = { infoPlayerIndex = index },
+                modifier = Modifier.align(if (isLocal) Alignment.BottomStart else Alignment.TopStart)
             )
         }
 
@@ -84,6 +96,24 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
         Row(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp)) {
             Text("当前颜色：${CardColor.label(state?.currentColor ?: 0)}　", fontSize = 12.sp)
             Text("当前牌名：${CardName.label(state?.currentName ?: 0)}", fontSize = 12.sp)
+        }
+
+        // 主动技面板：轮到自己出牌且有可用技能时，按数字键顺序显示，点击发动
+        if (canSelect && state?.availableSkills?.isNotEmpty() == true) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 26.dp)
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                state.availableSkills.forEachIndexed { i, name ->
+                    Button(
+                        onClick = { viewModel.useSkill(i + 1) },
+                        modifier = Modifier.height(30.dp).padding(end = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                    ) { Text("${i + 1}·$name", fontSize = 11.sp) }
+                }
+            }
         }
 
         // 右上：局数 / 胜负 / 结果
@@ -111,7 +141,7 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
 
         // 最右侧竖排操作：↑ 出牌，↓ 取消；下方两个小按钮保留整理/炸弹
         Column(
-            modifier = Modifier.align(Alignment.CenterEnd),
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 72.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -145,6 +175,28 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
                 modifier = Modifier.size(width = 64.dp, height = 40.dp)
             ) { Text("炸", fontSize = 13.sp) }
         }
+
+        infoPlayerIndex?.let { idx ->
+            Dialog(onDismissRequest = { infoPlayerIndex = null }) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "${if (idx == 0) "一号位" else "二号位"}角色信息",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = game.charInfo[idx] ?: "暂无角色信息",
+                            fontSize = 12.sp,
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = { infoPlayerIndex = null }) { Text("关闭") }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -156,65 +208,93 @@ private fun PlayerArea(
     selectedIndex: Int,
     canSelect: Boolean,
     onSelect: (Int) -> Unit,
+    charInfo: String?,
+    onPortraitClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier, verticalAlignment = Alignment.Top) {
+    val isLocal = player.id == localId
+    Row(modifier = modifier, verticalAlignment = Alignment.Bottom) {
         Column {
-            Row {
+            // 己方：文字在上、立绘在下，让立绘贴到屏幕最下沿；对手保持立绘在上
+            if (isLocal) {
+                PlayerTextInfo(player, index, isLocal)
+            }
+            Row(modifier = Modifier.clickable(enabled = charInfo != null, onClick = onPortraitClick)) {
                 player.characterImagePaths.take(2).forEach { path ->
                     AssetImage(
                         path = path,
-                        modifier = Modifier.size(width = 104.dp, height = 134.dp).padding(end = 2.dp),
+                        modifier = Modifier.size(width = 90.dp, height = 116.dp).padding(end = 2.dp),
                         maxDimension = 256
                     )
                 }
             }
-            Text(
-                "${if (index == 0) "一号位" else "二号位"}${if (player.id == localId) "（我）" else ""}",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-            val shield = if (player.shield > 0) "(+${player.shield})" else ""
-            Text("体力：${player.hp}$shield/${player.maxHp}", fontSize = 11.sp)
-            Text(
-                "手牌数：${player.hand.cards.size}" +
-                    if (player.id == localId) "  价值：${player.hand.cards.sumOf { CardCatalog.value(it) }}" else "",
-                fontSize = 11.sp
-            )
+            if (!isLocal) {
+                PlayerTextInfo(player, index, isLocal)
+            }
         }
 
         Spacer(Modifier.width(4.dp))
 
-        val isLocal = player.id == localId
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            player.hand.cards.forEachIndexed { i, card ->
-                // Windows 的 displayHand：后续卡牌向左压住前一张约 1/3 宽度
-                Box(modifier = Modifier.offset(x = if (i == 0) 0.dp else (-20).dp)) {
-                    if (isLocal) {
-                        HandCard(
-                            card = card,
-                            selected = i == selectedIndex,
-                            enabled = canSelect,
-                            onClick = { onSelect(i) }
-                        )
-                    } else {
-                        BackCard()
+        // 对方只显示手牌数，不显示牌面/牌背
+        if (isLocal) {
+            // Windows displayHand：选中牌完整展开，其余牌只露出 1/3 宽
+            val cardWidth = 62.dp
+            val foldStep = (cardWidth.value / 3).dp
+            val fullStep = cardWidth + 2.dp
+            var cursor = 0.dp
+            val offsets = player.hand.cards.mapIndexed { i, _ ->
+                val current = cursor
+                cursor = cursor + if (i == selectedIndex) fullStep else foldStep
+                current
+            }
+            val totalWidth = cursor + cardWidth
+
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                Box(modifier = Modifier.width(totalWidth).height(93.dp)) {
+                    player.hand.cards.forEachIndexed { i, card ->
+                        Box(modifier = Modifier.offset(x = offsets[i])) {
+                            HandCard(
+                                card = card,
+                                selected = i == selectedIndex,
+                                enabled = canSelect,
+                                onClick = { onSelect(i) }
+                            )
+                        }
                     }
                 }
             }
-            Spacer(Modifier.width(2.dp))
         }
     }
 }
 
 @Composable
+private fun PlayerTextInfo(player: PlayerStateData, index: Int, isLocal: Boolean) {
+    Text(
+        "${if (index == 0) "一号位" else "二号位"}${if (isLocal) "（我）" else ""}",
+        fontSize = 10.sp,
+        lineHeight = 12.sp,
+        fontWeight = FontWeight.Medium
+    )
+    val shield = if (player.shield > 0) "(+${player.shield})" else ""
+    Text("体力：${player.hp}$shield/${player.maxHp}", fontSize = 10.sp, lineHeight = 12.sp)
+    Text(
+        "手牌数：${player.hand.cards.size}" +
+            if (isLocal) "  价值：${player.hand.cards.sumOf { CardCatalog.value(it) }}" else "",
+        fontSize = 10.sp,
+        lineHeight = 12.sp
+    )
+}
+
+@Composable
 private fun HandCard(card: CardData, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary else Color(0xFFDDDDDD)
+    // 不能选牌时不画选中框，也不高亮
+    val showSelection = enabled && selected
+    val borderColor = if (showSelection) MaterialTheme.colorScheme.primary else Color.Transparent
     Box(
         modifier = Modifier
             .size(width = 62.dp, height = 93.dp)
-            .border(if (selected) 3.dp else 1.dp, borderColor)
-            .background(if (selected) Color(0xFFE3EEFF) else Color.White)
+            .border(if (showSelection) 3.dp else 0.dp, borderColor)
+            .background(if (showSelection) Color(0xFFE3EEFF) else Color.White)
             .clickable(enabled = enabled, onClick = onClick)
     ) {
         AssetImage(
@@ -244,8 +324,9 @@ private fun BackCard() {
 @Composable
 private fun DiscardArea(state: GameStateData?, modifier: Modifier = Modifier) {
     val discards = state?.discards.orEmpty()
-    val current = discards.lastOrNull()
-    val history = discards.takeLast(4).dropLast(1)
+    // 服务端 discardPile 是新牌在前面：front 为当前牌，后面依次是更早的牌。
+    val current = discards.firstOrNull()
+    val history = discards.drop(1).take(3).reversed()
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {

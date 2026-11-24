@@ -58,6 +58,9 @@ private:
 
 #pragma region 成员变量 - 输入
 	unool::contract::Key currentInput = unool::contract::Key::Unknown;
+	//当前出牌阶段可用主动技名（按数字键1..顺序：即时技在前、转换技在后）。
+	//由 collectAvailableSkills 填充，随状态包下发给本玩家；阶段结束清空。
+	std::vector<std::string> availableSkills_;
 #pragma endregion
 
 #pragma region 私有方法 - 输入
@@ -203,6 +206,8 @@ public:
 	std::size_t handSelectedIndex() const { return hand->getSelectedIndex(); }
 	const Card& handSelectedCard() const { return hand->getSelectedCard(); }
 	std::size_t handValue() const { return hand->value(); }
+	//当前出牌阶段可用主动技名列表（按数字键1..顺序），非出牌阶段为空
+	const std::vector<std::string>& getAvailableSkills() const { return availableSkills_; }
 	bool handSatisfy(const std::function<bool(const Cards&)>& condition) const { return hand->satisfy(condition); }
 	bool handInclude(const std::function<bool(const Card&)>& condition) const { return hand->include(condition); }
 	bool handExclude(const std::function<bool(const Card&)>& condition) const { return hand->exclude(condition); }

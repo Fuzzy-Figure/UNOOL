@@ -5,20 +5,23 @@
 
     <application
         android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="false"
         android:resizeableActivity="true"
         android:theme="@style/Theme.UNOOL">
 
-        <meta-data
-            android:name="android.max_aspect_ratio"
-            android:value="2.5" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="landscape"
+            android:windowLayoutInDisplayCutoutMode="always"
             android:windowSoftInputMode="adjustResize">
+
+            <meta-data
+                android:name="android.max_aspect_ratio"
+                android:value="2.5" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

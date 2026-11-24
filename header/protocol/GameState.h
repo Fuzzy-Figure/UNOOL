@@ -56,6 +56,9 @@ struct GameState {
 	std::vector<std::size_t> seatOrder;
 	std::optional<std::size_t> operatingPlayerId; //当前正在选牌/操作的玩家，nullopt=无人操作
 	std::size_t gameCount = 0; //本场内当前是第几局（摸初始手牌时+1）
+	//当前玩家出牌阶段可用的主动技名（按数字键1..的顺序：即时技在前、转换技在后）。
+	//只在该玩家自己的状态包里填充；追加在包尾以保持既有字段字节不变。
+	std::vector<std::string> availableSkills;
 
 	friend sf::Packet& operator>>(sf::Packet& packet, GameState& state);
 	friend sf::Packet& operator<<(sf::Packet& packet, const GameState& state);

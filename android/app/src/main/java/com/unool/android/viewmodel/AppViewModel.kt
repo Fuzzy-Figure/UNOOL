@@ -301,6 +301,9 @@ class AppViewModel : ViewModel() {
     fun sortHand() = sendKey(Key.SPACE)
     fun useBomb() = sendKey(Key.B)
     fun chooseOption(index: Int) = sendKey(Key.digit(index))
+
+    //发动第 index 个主动技（1-based），与服务端可用技能列表顺序一致
+    fun useSkill(index: Int) = sendKey(Key.digit(index))
     fun cancelChoice() = sendKey(Key.NUM_0)
     fun previousChoicePage() = sendKey(Key.LEFT)
     fun nextChoicePage() = sendKey(Key.RIGHT)

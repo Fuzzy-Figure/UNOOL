@@ -120,6 +120,12 @@ sf::Packet& operator>>(sf::Packet& packet, GameState& state) {
 
 	packet >> state.gameCount;
 
+	//可用主动技列表：追加在包尾，保持既有字段字节不变
+	std::size_t skillCount;
+	packet >> skillCount;
+	state.availableSkills.resize(skillCount);
+	for (std::size_t i = 0; i < skillCount; ++i) packet >> state.availableSkills[i];
+
 	return packet;
 }
 
@@ -150,6 +156,10 @@ sf::Packet& operator<<(sf::Packet& packet, const GameState& state) {
 	}
 
 	packet << state.gameCount;
+
+	//可用主动技列表：追加在包尾，保持既有字段字节不变
+	packet << state.availableSkills.size();
+	for (const std::string& skill : state.availableSkills) packet << skill;
 
 	return packet;
 }

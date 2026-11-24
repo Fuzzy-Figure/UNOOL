@@ -646,6 +646,14 @@ GameState GameLogic::packStateForPlayer(std::size_t playerId) const {
 	state.operatingPlayerId = operatingPlayerId;
 	state.gameCount = gameCount;
 
+	//只把接收者自己的可用主动技列表下发，避免泄露对手技能
+	for (const auto& pl : players) {
+		if (pl->getId() == playerId) {
+			state.availableSkills = pl->getAvailableSkills();
+			break;
+		}
+	}
+
 	return state;
 }
 

@@ -89,7 +89,8 @@ data class GameStateData(
     val discards: List<CardData>,
     val seatOrder: List<Long>,
     val operatingPlayerId: Long?,
-    val gameCount: Long
+    val gameCount: Long,
+    val availableSkills: List<String> = emptyList()
 )
 
 data class ChoiceMeta(

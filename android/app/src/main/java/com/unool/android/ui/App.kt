@@ -1,11 +1,14 @@
 package com.unool.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -30,20 +33,39 @@ import com.unool.android.viewmodel.UiState
 @Composable
 fun UnoolApp(viewModel: AppViewModel) {
     val ui by viewModel.ui.collectAsState()
+    val connected = ui.connection is ConnectionState.Connected
+    val connecting = ui.connection is ConnectionState.Connecting
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .imePadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        ConnectionBar(ui = ui, viewModel = viewModel)
         when (ui.screen) {
             Screen.Login -> LoginScreen(ui, viewModel)
             Screen.Lobby -> LobbyScreen(ui, viewModel)
             Screen.Shop -> ShopScreen(ui, viewModel)
             Screen.Game -> GameScreen(ui, viewModel)
+        }
+
+        // 小尺寸连接按钮悬浮右上角，避开导航键区域
+        Row(modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp, top = 2.dp)) {
+            Button(
+                onClick = viewModel::reconnect,
+                enabled = !connecting,
+                modifier = Modifier.width(64.dp).height(32.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+            ) { Text(if (connecting) "连接中" else "重连", fontSize = 11.sp) }
+            if (connected) {
+                Spacer(Modifier.width(4.dp))
+                Button(
+                    onClick = viewModel::disconnect,
+                    modifier = Modifier.width(64.dp).height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                ) { Text("断开", fontSize = 11.sp) }
+            }
         }
     }
 }
@@ -90,5 +112,7 @@ private fun ConnectionBar(ui: UiState, viewModel: AppViewModel) {
                 Text("断开")
             }
         }
+        // 避开右侧系统导航键区域
+        Spacer(Modifier.width(72.dp))
     }
 }

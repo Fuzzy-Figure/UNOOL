@@ -1,7 +1,7 @@
 {
   "mode": "normal",
   "characters": {
-    //"assign": [ "妮塔", "巴利" ],
+    "assign": [ "棍母", "科比" ],
     "shielded": {
       "characters": [],
       "groups": [ "实验" ]

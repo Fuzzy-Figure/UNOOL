@@ -181,9 +181,13 @@ object ProtocolCodec {
         val operatingPlayerId = if (hasOperating) r.u64() else null
         val gameCount = r.u64()
 
+        //可用主动技列表：服务端追加在包尾（数字键1..顺序）
+        val skillCount = r.count()
+        val availableSkills = List(skillCount) { r.str() }
+
         return GameStateData(
             currentPlayerIndex, currentColor, currentName, direction,
-            players, discards, seatOrder, operatingPlayerId, gameCount
+            players, discards, seatOrder, operatingPlayerId, gameCount, availableSkills
         )
     }
 }
