@@ -61,6 +61,13 @@ namespace unool::protocol {
 
 		// ---- 双向控制（9xx）----
 		Heartbeat         = 901,
+
+		// 新增消息追加在末尾，不改已有枚举数值：客户端报告本地 assets 中缺失的图片路径。
+		ImageMissingWarning = 115,
+		// 用户确认「账号已在别处登录，仍要登录」后发送；服务端这时才顶掉旧设备。
+		ForceLoginRequest   = 116,
+		// 客户端分页后按真实选项序号选择：0=不选择，1..N=第 N 个选项。
+		ChoiceSelect        = 117,
 	};
 
 	constexpr std::uint16_t toWire(MessageType type) noexcept {

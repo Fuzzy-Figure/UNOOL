@@ -31,6 +31,19 @@ namespace unool::protocol {
 		return data;
 	}
 
+	sf::Packet makeChoiceSelect(std::size_t choiceIndex, std::size_t selectedIndex) {
+		sf::Packet packet;
+		packet << static_cast<int>(MessageType::ChoiceSelect)
+			<< choiceIndex << selectedIndex;
+		return packet;
+	}
+
+	std::optional<ChoiceSelectData> parseChoiceSelect(sf::Packet& packet) {
+		ChoiceSelectData data;
+		if (!(packet >> data.choiceIndex >> data.selectedIndex)) return std::nullopt;
+		return data;
+	}
+
 	// ---- 服务端 -> 客户端 ----
 	sf::Packet makeConnectionInfo(std::size_t playerId) {
 		sf::Packet packet;

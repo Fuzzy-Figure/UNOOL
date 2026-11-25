@@ -67,6 +67,12 @@ bool ClientNetwork::sendClientInput(sf::Keyboard::Scancode key, std::size_t sele
 	return sendPacket(packet);
 }
 
+bool ClientNetwork::sendChoiceSelect(std::size_t choiceIndex, std::size_t selectedIndex) {
+	if (!socket) return false;
+	sf::Packet packet = unool::protocol::makeChoiceSelect(choiceIndex, selectedIndex);
+	return sendPacket(packet);
+}
+
 bool ClientNetwork::send(sf::Packet& packet) {
 	if (!socket) return false;
 	return sendPacket(packet);

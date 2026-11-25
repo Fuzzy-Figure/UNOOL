@@ -91,9 +91,12 @@ namespace unool::shell {
 		void handleAccountPacket(std::size_t clientIdx, unool::protocol::MessageType type, sf::Packet packet);
 		void handleRoomPacket(std::size_t clientIdx, unool::protocol::MessageType type, sf::Packet packet);
 		void handleClientInput(std::size_t clientIdx, sf::Packet packet);
+		void handleChoiceSelect(std::size_t clientIdx, sf::Packet packet);
 
-		// 同账号重连顶替：返回最终承载这次登录的槽位（可能把 socket 挪到旧槽位）
-		std::size_t reconcileReconnect(std::size_t newSlot, const std::string& username);
+		// 同账号重连/确认强制登录顶替：返回最终承载这次登录的槽位（可能把 socket 挪到旧槽位）。
+		// allowKickOnline=false 时只回收已掉线槽位，不踢仍在线的另一台设备。
+		std::size_t reconcileReconnect(std::size_t newSlot, const std::string& username,
+									   bool allowKickOnline);
 		void removeClient(std::size_t clientIdx);
 		void clearSlot(std::size_t clientIdx);
 

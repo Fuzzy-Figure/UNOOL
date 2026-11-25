@@ -49,11 +49,12 @@ class ServerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
             stopNative()
-            stopSelf()
+            // 只关闭服务端，不结束 Service / App；通知栏保留"已停止"状态。
+            startForeground(1, buildNotification(running = false))
             return START_NOT_STICKY
         }
 
-        startForeground(1, buildNotification())
+        startForeground(1, buildNotification(running = true))
         acquireWakeLock()
 
         if (worker == null) {
@@ -66,7 +67,8 @@ class ServerService : Service() {
                     FrpcController.stop()
                 }
                 ServerState.setRunning(false)
-                stopSelf()
+                // 原生循环结束后只保留 Service，不再自动关闭 App。
+                startForeground(1, buildNotification(running = false))
             }, "unool-native-server").also { it.start() }
         }
 
@@ -118,7 +120,7 @@ class ServerService : Service() {
         }
     }
 
-    private fun buildNotification(): android.app.Notification {
+    private fun buildNotification(running: Boolean): android.app.Notification {
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else {
@@ -130,20 +132,23 @@ class ServerService : Service() {
             Intent(this, ServerActivity::class.java),
             flags
         )
-        val stopIntent = PendingIntent.getService(
-            this,
-            1,
-            Intent(this, ServerService::class.java).apply { action = ACTION_STOP },
-            flags
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("UNOOL 服务端运行中")
-            .setContentText("局域网客户端可连接本机 8888 端口")
+            .setContentTitle(if (running) "UNOOL 服务端运行中" else "UNOOL 服务端已停止")
+            .setContentText(if (running) "局域网客户端可连接本机 8888 端口" else "服务端已关闭，App 继续保持运行")
             .setContentIntent(contentIntent)
-            .addAction(android.R.drawable.ic_media_pause, "停止", stopIntent)
-            .setOngoing(true)
-            .build()
+            .setOngoing(running)
+
+        if (running) {
+            val stopIntent = PendingIntent.getService(
+                this,
+                1,
+                Intent(this, ServerService::class.java).apply { action = ACTION_STOP },
+                flags
+            )
+            builder.addAction(android.R.drawable.ic_media_pause, "关闭服务器", stopIntent)
+        }
+        return builder.build()
     }
 
     override fun onDestroy() {

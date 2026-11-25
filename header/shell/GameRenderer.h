@@ -51,6 +51,7 @@ private:
 	GameState currentState;
 	Config config;
 	std::optional<Choice> choice;
+	std::size_t localChoicePage = 0;
 	std::optional<std::size_t> infoBoxPlayerId; // 当前显示信息框的角色id
 	std::size_t localPlayerId = 0;
 
@@ -155,7 +156,10 @@ public:
 	TextManager& getTextManager() { return textMgr; }
 	const Config& getConfig() const { return config; }
 
-	//选项提示相关
+	//选项提示相关：服务端下发全量选项，Windows 端本地按 9 项分页。
 	void setChoicePrompt(const Choice& prompt);
 	void clearChoicePrompt();
+	void previousChoicePage();
+	void nextChoicePage();
+	std::optional<std::size_t> choiceIndexForDigit(int digit) const;
 };

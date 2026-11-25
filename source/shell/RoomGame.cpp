@@ -105,8 +105,12 @@ namespace unool::shell {
 				player.characterName(), levelPart, marksPart, skillsPart
 			);
 
+			// 角色信息（含技能文本）双方都要能看到：同一份信息发给房间内两个在线座位，
+			// 不再只发给角色本人，否则对手只能看到立绘/角色名而看不到技能。
 			sf::Packet packet = unool::protocol::makeCharInfoMessage(info);
-			game_.sendToSeat(i, packet);
+			for (std::size_t seat = 0; seat < kSeats; ++seat) {
+				if (game_.isSeatOnline(seat)) game_.sendToSeat(seat, packet);
+			}
 			player.clearCharInfoDirty();
 		}
 	}

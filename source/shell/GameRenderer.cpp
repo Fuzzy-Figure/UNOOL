@@ -231,6 +231,14 @@ void GameRenderer::renderChoice() {
 	choiceRows.clear();
 	if (!choice.has_value()) return;
 
+	// 服务端下发全量选项；Windows 端本地按 9 项一页显示。
+	constexpr std::size_t perPage = 9;
+	const std::size_t localTotalPages = choice->options.empty()
+		? 1 : (choice->options.size() + perPage - 1) / perPage;
+	if (localChoicePage >= localTotalPages) localChoicePage = localTotalPages - 1;
+	const std::size_t pageBegin = localChoicePage * perPage;
+	const std::size_t pageEnd = std::min(pageBegin + perPage, choice->options.size());
+
 	std::string choiceText;
 	//每行对应的选项下标；nullopt 表示标题 / 提示 / 错误 / 倒计时等非选项行。
 	//同时保留原始文本，用于按"实际绘制行号"映射命中矩形（标题含 \n 时也占多行）。
@@ -243,27 +251,27 @@ void GameRenderer::renderChoice() {
 	if (!choice->title.empty()) {
 		addLine(choice->title);
 	}
-	for (const auto& [i, option] : choice->options | std::views::enumerate) {
-		addLine(std::format("[{}] {}", i + 1, option), static_cast<std::size_t>(i));
+	for (std::size_t i = pageBegin; i < pageEnd; ++i) {
+		addLine(std::format("[{}] {}", i + 1, choice->options[i]), i);
 	}
 	if (!choice->options.empty()) {
 		if (choice->forced) {
-			if (choice->totalPages > 1) {
-				addLine(std::format("第 {}/{}页，<-->翻页", choice->currentPage + 1, choice->totalPages));
-				addLine(std::format("输入数字1-{}选择（必须选择）", choice->options.size()));
-			}
-			else {
-				addLine(std::format("输入数字1-{}选择（必须选择）", choice->options.size()));
-			}
+		if (localTotalPages > 1) {
+			addLine(std::format("第 {}/{}页，<-->翻页", localChoicePage + 1, localTotalPages));
+			addLine("输入数字1-9选择当前页（必须选择）");
 		}
 		else {
-			if (choice->totalPages > 1) {
-				addLine(std::format("第 {}/{}页，<-->翻页", choice->currentPage + 1, choice->totalPages));
-				addLine(std::format("输入数字0-{}选择（0表示不选择）", choice->options.size()));
-			}
-			else {
-				addLine(std::format("输入数字0-{}选择（0表示不选择）", choice->options.size()));
-			}
+			addLine(std::format("输入数字1-{}选择（必须选择）", choice->options.size()));
+		}
+		}
+		else {
+		if (localTotalPages > 1) {
+			addLine(std::format("第 {}/{}页，<-->翻页", localChoicePage + 1, localTotalPages));
+			addLine("输入数字1-9选择当前页，0表示不选择");
+		}
+		else {
+			addLine(std::format("输入数字0-{}选择（0表示不选择）", choice->options.size()));
+		}
 		}
 	}
 	if (!choice->errorMsg.empty()) {
@@ -471,19 +479,15 @@ void GameRenderer::setChoicePrompt(const Choice& prompt) {
 	const bool isSameAsk = choice.has_value()
 		&& choice->title == prompt.title
 		&& choice->forced == prompt.forced
-		&& choice->totalPages == prompt.totalPages;
+		&& choice->options == prompt.options;
 	if (isSameAsk) {
-		// 翻页 / 错误提示更新：保留原有倒计时，仅刷新可变字段
-		choice->options = prompt.options;
-		choice->currentPage = prompt.currentPage;
-		choice->totalPages = prompt.totalPages;
+		// 同一个 ask 的错误提示更新：保留倒计时和本地页码。
 		choice->errorMsg = prompt.errorMsg;
-		choice->optionMeta = prompt.optionMeta;
-		// timeoutMs / title / forced 保持不变
 	}
 	else {
-		// 新的 ask：完整赋值并重启倒计时
+		// 新的 ask：服务端下发全量选项，Windows 端从第一页开始。
 		choice = prompt;
+		localChoicePage = 0;
 		countdownClock.restart();
 	}
 	//换页 / 换一批后旧悬停位置失效，重新排队技能描述请求
@@ -493,8 +497,35 @@ void GameRenderer::setChoicePrompt(const Choice& prompt) {
 
 void GameRenderer::clearChoicePrompt() {
 	choice = std::nullopt;
+	localChoicePage = 0;
 	bpHoverIndex = std::nullopt;
 	choiceRows.clear();
+}
+
+void GameRenderer::previousChoicePage() {
+	if (localChoicePage > 0) --localChoicePage;
+	bpHoverIndex = std::nullopt;
+	queueSkillRequests();
+}
+
+void GameRenderer::nextChoicePage() {
+	if (!choice.has_value()) return;
+	constexpr std::size_t perPage = 9;
+	const std::size_t total = choice->options.empty()
+		? 1 : (choice->options.size() + perPage - 1) / perPage;
+	if (localChoicePage + 1 < total) ++localChoicePage;
+	bpHoverIndex = std::nullopt;
+	queueSkillRequests();
+}
+
+std::optional<std::size_t> GameRenderer::choiceIndexForDigit(int digit) const {
+	if (!choice.has_value() || choice->options.empty()) return std::nullopt;
+	if (digit == 0) return std::size_t{ 0 };
+	if (digit < 1 || digit > 9) return std::nullopt;
+	constexpr std::size_t perPage = 9;
+	const std::size_t index = localChoicePage * perPage + static_cast<std::size_t>(digit - 1);
+	if (index >= choice->options.size()) return std::nullopt;
+	return index + 1;  // 1-based 真实序号
 }
 
 void GameRenderer::handleMouseClick(const sf::Vector2f& mousePos) {

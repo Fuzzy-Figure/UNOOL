@@ -269,8 +269,18 @@ namespace unool::shell {
 				switch (type) {
 					case unool::protocol::MessageType::Heartbeat:
 						break;  // 心跳回包：lastRecv 已重置，不入队
+					case unool::protocol::MessageType::ImageMissingWarning: {
+						// 客户端本地 assets 图片加载失败：只打印路径，不打断对局。
+						int discardedType{};
+						std::string imagePath;
+						if (packet >> discardedType >> imagePath) {
+							std::println(stderr, "[客户端图片缺失] 槽位{}：{}", i, imagePath);
+						}
+						break;
+					}
 					case unool::protocol::MessageType::RegisterRequest:
 					case unool::protocol::MessageType::LoginRequest:
+					case unool::protocol::MessageType::ForceLoginRequest:
 					case unool::protocol::MessageType::CheckUsernameRequest:
 						handleAccountPacket(i, type, std::move(packet));
 						break;
@@ -306,6 +316,9 @@ namespace unool::shell {
 					case unool::protocol::MessageType::ClientInput:
 						handleClientInput(i, std::move(packet));
 						break;
+					case unool::protocol::MessageType::ChoiceSelect:
+						handleChoiceSelect(i, std::move(packet));
+						break;
 					default:
 						break;
 				}
@@ -322,8 +335,11 @@ namespace unool::shell {
 		int discarded{};
 		packet >> discarded;
 
-		// Arch-C P1-1：登录/注册包首字段带协议版本，不匹配时明确拒绝（不进业务分支）。
-		const bool withVersion = (type == unool::protocol::MessageType::LoginRequest || type == unool::protocol::MessageType::RegisterRequest);
+		// Arch-C P1-1：登录/注册/强制登录包首字段带协议版本，不匹配时明确拒绝（不进业务分支）。
+		const bool withVersion =
+			(type == unool::protocol::MessageType::LoginRequest ||
+			 type == unool::protocol::MessageType::ForceLoginRequest ||
+			 type == unool::protocol::MessageType::RegisterRequest);
 		if (withVersion) {
 			sf::Packet peek = packet;
 			std::uint32_t version{};
@@ -338,14 +354,17 @@ namespace unool::shell {
 			}
 		}
 
-		// 同账号重连顶替：把 socket 挪回原槽位，房间成员身份与账号信息随之保留
+		// 同账号重连/强制登录顶替：把 socket 挪回原槽位，房间成员身份与账号信息随之保留。
+		// 普通登录只回收已掉线槽位；只有 ForceLoginRequest（用户确认后）才踢在线的另一台设备。
 		std::size_t slot = clientIdx;
-		if (type == unool::protocol::MessageType::LoginRequest) {
+		if (type == unool::protocol::MessageType::LoginRequest ||
+			type == unool::protocol::MessageType::ForceLoginRequest) {
 			sf::Packet peek = packet;
 			std::uint32_t version{};
 			std::string username, password;
 			if (peek >> version >> username >> password) {
-				slot = reconcileReconnect(clientIdx, username);
+				const bool allowKickOnline = (type == unool::protocol::MessageType::ForceLoginRequest);
+				slot = reconcileReconnect(clientIdx, username, allowKickOnline);
 			}
 		}
 
@@ -373,7 +392,8 @@ namespace unool::shell {
 		accountService_->get().handleAccountRequest(slot, type, *req);
 	}
 
-	std::size_t ServerNetwork::reconcileReconnect(const std::size_t newSlot, const std::string& username) {
+	std::size_t ServerNetwork::reconcileReconnect(const std::size_t newSlot, const std::string& username,
+												 const bool allowKickOnline) {
 		if (username.empty()) return newSlot;
 
 		std::size_t target = capacity_;
@@ -382,9 +402,9 @@ namespace unool::shell {
 			for (std::size_t i = 0; i < slots_.size(); ++i) {
 				if (i == newSlot) continue;
 				const auto& slot = slots_[i];
-				// 同账号在此槽位登录过（在线或掉线保留）都算命中：新端顶替旧端。
-				// 在线的那一端不能静默断线 —— kickSlotLocked 会先发「被顶下线」通知再关连接。
-				if ((slot.loggedIn || slot.disconnected) && slot.username == username) {
+				// 普通登录只回收已掉线槽位；强制登录才顶替仍在线的另一端。
+				if (slot.username != username) continue;
+				if (slot.disconnected || (allowKickOnline && slot.loggedIn)) {
 					target = i;
 					break;
 				}
@@ -601,6 +621,18 @@ namespace unool::shell {
 		}
 		roomManager_->get().routeInput(clientIdx, static_cast<sf::Keyboard::Scancode>(data->key),
 									   data->selectedIndex);
+	}
+
+	void ServerNetwork::handleChoiceSelect(const std::size_t clientIdx, sf::Packet packet) {
+		if (!roomManager_) return;
+		int discarded{};
+		if (!(packet >> discarded)) return;
+		auto data = unool::protocol::parseChoiceSelect(packet);
+		if (!data) {
+			std::println(stderr, "[ServerNetwork] 槽位{} 的选项序号包解析失败", clientIdx);
+			return;
+		}
+		roomManager_->get().routeChoiceSelect(clientIdx, data->choiceIndex, data->selectedIndex);
 	}
 
 	// === 线程安全的状态查询 ===

@@ -42,7 +42,7 @@ namespace unool::core {
 			std::string msg = ok ? "注册成功" : errMsg;
 			session_.sendAccountResponse(clientIdx, MessageType::RegisterResponse, ok, msg, 0, 0, 0);
 		}
-		else if (type == MessageType::LoginRequest) {
+		else if (type == MessageType::LoginRequest || type == MessageType::ForceLoginRequest) {
 			std::string errMsg;
 			const auto started = std::chrono::steady_clock::now();
 			auto userInfo = users_.login(req.username, req.password, errMsg);
@@ -62,7 +62,8 @@ namespace unool::core {
 			// 检查是否有另一个槽位已用同一账号在线。
 			// 房间功能上线后槽位数不再等于 2，这里按「除自己以外是否还有同名登录」判定；
 			// 同账号重连顶替已由 ServerNetwork 在解析 LoginRequest 时先行处理。
-			if (ok && session_.isUsernameLoggedInElsewhere(clientIdx, req.username)) {
+			if (ok && type != MessageType::ForceLoginRequest &&
+				session_.isUsernameLoggedInElsewhere(clientIdx, req.username)) {
 				ok = false;
 				errMsg = "该账号已在另一端登录";
 			}

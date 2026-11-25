@@ -928,9 +928,9 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 		~OperatingGuard() { if (active) g.clearOperatingPlayer(); }
 	} guard(game, id);
 
-	constexpr std::size_t PER_PAGE = 9;
-	const bool usePaging = options.size() > PER_PAGE;
-	const std::size_t totalPages = usePaging ? (options.size() + PER_PAGE - 1) / PER_PAGE : 1;
+	// 服务端不再分页：全量下发选项/元数据；分页由各客户端自行决定。
+	constexpr bool usePaging = false;
+	constexpr std::size_t totalPages = 1;
 	std::size_t currentPage = 0;
 
 	auto toTimeoutMs = [&]() -> std::optional<std::size_t> {
@@ -941,23 +941,7 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 	};
 
 	auto sendPage = [&]() {
-		if (!usePaging) {
-			decision.showChoice(id, { title, options, forced, errorMsg, toTimeoutMs(), 0, 1, optionMeta });
-			return;
-		}
-		std::vector<std::string> pageOptions;
-		std::vector<unool::core::ChoiceOptionMeta> pageMeta;
-		const std::size_t start = currentPage * PER_PAGE;
-		const std::size_t end = std::min(start + PER_PAGE, options.size());
-		for (std::size_t i = start; i < end; ++i) {
-			pageOptions.push_back(options[i]);
-		}
-		//元数据与选项等长时才切片，避免非 BP 的空元数据干扰分页
-		if (optionMeta.size() == options.size()) {
-			pageMeta.reserve(end - start);
-			for (std::size_t i = start; i < end; ++i) pageMeta.push_back(optionMeta[i]);
-		}
-		decision.showChoice(id, { title, pageOptions, forced, errorMsg, toTimeoutMs(), currentPage, totalPages, pageMeta });
+		decision.showChoice(id, { title, options, forced, errorMsg, toTimeoutMs(), 0, 1, optionMeta });
 	};
 
 	sendPage();
@@ -1000,6 +984,30 @@ std::size_t Player::ask(const std::string& title, const std::vector<std::string>
 						 displayName(), clientInput.player, static_cast<int>(clientInput.key));
 			continue;
 		}
+
+		// 新协议：客户端按真实序号选择（1-based，0=不选择），服务端不再做页内换算。
+		if (clientInput.choiceIndex.has_value()) {
+			const std::size_t realChoice = clientInput.choiceIndex.value();
+			bool accepted = realChoice <= options.size();
+			if (accepted && forced && realChoice == 0) {
+				errorMsg = "必须选择一个选项，请重新输入";
+				accepted = false;
+			}
+			if (!accepted) {
+				if (errorMsg.empty()) {
+					errorMsg = std::format("超出范围，请输入0-{}", options.size());
+				}
+				sendPage();
+				continue;
+			}
+			errorMsg.clear();
+			decision.clearChoice(id);
+			std::print("[ask] 标题：“{}”，{}选择了{}", title, displayName(), realChoice);
+			if (realChoice != 0) std::println(": {}", options[realChoice - 1]);
+			else std::println("");
+			return realChoice;
+		}
+
 		unool::contract::Key input = clientInput.key;
 		setInput(input);
 

@@ -38,6 +38,10 @@ namespace unool::protocol {
 		std::size_t playerId{};
 		std::size_t selectedIndex{};
 	};
+	struct ChoiceSelectData {
+		std::size_t choiceIndex{};  // 1-based 真实选项序号；0=取消
+		std::size_t selectedIndex{};
+	};
 	struct StringPayload {
 		std::string text;           // ShopResult / SkillInfoResponse / ShopData 的 JSON 载荷
 	};
@@ -45,6 +49,8 @@ namespace unool::protocol {
 	// ---- 客户端 -> 服务端 ----
 	sf::Packet makeClientInput(int key, std::size_t playerId, std::size_t selectedIndex);
 	std::optional<ClientInputData> parseClientInput(sf::Packet& packet);
+	sf::Packet makeChoiceSelect(std::size_t choiceIndex, std::size_t selectedIndex);
+	std::optional<ChoiceSelectData> parseChoiceSelect(sf::Packet& packet);
 
 	// ---- 服务端 -> 客户端 ----
 	sf::Packet makeConnectionInfo(std::size_t playerId);

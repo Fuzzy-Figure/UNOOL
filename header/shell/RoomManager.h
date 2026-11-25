@@ -44,6 +44,7 @@ namespace unool::shell {
 		// packet 已消费开头的 int 消息号
 		void handleRoomRequest(std::size_t slot, unool::protocol::MessageType type, sf::Packet& packet);
 		void routeInput(std::size_t slot, sf::Keyboard::Scancode key, std::size_t selectedIndex);
+		void routeChoiceSelect(std::size_t slot, std::size_t choiceIndex, std::size_t selectedIndex);
 		void onClientDisconnected(std::size_t slot);
 		void onClientLoggedIn(std::size_t slot);
 

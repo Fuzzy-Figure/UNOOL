@@ -123,6 +123,24 @@ fun LoginScreen(ui: UiState, viewModel: AppViewModel) {
         Spacer(Modifier.height(10.dp))
         Text("改地址/端口后点「连接服务器」，也可以点右上角「重连」", fontSize = 12.sp, color = Color.Gray)
     }
+
+    if (ui.loginOccupied) {
+        Dialog(onDismissRequest = viewModel::dismissLoginOccupied) {
+            Card {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text("账号已在别处登录", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+                    Text("继续登录会将另一台设备顶下线，是否继续？", fontSize = 14.sp)
+                    Spacer(Modifier.height(18.dp))
+                    Row {
+                        Button(onClick = viewModel::dismissLoginOccupied) { Text("取消") }
+                        Spacer(Modifier.width(16.dp))
+                        Button(onClick = viewModel::confirmForceLogin) { Text("确定登录") }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------- 主大厅：开始游戏 / 商城 / 签到

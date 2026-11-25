@@ -18,6 +18,8 @@ namespace unool::core {
 		player_id     player{};
 		contract::Key   key{};
 		std::size_t   selectedIndex{};
+		// 客户端直接选择真实选项序号（1-based，0=取消）；空表示走旧的按键路径。
+		std::optional<std::size_t> choiceIndex{};
 	};
 
 	// BP 阶段候选项的展示元数据（服务端权威下发）。

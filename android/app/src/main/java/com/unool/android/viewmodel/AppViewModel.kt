@@ -8,6 +8,7 @@ import com.unool.android.model.ShopParser
 import com.unool.android.model.ShopSkin
 import com.unool.android.net.ConnectionState
 import com.unool.android.net.GameConnection
+import com.unool.android.net.MissingImageReporter
 import com.unool.android.protocol.ChoicePrompt
 import com.unool.android.protocol.ClientMessage
 import com.unool.android.protocol.GameStateData
@@ -70,6 +71,7 @@ data class UiState(
     val losses: Int = 0,
     val loggedIn: Boolean = false,
     val checkinPopup: String? = null,
+    val loginOccupied: Boolean = false,
     val playerId: Long = 0L,
     // === 房间 ===
     val roomNameInput: String = "",
@@ -95,15 +97,21 @@ class AppViewModel : ViewModel() {
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     // 手动断开不自动重连；掉线后只排一个自动重连任务，避免重复连接。
+    // 同账号被顶下线也不是网络掉线：必须停止自动重连/自动恢复登录，否则两个客户端会互相顶号。
     private val manualDisconnect = AtomicBoolean(false)
+    private val sessionReplaced = AtomicBoolean(false)
     private val autoReconnectPending = AtomicBoolean(false)
 
     init {
+        MissingImageReporter.bindSender { path ->
+            connection.send(ClientMessage.ImageMissingWarning(path))
+        }
         viewModelScope.launch {
             connection.state.collect { state ->
                 val snapshot = _ui.value
                 if (state is ConnectionState.Connected &&
                     snapshot.dropped &&
+                    !sessionReplaced.get() &&
                     !snapshot.loggedIn &&
                     snapshot.username.isNotBlank() &&
                     snapshot.password.isNotBlank()
@@ -130,6 +138,7 @@ class AppViewModel : ViewModel() {
     }
 
     override fun onCleared() {
+        MissingImageReporter.clear()
         connection.close()
         super.onCleared()
     }
@@ -141,7 +150,10 @@ class AppViewModel : ViewModel() {
     fun setPort(value: String) = _ui.update { it.copy(port = value) }
 
     fun connect() {
+        // 手动连接（登录页「连接服务器」或「重连」）清除被顶标记；自动重连会先检查该标记，
+        // 因此不会在这里把被顶下线误恢复成自动登录。
         manualDisconnect.set(false)
+        sessionReplaced.set(false)
         val port = _ui.value.port.toIntOrNull()
         if (port == null || port !in 1..65535) {
             _ui.update { it.copy(message = "端口必须是 1-65535 的数字") }
@@ -152,12 +164,14 @@ class AppViewModel : ViewModel() {
 
     fun reconnect() {
         manualDisconnect.set(false)
+        sessionReplaced.set(false)
         connection.disconnect()
         connect()
     }
 
     fun disconnect() {
         manualDisconnect.set(true)
+        sessionReplaced.set(false)
         connection.disconnect()
         _ui.update {
             it.copy(
@@ -171,14 +185,14 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    /** 掉线后 3 秒尝试重连；手动断开不触发，且同时只允许一个待重连任务。 */
+    /** 掉线后 3 秒尝试重连；手动断开/被顶下线不触发，且同时只允许一个待重连任务。 */
     private fun scheduleAutoReconnect() {
-        if (manualDisconnect.get()) return
+        if (manualDisconnect.get() || sessionReplaced.get()) return
         if (!autoReconnectPending.compareAndSet(false, true)) return
         viewModelScope.launch {
             delay(3000)
             autoReconnectPending.set(false)
-            if (manualDisconnect.get()) return@launch
+            if (manualDisconnect.get() || sessionReplaced.get()) return@launch
             val state = _ui.value.connection
             if (state !is ConnectionState.Connected && state !is ConnectionState.Connecting) {
                 _ui.update { it.copy(message = "连接中断，正在自动重连...") }
@@ -205,8 +219,27 @@ class AppViewModel : ViewModel() {
             _ui.update { it.copy(message = "用户名和密码不能为空") }
             return
         }
-        _ui.update { it.copy(message = "登录中...") }
+        _ui.update { it.copy(message = "登录中...", loginOccupied = false) }
         connection.send(ClientMessage.Login(s.username, s.password))
+    }
+
+    /** 用户确认后强制登录：服务端此时才顶掉另一台设备。 */
+    fun confirmForceLogin() {
+        val s = _ui.value
+        if (s.connection !is ConnectionState.Connected) {
+            _ui.update { it.copy(message = "请先连接服务器", loginOccupied = false) }
+            return
+        }
+        if (s.username.isBlank() || s.password.isBlank()) {
+            _ui.update { it.copy(message = "用户名和密码不能为空", loginOccupied = false) }
+            return
+        }
+        _ui.update { it.copy(message = "正在强制登录...", loginOccupied = false) }
+        connection.send(ClientMessage.ForceLogin(s.username, s.password))
+    }
+
+    fun dismissLoginOccupied() {
+        _ui.update { it.copy(loginOccupied = false, message = "已取消登录") }
     }
 
     fun register() {
@@ -415,11 +448,23 @@ class AppViewModel : ViewModel() {
     fun cancelSelection() = sendKey(Key.DOWN)
     fun sortHand() = sendKey(Key.SPACE)
     fun useBomb() = sendKey(Key.B)
-    fun chooseOption(index: Int) = sendKey(Key.digit(index))
+    /** 选择第 index 个选项（0-based，全局真实序号）。服务端不再分页。 */
+    fun chooseOption(index: Int) {
+        val s = _ui.value
+        connection.send(
+            ClientMessage.ChoiceSelect(
+                (index + 1).toLong(),
+                s.game.selectedIndex.toLong()
+            )
+        )
+    }
 
     //发动第 index 个主动技（1-based），与服务端可用技能列表顺序一致
     fun useSkill(index: Int) = sendKey(Key.digit(index))
-    fun cancelChoice() = sendKey(Key.NUM_0)
+    fun cancelChoice() {
+        val s = _ui.value
+        connection.send(ClientMessage.ChoiceSelect(0L, s.game.selectedIndex.toLong()))
+    }
     fun previousChoicePage() = sendKey(Key.LEFT)
     fun nextChoicePage() = sendKey(Key.RIGHT)
 
@@ -495,6 +540,8 @@ class AppViewModel : ViewModel() {
             // 被顶下线：不当作普通断线，提示原因并退回登录界面
             is ServerMessage.SessionReplaced -> {
                 appendLog(message.reason)
+                // 被顶下线不是网络故障：先置标记，后续 Disconnected 不再自动重连/恢复登录。
+                sessionReplaced.set(true)
                 connection.disconnect()
                 _ui.update {
                     it.copy(
@@ -502,6 +549,7 @@ class AppViewModel : ViewModel() {
                         loggedIn = false,
                         room = null,
                         rooms = emptyList(),
+                        dropped = false,
                         message = message.reason,
                         status = ""
                     )
@@ -585,7 +633,7 @@ class AppViewModel : ViewModel() {
 
             ServerMessage.Disconnected -> {
                 appendLog("与服务器断开连接")
-                if (!manualDisconnect.get()) {
+                if (!manualDisconnect.get() && !sessionReplaced.get()) {
                     _ui.update {
                         it.copy(
                             dropped = true,
@@ -618,6 +666,7 @@ class AppViewModel : ViewModel() {
                         it.copy(
                             loggedIn = true,
                             screen = Screen.Lobby,
+                            loginOccupied = false,
                             points = message.points,
                             wins = message.wins,
                             losses = message.losses,
@@ -627,8 +676,15 @@ class AppViewModel : ViewModel() {
                     }
                     appendLog("登录成功: ${_ui.value.username} 积分=${message.points} 胜=${message.wins} 负=${message.losses}")
                     // 主大厅只有按钮：房间列表在点「开始游戏」进入房间界面时才拉
+                } else if (message.msg.contains("已在另一端登录")) {
+                    _ui.update {
+                        it.copy(
+                            loginOccupied = true,
+                            message = "该账号已在另一台设备登录"
+                        )
+                    }
                 } else {
-                    _ui.update { it.copy(message = "登录失败: ${message.msg}") }
+                    _ui.update { it.copy(loginOccupied = false, message = "登录失败: ${message.msg}") }
                 }
             }
         }

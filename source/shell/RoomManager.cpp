@@ -94,7 +94,20 @@ namespace unool::shell {
 		for (std::size_t seat = 0; seat < room->members.size(); ++seat) {
 			if (room->members[seat].slot != slot) continue;
 			room->game->pushInput(
-				seat, unool::core::DecisionInput{ seat, toDomainKey(key), selectedIndex });
+				seat, unool::core::DecisionInput{ seat, toDomainKey(key), selectedIndex, std::nullopt });
+			return;
+		}
+	}
+
+	void RoomManager::routeChoiceSelect(const std::size_t slot, const std::size_t choiceIndex,
+										const std::size_t selectedIndex) {
+		std::lock_guard lock(mutex_);
+		Room* room = findRoomLocked(net_.roomIdOfSlot(slot));
+		if (!room || !room->game) return;
+		for (std::size_t seat = 0; seat < room->members.size(); ++seat) {
+			if (room->members[seat].slot != slot) continue;
+			room->game->pushInput(
+				seat, unool::core::DecisionInput{ seat, unool::contract::Key::Unknown, selectedIndex, choiceIndex });
 			return;
 		}
 	}

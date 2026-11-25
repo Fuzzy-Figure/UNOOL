@@ -7,6 +7,23 @@
 #include <algorithm>
 #include <format>
 #include <numeric>
+#include <string>
+#include <unordered_set>
+#include <vector>
+
+namespace {
+	std::unordered_set<std::string> toNameSet(const std::vector<std::string>& names) {
+		return { names.begin(), names.end() };
+	}
+
+	bool isShieldedCharacter(const std::string& name,
+		const std::unordered_set<std::string>& shieldedCharacters,
+		const std::unordered_set<std::string>& shieldedGroups) {
+		if (shieldedCharacters.contains(name)) return true;
+		const auto it = Character::infos.find(name);
+		return it != Character::infos.end() && shieldedGroups.contains(it->second.group);
+	}
+}
 
 //获取curIndex的下一个玩家的id（curIndex不一定是当前回合玩家的id）
 std::size_t GameLogic::nextPlayerIndex(const std::size_t curIndex) const {
@@ -188,14 +205,17 @@ void GameLogic::initPlayersNormal(std::size_t firstSeatId, std::size_t secondSea
 
 	//双方已抽取的角色名，用于避免重复
 	std::unordered_set<std::string> pickedNames;
+	const auto shieldedCharacters = toNameSet(services.config.shieldedCharacters());
+	const auto shieldedGroups = toNameSet(services.config.shieldedGroups());
 
-	//从角色池中随机抽取候选：排除exclude中已有角色名，跳过infos中不存在的名字
-	auto pickFromPool = [](const std::vector<std::string>& pool, std::size_t n,
+	//从角色池中随机抽取候选：排除已抽角色、服务器屏蔽角色/分组，以及 infos 中不存在的名字
+	auto pickFromPool = [&](const std::vector<std::string>& pool, std::size_t n,
 						   const std::unordered_set<std::string>& exclude) {
 		std::vector<std::string> available;
 		for (const auto& name : pool) {
 			if (exclude.contains(name)) continue;
 			if (!Character::infos.contains(name)) continue;
+			if (isShieldedCharacter(name, shieldedCharacters, shieldedGroups)) continue;
 			available.push_back(name);
 		}
 		std::ranges::shuffle(available, unool::random::rng);
@@ -504,10 +524,14 @@ void GameLogic::selectCharacterDouble(std::size_t playerId, std::vector<Characte
 std::vector<Character::Entry> GameLogic::pickEntriesFromPool(const std::vector<std::string>& pool,
 															 std::size_t n,
 															 const std::unordered_set<std::string>& exclude) {
+	// 该辅助函数是 static，不能用 GameLogic 的成员 services；走领域服务访问点。
+	const auto shieldedCharacters = toNameSet(unool::core::services().config.shieldedCharacters());
+	const auto shieldedGroups = toNameSet(unool::core::services().config.shieldedGroups());
 	std::vector<std::string> available;
 	for (const auto& name : pool) {
 		if (exclude.contains(name)) continue;
 		if (!Character::infos.contains(name)) continue;
+		if (isShieldedCharacter(name, shieldedCharacters, shieldedGroups)) continue;
 		available.push_back(name);
 	}
 	std::ranges::shuffle(available, unool::random::rng);
@@ -522,6 +546,13 @@ void GameLogic::initPlayers(const std::vector<std::string>& chars) {
 	players.clear();
 	bonusCardUsed.fill(false);
 	const std::string mode = services.config.mode();
+	const auto shieldedCharacters = toNameSet(services.config.shieldedCharacters());
+	const auto shieldedGroups = toNameSet(services.config.shieldedGroups());
+	for (const auto& name : chars) {
+		if (isShieldedCharacter(name, shieldedCharacters, shieldedGroups)) {
+			throw std::invalid_argument(std::format("指定角色 [{}] 已被服务器屏蔽", name));
+		}
+	}
 	if (mode == "double") {
 		//双将模式：4 个角色，前 2 个给玩家1，后 2 个给玩家2，各自 makeCombined
 		if (chars.size() != 4)

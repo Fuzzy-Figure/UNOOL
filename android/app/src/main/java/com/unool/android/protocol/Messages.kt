@@ -17,6 +17,12 @@ object Msg {
     const val ROOM_JOIN_REQUEST = 112
     const val ROOM_LEAVE_REQUEST = 113
     const val ROOM_READY_REQUEST = 114
+    /** 客户端本地图片加载失败，携带相对路径；服务端只打印警告 */
+    const val IMAGE_MISSING_WARNING = 115
+    /** 用户确认后强制登录；服务端收到时才顶掉旧设备 */
+    const val FORCE_LOGIN_REQUEST = 116
+    /** 客户端按真实选项序号选择（1-based，0=取消） */
+    const val CHOICE_SELECT = 117
 
     // 服务端 -> 客户端
     const val CONNECTION_INFO = 201
@@ -162,6 +168,9 @@ sealed interface ClientMessage {
     data class RoomJoin(val roomId: Long) : ClientMessage
     data object RoomLeave : ClientMessage
     data class RoomReady(val ready: Boolean) : ClientMessage
+    data class ImageMissingWarning(val path: String) : ClientMessage
+    data class ForceLogin(val username: String, val password: String) : ClientMessage
+    data class ChoiceSelect(val choiceIndex: Long, val selectedIndex: Long) : ClientMessage
     data object Heartbeat : ClientMessage
 }
 

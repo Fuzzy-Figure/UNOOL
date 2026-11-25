@@ -1,6 +1,7 @@
 package com.unool.android.server
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -18,12 +19,83 @@ object UserDataFile {
         val file = file(context)
         if (!file.exists()) return "{}"
         return try {
-            JSONObject(file.readText(Charsets.UTF_8)).toString(2)
+            prettyJson(JSONObject(file.readText(Charsets.UTF_8)))
         }
         catch (_: Exception) {
             file.readText(Charsets.UTF_8)
         }
     }
+
+    /**
+     * 与 C++ UserDB::dumpJson 对齐：
+     * ownedCharacters 下每个角色的皮肤数组保持单行：
+     *   "角色名": [ "皮肤1", "皮肤2" ]
+     */
+    private fun prettyJson(value: Any?): String = buildPretty(value, 0, false)
+
+    private fun buildPretty(value: Any?, indent: Int, compactArray: Boolean): String = when (value) {
+        is JSONObject -> {
+            if (value.length() == 0) {
+                "{}"
+            }
+            else {
+                val keys = value.keys()
+                val lines = mutableListOf<String>()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val child = value.opt(key)
+                    val childCompact = key == "ownedCharacters" || compactArray
+                    lines += "${pad(indent + 1)}${JSONObject.quote(key)}: ${buildPretty(child, indent + 1, childCompact)}"
+                }
+                "{\n${lines.joinToString(",\n")}\n${pad(indent)}}"
+            }
+        }
+
+        is JSONArray -> {
+            if (value.length() == 0) {
+                "[]"
+            }
+            else if (compactArray) {
+                val items = (0 until value.length()).map { index ->
+                    compactValue(value.opt(index))
+                }
+                "[ ${items.joinToString(", ")} ]"
+            }
+            else {
+                val lines = mutableListOf<String>()
+                for (index in 0 until value.length()) {
+                    lines += "${pad(indent + 1)}${buildPretty(value.opt(index), indent + 1, false)}"
+                }
+                "[\n${lines.joinToString(",\n")}\n${pad(indent)}]"
+            }
+        }
+
+        is String -> JSONObject.quote(value)
+        JSONObject.NULL -> "null"
+        null -> "null"
+        else -> value.toString()
+    }
+
+    private fun compactValue(value: Any?): String = when (value) {
+        is String -> JSONObject.quote(value)
+        JSONObject.NULL, null -> "null"
+        is JSONArray -> {
+            val items = (0 until value.length()).map { index -> compactValue(value.opt(index)) }
+            "[ ${items.joinToString(", ")} ]"
+        }
+        is JSONObject -> {
+            val keys = value.keys()
+            val items = mutableListOf<String>()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                items += "${JSONObject.quote(key)}: ${compactValue(value.opt(key))}"
+            }
+            "{ ${items.joinToString(", ")} }"
+        }
+        else -> value.toString()
+    }
+
+    private fun pad(indent: Int): String = "  ".repeat(indent)
 
     /** 返回 null 表示校验通过；否则返回给界面显示的错误原因。 */
     private fun validate(text: String): String? {
@@ -78,8 +150,7 @@ object UserDataFile {
             if (file.exists()) {
                 file.copyTo(File(context.filesDir, BACKUP_NAME), overwrite = true)
             }
-            val pretty = JSONObject(text).toString(2)
-            file.writeText(pretty, Charsets.UTF_8)
+            file.writeText(prettyJson(JSONObject(text)), Charsets.UTF_8)
             null
         }
         catch (e: Exception) {

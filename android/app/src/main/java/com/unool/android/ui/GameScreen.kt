@@ -124,6 +124,7 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
                 .align(Alignment.CenterEnd)
                 .padding(end = 28.dp)
                 .width(200.dp)
+                .heightIn(max = 280.dp)
                 .background(Color(0xD6FFFFFF))
                 .padding(6.dp)
                 .verticalScroll(rememberScrollState())
@@ -411,18 +412,27 @@ private fun DiscardArea(state: GameStateData?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ChoicePanel(choice: ChoicePrompt?, remainingSeconds: Long?, viewModel: AppViewModel) {
+private fun ChoicePanel(
+    choice: ChoicePrompt?,
+    remainingSeconds: Long?,
+    viewModel: AppViewModel
+) {
     if (choice == null) {
         Text("当前没有待选项", color = Color.Gray, fontSize = 12.sp)
         return
     }
 
+    // 服务端已不分页：一次下发全部选项，安卓端直接用上下滑动显示。
+    val entries = choice.options.mapIndexed { index, option ->
+        Triple(index, option, choice.optionMeta.getOrNull(index))
+    }
+
     Column {
         Text(choice.title, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(2.dp))
-        if (choice.totalPages > 1) {
+        if (choice.options.size > 9) {
             Text(
-                "第 ${choice.currentPage + 1}/${choice.totalPages} 页  ← → 翻页",
+                "共 ${entries.size} 项，上下滑动选择",
                 fontSize = 11.sp,
                 color = Color.Gray
             )
@@ -433,8 +443,7 @@ private fun ChoicePanel(choice: ChoicePrompt?, remainingSeconds: Long?, viewMode
         }
         Spacer(Modifier.height(4.dp))
 
-        choice.options.forEachIndexed { index, option ->
-            val meta = choice.optionMeta.getOrNull(index)
+        entries.forEach { (index, option, meta) ->
             val label = buildString {
                 append("[${index + 1}] $option")
                 if (meta != null && meta.characterName.isNotBlank()) {
@@ -447,7 +456,7 @@ private fun ChoicePanel(choice: ChoicePrompt?, remainingSeconds: Long?, viewMode
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .width(168.dp)
-                    .clickable(enabled = index < 9) { viewModel.chooseOption(index + 1) }
+                    .clickable { viewModel.chooseOption(index) }
                     .padding(vertical = 2.dp)
             )
         }

@@ -63,6 +63,24 @@ object ProtocolCodec {
                 w.bool(message.ready)
             }
 
+            is ClientMessage.ImageMissingWarning -> {
+                w.i32(Msg.IMAGE_MISSING_WARNING)
+                w.str(message.path)
+            }
+
+            is ClientMessage.ForceLogin -> {
+                w.i32(Msg.FORCE_LOGIN_REQUEST)
+                w.u32(Msg.PROTOCOL_VERSION)
+                w.str(message.username)
+                w.str(message.password)
+            }
+
+            is ClientMessage.ChoiceSelect -> {
+                w.i32(Msg.CHOICE_SELECT)
+                w.u64(message.choiceIndex)
+                w.u64(message.selectedIndex)
+            }
+
             ClientMessage.Heartbeat -> w.i32(Msg.HEARTBEAT)
         }
         return w.frame()

@@ -48,6 +48,8 @@ public:
 	void update() override;
 
 	bool sendClientInput(sf::Keyboard::Scancode key, std::size_t selectedIndex);
+	// 按真实选项序号选择（1-based，0=不选择）；客户端分页后用它替代页内数字键。
+	bool sendChoiceSelect(std::size_t choiceIndex, std::size_t selectedIndex);
 	bool send(sf::Packet& packet) override;
 	// 发送商城购买请求（purchaseData 为 JSON 字符串）
 	bool sendShopPurchase(const std::string& purchaseData) override;

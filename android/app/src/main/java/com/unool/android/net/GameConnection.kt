@@ -18,12 +18,34 @@ import java.io.DataInputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.ByteBuffer
+import java.util.Collections
 
 sealed interface ConnectionState {
     data object Disconnected : ConnectionState
     data object Connecting : ConnectionState
     data object Connected : ConnectionState
     data class Failed(val reason: String) : ConnectionState
+}
+
+/** 客户端本地图片加载失败时上报；同一路径只报一次，避免刷屏。 */
+object MissingImageReporter {
+    private val reported = Collections.synchronizedSet(mutableSetOf<String>())
+    private var sender: ((String) -> Unit)? = null
+
+    fun bindSender(sender: (String) -> Unit) {
+        this.sender = sender
+    }
+
+    fun clear() {
+        reported.clear()
+        sender = null
+    }
+
+    fun report(path: String) {
+        if (path.isBlank()) return
+        if (!reported.add(path)) return
+        sender?.invoke(path)
+    }
 }
 
 /**

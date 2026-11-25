@@ -1,4 +1,5 @@
 #include "AndroidPlatform.h"
+#include "AndroidAssetCatalog.h"
 
 #include "shell/ServerNetwork.h"
 #include "shell/RoomManager.h"
@@ -72,7 +73,7 @@ namespace {
 		AAsset_close(asset);
 	}
 
-	bool runServer(const unsigned short port) {
+	bool runServer(const unsigned short port, AAssetManager* assetManager) {
 		unool::platform::setupConsoleUtf8();
 		std::println("[AndroidServer] 启动服务端（房间模式，协议版本 3）...");
 
@@ -82,7 +83,9 @@ namespace {
 		unool::shell::JsonUserRepository userRepository(userDatabase);
 		unool::shell::Mt19937Random randomService;
 		unool::shell::ChronoClock clockService;
-		unool::shell::FilesystemAssetCatalog assetCatalog;
+		// 安卓角色图片在 APK assets 里，不是 filesDir 下的真实目录。
+		// 用 AAssetManager 扫描，避免误报“皮肤目录不存在”。
+		unool::android::AndroidAssetCatalog assetCatalog(assetManager);
 		unool::core::DomainServices domainServices{
 			configService, userRepository, randomService, clockService, assetCatalog };
 		unool::core::installServices(domainServices);
@@ -206,7 +209,7 @@ Java_com_unool_android_server_ServerBridge_nativeRun(
 	}
 
 	const auto selectedPort = port > 0 ? static_cast<unsigned short>(port) : kDefaultPort;
-	const bool ok = runServer(selectedPort);
+	const bool ok = runServer(selectedPort, manager);
 
 	if (bridgeClass != nullptr) env->DeleteGlobalRef(bridgeClass);
 	bridgeClass = nullptr;

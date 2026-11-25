@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.util.LruCache
+import com.unool.android.net.MissingImageReporter
 
 private val bitmapCache = object : LruCache<String, androidx.compose.ui.graphics.ImageBitmap>(32 * 1024) {
     override fun sizeOf(key: String, value: androidx.compose.ui.graphics.ImageBitmap): Int =
@@ -33,12 +34,16 @@ private suspend fun loadAsset(context: Context, path: String, maxDimension: Int)
         val bytes = try {
             context.assets.open(path).use { it.readBytes() }
         } catch (e: Exception) {
+            MissingImageReporter.report(path)
             return@withContext null
         }
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@withContext null
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            MissingImageReporter.report(path)
+            return@withContext null
+        }
 
         var sample = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / sample > maxDimension) sample *= 2
@@ -47,7 +52,10 @@ private suspend fun loadAsset(context: Context, path: String, maxDimension: Int)
             inSampleSize = sample
             inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
         }
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return@withContext null
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: run {
+            MissingImageReporter.report(path)
+            return@withContext null
+        }
         val image = bitmap.asImageBitmap()
         bitmapCache.put(key, image)
         image
