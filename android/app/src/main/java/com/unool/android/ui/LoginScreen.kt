@@ -1,6 +1,7 @@
 package com.unool.android.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
@@ -24,9 +25,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.unool.android.net.ConnectionState
 import com.unool.android.protocol.RoomSummary
 import com.unool.android.viewmodel.AppViewModel
 import com.unool.android.viewmodel.UiState
@@ -40,8 +43,47 @@ fun LoginScreen(ui: UiState, viewModel: AppViewModel) {
         verticalArrangement = Arrangement.Top
     ) {
         Text("UNOOL", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        Text("安卓客户端 · 连接 PC 服务端对战", fontSize = 11.sp, color = Color.Gray)
+        Text("安卓客户端 · 连接 PC / 手机服务端对战", fontSize = 11.sp, color = Color.Gray)
         Spacer(Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = ui.host,
+                onValueChange = viewModel::setHost,
+                label = { Text("服务器 IP / 域名", fontSize = 11.sp) },
+                singleLine = true,
+                modifier = Modifier.weight(3f)
+            )
+            Spacer(Modifier.width(8.dp))
+            OutlinedTextField(
+                value = ui.port,
+                onValueChange = viewModel::setPort,
+                label = { Text("端口", fontSize = 11.sp) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = viewModel::connect, modifier = Modifier.height(42.dp)) {
+                Text("连接服务器", fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            val connectionText = when (val state = ui.connection) {
+                ConnectionState.Disconnected -> "未连接"
+                ConnectionState.Connecting -> "连接中..."
+                ConnectionState.Connected -> "已连接"
+                is ConnectionState.Failed -> "连接失败：${state.reason}"
+            }
+            val connectionColor = when (ui.connection) {
+                ConnectionState.Connected -> Color(0xFF1B7F3A)
+                ConnectionState.Connecting -> Color(0xFFB26A00)
+                else -> Color(0xFFB3261E)
+            }
+            Text(text = connectionText, fontSize = 12.sp, color = connectionColor)
+        }
+        Spacer(Modifier.height(10.dp))
 
         OutlinedTextField(
             value = ui.username,
@@ -79,7 +121,7 @@ fun LoginScreen(ui: UiState, viewModel: AppViewModel) {
         }
 
         Spacer(Modifier.height(10.dp))
-        Text("启动后自动连接服务器，直接登录或注册", fontSize = 12.sp, color = Color.Gray)
+        Text("改地址/端口后点「连接服务器」，也可以点右上角「重连」", fontSize = 12.sp, color = Color.Gray)
     }
 }
 

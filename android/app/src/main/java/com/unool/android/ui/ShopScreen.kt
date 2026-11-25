@@ -4,13 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -92,7 +96,7 @@ fun ShopScreen(ui: UiState, viewModel: AppViewModel) {
             }
 
             Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(0.45f)) {
+            Column(modifier = Modifier.weight(0.45f).verticalScroll(rememberScrollState())) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         val hero = shop.heroes.firstOrNull { it.name == shop.expandedHero }
@@ -133,6 +137,13 @@ private fun HeroRow(hero: ShopHero, expanded: Boolean, viewModel: AppViewModel) 
             modifier = Modifier.padding(10.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (hero.defaultImagePath.isNotBlank()) {
+                AssetImage(
+                    path = hero.defaultImagePath,
+                    modifier = Modifier.size(width = 28.dp, height = 38.dp).padding(end = 6.dp),
+                    maxDimension = 128
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text("${hero.name}（${hero.level}）", fontWeight = FontWeight.Medium)
                 Text(
@@ -181,9 +192,35 @@ private fun ItemRow(item: ShopItem, selected: Boolean, viewModel: AppViewModel) 
 
 @Composable
 private fun HeroDetail(hero: ShopHero, skillText: String, viewModel: AppViewModel) {
-    Text("${hero.name}（${hero.level}）", fontSize = 17.sp, fontWeight = FontWeight.Bold)
-    Spacer(Modifier.height(6.dp))
-    Text(skillText.ifBlank { "技能描述加载中..." }, fontSize = 13.sp)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (hero.defaultImagePath.isNotBlank()) {
+            AssetImage(
+                path = hero.defaultImagePath,
+                modifier = Modifier.size(width = 64.dp, height = 86.dp),
+                maxDimension = 256
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        Column {
+            Text("${hero.name}（${hero.level}）", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                when {
+                    hero.unlocked -> "已解锁"
+                    hero.price == null -> "不可购买"
+                    else -> "售价 ${hero.price}"
+                },
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+    Text("技能", fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(4.dp))
+    Text(skillText.ifBlank { "技能描述加载中..." }, fontSize = 12.sp)
+
     Spacer(Modifier.height(10.dp))
     HorizontalDivider()
     Spacer(Modifier.height(8.dp))
@@ -193,23 +230,35 @@ private fun HeroDetail(hero: ShopHero, skillText: String, viewModel: AppViewMode
             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "${skin.name}（${skin.quality}）",
-                fontSize = 13.sp,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                when {
-                    skin.unlocked -> "已解锁"
-                    skin.price == null -> "不售卖"
-                    else -> "售价 ${skin.price}"
-                },
-                fontSize = 11.sp,
-                color = Color.Gray
-            )
+            if (skin.imagePath.isNotBlank()) {
+                AssetImage(
+                    path = skin.imagePath,
+                    modifier = Modifier.size(width = 26.dp, height = 36.dp),
+                    maxDimension = 128
+                )
+            }
+            else {
+                Spacer(Modifier.size(width = 26.dp, height = 36.dp))
+            }
             Spacer(Modifier.width(6.dp))
-            Button(onClick = { viewModel.buySkin(hero, skin) }, enabled = !skin.unlocked && skin.price != null) {
-                Text("购买")
+            Column(modifier = Modifier.weight(1f)) {
+                Text("${skin.name}（${skin.quality}）", fontSize = 12.sp)
+                Text(
+                    when {
+                        skin.unlocked -> "已解锁"
+                        skin.price == null -> "不售卖"
+                        else -> "售价 ${skin.price}"
+                    },
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+            Button(
+                onClick = { viewModel.buySkin(hero, skin) },
+                enabled = !skin.unlocked && skin.price != null,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+            ) {
+                Text("购买", fontSize = 11.sp)
             }
         }
     }

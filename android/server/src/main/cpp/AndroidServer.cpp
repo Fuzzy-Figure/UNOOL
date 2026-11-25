@@ -26,6 +26,7 @@
 #include <fstream>
 #include <print>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <unistd.h>
 
@@ -45,6 +46,17 @@ namespace {
 	std::thread logReader;
 
 	void extractAsset(AAssetManager* manager, const char* name, const std::string& dataDir) {
+		const auto target = std::filesystem::path(dataDir) / name;
+		// 本地文件已存在且非空时视为用户配置，启动时不再用 APK 内置模板覆盖。
+		if (std::filesystem::exists(target)) {
+			std::error_code sizeError{};
+			const auto size = std::filesystem::file_size(target, sizeError);
+			if (!sizeError && size > 0) {
+				std::println("[AndroidServer] 使用已有配置 {}，跳过 assets 释放", target.string());
+				return;
+			}
+		}
+
 		AAsset* asset = AAssetManager_open(manager, name, AASSET_MODE_BUFFER);
 		if (asset == nullptr) {
 			std::println(stderr, "[AndroidServer] assets 缺少 {}", name);
@@ -53,7 +65,6 @@ namespace {
 		const void* buffer = AAsset_getBuffer(asset);
 		const off_t length = AAsset_getLength(asset);
 		if (buffer != nullptr && length > 0) {
-			const auto target = std::filesystem::path(dataDir) / name;
 			std::ofstream output(target, std::ios::binary | std::ios::trunc);
 			output.write(static_cast<const char*>(buffer), length);
 			std::println("[AndroidServer] 已释放配置 {} ({} 字节)", target.string(), length);

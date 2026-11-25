@@ -4,6 +4,7 @@
 #include "ShopData.h"
 #include "Character.h"
 #include "MessageType.h"
+#include "Services.h"
 
 #include <algorithm>
 #include <array>
@@ -14,6 +15,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 
 #include <json.hpp>
@@ -57,9 +59,22 @@ namespace unool::core {
 		ShopData shopData;
 		shopData.points = userInfo.points;
 
-		// 遍历 Character::infos，跳过"白板"，为每个角色构建 ShopCharacterInfo
+		// 与选将保持同一套屏蔽口径：被屏蔽的角色/分组也不出现在商城。
+		// 皮肤属于角色，角色被过滤后其皮肤自然一并隐藏。
+		const auto shieldedCharacterNames = unool::core::services().config.shieldedCharacters();
+		const auto shieldedGroupNames = unool::core::services().config.shieldedGroups();
+		const std::unordered_set<std::string> shieldedCharacters{
+			shieldedCharacterNames.begin(), shieldedCharacterNames.end()
+		};
+		const std::unordered_set<std::string> shieldedGroups{
+			shieldedGroupNames.begin(), shieldedGroupNames.end()
+		};
+
+		// 遍历 Character::infos，跳过白板与被屏蔽角色，为每个角色构建 ShopCharacterInfo
 		for (const auto& [name, info] : Character::infos) {
 			if (name == "白板") continue;
+			if (shieldedCharacters.contains(name)) continue;
+			if (shieldedGroups.contains(info.group)) continue;
 
 		ShopCharacterInfo charInfo;
 		charInfo.name = name;

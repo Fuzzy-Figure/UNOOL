@@ -87,7 +87,9 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
                 onSelect = { viewModel.selectCard(it) },
                 charInfo = game.charInfo[index],
                 onPortraitClick = { infoPlayerIndex = index },
-                modifier = Modifier.align(if (isLocal) Alignment.BottomStart else Alignment.TopStart)
+                modifier = Modifier
+                    .align(if (isLocal) Alignment.BottomStart else Alignment.TopStart)
+                    .then(if (isLocal) Modifier.fillMaxWidth() else Modifier)
             )
         }
 
@@ -245,9 +247,9 @@ private fun PlayerArea(
 
         // 对方只显示手牌数，不显示牌面/牌背
         if (isLocal) {
-            // Windows displayHand：选中牌完整展开，其余牌只露出 1/3 宽
+            // 选中牌完整展开，其余牌折叠为一半宽度；总宽超出屏幕时可左右滑动。
             val cardWidth = 62.dp
-            val foldStep = (cardWidth.value / 3).dp
+            val foldStep = (cardWidth.value / 2).dp
             val fullStep = cardWidth + 2.dp
             var cursor = 0.dp
             val offsets = player.hand.cards.mapIndexed { i, _ ->
@@ -255,9 +257,9 @@ private fun PlayerArea(
                 cursor = cursor + if (i == selectedIndex) fullStep else foldStep
                 current
             }
-            val totalWidth = cursor + cardWidth
+            val totalWidth = (offsets.lastOrNull() ?: 0.dp) + cardWidth
 
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                 Box(modifier = Modifier.width(totalWidth).height(93.dp)) {
                     player.hand.cards.forEachIndexed { i, card ->
                         Box(modifier = Modifier.offset(x = offsets[i])) {

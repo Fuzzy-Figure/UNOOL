@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "UNOOL-Android"
 include(":app")
+include(":server")

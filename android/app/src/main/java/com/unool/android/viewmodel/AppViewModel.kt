@@ -102,7 +102,7 @@ class AppViewModel : ViewModel() {
                 handleServerMessage(message)
             }
         }
-        // 启动即自动连接固定服务器，用户不需要输入地址和端口。
+        // 启动即按当前地址连接；登录页可修改 IP / 端口后重新连接。
         connect()
     }
 
@@ -154,6 +154,10 @@ class AppViewModel : ViewModel() {
 
     fun submitLogin() {
         val s = _ui.value
+        if (s.connection !is ConnectionState.Connected) {
+            _ui.update { it.copy(message = "请先连接服务器") }
+            return
+        }
         if (s.username.isBlank() || s.password.isBlank()) {
             _ui.update { it.copy(message = "用户名和密码不能为空") }
             return
@@ -164,6 +168,10 @@ class AppViewModel : ViewModel() {
 
     fun register() {
         val s = _ui.value
+        if (s.connection !is ConnectionState.Connected) {
+            _ui.update { it.copy(message = "请先连接服务器") }
+            return
+        }
         if (s.username.isBlank()) {
             _ui.update { it.copy(message = "用户名不能为空") }
             return
