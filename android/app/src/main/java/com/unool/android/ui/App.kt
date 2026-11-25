@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +69,26 @@ fun UnoolApp(viewModel: AppViewModel) {
                     modifier = Modifier.width(64.dp).height(32.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
                 ) { Text("断开", fontSize = 11.sp) }
+            }
+        }
+
+        // 掉线顶部覆盖提示：不拦截操作，只显示 lagging.jpg 与自动重连状态。
+        if (ui.dropped) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 40.dp)
+                    .background(Color(0xCCFFFFFF))
+                    .padding(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AssetImage(
+                    path = "images/lagging.jpg",
+                    modifier = Modifier.size(HandCardHeight),
+                    maxDimension = 512,
+                    contentScale = ContentScale.FillBounds
+                )
+                Text("连接中断，正在自动重连...", fontSize = 11.sp, color = Color(0xFFB3261E))
             }
         }
     }

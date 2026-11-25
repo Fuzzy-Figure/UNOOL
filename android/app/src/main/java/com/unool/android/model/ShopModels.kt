@@ -2,6 +2,19 @@ package com.unool.android.model
 
 import org.json.JSONObject
 
+/** 商城等级显示：兼容服务端下发 "F" 或枚举数字 "0"~"5"。 */
+object ShopLevel {
+    fun label(value: String): String = when (value.trim()) {
+        "0", "F" -> "F"
+        "1", "D" -> "D"
+        "2", "C" -> "C"
+        "3", "B" -> "B"
+        "4", "A" -> "A"
+        "5", "S" -> "S"
+        else -> value.ifBlank { "?" }
+    }
+}
+
 data class ShopSkin(
     val name: String,
     val unlocked: Boolean,

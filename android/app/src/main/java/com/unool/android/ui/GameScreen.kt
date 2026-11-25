@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +42,7 @@ import androidx.compose.ui.window.Dialog
 import com.unool.android.model.CardCatalog
 import com.unool.android.model.CardColor
 import com.unool.android.model.CardName
+import com.unool.android.model.DiscardReason
 import com.unool.android.protocol.CardData
 import com.unool.android.protocol.ChoicePrompt
 import com.unool.android.protocol.GameStateData
@@ -47,6 +50,9 @@ import com.unool.android.protocol.PlayerStateData
 import com.unool.android.viewmodel.AppViewModel
 import com.unool.android.viewmodel.UiState
 import kotlinx.coroutines.delay
+
+// 对战手牌高度；掉线提示图也按这个边长显示为正方形。
+internal val HandCardHeight = 93.dp
 
 @Composable
 fun GameScreen(ui: UiState, viewModel: AppViewModel) {
@@ -196,10 +202,35 @@ fun GameScreen(ui: UiState, viewModel: AppViewModel) {
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
+                        val infoText = game.charInfo[idx]?.takeIf { it.isNotBlank() } ?: run {
+                            val playerInfo = state?.players?.getOrNull(idx)
+                            buildString {
+                                append("角色信息尚未同步，先显示对局内基础信息：\n\n")
+                                if (playerInfo != null) {
+                                    append("角色：")
+                                    append(playerInfo.characterNames.joinToString(" + ").ifBlank { "未知" })
+                                    append('\n')
+                                    append("皮肤：")
+                                    append(playerInfo.skins.joinToString("、").ifBlank { "默认" })
+                                    append('\n')
+                                    append("体力：${playerInfo.hp}/${playerInfo.maxHp}　护盾：${playerInfo.shield}\n")
+                                    if (playerInfo.marks.isNotEmpty()) {
+                                        append("标记：")
+                                        append(playerInfo.marks.entries.joinToString("、") { "${it.key}:${it.value}" })
+                                        append('\n')
+                                    }
+                                }
+                                else {
+                                    append("暂无对局数据")
+                                }
+                            }
+                        }
                         Text(
-                            text = game.charInfo[idx] ?: "暂无角色信息",
+                            text = infoText,
                             fontSize = 12.sp,
-                            modifier = Modifier.verticalScroll(rememberScrollState())
+                            modifier = Modifier
+                                .heightIn(max = 360.dp)
+                                .verticalScroll(rememberScrollState())
                         )
                         Spacer(Modifier.height(12.dp))
                         Button(onClick = { infoPlayerIndex = null }) { Text("关闭") }
@@ -229,12 +260,17 @@ private fun PlayerArea(
             if (isLocal) {
                 PlayerTextInfo(player, index, isLocal)
             }
-            Row(modifier = Modifier.clickable(enabled = charInfo != null, onClick = onPortraitClick)) {
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 116.dp)
+                    .clickable { onPortraitClick() }
+            ) {
                 player.characterImagePaths.take(2).forEach { path ->
                     AssetImage(
                         path = path,
                         modifier = Modifier.size(width = 90.dp, height = 116.dp).padding(end = 2.dp),
-                        maxDimension = 256
+                        maxDimension = 256,
+                        contentScale = ContentScale.FillBounds
                     )
                 }
             }
@@ -260,7 +296,7 @@ private fun PlayerArea(
             val totalWidth = (offsets.lastOrNull() ?: 0.dp) + cardWidth
 
             Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
-                Box(modifier = Modifier.width(totalWidth).height(93.dp)) {
+                Box(modifier = Modifier.width(totalWidth).height(HandCardHeight)) {
                     player.hand.cards.forEachIndexed { i, card ->
                         Box(modifier = Modifier.offset(x = offsets[i])) {
                             HandCard(
@@ -302,7 +338,7 @@ private fun HandCard(card: CardData, selected: Boolean, enabled: Boolean, onClic
     val borderColor = if (showSelection) MaterialTheme.colorScheme.primary else Color.Transparent
     Box(
         modifier = Modifier
-            .size(width = 62.dp, height = 93.dp)
+            .size(width = 62.dp, height = HandCardHeight)
             .border(if (showSelection) 3.dp else 0.dp, borderColor)
             .background(if (showSelection) Color(0xFFE3EEFF) else Color.White)
             .clickable(enabled = enabled, onClick = onClick)
@@ -319,7 +355,7 @@ private fun HandCard(card: CardData, selected: Boolean, enabled: Boolean, onClic
 private fun BackCard() {
     Box(
         modifier = Modifier
-            .size(width = 62.dp, height = 93.dp)
+            .size(width = 62.dp, height = HandCardHeight)
             .border(1.dp, Color(0xFFDDDDDD))
             .background(Color.White)
     ) {
@@ -339,20 +375,36 @@ private fun DiscardArea(state: GameStateData?, modifier: Modifier = Modifier) {
     val history = discards.drop(1).take(3).reversed()
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.Top) {
+            // 历史牌为当前牌 60% 高，顶部下移使其垂直居中，与 Windows 端一致。
             history.forEach { card ->
-                AssetImage(
-                    path = CardCatalog.imagePath(card),
-                    modifier = Modifier.size(width = 38.dp, height = 57.dp).padding(end = 2.dp),
-                    maxDimension = 128
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 21.dp, end = 2.dp)
+                ) {
+                    AssetImage(
+                        path = CardCatalog.imagePath(card),
+                        modifier = Modifier.size(width = 38.dp, height = 57.dp),
+                        maxDimension = 128
+                    )
+                    val reason = DiscardReason.label(card.discardReason)
+                    if (reason.isNotBlank()) {
+                        Text(reason, fontSize = 9.sp, color = Color.Gray, maxLines = 1)
+                    }
+                }
             }
             if (current != null) {
-                AssetImage(
-                    path = CardCatalog.imagePath(current),
-                    modifier = Modifier.size(width = 66.dp, height = 99.dp),
-                    maxDimension = 256
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AssetImage(
+                        path = CardCatalog.imagePath(current),
+                        modifier = Modifier.size(width = 66.dp, height = 99.dp),
+                        maxDimension = 256
+                    )
+                    val reason = DiscardReason.label(current.discardReason)
+                    if (reason.isNotBlank()) {
+                        Text(reason, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
+                    }
+                }
             }
         }
     }

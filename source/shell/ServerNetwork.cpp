@@ -17,9 +17,9 @@
 namespace unool::shell {
 
 	namespace {
-		// 心跳：每秒一次；连续 3 秒没有任何回包判定掉线（原值不变）。
+		// 心跳：每秒一次；连续 10 秒没有任何回包判定掉线。
 		constexpr float kHeartbeatSeconds = 1.0f;
-		constexpr float kTimeoutSeconds = 3.0f;
+		constexpr float kTimeoutSeconds = 10.0f;
 		// 掉线槽位的保留时长：与 server_config.json 的 network.reconnectTimeoutSec 默认值一致。
 		// 保留期内同账号重连会顶替回原槽位（房间成员身份随之保留）。
 		constexpr int kDisconnectedSlotKeepSeconds = 600;

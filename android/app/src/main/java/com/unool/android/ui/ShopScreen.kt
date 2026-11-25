@@ -27,11 +27,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.unool.android.model.ShopHero
 import com.unool.android.model.ShopItem
+import com.unool.android.model.ShopLevel
 import com.unool.android.viewmodel.AppViewModel
 import com.unool.android.viewmodel.UiState
 
@@ -141,11 +143,12 @@ private fun HeroRow(hero: ShopHero, expanded: Boolean, viewModel: AppViewModel) 
                 AssetImage(
                     path = hero.defaultImagePath,
                     modifier = Modifier.size(width = 28.dp, height = 38.dp).padding(end = 6.dp),
-                    maxDimension = 128
+                    maxDimension = 128,
+                    contentScale = ContentScale.FillBounds
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("${hero.name}（${hero.level}）", fontWeight = FontWeight.Medium)
+                Text("${hero.name}（${ShopLevel.label(hero.level)}）", fontWeight = FontWeight.Medium)
                 Text(
                     when {
                         hero.unlocked -> "已解锁"
@@ -197,12 +200,13 @@ private fun HeroDetail(hero: ShopHero, skillText: String, viewModel: AppViewMode
             AssetImage(
                 path = hero.defaultImagePath,
                 modifier = Modifier.size(width = 64.dp, height = 86.dp),
-                maxDimension = 256
+                maxDimension = 256,
+                contentScale = ContentScale.FillBounds
             )
             Spacer(Modifier.width(8.dp))
         }
         Column {
-            Text("${hero.name}（${hero.level}）", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("${hero.name}（${ShopLevel.label(hero.level)}）", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Text(
                 when {
@@ -234,7 +238,8 @@ private fun HeroDetail(hero: ShopHero, skillText: String, viewModel: AppViewMode
                 AssetImage(
                     path = skin.imagePath,
                     modifier = Modifier.size(width = 26.dp, height = 36.dp),
-                    maxDimension = 128
+                    maxDimension = 128,
+                    contentScale = ContentScale.FillBounds
                 )
             }
             else {

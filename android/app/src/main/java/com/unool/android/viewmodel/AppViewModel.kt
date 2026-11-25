@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 // 房间功能（协议版本 3）：登录后不再匹配，改为
 // Login → Lobby（开始游戏 / 商城 / 签到）→ Rooms（房间列表）→ Room（房内准备）→ Game
@@ -54,6 +56,7 @@ data class GameUiState(
 
 data class UiState(
     val connection: ConnectionState = ConnectionState.Disconnected,
+    val dropped: Boolean = false,
     val host: String = "120.226.44.187",
     val port: String = "14341",
     val screen: Screen = Screen.Login,
@@ -91,10 +94,30 @@ class AppViewModel : ViewModel() {
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
+    // 手动断开不自动重连；掉线后只排一个自动重连任务，避免重复连接。
+    private val manualDisconnect = AtomicBoolean(false)
+    private val autoReconnectPending = AtomicBoolean(false)
+
     init {
         viewModelScope.launch {
             connection.state.collect { state ->
-                _ui.update { it.copy(connection = state) }
+                val snapshot = _ui.value
+                if (state is ConnectionState.Connected &&
+                    snapshot.dropped &&
+                    !snapshot.loggedIn &&
+                    snapshot.username.isNotBlank() &&
+                    snapshot.password.isNotBlank()
+                ) {
+                    // 掉线重连后自动恢复登录，服务端保留槽位时会回到原房间状态。
+                    connection.send(ClientMessage.Login(snapshot.username, snapshot.password))
+                    _ui.update { it.copy(message = "已重连，正在恢复登录...") }
+                }
+                _ui.update {
+                    it.copy(
+                        connection = state,
+                        dropped = if (state is ConnectionState.Connected) false else it.dropped
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -118,6 +141,7 @@ class AppViewModel : ViewModel() {
     fun setPort(value: String) = _ui.update { it.copy(port = value) }
 
     fun connect() {
+        manualDisconnect.set(false)
         val port = _ui.value.port.toIntOrNull()
         if (port == null || port !in 1..65535) {
             _ui.update { it.copy(message = "端口必须是 1-65535 的数字") }
@@ -127,11 +151,13 @@ class AppViewModel : ViewModel() {
     }
 
     fun reconnect() {
+        manualDisconnect.set(false)
         connection.disconnect()
         connect()
     }
 
     fun disconnect() {
+        manualDisconnect.set(true)
         connection.disconnect()
         _ui.update {
             it.copy(
@@ -139,8 +165,25 @@ class AppViewModel : ViewModel() {
                 screen = Screen.Login,
                 room = null,
                 rooms = emptyList(),
+                dropped = false,
                 message = "已断开连接"
             )
+        }
+    }
+
+    /** 掉线后 3 秒尝试重连；手动断开不触发，且同时只允许一个待重连任务。 */
+    private fun scheduleAutoReconnect() {
+        if (manualDisconnect.get()) return
+        if (!autoReconnectPending.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            delay(3000)
+            autoReconnectPending.set(false)
+            if (manualDisconnect.get()) return@launch
+            val state = _ui.value.connection
+            if (state !is ConnectionState.Connected && state !is ConnectionState.Connecting) {
+                _ui.update { it.copy(message = "连接中断，正在自动重连...") }
+                connect()
+            }
         }
     }
 
@@ -540,7 +583,18 @@ class AppViewModel : ViewModel() {
 
             is ServerMessage.Heartbeat -> Unit
 
-            ServerMessage.Disconnected -> appendLog("与服务器断开连接")
+            ServerMessage.Disconnected -> {
+                appendLog("与服务器断开连接")
+                if (!manualDisconnect.get()) {
+                    _ui.update {
+                        it.copy(
+                            dropped = true,
+                            message = "与服务器断开连接，正在自动重连..."
+                        )
+                    }
+                    scheduleAutoReconnect()
+                }
+            }
 
             is ServerMessage.Unknown -> Unit
         }
